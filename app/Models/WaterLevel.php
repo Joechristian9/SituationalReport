@@ -6,22 +6,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
-class WeatherReport extends Model
+class WaterLevel extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'municipality',
-        'sky_condition',
-        'wind',
-        'precipitation',
-        'sea_condition',
+        'gauging_station',
+        'current_level',
+        'alarm_level',
+        'critical_level',
+        'affected_areas',
         'updated_by',
         'user_id',
     ];
 
     /**
-     * Each weather report belongs to a user (creator).
+     * The user who created the water level report.
      */
     public function user()
     {
@@ -29,7 +29,7 @@ class WeatherReport extends Model
     }
 
     /**
-     * User who last updated the report.
+     * The user who last updated the water level report.
      */
     public function updater()
     {
@@ -37,7 +37,7 @@ class WeatherReport extends Model
     }
 
     /**
-     * Boot method to automatically handle updated_by.
+     * Boot method to automatically handle user_id and updated_by.
      */
     protected static function boot()
     {

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\WeatherReportController;
+use App\Http\Controllers\SituationOverviewController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,12 +27,12 @@ Route::middleware('auth')->group(function () {
 
 // Weather Report
 Route::middleware('auth')->group(function () {
-    Route::resource('situational-reports', WeatherReportController::class)
+    Route::resource('situation-reports', SituationOverviewController::class)
         ->only(['index', 'store', 'update'])
         ->middleware('auth');
 
-    Route::post('/weather-reports', [WeatherReportController::class, 'store'])->name('weather-reports.store');
-    Route::get('/situation-reports', [WeatherReportController::class, 'index'])->name('situation-reports.index');
+    Route::post('/weather-reports', [SituationOverviewController::class, 'store'])->name('weather-reports.store');
+    Route::get('/situation-reports', [SituationOverviewController::class, 'index'])->name('situation-reports.index');
 });
 
 

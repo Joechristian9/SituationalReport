@@ -1,25 +1,25 @@
-// resources/js/Components/SituationOverview/WeatherForm.jsx
+// resources/js/Components/SituationOverview/WaterLevelForm.jsx
 import React from "react";
 import { Plus } from "lucide-react";
 
-export default function WeatherForm({ data, setData, errors }) {
+export default function WaterLevelForm({ data, setData, errors }) {
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
-        const newReports = [...data.reports];
-        newReports[index][name] = value;
-        setData("reports", newReports);
+        const newLevels = [...data.waterLevels];
+        newLevels[index][name] = value;
+        setData("waterLevels", newLevels);
     };
 
     const handleAddRow = () => {
-        setData("reports", [
-            ...data.reports,
+        setData("waterLevels", [
+            ...data.waterLevels,
             {
-                id: data.reports.length + 1,
-                municipality: "",
-                sky_condition: "",
-                wind: "",
-                precipitation: "",
-                sea_condition: "",
+                id: data.waterLevels.length + 1,
+                gauging_station: "",
+                current_level: "",
+                alarm_level: "",
+                critical_level: "",
+                affected_areas: "",
             },
         ]);
     };
@@ -28,11 +28,11 @@ export default function WeatherForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    🌦️ Present Weather Conditions
+                    🌊 Water Level Monitoring
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    Enter current weather details. You can add multiple rows as
-                    needed.
+                    Enter river/stream gauging station levels and affected
+                    areas.
                 </p>
             </div>
 
@@ -40,71 +40,77 @@ export default function WeatherForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 sticky top-0 z-10">
                         <tr className="text-left text-gray-700 font-semibold">
-                            <th className="p-3">Municipality</th>
-                            <th className="p-3">Sky Condition</th>
-                            <th className="p-3">Wind</th>
-                            <th className="p-3">Precipitation</th>
-                            <th className="p-3">Sea Condition</th>
+                            <th className="p-3">Gauging Station</th>
+                            <th className="p-3">Current Level (m)</th>
+                            <th className="p-3">Alarm Level (m)</th>
+                            <th className="p-3">Critical Level (m)</th>
+                            <th className="p-3">Affected Areas</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.reports.map((row, index) => (
+                        {data.waterLevels.map((row, index) => (
                             <tr
                                 key={row.id}
                                 className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
                             >
                                 <td className="p-2">
                                     <input
-                                        name="municipality"
-                                        value={row.municipality}
+                                        name="gauging_station"
+                                        value={row.gauging_station}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Enter municipality"
+                                        placeholder="Enter station name"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="sky_condition"
-                                        value={row.sky_condition}
+                                        name="current_level"
+                                        type="number"
+                                        step="0.01"
+                                        value={row.current_level}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Clear / Cloudy"
+                                        placeholder="0.00"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="wind"
-                                        value={row.wind}
+                                        name="alarm_level"
+                                        type="number"
+                                        step="0.01"
+                                        value={row.alarm_level}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Light / Strong"
+                                        placeholder="0.00"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="precipitation"
-                                        value={row.precipitation}
+                                        name="critical_level"
+                                        type="number"
+                                        step="0.01"
+                                        value={row.critical_level}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Rain / N/A"
+                                        placeholder="0.00"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="sea_condition"
-                                        value={row.sea_condition}
+                                        name="affected_areas"
+                                        value={row.affected_areas}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Calm / Rough / N/A"
+                                        placeholder="Barangays / Areas"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
@@ -112,9 +118,9 @@ export default function WeatherForm({ data, setData, errors }) {
                         ))}
                     </tbody>
                 </table>
-                {errors.reports && (
+                {errors.waterLevels && (
                     <div className="text-red-500 text-sm mt-2 px-2">
-                        {errors.reports}
+                        {errors.waterLevels}
                     </div>
                 )}
             </div>
@@ -128,17 +134,6 @@ export default function WeatherForm({ data, setData, errors }) {
                     <Plus size={18} />
                     Add Row
                 </button>
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
-                <p>
-                    <span className="font-bold">💡 Note:</span> For non-coastal
-                    municipalities, enter{" "}
-                    <span className="font-mono bg-white px-1 py-0.5 rounded">
-                        N/A
-                    </span>{" "}
-                    for Sea Condition.
-                </p>
             </div>
         </div>
     );

@@ -47,12 +47,12 @@ export function AppSidebar({ ...props }) {
             url: "#",
             icon: MdOutlineHealthAndSafety,
             // This now dynamically checks if the current route starts with 'situational-reports'
-            isActive: route().current("situational-reports.*"),
+            isActive: route().current("situation-reports.*"),
             items: [
                 {
                     title: "Situational Reports",
                     // This is now safe to call here
-                    url: route("situational-reports.index"),
+                    url: route("situation-reports.index"),
                 },
             ],
         },
