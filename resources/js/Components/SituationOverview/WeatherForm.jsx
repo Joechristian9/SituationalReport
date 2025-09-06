@@ -1,25 +1,22 @@
 // resources/js/Components/SituationOverview/WeatherForm.jsx
+import React, { useEffect } from "react";
+import { useForm, usePage } from "@inertiajs/react";
+import { Plus, Save } from "lucide-react";
 
-import React, { useEffect } from "react"; // 1. Import useEffect
-import { useForm } from "@inertiajs/react";
-import { Plus } from "lucide-react";
-
-// NEW: Define a unique key for storing the form data in localStorage.
 const LOCAL_STORAGE_KEY = "weatherFormData";
 
 export default function WeatherForm() {
-    // 2. MODIFIED: Initialize the form with data from localStorage or a default state.
+    const { auth } = usePage().props;
+
     const { data, setData, post, processing, errors } = useForm(() => {
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (savedData) {
-            // If we find saved data, parse it and use it.
             try {
                 return JSON.parse(savedData);
             } catch (e) {
                 console.error("Failed to parse saved form data:", e);
             }
         }
-        // If no saved data is found, return the default structure.
         return {
             reports: [
                 {
@@ -34,16 +31,10 @@ export default function WeatherForm() {
         };
     });
 
-    // 3. NEW: Add a useEffect hook to save data to localStorage whenever it changes.
-    // This is the core of the persistence logic.
     useEffect(() => {
-        // We convert the 'data' object to a JSON string to store it.
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-    }, [data]); // This effect runs every time the 'data' object is updated.
+    }, [data]);
 
-    /**
-     * Handles changes in any input field and updates the form state.
-     */
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
         const newReports = [...data.reports];
@@ -51,9 +42,6 @@ export default function WeatherForm() {
         setData("reports", newReports);
     };
 
-    /**
-     * Adds a new, empty row to the form.
-     */
     const handleAddRow = () => {
         setData("reports", [
             ...data.reports,
@@ -68,37 +56,32 @@ export default function WeatherForm() {
         ]);
     };
 
-    /**
-     * Handles the form submission.
-     */
     const handleSubmit = (event) => {
         event.preventDefault();
         post(route("weather-reports.store"), {
-            // 4. MODIFIED: Remove the reset() call to keep the data after saving.
-            onSuccess: () => {
-                // The form will no longer reset on success.
-                // reset(); <-- THIS LINE HAS BEEN REMOVED.
-                // A success toast will still appear from your Index.jsx page.
-            },
             preserveScroll: true,
         });
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            {/* The rest of your JSX remains exactly the same */}
-            <h3 className="text-lg font-semibold text-gray-800">
-                A. Present Weather Conditions
-            </h3>
-            <p className="text-sm text-gray-600 -mt-4">
-                Enter current weather details in an Excel-like grid. You can add
-                multiple rows.
-            </p>
+        <form
+            onSubmit={handleSubmit}
+            className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200"
+        >
+            <div>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    🌦️ Present Weather Conditions
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                    Enter current weather details. You can add multiple rows as
+                    needed.
+                </p>
+            </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm">
-                    <thead>
-                        <tr className="bg-gray-100 text-left text-gray-700 font-medium">
+                    <thead className="bg-gray-100 sticky top-0 z-10">
+                        <tr className="text-left text-gray-700 font-semibold">
                             <th className="p-3">Municipality</th>
                             <th className="p-3">Sky Condition</th>
                             <th className="p-3">Wind</th>
@@ -108,7 +91,10 @@ export default function WeatherForm() {
                     </thead>
                     <tbody>
                         {data.reports.map((row, index) => (
-                            <tr key={row.id}>
+                            <tr
+                                key={row.id}
+                                className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
+                            >
                                 <td className="p-2">
                                     <input
                                         name="municipality"
@@ -116,7 +102,8 @@ export default function WeatherForm() {
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md"
+                                        placeholder="Enter municipality"
+                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -126,7 +113,8 @@ export default function WeatherForm() {
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md"
+                                        placeholder="Clear / Cloudy"
+                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -136,7 +124,8 @@ export default function WeatherForm() {
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md"
+                                        placeholder="Light / Strong"
+                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -146,52 +135,72 @@ export default function WeatherForm() {
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md"
+                                        placeholder="Rain / N/A"
+                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
-                                <td className="p-2">
+                                <td className="p-2 flex items-center gap-3">
                                     <input
                                         name="sea_condition"
                                         value={row.sea_condition}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md"
+                                        placeholder="Calm / Rough / N/A"
+                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
+                                    {/* <img
+                                        src={
+                                            auth.user?.profile_photo_url ||
+                                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                auth.user?.name ?? "User"
+                                            )}&background=0D8ABC&color=fff`
+                                        }
+                                        alt={auth.user?.name}
+                                        title={auth.user?.name}
+                                        className="w-10 h-10 rounded-full border shadow-sm"
+                                    /> */}
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
                 {errors["reports"] && (
-                    <div className="text-red-500 text-sm mt-2">
+                    <div className="text-red-500 text-sm mt-2 px-2">
                         {errors["reports"]}
                     </div>
                 )}
             </div>
 
-            <button
-                type="button"
-                onClick={handleAddRow}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700"
-            >
-                <Plus size={18} />
-                Add Row
-            </button>
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={handleAddRow}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 transition"
+                >
+                    <Plus size={18} />
+                    Add Row
+                </button>
+            </div>
 
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg">
+            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
                 <p>
-                    <span className="font-bold">Note:</span> For non-coastal
-                    municipalities, enter "N/A" for Sea Condition.
+                    <span className="font-bold">💡 Note:</span> For non-coastal
+                    municipalities, enter{" "}
+                    <span className="font-mono bg-white px-1 py-0.5 rounded">
+                        N/A
+                    </span>{" "}
+                    for Sea Condition.
                 </p>
             </div>
 
             <div className="flex justify-end">
                 <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-md shadow hover:bg-blue-700 transition disabled:opacity-50"
                     disabled={processing}
                 >
+                    <Save size={18} />
                     {processing ? "Saving..." : "Save Weather Report(s)"}
                 </button>
             </div>

@@ -9,11 +9,6 @@ class WeatherReport extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'municipality',
         'sky_condition',
@@ -24,7 +19,7 @@ class WeatherReport extends Model
     ];
 
     /**
-     * Get the user that created this weather report.
+     * Each weather report belongs to a user.
      */
     public function user()
     {
