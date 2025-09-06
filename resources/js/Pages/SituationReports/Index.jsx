@@ -52,7 +52,7 @@ export default function Index() {
                     {/* The form to add a new report is the only component here */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Add New Weather Report</CardTitle>
+                            <CardTitle>Add New Weather Report!</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <WeatherForm />
