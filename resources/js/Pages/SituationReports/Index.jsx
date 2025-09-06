@@ -77,36 +77,15 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6">
-                    <form onSubmit={handleSubmit}>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Situational Report</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-8">
-                                {/* Child forms now only render inputs */}
-                                <WeatherForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                />
-                                <WaterLevelForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <div className="flex justify-end mt-6">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="px-6 py-2 bg-blue-600 text-white font-bold rounded-md shadow hover:bg-blue-700 transition disabled:opacity-50"
-                            >
-                                {processing ? "Saving..." : "Save All Reports"}
-                            </Button>
-                        </div>
-                    </form>
+                    {/* The form to add a new report is the only component here */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Add New Weather Report!</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <WeatherForm />
+                        </CardContent>
+                    </Card>
                 </main>
             </SidebarInset>
         </SidebarProvider>
