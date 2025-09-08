@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
-
+import { Plus, Minus } from "lucide-react";
 import {
     SidebarProvider,
     SidebarInset,
@@ -56,6 +56,10 @@ export default function Index() {
             },
         ],
     });
+
+    // ✅ Toggle visibility
+    const [waterLevelVisible, setWaterLevelVisible] = useState(false);
+    const [electricityVisible, setElectricityVisible] = useState(false);
 
     // ✅ Load saved data from localStorage on mount
     useEffect(() => {
@@ -124,55 +128,68 @@ export default function Index() {
                                     errors={errors}
                                 />
 
-                                {/* Toggle buttons */}
-                                <div className="space-y-3">
+                                {/* Toggle Water Level */}
+                                <div className="space-y-4">
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2 text-blue-600"
+                                        variant="ghost"
                                         onClick={() =>
-                                            setShowWaterLevel(!showWaterLevel)
+                                            setWaterLevelVisible(
+                                                !waterLevelVisible
+                                            )
                                         }
+                                        className={`flex items-center gap-2 ${
+                                            waterLevelVisible
+                                                ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        }`}
                                     >
-                                        {showWaterLevel ? (
-                                            <span className="text-red-600">
-                                                − Hide Water Level Form
-                                            </span>
+                                        {waterLevelVisible ? (
+                                            <Minus size={16} />
                                         ) : (
-                                            <span>
-                                                ＋ Show Water Level Form
-                                            </span>
+                                            <Plus size={16} />
                                         )}
+                                        {waterLevelVisible
+                                            ? "Hide Water Level Form"
+                                            : "Show Water Level Form"}
                                     </Button>
 
-                                    {showWaterLevel && (
+                                    {waterLevelVisible && (
                                         <WaterLevelForm
                                             data={data}
                                             setData={setData}
                                             errors={errors}
                                         />
                                     )}
+                                </div>
 
+                                {/* Toggle Electricity */}
+                                <div className="space-y-4">
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2 text-blue-600"
+                                        variant="ghost"
                                         onClick={() =>
-                                            setShowElectricity(!showElectricity)
+                                            setElectricityVisible(
+                                                !electricityVisible
+                                            )
                                         }
+                                        className={`flex items-center gap-2 ${
+                                            electricityVisible
+                                                ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        }`}
                                     >
-                                        {showElectricity ? (
-                                            <span className="text-red-600">
-                                                − Hide Electricity Form
-                                            </span>
+                                        {electricityVisible ? (
+                                            <Minus size={16} />
                                         ) : (
-                                            <span>
-                                                ＋ Show Electricity Form
-                                            </span>
+                                            <Plus size={16} />
                                         )}
+                                        {electricityVisible
+                                            ? "Hide Electricity Form"
+                                            : "Show Electricity Form"}
                                     </Button>
 
-                                    {showElectricity && (
+                                    {electricityVisible && (
                                         <ElectricityForm
                                             data={data}
                                             setData={setData}
