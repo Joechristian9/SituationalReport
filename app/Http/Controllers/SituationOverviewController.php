@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\WeatherReport;
 use App\Models\WaterLevel;
 use App\Models\ElectricityService;
+use App\Models\WaterService; // ✅ Import WaterService
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -16,18 +17,20 @@ class SituationOverviewController extends Controller
         $weatherReports = WeatherReport::latest()->get();
         $waterLevels    = WaterLevel::latest()->get();
         $electricity    = ElectricityService::latest()->get();
+        $waterServices  = WaterService::latest()->get(); // ✅ Fetch water services
 
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherReports,
             'waterLevels'    => $waterLevels,
             'electricity'    => $electricity,
+            'waterServices'  => $waterServices, // ✅ Pass to frontend
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            // Weather reports
+            // ✅ Weather reports
             'reports' => 'required|array',
             'reports.*.municipality'   => 'nullable|string|max:255',
             'reports.*.sky_condition'  => 'nullable|string|max:255',
@@ -35,7 +38,7 @@ class SituationOverviewController extends Controller
             'reports.*.precipitation'  => 'nullable|string|max:255',
             'reports.*.sea_condition'  => 'nullable|string|max:255',
 
-            // Water level reports
+            // ✅ Water level reports
             'waterLevels' => 'required|array',
             'waterLevels.*.gauging_station' => 'required|string|max:255',
             'waterLevels.*.current_level'   => 'nullable|numeric',
@@ -43,11 +46,18 @@ class SituationOverviewController extends Controller
             'waterLevels.*.critical_level'  => 'nullable|numeric',
             'waterLevels.*.affected_areas'  => 'nullable|string|max:255',
 
-            // Electricity services reports
+            // ✅ Electricity services reports
             'electricityServices' => 'required|array',
             'electricityServices.*.status'            => 'nullable|string|max:255',
             'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
             'electricityServices.*.remarks'           => 'nullable|string|max:500',
+
+            // ✅ Water services reports
+            'waterServices' => 'required|array',
+            'waterServices.*.source_of_water'   => 'nullable|string|max:255',
+            'waterServices.*.barangays_served'  => 'nullable|string|max:500',
+            'waterServices.*.status'            => 'nullable|string|max:255',
+            'waterServices.*.remarks'           => 'nullable|string|max:500',
         ]);
 
         // ✅ Save Weather Reports
@@ -93,6 +103,20 @@ class SituationOverviewController extends Controller
             }
         }
 
-        return back()->with('success', 'Weather, Water Level, and Electricity reports saved successfully.');
+        // ✅ Save Water Services
+        foreach ($validated['waterServices'] as $water) {
+            if (!empty(array_filter($water))) {
+                WaterService::create([
+                    'source_of_water'  => $water['source_of_water'] ?? null,
+                    'barangays_served' => $water['barangays_served'] ?? null,
+                    'status'           => $water['status'] ?? null,
+                    'remarks'          => $water['remarks'] ?? null,
+                    'user_id'          => Auth::id(),
+                    'updated_by'       => Auth::id(),
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Weather, Water Level, Electricity, and Water Services reports saved successfully.');
     }
 }

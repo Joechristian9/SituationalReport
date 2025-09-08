@@ -17,13 +17,15 @@ import { Button } from "@/components/ui/button";
 import WeatherForm from "@/Components/SituationOverview/WeatherForm";
 import WaterLevelForm from "@/Components/SituationOverview/WaterLevelForm";
 import ElectricityForm from "@/Components/SituationOverview/ElectricityForm";
+import WaterForm from "@/Components/SituationOverview/WaterForm";
 
 export default function Index() {
     const { flash } = usePage().props;
 
     // ✅ Show/hide state for forms
-    const [showWaterLevel, setShowWaterLevel] = useState(false);
-    const [showElectricity, setShowElectricity] = useState(false);
+    const [waterLevelVisible, setWaterLevelVisible] = useState(false);
+    const [electricityVisible, setElectricityVisible] = useState(false);
+    const [waterServiceVisible, setWaterServiceVisible] = useState(false);
 
     // ✅ Combined useForm with default structure
     const { data, setData, post, processing, errors } = useForm({
@@ -55,11 +57,17 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        // ✅ Added Water Services default array so WaterForm.jsx won’t crash
+        waterServices: [
+            {
+                id: 1,
+                source_of_water: "",
+                barangays_served: "",
+                status: "",
+                remarks: "",
+            },
+        ],
     });
-
-    // ✅ Toggle visibility
-    const [waterLevelVisible, setWaterLevelVisible] = useState(false);
-    const [electricityVisible, setElectricityVisible] = useState(false);
 
     // ✅ Load saved data from localStorage on mount
     useEffect(() => {
@@ -79,11 +87,9 @@ export default function Index() {
         localStorage.setItem("situationReports", JSON.stringify(data));
     }, [data]);
 
-    // ✅ Clear localStorage after successful save
+    // ✅ Flash messages
     useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
+        if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
@@ -92,7 +98,7 @@ export default function Index() {
         { label: "Create Situational Report" },
     ];
 
-    // ✅ Single submit handler
+    // ✅ Submit handler
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("situation-reports.store"), {
@@ -121,22 +127,22 @@ export default function Index() {
                                 <CardTitle>Situational Report</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-8">
-                                {/* Weather form always visible */}
+                                {/* ✅ Weather always visible */}
                                 <WeatherForm
                                     data={data}
                                     setData={setData}
                                     errors={errors}
                                 />
 
-                                {/* Toggle Water Level */}
+                                {/* ✅ Water Level Toggle */}
                                 <div className="space-y-4">
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         onClick={() => {
                                             if (waterLevelVisible) {
-                                                // ✅ If hiding Water Level, also hide Electricity
                                                 setElectricityVisible(false);
+                                                setWaterServiceVisible(false);
                                             }
                                             setWaterLevelVisible(
                                                 !waterLevelVisible
@@ -167,7 +173,7 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* ✅ Electricity only appears if Water Level is open */}
+                                {/* ✅ Electricity appears only if Water Level is open */}
                                 {waterLevelVisible && (
                                     <div className="space-y-4">
                                         <Button
@@ -203,9 +209,45 @@ export default function Index() {
                                         )}
                                     </div>
                                 )}
+
+                                {/* ✅ Water Services appears only if Electricity is open */}
+                                {electricityVisible && (
+                                    <div className="space-y-4">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() =>
+                                                setWaterServiceVisible(
+                                                    !waterServiceVisible
+                                                )
+                                            }
+                                            className={`flex items-center gap-2 ${
+                                                waterServiceVisible
+                                                    ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            }`}
+                                        >
+                                            {waterServiceVisible ? (
+                                                <Minus size={16} />
+                                            ) : (
+                                                <Plus size={16} />
+                                            )}
+                                            {waterServiceVisible
+                                                ? "Hide Water Services Form"
+                                                : "Show Water Services Form"}
+                                        </Button>
+
+                                        {waterServiceVisible && (
+                                            <WaterForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
-
                         <div className="flex justify-end mt-6">
                             <Button
                                 type="submit"
