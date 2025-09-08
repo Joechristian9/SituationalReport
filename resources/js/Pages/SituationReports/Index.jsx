@@ -133,11 +133,15 @@ export default function Index() {
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        onClick={() =>
+                                        onClick={() => {
+                                            if (waterLevelVisible) {
+                                                // ✅ If hiding Water Level, also hide Electricity
+                                                setElectricityVisible(false);
+                                            }
                                             setWaterLevelVisible(
                                                 !waterLevelVisible
-                                            )
-                                        }
+                                            );
+                                        }}
                                         className={`flex items-center gap-2 ${
                                             waterLevelVisible
                                                 ? "text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -163,40 +167,42 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* Toggle Electricity */}
-                                <div className="space-y-4">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        onClick={() =>
-                                            setElectricityVisible(
-                                                !electricityVisible
-                                            )
-                                        }
-                                        className={`flex items-center gap-2 ${
-                                            electricityVisible
-                                                ? "text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                        }`}
-                                    >
-                                        {electricityVisible ? (
-                                            <Minus size={16} />
-                                        ) : (
-                                            <Plus size={16} />
-                                        )}
-                                        {electricityVisible
-                                            ? "Hide Electricity Form"
-                                            : "Show Electricity Form"}
-                                    </Button>
+                                {/* ✅ Electricity only appears if Water Level is open */}
+                                {waterLevelVisible && (
+                                    <div className="space-y-4">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() =>
+                                                setElectricityVisible(
+                                                    !electricityVisible
+                                                )
+                                            }
+                                            className={`flex items-center gap-2 ${
+                                                electricityVisible
+                                                    ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            }`}
+                                        >
+                                            {electricityVisible ? (
+                                                <Minus size={16} />
+                                            ) : (
+                                                <Plus size={16} />
+                                            )}
+                                            {electricityVisible
+                                                ? "Hide Electricity Form"
+                                                : "Show Electricity Form"}
+                                        </Button>
 
-                                    {electricityVisible && (
-                                        <ElectricityForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
-                                    )}
-                                </div>
+                                        {electricityVisible && (
+                                            <ElectricityForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
