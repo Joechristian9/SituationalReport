@@ -1,7 +1,8 @@
 // resources/js/Pages/SituationReports/Index.jsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
+import { Plus, Minus } from "lucide-react";
 
 import {
     SidebarProvider,
@@ -16,11 +17,12 @@ import { Button } from "@/components/ui/button";
 
 import WeatherForm from "@/Components/SituationOverview/WeatherForm";
 import WaterLevelForm from "@/Components/SituationOverview/WaterLevelForm";
+import ElectricityForm from "@/Components/SituationOverview/ElectricityForm";
 
 export default function Index() {
     const { flash } = usePage().props;
 
-    // ✅ Combined useForm
+    // ✅ Form data
     const { data, setData, post, processing, errors } = useForm({
         reports: [
             {
@@ -42,8 +44,17 @@ export default function Index() {
                 affected_areas: "",
             },
         ],
+        electricityServices: [
+            {
+                id: 1,
+                status: "",
+                barangays_affected: "",
+                remarks: "",
+            },
+        ],
     });
 
+    // ✅ Flash messages
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -54,7 +65,11 @@ export default function Index() {
         { label: "Create Situational Report" },
     ];
 
-    // ✅ Single submit handler
+    // ✅ Toggle visibility
+    const [waterLevelVisible, setWaterLevelVisible] = useState(false);
+    const [electricityVisible, setElectricityVisible] = useState(false);
+
+    // ✅ Submit handler
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("situation-reports.store"), {
@@ -83,17 +98,82 @@ export default function Index() {
                                 <CardTitle>Situational Report</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-8">
-                                {/* Child forms now only render inputs */}
+                                {/* Weather always visible */}
                                 <WeatherForm
                                     data={data}
                                     setData={setData}
                                     errors={errors}
                                 />
-                                <WaterLevelForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                />
+
+                                {/* Toggle Water Level */}
+                                <div className="space-y-4">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() =>
+                                            setWaterLevelVisible(
+                                                !waterLevelVisible
+                                            )
+                                        }
+                                        className={`flex items-center gap-2 ${
+                                            waterLevelVisible
+                                                ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        }`}
+                                    >
+                                        {waterLevelVisible ? (
+                                            <Minus size={16} />
+                                        ) : (
+                                            <Plus size={16} />
+                                        )}
+                                        {waterLevelVisible
+                                            ? "Hide Water Level Form"
+                                            : "Show Water Level Form"}
+                                    </Button>
+
+                                    {waterLevelVisible && (
+                                        <WaterLevelForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Toggle Electricity */}
+                                <div className="space-y-4">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() =>
+                                            setElectricityVisible(
+                                                !electricityVisible
+                                            )
+                                        }
+                                        className={`flex items-center gap-2 ${
+                                            electricityVisible
+                                                ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        }`}
+                                    >
+                                        {electricityVisible ? (
+                                            <Minus size={16} />
+                                        ) : (
+                                            <Plus size={16} />
+                                        )}
+                                        {electricityVisible
+                                            ? "Hide Electricity Form"
+                                            : "Show Electricity Form"}
+                                    </Button>
+
+                                    {electricityVisible && (
+                                        <ElectricityForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WeatherReport;
 use App\Models\WaterLevel;
+use App\Models\ElectricityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -13,11 +14,13 @@ class SituationOverviewController extends Controller
     public function index()
     {
         $weatherReports = WeatherReport::latest()->get();
-        $waterLevels = WaterLevel::latest()->get();
+        $waterLevels    = WaterLevel::latest()->get();
+        $electricity    = ElectricityService::latest()->get();
 
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherReports,
-            'waterLevels'   => $waterLevels,
+            'waterLevels'    => $waterLevels,
+            'electricity'    => $electricity,
         ]);
     }
 
@@ -39,6 +42,12 @@ class SituationOverviewController extends Controller
             'waterLevels.*.alarm_level'     => 'nullable|numeric',
             'waterLevels.*.critical_level'  => 'nullable|numeric',
             'waterLevels.*.affected_areas'  => 'nullable|string|max:255',
+
+            // Electricity services reports
+            'electricityServices' => 'required|array',
+            'electricityServices.*.status'            => 'nullable|string|max:255',
+            'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
+            'electricityServices.*.remarks'           => 'nullable|string|max:500',
         ]);
 
         // ✅ Save Weather Reports
@@ -50,8 +59,8 @@ class SituationOverviewController extends Controller
                     'wind'          => $report['wind'] ?? null,
                     'precipitation' => $report['precipitation'] ?? null,
                     'sea_condition' => $report['sea_condition'] ?? null,
-                    'user_id'       => Auth::id(), // creator
-                    'updated_by'    => Auth::id(), // also set on creation
+                    'user_id'       => Auth::id(),
+                    'updated_by'    => Auth::id(),
                 ]);
             }
         }
@@ -65,12 +74,25 @@ class SituationOverviewController extends Controller
                     'alarm_level'     => $station['alarm_level'] ?? null,
                     'critical_level'  => $station['critical_level'] ?? null,
                     'affected_areas'  => $station['affected_areas'] ?? null,
-                    'user_id'         => Auth::id(), // creator
-                    'updated_by'      => Auth::id(), // also set on creation
+                    'user_id'         => Auth::id(),
+                    'updated_by'      => Auth::id(),
                 ]);
             }
         }
 
-        return back()->with('success', 'Weather and Water Level reports saved successfully.');
+        // ✅ Save Electricity Services
+        foreach ($validated['electricityServices'] as $service) {
+            if (!empty(array_filter($service))) {
+                ElectricityService::create([
+                    'status'             => $service['status'] ?? null,
+                    'barangays_affected' => $service['barangays_affected'] ?? null,
+                    'remarks'            => $service['remarks'] ?? null,
+                    'user_id'            => Auth::id(),
+                    'updated_by'         => Auth::id(),
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Weather, Water Level, and Electricity reports saved successfully.');
     }
 }
