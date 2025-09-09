@@ -18,16 +18,18 @@ import WeatherForm from "@/Components/SituationOverview/WeatherForm";
 import WaterLevelForm from "@/Components/SituationOverview/WaterLevelForm";
 import ElectricityForm from "@/Components/SituationOverview/ElectricityForm";
 import WaterForm from "@/Components/SituationOverview/WaterForm";
+import CommunicationForm from "@/Components/SituationOverview/CommunicationForm"; // ✅ import
 
 export default function Index() {
     const { flash } = usePage().props;
 
-    // ✅ Show/hide state for forms
+    // ✅ Show/hide states for chained forms
     const [waterLevelVisible, setWaterLevelVisible] = useState(false);
     const [electricityVisible, setElectricityVisible] = useState(false);
     const [waterServiceVisible, setWaterServiceVisible] = useState(false);
+    const [communicationVisible, setCommunicationVisible] = useState(false);
 
-    // ✅ Combined useForm with default structure
+    // ✅ useForm defaults
     const { data, setData, post, processing, errors } = useForm({
         reports: [
             {
@@ -57,7 +59,6 @@ export default function Index() {
                 remarks: "",
             },
         ],
-        // ✅ Added Water Services default array so WaterForm.jsx won’t crash
         waterServices: [
             {
                 id: 1,
@@ -67,9 +68,20 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        communications: [
+            {
+                id: 1,
+                globe: "",
+                smart: "",
+                pldt_landline: "",
+                pldt_internet: "",
+                vhf: "",
+                remarks: "",
+            },
+        ],
     });
 
-    // ✅ Load saved data from localStorage on mount
+    // ✅ Restore saved form from localStorage
     useEffect(() => {
         const saved = localStorage.getItem("situationReports");
         if (saved) {
@@ -82,7 +94,7 @@ export default function Index() {
         }
     }, []);
 
-    // ✅ Save data to localStorage whenever it changes
+    // ✅ Save form state
     useEffect(() => {
         localStorage.setItem("situationReports", JSON.stringify(data));
     }, [data]);
@@ -98,12 +110,9 @@ export default function Index() {
         { label: "Create Situational Report" },
     ];
 
-    // ✅ Submit handler
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route("situation-reports.store"), {
-            preserveScroll: true,
-        });
+        post(route("situation-reports.store"), { preserveScroll: true });
     };
 
     return (
@@ -143,6 +152,7 @@ export default function Index() {
                                             if (waterLevelVisible) {
                                                 setElectricityVisible(false);
                                                 setWaterServiceVisible(false);
+                                                setCommunicationVisible(false);
                                             }
                                             setWaterLevelVisible(
                                                 !waterLevelVisible
@@ -173,17 +183,25 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* ✅ Electricity appears only if Water Level is open */}
+                                {/* ✅ Electricity only if Water Level is visible */}
                                 {waterLevelVisible && (
                                     <div className="space-y-4">
                                         <Button
                                             type="button"
                                             variant="ghost"
-                                            onClick={() =>
+                                            onClick={() => {
+                                                if (electricityVisible) {
+                                                    setWaterServiceVisible(
+                                                        false
+                                                    );
+                                                    setCommunicationVisible(
+                                                        false
+                                                    );
+                                                }
                                                 setElectricityVisible(
                                                     !electricityVisible
-                                                )
-                                            }
+                                                );
+                                            }}
                                             className={`flex items-center gap-2 ${
                                                 electricityVisible
                                                     ? "text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -210,17 +228,22 @@ export default function Index() {
                                     </div>
                                 )}
 
-                                {/* ✅ Water Services appears only if Electricity is open */}
+                                {/* ✅ Water Services only if Electricity is visible */}
                                 {electricityVisible && (
                                     <div className="space-y-4">
                                         <Button
                                             type="button"
                                             variant="ghost"
-                                            onClick={() =>
+                                            onClick={() => {
+                                                if (waterServiceVisible) {
+                                                    setCommunicationVisible(
+                                                        false
+                                                    );
+                                                }
                                                 setWaterServiceVisible(
                                                     !waterServiceVisible
-                                                )
-                                            }
+                                                );
+                                            }}
                                             className={`flex items-center gap-2 ${
                                                 waterServiceVisible
                                                     ? "text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -246,8 +269,47 @@ export default function Index() {
                                         )}
                                     </div>
                                 )}
+
+                                {/* ✅ Communications only if Water Services is visible */}
+                                {waterServiceVisible && (
+                                    <div className="space-y-4">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() =>
+                                                setCommunicationVisible(
+                                                    !communicationVisible
+                                                )
+                                            }
+                                            className={`flex items-center gap-2 ${
+                                                communicationVisible
+                                                    ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            }`}
+                                        >
+                                            {communicationVisible ? (
+                                                <Minus size={16} />
+                                            ) : (
+                                                <Plus size={16} />
+                                            )}
+                                            {communicationVisible
+                                                ? "Hide Communication Form"
+                                                : "Show Communication Form"}
+                                        </Button>
+
+                                        {communicationVisible && (
+                                            <CommunicationForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
+
+                        {/* ✅ Submit Button */}
                         <div className="flex justify-end mt-6">
                             <Button
                                 type="submit"
