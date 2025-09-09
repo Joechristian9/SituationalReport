@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
 use Illuminate\Foundation\Application;
+use App\Http\Controllers\PreemptiveEvacuationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -35,5 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])->name('situation-reports.index');
 });
 
-
+Route::get('/preemptive-evacuations', [PreemptiveEvacuationController::class, 'index'])->name('preemptive.index');
+Route::post('/preemptive-evacuations', [PreemptiveEvacuationController::class, 'store'])
+    ->name('preemptive-evacuations.store');
 require __DIR__ . '/auth.php';
