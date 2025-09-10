@@ -1,5 +1,6 @@
 import React from "react";
 import { Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function PreEmptiveForm({ data, setData, errors }) {
     const handleInputChange = (index, event) => {
@@ -7,7 +8,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
         const newReports = [...data.reports];
         newReports[index][name] = value;
 
-        // Auto-calculate totals (families + persons)
+        // Auto-calculate totals
         const famInside = parseInt(newReports[index].families || 0);
         const personsInside = parseInt(newReports[index].persons || 0);
         const famOutside = parseInt(newReports[index].outside_families || 0);
@@ -41,140 +42,147 @@ export default function PreEmptiveForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
             {/* Header */}
             <div>
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                     🏠 Pre-Emptive Evacuation
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                    Record pre-emptive evacuation details for each barangay.
+                    Fill in the evacuation details for each barangay. Totals are
+                    calculated automatically.
                 </p>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
                             <th className="p-3">Barangay</th>
-                            <th className="p-3">Evacuation Centers</th>
-                            <th className="p-3">No. of Families</th>
-                            <th className="p-3">No. of Persons</th>
-                            <th className="p-3">Outside Evacuation Centers</th>
-                            <th className="p-3">No. of Families</th>
-                            <th className="p-3">No. of Persons</th>
-                            <th className="p-3">Total Families</th>
-                            <th className="p-3">Total Persons</th>
+                            <th className="p-3">Evacuation Center</th>
+                            <th className="p-3 text-right">Families</th>
+                            <th className="p-3 text-right">Persons</th>
+                            <th className="p-3">Outside Center</th>
+                            <th className="p-3 text-right">Families</th>
+                            <th className="p-3 text-right">Persons</th>
+                            <th className="p-3 text-right">Total Families</th>
+                            <th className="p-3 text-right">Total Persons</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.reports.map((row, index) => (
-                            <tr
-                                key={row.id}
-                                className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/40 transition-colors"
-                            >
-                                <td className="p-2">
-                                    <input
-                                        name="barangay"
-                                        value={row.barangay}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="barangay"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        name="evacuation_center"
-                                        value={row.evacuation_center}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="Evacuation"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        type="number"
-                                        name="families"
-                                        value={row.families}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-right"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        type="number"
-                                        name="persons"
-                                        value={row.persons}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-right"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        name="outside_center"
-                                        value={row.outside_center}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="Outside "
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        type="number"
-                                        name="outside_families"
-                                        value={row.outside_families}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-right"
-                                    />
-                                </td>
-                                <td className="p-2">
-                                    <input
-                                        type="number"
-                                        name="outside_persons"
-                                        value={row.outside_persons}
-                                        onChange={(e) =>
-                                            handleInputChange(index, e)
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-right"
-                                    />
-                                </td>
-                                <td className="p-2 text-right font-semibold text-gray-700">
-                                    {row.total_families}
-                                </td>
-                                <td className="p-2 text-right font-semibold text-gray-700">
-                                    {row.total_persons}
-                                </td>
-                            </tr>
-                        ))}
+                        <AnimatePresence>
+                            {data.reports.map((row, index) => (
+                                <motion.tr
+                                    key={row.id}
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/60 transition-colors"
+                                >
+                                    <td className="p-2">
+                                        <input
+                                            name="barangay"
+                                            value={row.barangay}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="Enter barangay"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            name="evacuation_center"
+                                            value={row.evacuation_center}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="Evacuation center"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            type="number"
+                                            name="families"
+                                            value={row.families}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm text-right focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            type="number"
+                                            name="persons"
+                                            value={row.persons}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm text-right focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            name="outside_center"
+                                            value={row.outside_center}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="Outside center"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            type="number"
+                                            name="outside_families"
+                                            value={row.outside_families}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm text-right focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2">
+                                        <input
+                                            type="number"
+                                            name="outside_persons"
+                                            value={row.outside_persons}
+                                            onChange={(e) =>
+                                                handleInputChange(index, e)
+                                            }
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border rounded-lg shadow-sm text-right focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                        />
+                                    </td>
+                                    <td className="p-2 text-right font-semibold text-blue-700">
+                                        {row.total_families}
+                                    </td>
+                                    <td className="p-2 text-right font-semibold text-blue-700">
+                                        {row.total_persons}
+                                    </td>
+                                </motion.tr>
+                            ))}
+                        </AnimatePresence>
                     </tbody>
-                    {/* ✅ Table Footer */}
+                    {/* Table Footer */}
                     <tfoot className="bg-gray-100 font-bold text-gray-800">
                         <tr>
                             <td className="p-2 text-center" colSpan={2}>
                                 Grand Total
                             </td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-600">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.families || 0),
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-600">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.persons || 0),
@@ -182,7 +190,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                 )}
                             </td>
                             <td className="p-2"></td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-600">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum +
@@ -190,7 +198,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-600">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum +
@@ -198,14 +206,14 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-800">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.total_families || 0),
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right">
+                            <td className="p-2 text-right text-blue-800">
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.total_persons || 0),
@@ -233,15 +241,6 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                     Add Row
                 </button>
             </div>
-
-            {/* Info Note */}
-            {/* <div className="mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg shadow-sm">
-                <p>
-                    <span className="font-bold">💡 Note:</span> Totals are
-                    automatically calculated based on inside and outside
-                    evacuation counts.
-                </p>
-            </div> */}
         </div>
     );
 }
