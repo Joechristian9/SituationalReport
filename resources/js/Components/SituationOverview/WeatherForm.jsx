@@ -25,20 +25,22 @@ export default function WeatherForm({ data, setData, errors }) {
     };
 
     return (
-        <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <div className="space-y-6 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+            {/* Header */}
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                     🌦️ Present Weather Conditions
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                     Enter current weather details. You can add multiple rows as
                     needed.
                 </p>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-100 sticky top-0 z-10">
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+                <table className="w-full text-sm border-collapse">
+                    <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-gray-700 font-semibold">
                             <th className="p-3">Municipality</th>
                             <th className="p-3">Sky Condition</th>
@@ -51,7 +53,7 @@ export default function WeatherForm({ data, setData, errors }) {
                         {data.reports.map((row, index) => (
                             <tr
                                 key={row.id}
-                                className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
+                                className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/40 transition-colors"
                             >
                                 <td className="p-2">
                                     <input
@@ -61,7 +63,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Enter municipality"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -72,7 +74,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Clear / Cloudy"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -83,7 +85,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Light / Strong"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -94,7 +96,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Rain / N/A"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -105,7 +107,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Calm / Rough / N/A"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     />
                                 </td>
                             </tr>
@@ -113,28 +115,29 @@ export default function WeatherForm({ data, setData, errors }) {
                     </tbody>
                 </table>
                 {errors.reports && (
-                    <div className="text-red-500 text-sm mt-2 px-2">
+                    <div className="text-red-500 text-sm mt-2 px-3">
                         {errors.reports}
                     </div>
                 )}
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Add Row Button */}
+            <div className="flex items-center">
                 <button
                     type="button"
                     onClick={handleAddRow}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 transition"
+                    className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-medium transition-colors"
                 >
-                    <Plus size={18} />
+                    <Plus size={18} className="stroke-[2]" />
                     Add Row
                 </button>
             </div>
-
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
+            {/* Info Note */}
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg shadow-sm">
                 <p>
                     <span className="font-bold">💡 Note:</span> For non-coastal
                     municipalities, enter{" "}
-                    <span className="font-mono bg-white px-1 py-0.5 rounded">
+                    <span className="font-mono bg-white px-1 py-0.5 rounded border">
                         N/A
                     </span>{" "}
                     for Sea Condition.

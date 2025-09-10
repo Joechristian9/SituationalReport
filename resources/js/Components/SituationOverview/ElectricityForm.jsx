@@ -95,13 +95,13 @@ export default function ElectricityForm({ data, setData, errors }) {
                 )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center">
                 <button
                     type="button"
                     onClick={handleAddRow}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 transition"
+                    className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-medium transition-colors"
                 >
-                    <Plus size={18} />
+                    <Plus size={18} className="stroke-[2]" />
                     Add Row
                 </button>
             </div>
