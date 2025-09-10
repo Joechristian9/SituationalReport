@@ -41,8 +41,8 @@ export default function RoadForm({ data, setData, errors }) {
 
             <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-100 sticky top-0 z-10">
-                        <tr className="text-left text-gray-700 font-semibold">
+                    <thead className="bg-blue-500 sticky top-0 z-10">
+                        <tr className="text-left text-white font-semibold">
                             <th className="p-3">Classification</th>
                             <th className="p-3">Name of Road</th>
                             <th className="p-3">Status</th>

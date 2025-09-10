@@ -40,8 +40,8 @@ export default function WeatherForm({ data, setData, errors }) {
             {/* Table */}
             <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
                 <table className="w-full text-sm border-collapse">
-                    <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
-                        <tr className="text-left text-gray-700 font-semibold">
+                    <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
+                        <tr className="text-left text-white font-semibold">
                             <th className="p-3">Municipality</th>
                             <th className="p-3">Sky Condition</th>
                             <th className="p-3">Wind</th>
