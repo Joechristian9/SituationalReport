@@ -1,15 +1,6 @@
 import * as React from "react";
 import { usePage } from "@inertiajs/react";
-import {
-    AudioWaveform,
-    BookOpen,
-    Bot,
-    Command,
-    Frame,
-    Map,
-    PieChart,
-    Settings2,
-} from "lucide-react";
+
 import { MdOutlineHealthAndSafety } from "react-icons/md";
 
 import { NavMain } from "@/components/nav-main";
@@ -24,7 +15,7 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 // The route function is now only used inside the component
-/* import { route } from "ziggy-js"; */
+import { route } from "ziggy-js";
 
 // Data that is truly static can remain outside
 const staticTeams = [
@@ -53,6 +44,10 @@ export function AppSidebar({ ...props }) {
                     title: "Situational Reports",
                     // This is now safe to call here
                     url: route("situation-reports.index"),
+                },
+                {
+                    title: "Pre-Emptive Reports",
+                    url: route("preemptive-reports.index"),
                 },
             ],
         },

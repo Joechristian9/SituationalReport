@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
+use App\Http\Controllers\PreEmptiveReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -25,7 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Weather Report
+// ✅ Situation Reports
 Route::middleware('auth')->group(function () {
     Route::resource('situation-reports', SituationOverviewController::class)
         ->only(['index', 'store', 'update'])
@@ -35,5 +36,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])->name('situation-reports.index');
 });
 
+// ✅ Pre-Emptive Reports
+Route::middleware('auth')->group(function () {
+    Route::resource('preemptive-reports', PreEmptiveReportController::class)
+        ->only(['index', 'store', 'update'])
+        ->middleware('auth');
+
+    Route::post('/preemptive-reports', [PreEmptiveReportController::class, 'store'])->name('preemptive-reports.store');
+    Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])->name('preemptive-reports.index');
+});
 
 require __DIR__ . '/auth.php';
