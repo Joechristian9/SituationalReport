@@ -6,7 +6,9 @@ use App\Models\WeatherReport;
 use App\Models\WaterLevel;
 use App\Models\ElectricityService;
 use App\Models\WaterService;
-use App\Models\Communication; // ✅ Import Communication
+use App\Models\Communication;
+use App\Models\Road;
+use App\Models\Bridge; // ✅ Added
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,21 +21,25 @@ class SituationOverviewController extends Controller
         $waterLevels    = WaterLevel::latest()->get();
         $electricity    = ElectricityService::latest()->get();
         $waterServices  = WaterService::latest()->get();
-        $communications = Communication::latest()->get(); // ✅ Fetch communications
+        $communications = Communication::latest()->get();
+        $roads          = Road::latest()->get();
+        $bridges        = Bridge::latest()->get(); // ✅ Added
 
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherReports,
             'waterLevels'    => $waterLevels,
             'electricity'    => $electricity,
             'waterServices'  => $waterServices,
-            'communications' => $communications, // ✅ Pass to frontend
+            'communications' => $communications,
+            'roads'          => $roads,
+            'bridges'        => $bridges, // ✅ Added
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            // ✅ Weather reports
+            // Weather
             'reports' => 'required|array',
             'reports.*.municipality'   => 'nullable|string|max:255',
             'reports.*.sky_condition'  => 'nullable|string|max:255',
@@ -41,7 +47,7 @@ class SituationOverviewController extends Controller
             'reports.*.precipitation'  => 'nullable|string|max:255',
             'reports.*.sea_condition'  => 'nullable|string|max:255',
 
-            // ✅ Water level reports
+            // Water levels
             'waterLevels' => 'required|array',
             'waterLevels.*.gauging_station' => 'required|string|max:255',
             'waterLevels.*.current_level'   => 'nullable|numeric',
@@ -49,20 +55,20 @@ class SituationOverviewController extends Controller
             'waterLevels.*.critical_level'  => 'nullable|numeric',
             'waterLevels.*.affected_areas'  => 'nullable|string|max:255',
 
-            // ✅ Electricity services reports
+            // Electricity
             'electricityServices' => 'required|array',
             'electricityServices.*.status'             => 'nullable|string|max:255',
             'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
             'electricityServices.*.remarks'            => 'nullable|string|max:500',
 
-            // ✅ Water services reports
+            // Water services
             'waterServices' => 'required|array',
             'waterServices.*.source_of_water'   => 'nullable|string|max:255',
             'waterServices.*.barangays_served'  => 'nullable|string|max:500',
             'waterServices.*.status'            => 'nullable|string|max:255',
             'waterServices.*.remarks'           => 'nullable|string|max:500',
 
-            // ✅ Communications reports
+            // Communications
             'communications' => 'required|array',
             'communications.*.globe'          => 'nullable|string|max:255',
             'communications.*.smart'          => 'nullable|string|max:255',
@@ -70,9 +76,27 @@ class SituationOverviewController extends Controller
             'communications.*.pldt_internet'  => 'nullable|string|max:255',
             'communications.*.vhf'            => 'nullable|string|max:255',
             'communications.*.remarks'        => 'nullable|string|max:500',
+
+            // Roads
+            'roads' => 'required|array',
+            'roads.*.road_classification' => 'nullable|string|max:255',
+            'roads.*.name_of_road'        => 'nullable|string|max:255',
+            'roads.*.status'              => 'nullable|string|max:255',
+            'roads.*.areas_affected'      => 'nullable|string|max:500',
+            'roads.*.re_routing'          => 'nullable|string|max:500',
+            'roads.*.remarks'             => 'nullable|string|max:500',
+
+            // ✅ Bridges
+            'bridges' => 'required|array',
+            'bridges.*.road_classification' => 'nullable|string|max:255',
+            'bridges.*.name_of_bridge'      => 'nullable|string|max:255',
+            'bridges.*.status'              => 'nullable|string|max:255',
+            'bridges.*.areas_affected'      => 'nullable|string|max:500',
+            'bridges.*.re_routing'          => 'nullable|string|max:500',
+            'bridges.*.remarks'             => 'nullable|string|max:500',
         ]);
 
-        // ✅ Save Weather Reports
+        // ✅ Weather Reports
         foreach ($validated['reports'] as $report) {
             if (!empty(array_filter($report))) {
                 WeatherReport::create([
@@ -87,7 +111,7 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // ✅ Save Water Levels
+        // ✅ Water Levels
         foreach ($validated['waterLevels'] as $station) {
             if (!empty(array_filter($station))) {
                 WaterLevel::create([
@@ -102,7 +126,7 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // ✅ Save Electricity Services
+        // ✅ Electricity
         foreach ($validated['electricityServices'] as $service) {
             if (!empty(array_filter($service))) {
                 ElectricityService::create([
@@ -115,7 +139,7 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // ✅ Save Water Services
+        // ✅ Water Services
         foreach ($validated['waterServices'] as $water) {
             if (!empty(array_filter($water))) {
                 WaterService::create([
@@ -129,7 +153,7 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // ✅ Save Communications
+        // ✅ Communications
         foreach ($validated['communications'] as $comm) {
             if (!empty(array_filter($comm))) {
                 Communication::create([
@@ -145,6 +169,41 @@ class SituationOverviewController extends Controller
             }
         }
 
-        return back()->with('success', 'Weather, Water Level, Electricity, Water Services, and Communications reports saved successfully.');
+        // ✅ Roads
+        foreach ($validated['roads'] as $road) {
+            if (!empty(array_filter($road))) {
+                Road::create([
+                    'road_classification' => $road['road_classification'] ?? null,
+                    'name_of_road'        => $road['name_of_road'] ?? null,
+                    'status'              => $road['status'] ?? null,
+                    'areas_affected'      => $road['areas_affected'] ?? null,
+                    're_routing'          => $road['re_routing'] ?? null,
+                    'remarks'             => $road['remarks'] ?? null,
+                    'user_id'             => Auth::id(),
+                    'updated_by'          => Auth::id(),
+                ]);
+            }
+        }
+
+        // ✅ Bridges
+        foreach ($validated['bridges'] as $bridge) {
+            if (!empty(array_filter($bridge))) {
+                Bridge::create([
+                    'road_classification' => $bridge['road_classification'] ?? null,
+                    'name_of_bridge'      => $bridge['name_of_bridge'] ?? null,
+                    'status'              => $bridge['status'] ?? null,
+                    'areas_affected'      => $bridge['areas_affected'] ?? null,
+                    're_routing'          => $bridge['re_routing'] ?? null,
+                    'remarks'             => $bridge['remarks'] ?? null,
+                    'user_id'             => Auth::id(),
+                    'updated_by'          => Auth::id(),
+                ]);
+            }
+        }
+
+        return back()->with(
+            'success',
+            'Weather, Water Level, Electricity, Water Services, Communications, Roads, and Bridges reports saved successfully.'
+        );
     }
 }

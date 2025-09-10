@@ -4,14 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        Schema::create('water_services', function (Blueprint $table) {
+        Schema::create('roads', function (Blueprint $table) {
             $table->id();
-            $table->string('source_of_water');
-            $table->text('barangays_served')->nullable();
-            $table->enum('status', ['functional', 'available', 'not_available'])->nullable();
+            $table->string('road_classification')->nullable();
+            $table->string('name_of_road');
+            $table->string('status')->nullable(); // e.g., Open, Closed, Passable
+            $table->string('areas_affected')->nullable();
+            $table->string('re_routing')->nullable();
             $table->text('remarks')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
@@ -21,6 +24,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('water_services');
+        Schema::dropIfExists('roads');
     }
 };
