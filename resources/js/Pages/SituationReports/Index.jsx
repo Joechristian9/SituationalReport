@@ -166,7 +166,7 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6">
+                <main className="w-full p-6 bg-gray-100">
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>

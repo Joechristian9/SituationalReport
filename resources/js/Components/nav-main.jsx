@@ -1,60 +1,37 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
-
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-    SidebarGroup,
-    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-export function NavMain({ items }) {
+export function NavMain({ items, label = "Main Menu" }) {
     return (
-        <SidebarGroup>
-            <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-            <SidebarMenu>
+        <div>
+            {/* Label */}
+            <div className="px-3 py-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                {label}
+            </div>
+
+            <SidebarMenu className="space-y-1">
                 {items.map((item) => (
-                    <Collapsible
-                        key={item.title}
-                        asChild
-                        defaultOpen={item.isActive}
-                        className="group/collapsible"
-                    >
-                        <SidebarMenuItem>
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuButton tooltip={item.title}>
-                                    {item.icon && <item.icon />}
-                                    <span>{item.title}</span>
-                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                </SidebarMenuButton>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenuSub>
-                                    {item.items?.map((subItem) => (
-                                        <SidebarMenuSubItem key={subItem.title}>
-                                            <SidebarMenuSubButton asChild>
-                                                <a href={subItem.url}>
-                                                    <span>{subItem.title}</span>
-                                                </a>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    ))}
-                                </SidebarMenuSub>
-                            </CollapsibleContent>
-                        </SidebarMenuItem>
-                    </Collapsible>
+                    <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                            <a
+                                href={item.url}
+                                className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300"
+                            >
+                                {item.icon && (
+                                    <item.icon className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600" />
+                                )}
+                                <span>{item.title}</span>
+                            </a>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                 ))}
             </SidebarMenu>
-        </SidebarGroup>
+        </div>
     );
 }
+//last
