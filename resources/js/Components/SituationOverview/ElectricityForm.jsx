@@ -26,7 +26,7 @@ export default function ElectricityForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    ⚡ Electricity Services Monitoring
+                    Electricity Services Monitoring
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                     Enter the status of electricity services, affected

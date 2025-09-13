@@ -53,6 +53,10 @@ export function AppSidebar({ ...props }) {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                 },
+                {
+                    title: "Deployment of Response Assets",
+                    url: route("pre-positioning.index"),
+                },
             ],
         },
     ];

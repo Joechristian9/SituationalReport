@@ -43,7 +43,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
             {/* Header */}
             <div>
                 <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    🏠 Pre-Emptive Evacuation
+                    Pre-Emptive Evacuation
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
                     Fill in the evacuation details for each barangay. Totals are

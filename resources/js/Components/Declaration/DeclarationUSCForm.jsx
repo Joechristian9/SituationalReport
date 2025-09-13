@@ -29,7 +29,7 @@ export default function DeclarationUSCForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    📜 Declaration under State of Calamity (USC)
+                    Declaration under State of Calamity (USC)
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                     Record details of declarations under a state of calamity.

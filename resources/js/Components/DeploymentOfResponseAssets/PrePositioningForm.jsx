@@ -1,29 +1,29 @@
-// resources/js/Components/SituationOverview/RoadForm.jsx
+// resources/js/Components/DeploymentOfResponseAssets/PrePositioning/PrePositioningForm.jsx
 import React from "react";
 import { Plus } from "lucide-react";
 
-export default function RoadForm({ data, setData, errors }) {
+export default function PrePositioningForm({ data, setData, errors }) {
     // ✅ Always fallback to [] if undefined
-    const roads = data?.roads ?? [];
+    const rows = data?.pre_positionings ?? [];
 
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
-        const newRows = [...roads];
+        const newRows = [...rows];
         newRows[index][name] = value;
-        setData("roads", newRows);
+        setData("pre_positionings", newRows);
     };
 
     const handleAddRow = () => {
-        setData("roads", [
-            ...roads,
+        setData("pre_positionings", [
+            ...rows,
             {
-                id: roads.length + 1,
-                road_classification: "",
-                name_of_road: "",
-                status: "",
-                areas_affected: "",
-                re_routing: "",
-                remarks: "",
+                id: rows.length + 1,
+                team_units: "",
+                team_leader: "",
+                personnel_deployed: "",
+                response_assets: "",
+                capability: "",
+                area_of_deployment: "",
             },
         ]);
     };
@@ -32,10 +32,10 @@ export default function RoadForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Roads
+                    Pre-Positioning of Response Assets
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    Enter details of roads and their current status.
+                    Record teams, units, and assets deployed in the field.
                 </p>
             </div>
 
@@ -43,83 +43,85 @@ export default function RoadForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Classification</th>
-                            <th className="p-3">Name of Road</th>
-                            <th className="p-3">Status</th>
-                            <th className="p-3">Areas Affected</th>
-                            <th className="p-3">Re-routing</th>
-                            <th className="p-3">Remarks</th>
+                            <th className="p-3">Team/Units</th>
+                            <th className="p-3">Team Leader</th>
+                            <th className="p-3">No. Personnel Deployed</th>
+                            <th className="p-3">Response Assets</th>
+                            <th className="p-3">Capability</th>
+                            <th className="p-3">Area of Deployment</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {roads.map((row, index) => (
+                        {rows.map((row, index) => (
                             <tr
                                 key={row.id}
                                 className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
                             >
                                 <td className="p-2">
                                     <input
-                                        name="road_classification"
-                                        value={row.road_classification}
+                                        name="team_units"
+                                        value={row.team_units}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="e.g. National, Provincial"
+                                        placeholder="e.g., Rescue Team 1"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="name_of_road"
-                                        value={row.name_of_road}
+                                        name="team_leader"
+                                        value={row.team_leader}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Name of road"
+                                        placeholder="Team Leader Name"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="status"
-                                        value={row.status}
+                                        type="number"
+                                        min="0"
+                                        name="personnel_deployed"
+                                        value={row.personnel_deployed}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="e.g. Passable, Not passable"
+                                        placeholder="0"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="areas_affected"
-                                        value={row.areas_affected}
+                                        name="response_assets"
+                                        value={row.response_assets}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Affected areas"
+                                        placeholder="e.g., Ambulance, Boat"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="re_routing"
-                                        value={row.re_routing}
+                                        name="capability"
+                                        value={row.capability}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Re-routing info"
+                                        placeholder="e.g., Search & Rescue"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
                                 <td className="p-2">
                                     <input
-                                        name="remarks"
-                                        value={row.remarks}
+                                        name="area_of_deployment"
+                                        value={row.area_of_deployment}
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        placeholder="Additional remarks"
+                                        placeholder="e.g., Barangay A"
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </td>
@@ -127,9 +129,9 @@ export default function RoadForm({ data, setData, errors }) {
                         ))}
                     </tbody>
                 </table>
-                {errors.roads && (
+                {errors.pre_positionings && (
                     <div className="text-red-500 text-sm mt-2 px-2">
-                        {errors.roads}
+                        {errors.pre_positionings}
                     </div>
                 )}
             </div>

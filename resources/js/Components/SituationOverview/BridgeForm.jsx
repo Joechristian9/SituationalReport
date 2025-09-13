@@ -32,7 +32,7 @@ export default function BridgeForm({ data, setData, errors }) {
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    🌉 Bridges / Overflow Bridges
+                    Bridges / Overflow Bridges
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                     Enter the condition and accessibility of bridges.
