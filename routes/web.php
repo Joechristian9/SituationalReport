@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\PreEmptiveReportController;
+use App\Http\Controllers\UscDeclarationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -44,6 +45,16 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/preemptive-reports', [PreEmptiveReportController::class, 'store'])->name('preemptive-reports.store');
     Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])->name('preemptive-reports.index');
+});
+
+// ✅ Declaration under State of Calamity
+Route::middleware('auth')->group(function () {
+    Route::resource('declaration-usc', UscDeclarationController::class)
+        ->only(['index', 'store', 'update'])
+        ->middleware('auth');
+
+    Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])->name('declaration-usc.store');
+    Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])->name('declaration-usc.index');
 });
 
 require __DIR__ . '/auth.php';

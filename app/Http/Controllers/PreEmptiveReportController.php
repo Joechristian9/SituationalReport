@@ -91,14 +91,4 @@ class PreEmptiveReportController extends Controller
 
         return back()->with('success', 'Pre-Emptive Report updated successfully.');
     }
-
-    /**
-     * Delete a Pre-Emptive Report
-     */
-    public function destroy(PreEmptiveReport $preEmptiveReport)
-    {
-        $preEmptiveReport->delete();
-
-        return back()->with('success', 'Pre-Emptive Report deleted successfully.');
-    }
 }

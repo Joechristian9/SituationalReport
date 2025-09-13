@@ -49,6 +49,10 @@ export function AppSidebar({ ...props }) {
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                 },
+                {
+                    title: "Declaration USC",
+                    url: route("declaration-usc.index"),
+                },
             ],
         },
     ];
