@@ -57,6 +57,10 @@ export function AppSidebar({ ...props }) {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                 },
+                {
+                    title: "Incidents Monitored",
+                    url: route("incident-monitored.index"),
+                },
             ],
         },
     ];

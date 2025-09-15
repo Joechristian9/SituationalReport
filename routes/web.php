@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\PreEmptiveReportController;
@@ -62,6 +63,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/pre-positioning', [PrePositioningController::class, 'store'])->name('pre-positioning.store');
     Route::get('/pre-positioning', [PrePositioningController::class, 'index'])->name('pre-positioning.index');
+});
+
+//Effects of Incident Monitored
+Route::middleware('auth')->group(function () {
+    Route::resource('incident-monitored', IncidentMonitoredController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])->name('incident-monitored.store');
+    Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])->name('incident-monitored.index');
 });
 
 require __DIR__ . '/auth.php';
