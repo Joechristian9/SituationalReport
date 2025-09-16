@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CasualtyController;
 use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
@@ -72,6 +73,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])->name('incident-monitored.store');
     Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])->name('incident-monitored.index');
+});
+
+//Casualties Dead
+Route::middleware('auth')->group(function () {
+    Route::resource('casualties', CasualtyController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/casualties', [CasualtyController::class, 'store'])->name('casualties.store');
+    Route::get('/casualties', [CasualtyController::class, 'index'])->name('casualties.index');
 });
 
 require __DIR__ . '/auth.php';

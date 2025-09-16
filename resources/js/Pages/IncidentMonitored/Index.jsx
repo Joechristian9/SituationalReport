@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -11,15 +11,30 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    ChevronLeft,
+    ChevronRight,
+    CheckCircle2,
+    AlertTriangle,
+    UserX,
+} from "lucide-react";
 
-// ✅ Import IncidentMonitoredForm
+// ✅ Forms
 import IncidentMonitoredForm from "@/Components/Effects/IncidentMonitoredForm";
+import CasualtyForm from "@/Components/Effects/CasualtyForm";
 
 export default function Index() {
     const { flash } = usePage().props;
 
-    // ✅ Form State
+    // ✅ Stepper state
+    const [step, setStep] = useState(1);
+    const steps = [
+        { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
+        { label: "Casualties", icon: <UserX size={18} /> },
+    ];
+
+    // ✅ Form State for both forms
     const { data, setData, post, processing, errors } = useForm({
         incidents: [
             {
@@ -31,23 +46,35 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        casualties: [
+            {
+                id: 1,
+                name: "",
+                age: "",
+                sex: "",
+                address: "",
+                cause_of_death: "",
+                date_died: "",
+                place_of_incident: "",
+            },
+        ],
     });
 
     // ✅ Restore saved form from localStorage
     useEffect(() => {
-        const saved = localStorage.getItem("incidentMonitored");
+        const saved = localStorage.getItem("effectsReport");
         if (saved) {
             try {
                 setData(JSON.parse(saved));
             } catch (e) {
-                console.error("Failed to parse saved IncidentMonitored", e);
+                console.error("Failed to parse saved effects report", e);
             }
         }
     }, []);
 
     // ✅ Save form state to localStorage
     useEffect(() => {
-        localStorage.setItem("incidentMonitored", JSON.stringify(data));
+        localStorage.setItem("effectsReport", JSON.stringify(data));
     }, [data]);
 
     // ✅ Flash messages
@@ -58,11 +85,12 @@ export default function Index() {
 
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
-        { label: "Incidents Monitored" },
+        { label: "Effects Report" },
     ];
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        post(route("casualties.store"), { preserveScroll: true });
         post(route("incident-monitored.store"), { preserveScroll: true });
     };
 
@@ -70,9 +98,8 @@ export default function Index() {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Incidents Monitored" />
+            <Head title="Effects Report" />
             <SidebarInset>
-                {/* ✅ Header with breadcrumbs */}
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
@@ -86,28 +113,140 @@ export default function Index() {
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
-                                    <span>Incidents Monitored</span>
+                                    <span>Effects Report</span>
+                                    <span className="text-sm font-medium text-gray-500">
+                                        Step {step} of {steps.length}
+                                    </span>
                                 </CardTitle>
+
+                                {/* ✅ Stepper UI */}
+                                <div className="relative w-full mt-8">
+                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
+                                        <div
+                                            className="h-0.5 bg-blue-600 transition-all duration-500"
+                                            style={{
+                                                width: `${
+                                                    ((step - 1) /
+                                                        (steps.length - 1)) *
+                                                    100
+                                                }%`,
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <div className="relative flex justify-between z-10">
+                                        {steps.map((item, index) => {
+                                            const stepNumber = index + 1;
+                                            const isCompleted =
+                                                step > stepNumber;
+                                            const isActive =
+                                                step === stepNumber;
+                                            return (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setStep(stepNumber)
+                                                    }
+                                                    className="flex flex-col items-center focus:outline-none group transition"
+                                                >
+                                                    <div
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
+                                                            isCompleted
+                                                                ? "border-green-600 bg-green-100 text-green-600"
+                                                                : isActive
+                                                                ? "border-blue-600 bg-blue-100 text-blue-600 shadow-md scale-110"
+                                                                : "border-gray-300 bg-white text-gray-400 group-hover:border-blue-400"
+                                                        }`}
+                                                    >
+                                                        {isCompleted ? (
+                                                            <CheckCircle2
+                                                                size={22}
+                                                                className="text-green-600 group-hover:scale-110 transition-transform"
+                                                            />
+                                                        ) : (
+                                                            item.icon
+                                                        )}
+                                                    </div>
+                                                    <span
+                                                        className={`mt-2 text-xs transition-colors duration-300 ${
+                                                            isCompleted
+                                                                ? "text-green-600"
+                                                                : isActive
+                                                                ? "text-blue-600 font-semibold"
+                                                                : "text-gray-400 group-hover:text-blue-400"
+                                                        }`}
+                                                    >
+                                                        {item.label}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </CardHeader>
 
-                            <CardContent>
-                                <motion.div
-                                    key="incidents"
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -30 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <IncidentMonitoredForm
-                                        data={data}
-                                        setData={setData}
-                                        errors={errors}
-                                    />
-                                </motion.div>
+                            <CardContent className="space-y-8">
+                                <AnimatePresence mode="wait">
+                                    {step === 1 && (
+                                        <motion.div
+                                            key="incidents"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <IncidentMonitoredForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+                                    {step === 2 && (
+                                        <motion.div
+                                            key="casualties"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <CasualtyForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </CardContent>
 
-                            {/* ✅ Save Button */}
-                            <div className="flex justify-end p-4 border-t bg-gray-50 rounded-b-2xl">
+                            <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={step === 1}
+                                    onClick={() => setStep(step - 1)}
+                                    className="flex items-center gap-2"
+                                >
+                                    <ChevronLeft size={16} />
+                                    Back
+                                </Button>
+
+                                {step < steps.length && (
+                                    <Button
+                                        type="button"
+                                        onClick={() => setStep(step + 1)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        Next
+                                        <ChevronRight size={16} />
+                                    </Button>
+                                )}
+                            </div>
+                        </Card>
+
+                        {step === steps.length && (
+                            <div className="flex justify-end mt-6">
                                 <Button
                                     type="submit"
                                     disabled={processing}
@@ -115,10 +254,10 @@ export default function Index() {
                                 >
                                     {processing
                                         ? "Saving..."
-                                        : "Save Incidents"}
+                                        : "Save All Reports"}
                                 </Button>
                             </div>
-                        </Card>
+                        )}
                     </form>
                 </main>
             </SidebarInset>
