@@ -24,6 +24,7 @@ import {
     Phone,
     Route, // ✅ replaced Road with Route
     Landmark,
+    Save,
 } from "lucide-react";
 
 // ✅ Forms
@@ -166,7 +167,8 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6 bg-gray-100">
+                {/* ✅ ENHANCEMENT: Softer, neutral background */}
+                <main className="w-full p-6 h-full bg-gray-50">
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
@@ -177,9 +179,8 @@ export default function Index() {
                                     </span>
                                 </CardTitle>
 
-                                {/* ✅ Stepper with line and icons */}
+                                {/* ✅ ENHANCEMENT: Refined stepper UI with better colors */}
                                 <div className="relative w-full mt-8">
-                                    {/* Connector line */}
                                     <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
                                         <div
                                             className="h-0.5 bg-blue-600 transition-all duration-500"
@@ -192,8 +193,6 @@ export default function Index() {
                                             }}
                                         ></div>
                                     </div>
-
-                                    {/* Step indicators */}
                                     <div className="relative flex justify-between z-10">
                                         {steps.map((item, index) => {
                                             const stepNumber = index + 1;
@@ -214,16 +213,15 @@ export default function Index() {
                                                     <div
                                                         className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
                                                             isCompleted
-                                                                ? "border-green-600 bg-green-100 text-green-600"
+                                                                ? "border-emerald-500 bg-emerald-50 text-emerald-500"
                                                                 : isActive
-                                                                ? "border-blue-600 bg-blue-100 text-blue-600 shadow-md scale-110"
-                                                                : "border-gray-300 bg-white text-gray-400 group-hover:border-blue-400"
+                                                                ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
+                                                                : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
                                                         }`}
                                                     >
                                                         {isCompleted ? (
                                                             <CheckCircle2
                                                                 size={22}
-                                                                className="text-green-600 group-hover:scale-110 transition-transform"
                                                             />
                                                         ) : (
                                                             item.icon
@@ -232,10 +230,10 @@ export default function Index() {
                                                     <span
                                                         className={`mt-2 text-xs transition-colors duration-300 ${
                                                             isCompleted
-                                                                ? "text-green-600"
+                                                                ? "text-emerald-600 font-medium"
                                                                 : isActive
                                                                 ? "text-blue-600 font-semibold"
-                                                                : "text-gray-400 group-hover:text-blue-400"
+                                                                : "text-gray-500 group-hover:text-blue-500"
                                                         }`}
                                                     >
                                                         {item.label}
@@ -247,8 +245,7 @@ export default function Index() {
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="space-y-8">
-                                {/* ✅ Stepper-controlled forms with smooth transitions */}
+                            <CardContent className="space-y-8 min-h-[300px]">
                                 <AnimatePresence mode="wait">
                                     {step === 1 && (
                                         <motion.div
@@ -358,7 +355,7 @@ export default function Index() {
                                 </AnimatePresence>
                             </CardContent>
 
-                            {/* ✅ Navigation */}
+                            {/* ✅ ENHANCEMENT: Standardized button styles */}
                             <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
                                 <Button
                                     type="button"
@@ -375,7 +372,7 @@ export default function Index() {
                                     <Button
                                         type="button"
                                         onClick={() => setStep(step + 1)}
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                                     >
                                         Next
                                         <ChevronRight size={16} />
@@ -384,14 +381,15 @@ export default function Index() {
                             </div>
                         </Card>
 
-                        {/* ✅ Save button (only last step) */}
+                        {/* ✅ ENHANCEMENT: Consistent primary action button with icon */}
                         {step === steps.length && (
                             <div className="flex justify-end mt-6">
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                                 >
+                                    <Save size={16} />
                                     {processing
                                         ? "Saving..."
                                         : "Save All Reports"}

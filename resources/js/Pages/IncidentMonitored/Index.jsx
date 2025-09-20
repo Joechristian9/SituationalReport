@@ -108,7 +108,7 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6 bg-gray-100">
+                <main className="w-full p-6 bg-blue-50">
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
@@ -236,7 +236,7 @@ export default function Index() {
                                     <Button
                                         type="button"
                                         onClick={() => setStep(step + 1)}
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                                     >
                                         Next
                                         <ChevronRight size={16} />

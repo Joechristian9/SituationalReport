@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('water_services', function (Blueprint $table) {
             $table->id();
-            $table->string('source_of_water');
+            $table->string('source_of_water')->nullable();
             $table->text('barangays_served')->nullable();
             $table->enum('status', ['functional', 'available', 'not_available'])->nullable();
             $table->text('remarks')->nullable();

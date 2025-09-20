@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('bridges', function (Blueprint $table) {
             $table->id();
             $table->string('road_classification')->nullable(); // e.g. National, Provincial
-            $table->string('name_of_bridge');
-            $table->enum('status', ['Passable', 'Not Passable'])->default('Passable');
+            $table->string('name_of_bridge')->nullable();
+            $table->enum('status', ['Passable', 'Not Passable'])->default('Passable')->nullable();
             $table->string('areas_affected')->nullable(); // affected barangays
             $table->string('re_routing')->nullable(); // alternative routes
             $table->text('remarks')->nullable();

@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('water_levels', function (Blueprint $table) {
             $table->id();
-            $table->string('gauging_station');
+            $table->string('gauging_station')->nullable();
             $table->decimal('current_level', 8, 2)->nullable();
             $table->decimal('alarm_level', 8, 2)->nullable();
             $table->decimal('critical_level', 8, 2)->nullable();

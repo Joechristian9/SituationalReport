@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('roads', function (Blueprint $table) {
             $table->id();
             $table->string('road_classification')->nullable();
-            $table->string('name_of_road');
+            $table->string('name_of_road')->nullable();
             $table->string('status')->nullable(); // e.g., Open, Closed, Passable
             $table->string('areas_affected')->nullable();
             $table->string('re_routing')->nullable();

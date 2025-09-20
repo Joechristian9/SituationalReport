@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('usc_declarations', function (Blueprint $table) {
             $table->id();
-            $table->string('declared_by');
+            $table->string('declared_by')->nullable();
             $table->string('resolution_number')->nullable();
             $table->date('date_approved')->nullable();
 
