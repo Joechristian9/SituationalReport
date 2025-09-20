@@ -40,17 +40,6 @@ export default function PreEmptiveForm({ data, setData, errors }) {
 
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
-            {/* Header */}
-            <div>
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    Pre-Emptive Evacuation
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                    Fill in the evacuation details for each barangay. Totals are
-                    calculated automatically.
-                </p>
-            </div>
-
             {/* Table */}
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm border-collapse">

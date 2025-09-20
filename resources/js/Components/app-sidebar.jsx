@@ -1,7 +1,7 @@
 import * as React from "react";
 import { usePage } from "@inertiajs/react";
 
-import { MdOutlineHealthAndSafety } from "react-icons/md";
+import { RiMenuFold2Fill } from "react-icons/ri";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
@@ -34,14 +34,14 @@ export function AppSidebar({ ...props }) {
     // This ensures `route()` is called only when the component renders.
     const navMain = [
         {
-            title: "Situation Overview",
+            title: "Main Menu",
             url: "#",
-            icon: MdOutlineHealthAndSafety,
+            icon: RiMenuFold2Fill,
             // This now dynamically checks if the current route starts with 'situational-reports'
             isActive: route().current("situation-reports.*"),
             items: [
                 {
-                    title: "Situational Reports",
+                    title: "Situation Overview",
                     // This is now safe to call here
                     url: route("situation-reports.index"),
                 },

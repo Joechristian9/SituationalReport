@@ -20,9 +20,9 @@ export function NavMain({ items }) {
     return (
         // ENHANCEMENT: Wrap the entire menu in a group with a label.
         <SidebarGroup>
-            <SidebarGroupLabel className="text-slate-400">
+            {/* <SidebarGroupLabel className="text-slate-400">
                 Main Menu
-            </SidebarGroupLabel>
+            </SidebarGroupLabel> */}
             <SidebarGroupContent>
                 <SidebarMenu>
                     {items.map((item) => {

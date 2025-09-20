@@ -176,7 +176,6 @@ export default function Index() {
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
-                                    <span>Situational Report</span>
                                     <span className="text-sm font-medium text-gray-500">
                                         Step {step} of {steps.length}
                                     </span>

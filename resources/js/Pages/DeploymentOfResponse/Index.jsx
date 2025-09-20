@@ -85,15 +85,21 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6 bg-gray-100">
+                <main className="w-full p-6 h-full bg-gray-50">
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
-                                    <span>
-                                        Deployment of Response Assets –
-                                        Pre-Positioning
-                                    </span>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                            Deployment of Response Assets –
+                                            Pre-Positioning
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Record teams, units, and assets
+                                            deployed in the field.
+                                        </p>
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
 

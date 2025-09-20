@@ -82,14 +82,21 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6 bg-gray-100">
+                <main className="w-full p-6 h-full bg-gray-50">
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
-                                    <span>
-                                        Declaration under State of Calamity
-                                    </span>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                            Declaration under State of Calamity
+                                            (USC)
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Record details of declarations under
+                                            a state of calamity.
+                                        </p>
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
 

@@ -30,15 +30,6 @@ export default function PrePositioningForm({ data, setData, errors }) {
 
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <div>
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Pre-Positioning of Response Assets
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                    Record teams, units, and assets deployed in the field.
-                </p>
-            </div>
-
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
