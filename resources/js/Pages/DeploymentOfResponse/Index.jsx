@@ -71,7 +71,10 @@ export default function Index() {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Pre-Positioning" />
+            <Head>
+                <title>Deployment of Response</title>
+                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
+            </Head>
             <SidebarInset>
                 {/* ✅ Header with breadcrumbs */}
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">

@@ -75,7 +75,10 @@ export default function Index() {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Pre-Emptive Reports" />
+            <Head>
+                <title>Pre-Emptive Report</title>
+                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
+            </Head>
             <SidebarInset>
                 {/* ✅ Header with breadcrumbs */}
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">

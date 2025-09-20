@@ -98,7 +98,10 @@ export default function Index() {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Effects Report" />
+            <Head>
+                <title>Effects Report</title>
+                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
+            </Head>
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
                     <div className="flex items-center gap-2">

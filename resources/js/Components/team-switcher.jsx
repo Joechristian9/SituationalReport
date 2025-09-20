@@ -32,16 +32,15 @@ export function TeamSwitcher({ teams }) {
                         focus-visible:ring-offset-0
                     "
                 >
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                        <activeTeam.logo className="size-4" />
-                    </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
+                    <div className="flex items-center gap-2">
+                        <img
+                            src={activeTeam.logo}
+                            alt="Team Logo"
+                            className="h-9 w-9 rounded-full"
+                        />
+                        <div className="text-lg font-semibold truncate">
                             {activeTeam.name}
-                        </span>
-                        <span className="truncate text-xs">
-                            {activeTeam.plan}
-                        </span>
+                        </div>
                     </div>
                 </SidebarMenuButton>
             </SidebarMenuItem>

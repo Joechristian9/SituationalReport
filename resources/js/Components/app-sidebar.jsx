@@ -21,7 +21,7 @@ import { route } from "ziggy-js";
 const staticTeams = [
     {
         name: "SitReps",
-        logo: MdOutlineHealthAndSafety,
+        logo: "/images/ilagan.jpeg",
     },
 ];
 
