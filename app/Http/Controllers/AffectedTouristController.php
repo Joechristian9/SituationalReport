@@ -60,7 +60,7 @@ class AffectedTouristController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Affected tourist records saved successfully.');
+        return back()->with('success', 'Incidents Report saved successfully.');
     }
 
     /**

@@ -39,9 +39,6 @@ export default function AffectedTouristsForm({ data, setData, errors }) {
                     <h3 className="text-xl font-bold text-gray-800">
                         Affected Tourists
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                        Source: Local Tourism Officer
-                    </p>
                 </div>
             </div>
 

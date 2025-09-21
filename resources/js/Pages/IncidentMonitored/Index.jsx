@@ -23,6 +23,7 @@ import {
     UserSearch,
     Plane,
     SaveAll,
+    Home,
 } from "lucide-react";
 
 // ✅ Forms
@@ -31,6 +32,7 @@ import CasualtyForm from "@/Components/Effects/CasualtyForm";
 import InjuredForm from "@/Components/Effects/InjuredForm";
 import MissingForm from "@/Components/Effects/MissingForm";
 import AffectedTouristsForm from "@/Components/Effects/AffectedTouristsForm";
+import DamagedHousesForm from "@/Components/Effects/DamagedHousesForm";
 
 export default function Index() {
     const { flash } = usePage().props;
@@ -43,6 +45,7 @@ export default function Index() {
         { label: "Injured", icon: <UserPlus size={18} /> },
         { label: "Missing", icon: <UserSearch size={18} /> },
         { label: "Affected Tourists", icon: <Plane size={18} /> },
+        { label: "Damaged Houses", icon: <Home size={18} /> },
     ];
 
     // ✅ Form State for both forms
@@ -103,6 +106,15 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        damaged_houses: [
+            {
+                id: 1,
+                barangay: "",
+                partially: "",
+                totally: "",
+                total: 0,
+            },
+        ],
     });
 
     // ✅ Restore saved form from localStorage
@@ -140,6 +152,7 @@ export default function Index() {
         post(route("injured.store"), { preserveScroll: true });
         post(route("missing.store"), { preserveScroll: true });
         post(route("affected-tourists.store"), { preserveScroll: true });
+        post(route("damaged-houses.store"), { preserveScroll: true });
     };
 
     return (
@@ -306,6 +319,21 @@ export default function Index() {
                                             transition={{ duration: 0.3 }}
                                         >
                                             <AffectedTouristsForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+                                    {step === 6 && (
+                                        <motion.div
+                                            key="damaged_houses"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <DamagedHousesForm
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}

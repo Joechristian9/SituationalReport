@@ -61,7 +61,7 @@ class CasualtyController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Casualties saved successfully.');
+        return back()->with('success', 'Incidents Report saved successfully.');
     }
 
     /**

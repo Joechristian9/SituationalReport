@@ -112,4 +112,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'store'])->name('affected-tourists.store');
     Route::get('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'index'])->name('affected-tourists.index');
 });
+
+// Damaged Houses
+Route::middleware('auth')->group(function () {
+    Route::resource('damaged-houses', \App\Http\Controllers\DamagedHouseReportController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/damaged-houses', [\App\Http\Controllers\DamagedHouseReportController::class, 'store'])->name('damaged-houses.store');
+    Route::get('/damaged-houses', [\App\Http\Controllers\DamagedHouseReportController::class, 'index'])->name('damaged-houses.index');
+});
 require __DIR__ . '/auth.php';
