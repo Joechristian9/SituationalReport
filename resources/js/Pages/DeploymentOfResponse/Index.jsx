@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 
 // ✅ Import PrePositioning Form
 import PrePositioningForm from "@/Components/DeploymentOfResponseAssets/PrePositioningForm";
+import { Loader2 } from "lucide-react";
 
 export default function Index() {
     const { flash } = usePage().props;
@@ -124,11 +125,18 @@ export default function Index() {
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                    className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {processing
-                                        ? "Saving..."
-                                        : "Save Pre-Positioning"}
+                                    {processing ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                            <span className="animate-pulse">
+                                                Saving...
+                                            </span>
+                                        </>
+                                    ) : (
+                                        "Save Pre-Positioning"
+                                    )}
                                 </Button>
                             </div>
                         </Card>

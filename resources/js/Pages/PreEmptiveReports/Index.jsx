@@ -12,7 +12,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Home } from "lucide-react";
+import { Home, Loader2 } from "lucide-react";
 
 // ✅ Import PreEmptive Form
 import PreEmptiveForm from "@/Components/PreEmptiveEvacuation/PreEmptiveForm";
@@ -128,11 +128,18 @@ export default function Index() {
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                    className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {processing
-                                        ? "Saving..."
-                                        : "Save Pre-Emptive Report"}
+                                    {processing ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                            <span className="animate-pulse">
+                                                Saving...
+                                            </span>
+                                        </>
+                                    ) : (
+                                        "Save Pre-Emptive Report"
+                                    )}
                                 </Button>
                             </div>
                         </Card>

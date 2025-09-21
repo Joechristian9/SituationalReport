@@ -18,6 +18,7 @@ import {
     CheckCircle2,
     AlertTriangle,
     UserX,
+    Loader2,
 } from "lucide-react";
 
 // ✅ Forms
@@ -248,15 +249,22 @@ export default function Index() {
                         </Card>
 
                         {step === steps.length && (
-                            <div className="flex justify-end mt-6">
+                            <div className="flex justify-end p-4 border-t bg-gray-50 rounded-b-2xl">
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                    className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {processing
-                                        ? "Saving..."
-                                        : "Save All Reports"}
+                                    {processing ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                            <span className="animate-pulse">
+                                                Saving...
+                                            </span>
+                                        </>
+                                    ) : (
+                                        "Save All Reports"
+                                    )}
                                 </Button>
                             </div>
                         )}

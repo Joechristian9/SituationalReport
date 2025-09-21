@@ -49,7 +49,7 @@ class SituationOverviewController extends Controller
 
             // Water levels
             'waterLevels' => 'required|array',
-            'waterLevels.*.gauging_station' => 'required|string|max:255',
+            'waterLevels.*.gauging_station' => 'nullable|string|max:255',
             'waterLevels.*.current_level'   => 'nullable|numeric',
             'waterLevels.*.alarm_level'     => 'nullable|numeric',
             'waterLevels.*.critical_level'  => 'nullable|numeric',
@@ -203,7 +203,7 @@ class SituationOverviewController extends Controller
 
         return back()->with(
             'success',
-            'Weather, Water Level, Electricity, Water Services, Communications, Roads, and Bridges reports saved successfully.'
+            'Situation Overview saved successfully.'
         );
     }
 }
