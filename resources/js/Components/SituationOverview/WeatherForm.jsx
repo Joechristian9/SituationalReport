@@ -30,7 +30,7 @@ export default function WeatherForm({ data, setData, errors }) {
             {/* Header */}
             <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    🌦️ Present Weather Conditions
+                    Present Weather Conditions
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
                     Enter current weather details. You can add multiple rows as

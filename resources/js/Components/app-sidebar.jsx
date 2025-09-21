@@ -82,18 +82,18 @@ export function AppSidebar({ ...props }) {
         // Use a solid, modern blue. Remove gradients for a cleaner look.
         <Sidebar collapsible="icon" {...props}>
             {/* Use a subtle border for separation instead of a harsh gradient */}
-            <SidebarHeader className="bg-blue-700 text-white border-b border-blue-600">
+            <SidebarHeader className="bg-blue-600 text-white border-b  border-blue-400">
                 <TeamSwitcher teams={data.teams} />
             </SidebarHeader>
 
             {/* Main content area of the sidebar */}
-            <SidebarContent className="bg-blue-700 text-white">
+            <SidebarContent className="bg-blue-600 text-white">
                 <NavMain items={data.navMain} />
                 <NavProjects projects={data.projects} />
             </SidebarContent>
 
             {/* Footer with a top border for clean separation */}
-            <SidebarFooter className="bg-blue-700 text-white border-t border-blue-600">
+            <SidebarFooter className="bg-blue-600 text-white border-t border-blue-500">
                 <NavUser user={data.user} />
             </SidebarFooter>
             <SidebarRail />
