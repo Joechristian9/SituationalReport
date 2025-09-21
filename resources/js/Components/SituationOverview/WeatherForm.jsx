@@ -43,11 +43,11 @@ export default function WeatherForm({ data, setData, errors }) {
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Municipality</th>
-                            <th className="p-3">Sky Condition</th>
-                            <th className="p-3">Wind</th>
-                            <th className="p-3">Precipitation</th>
-                            <th className="p-3">Sea Condition</th>
+                            <th className="p-3 border-r">Municipality</th>
+                            <th className="p-3 border-r">Sky Condition</th>
+                            <th className="p-3 border-r">Wind</th>
+                            <th className="p-3 border-r">Precipitation</th>
+                            <th className="p-3 border-r">Sea Condition</th>
                         </tr>
                     </thead>
                     <tbody>

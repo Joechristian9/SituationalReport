@@ -32,9 +32,9 @@ export default function DeclarationUSCForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Declared By</th>
-                            <th className="p-3">Resolution Number</th>
-                            <th className="p-3">Date Approved</th>
+                            <th className="p-3 border-r">Declared By</th>
+                            <th className="p-3 border-r">Resolution Number</th>
+                            <th className="p-3 border-r">Date Approved</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -44,12 +44,12 @@ export default function CommunicationsForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Globe</th>
-                            <th className="p-3">Smart</th>
-                            <th className="p-3">PLDT Landline</th>
-                            <th className="p-3">PLDT Internet</th>
-                            <th className="p-3">VHF Radio</th>
-                            <th className="p-3">Remarks</th>
+                            <th className="p-3 border-r">Globe</th>
+                            <th className="p-3 border-r">Smart</th>
+                            <th className="p-3 border-r">PLDT Landline</th>
+                            <th className="p-3 border-r">PLDT Internet</th>
+                            <th className="p-3 border-r">VHF Radio</th>
+                            <th className="p-3 border-r">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>

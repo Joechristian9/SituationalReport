@@ -44,12 +44,16 @@ export default function BridgeForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Road Classification</th>
-                            <th className="p-3">Name of Bridge</th>
-                            <th className="p-3">Status</th>
-                            <th className="p-3">Areas/Barangays Affected</th>
-                            <th className="p-3">Re-routing</th>
-                            <th className="p-3">Remarks</th>
+                            <th className="p-3 border-r">
+                                Road Classification
+                            </th>
+                            <th className="p-3 border-r">Name of Bridge</th>
+                            <th className="p-3 border-r">Status</th>
+                            <th className="p-3 border-r">
+                                Areas/Barangays Affected
+                            </th>
+                            <th className="p-3 border-r">Re-routing</th>
+                            <th className="p-3 border-r">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>

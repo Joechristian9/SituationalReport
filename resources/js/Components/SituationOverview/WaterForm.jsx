@@ -42,10 +42,10 @@ export default function WaterForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Source of Water</th>
-                            <th className="p-3">Barangays Served</th>
-                            <th className="p-3">Status</th>
-                            <th className="p-3">Remarks</th>
+                            <th className="p-3 border-r">Source of Water</th>
+                            <th className="p-3 border-r">Barangays Served</th>
+                            <th className="p-3 border-r">Status</th>
+                            <th className="p-3 border-r">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>

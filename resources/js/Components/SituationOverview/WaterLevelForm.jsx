@@ -41,11 +41,11 @@ export default function WaterLevelForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Gauging Station</th>
-                            <th className="p-3">Current Level (m)</th>
-                            <th className="p-3">Alarm Level (m)</th>
-                            <th className="p-3">Critical Level (m)</th>
-                            <th className="p-3">Affected Areas</th>
+                            <th className="p-3 border-r">Gauging Station</th>
+                            <th className="p-3 border-r">Current Level (m)</th>
+                            <th className="p-3 border-r">Alarm Level (m)</th>
+                            <th className="p-3 border-r">Critical Level (m)</th>
+                            <th className="p-3 border-r">Affected Areas</th>
                         </tr>
                     </thead>
                     <tbody>

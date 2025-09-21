@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->integer('age')->nullable();
-            $table->string('sex')->nullable();
+            $table->enum('sex', ['male', 'female'])->nullable();
             $table->string('address')->nullable();
             $table->string('cause_of_death')->nullable();
             $table->date('date_died')->nullable();

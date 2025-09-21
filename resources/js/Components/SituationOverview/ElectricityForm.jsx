@@ -39,11 +39,11 @@ export default function ElectricityForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">
+                            <th className="p-3 border-r">
                                 Status of Electricity Services
                             </th>
-                            <th className="p-3">Barangays Affected</th>
-                            <th className="p-3">Remarks</th>
+                            <th className="p-3 border-r">Barangays Affected</th>
+                            <th className="p-3 border-r">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>

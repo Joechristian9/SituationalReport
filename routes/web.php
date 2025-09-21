@@ -94,4 +94,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/injured', [\App\Http\Controllers\InjuredController::class, 'index'])->name('injured.index');
 });
 
+//Missing Persons
+Route::middleware('auth')->group(function () {
+    Route::resource('missing', \App\Http\Controllers\MissingController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/missing', [\App\Http\Controllers\MissingController::class, 'store'])->name('missing.store');
+    Route::get('/missing', [\App\Http\Controllers\MissingController::class, 'index'])->name('missing.index');
+});
+
 require __DIR__ . '/auth.php';

@@ -46,15 +46,23 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Barangay</th>
-                            <th className="p-3">Evacuation Center</th>
-                            <th className="p-3 text-right">Families</th>
-                            <th className="p-3 text-right">Persons</th>
-                            <th className="p-3">Outside Center</th>
-                            <th className="p-3 text-right">Families</th>
-                            <th className="p-3 text-right">Persons</th>
-                            <th className="p-3 text-right">Total Families</th>
-                            <th className="p-3 text-right">Total Persons</th>
+                            <th className="p-3 border-r">Barangay</th>
+                            <th className="p-3 border-r">Evacuation Center</th>
+                            <th className="p-3 text-right border-r">
+                                Families
+                            </th>
+                            <th className="p-3 text-right border-r">Persons</th>
+                            <th className="p-3 border-r">Outside Center</th>
+                            <th className="p-3 text-right border-r">
+                                Families
+                            </th>
+                            <th className="p-3 text-right border-r">Persons</th>
+                            <th className="p-3 text-right border-r">
+                                Total Families
+                            </th>
+                            <th className="p-3 text-right border-r">
+                                Total Persons
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

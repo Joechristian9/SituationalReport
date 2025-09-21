@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Creates the 'injured' table in the database.
-        Schema::create('injureds', function (Blueprint $table) {
+        // Creates the 'missing' table in the database.
+        Schema::create('missing', function (Blueprint $table) {
             $table->id(); // Primary key
 
             // Profile Information
@@ -21,10 +21,8 @@ return new class extends Migration
             $table->enum('sex', ['male', 'female'])->nullable();
             $table->text('address')->nullable(); // Using text for potentially longer addresses
 
-            // Medical and Incident Details
-            $table->text('diagnosis')->nullable(); // Using text for potentially long diagnoses
-            $table->date('date_admitted')->nullable();
-            $table->string('place_of_incident')->nullable();
+            // Details specific to a missing person
+            $table->text('cause')->nullable(); // Using text for a potentially long cause description
             $table->text('remarks')->nullable(); // Using text for potentially long remarks
 
             // Foreign keys for tracking who created and updated the record
@@ -41,7 +39,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drops the 'injured' table if the migration is rolled back.
-        Schema::dropIfExists('injureds');
+        // Drops the 'missing' table if the migration is rolled back.
+        Schema::dropIfExists('missing');
     }
 };

@@ -57,7 +57,7 @@ class IncidentMonitoredController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Incidents saved successfully.');
+        return back()->with('success', 'Incidents Report saved successfully.');
     }
 
     /**

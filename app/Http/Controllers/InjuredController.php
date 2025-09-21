@@ -69,7 +69,7 @@ class InjuredController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Injured records saved successfully.');
+        return back()->with('success', 'Incidents Report saved successfully.');
     }
 
     /**

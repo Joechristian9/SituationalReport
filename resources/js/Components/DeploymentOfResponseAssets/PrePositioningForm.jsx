@@ -35,12 +35,14 @@ export default function PrePositioningForm({ data, setData, errors }) {
                 <table className="w-full text-sm">
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Team/Units</th>
-                            <th className="p-3">Team Leader</th>
-                            <th className="p-3">No. Personnel Deployed</th>
-                            <th className="p-3">Response Assets</th>
-                            <th className="p-3">Capability</th>
-                            <th className="p-3">Area of Deployment</th>
+                            <th className="p-3 border-r">Team/Units</th>
+                            <th className="p-3 border-r">Team Leader</th>
+                            <th className="p-3 border-r">
+                                No. Personnel Deployed
+                            </th>
+                            <th className="p-3 border-r">Response Assets</th>
+                            <th className="p-3 border-r">Capability</th>
+                            <th className="p-3 border-r">Area of Deployment</th>
                         </tr>
                     </thead>
                     <tbody>

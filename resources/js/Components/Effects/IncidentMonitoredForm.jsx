@@ -1,10 +1,9 @@
-// resources/js/Components/Effects/IncidentMonitoredForm.jsx
 import React from "react";
-import { Plus } from "lucide-react";
+// ✅ 1. Changed icon for better thematic consistency
+import { AlertTriangle } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 
 export default function IncidentMonitoredForm({ data, setData, errors }) {
-    // ✅ Always fallback to [] if undefined
     const incidents = data?.incidents ?? [];
 
     const handleInputChange = (index, event) => {
@@ -30,24 +29,32 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
 
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <div>
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Incidents Monitored
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                    Record details of incidents being monitored.
-                </p>
+            <div className="flex items-center gap-3">
+                {/* ✅ 2. Changed header icon theme from red to blue */}
+                <div className="bg-red-100 p-2 rounded-full">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        Incidents Monitored
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Record details of incidents being monitored.
+                    </p>
+                </div>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm">
-                    <thead className="bg-red-500 sticky top-0 z-10 shadow-sm">
-                        <tr className="text-left text-white font-semibold">
-                            <th className="p-3">Kinds of Incident</th>
-                            <th className="p-3">Date & Time of Occurrence</th>
-                            <th className="p-3">Location</th>
-                            <th className="p-3">Description</th>
-                            <th className="p-3">Remarks</th>
+                    <thead className="bg-blue-500 border-b border-gray-200 sticky top-0 z-10">
+                        <tr className="text-left text-white font-semibold ">
+                            <th className="p-3 border-r">Kinds of Incident</th>
+                            <th className="p-3 border-r">
+                                Date & Time of Occurrence
+                            </th>
+                            <th className="p-3 border-r">Location</th>
+                            <th className="p-3 border-r">Description</th>
+                            <th className="p-3 border-r">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -64,7 +71,8 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Type of Incident"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        // ✅ 3. ADOPTED: Consistent input styling
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -75,7 +83,8 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                                         onChange={(e) =>
                                             handleInputChange(index, e)
                                         }
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        // ✅ 3. ADOPTED: Consistent input styling
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -86,7 +95,8 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Location"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        // ✅ 3. ADOPTED: Consistent input styling
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -97,7 +107,9 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Description"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        rows="1" // A single row is often enough for a table textarea
+                                        // ✅ 3. ADOPTED: Consistent input styling
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                     />
                                 </td>
                                 <td className="p-2">
@@ -108,7 +120,8 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                                             handleInputChange(index, e)
                                         }
                                         placeholder="Remarks"
-                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        // ✅ 3. ADOPTED: Consistent input styling
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                     />
                                 </td>
                             </tr>

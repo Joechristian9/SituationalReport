@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, m } from "framer-motion";
 import {
     ChevronLeft,
     ChevronRight,
@@ -20,12 +20,14 @@ import {
     UserX,
     Loader2,
     UserPlus,
+    UserSearch,
 } from "lucide-react";
 
 // ✅ Forms
 import IncidentMonitoredForm from "@/Components/Effects/IncidentMonitoredForm";
 import CasualtyForm from "@/Components/Effects/CasualtyForm";
 import InjuredForm from "@/Components/Effects/InjuredForm";
+import MissingForm from "@/Components/Effects/MissingForm";
 
 export default function Index() {
     const { flash } = usePage().props;
@@ -36,6 +38,7 @@ export default function Index() {
         { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
         { label: "Casualties", icon: <UserX size={18} /> },
         { label: "Injured", icon: <UserPlus size={18} /> },
+        { label: "Missing", icon: <UserSearch size={18} /> },
     ];
 
     // ✅ Form State for both forms
@@ -75,6 +78,17 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        missing: [
+            {
+                id: 1,
+                name: "",
+                age: "",
+                sex: "",
+                address: "",
+                cause: "",
+                remarks: "",
+            },
+        ],
     });
 
     // ✅ Restore saved form from localStorage
@@ -110,6 +124,7 @@ export default function Index() {
         post(route("casualties.store"), { preserveScroll: true });
         post(route("incident-monitored.store"), { preserveScroll: true });
         post(route("injured.store"), { preserveScroll: true });
+        post(route("missing.store"), { preserveScroll: true });
     };
 
     return (
@@ -246,6 +261,21 @@ export default function Index() {
                                             transition={{ duration: 0.3 }}
                                         >
                                             <InjuredForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+                                    {step === 4 && (
+                                        <motion.div
+                                            key="missing"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <MissingForm
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}

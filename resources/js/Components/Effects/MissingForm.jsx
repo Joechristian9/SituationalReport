@@ -1,8 +1,8 @@
 import React from "react";
-import { UserX } from "lucide-react";
+import { UserSearch } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 
-// The enhanced SexSelector component from the previous step
+// The SexSelector component remains the same and already uses a blue/pink theme.
 const SexSelector = ({ value, onChange }) => {
     const options = ["Male", "Female"];
     return (
@@ -38,49 +38,55 @@ const SexSelector = ({ value, onChange }) => {
     );
 };
 
-export default function CasualtyForm({ data, setData, errors }) {
-    const casualties = data?.casualties ?? [];
+export default function MissingForm({ data, setData, errors }) {
+    const missingList = data?.missing ?? [];
 
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
-        const newRows = [...casualties];
+        const newRows = [...missingList];
         newRows[index][name] = value;
-        setData("casualties", newRows);
+        setData("missing", newRows);
     };
 
     const handleAddRow = () => {
-        setData("casualties", [
-            ...casualties,
+        setData("missing", [
+            ...missingList,
             {
-                id: casualties.length + 1,
+                id: missingList.length + 1,
                 name: "",
                 age: "",
                 sex: "",
                 address: "",
-                cause_of_death: "",
-                date_died: "",
-                place_of_incident: "",
+                cause: "",
+                remarks: "",
             },
         ]);
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                    <UserX className="h-6 w-6 text-red-600" />
+                {/* ✅ 1. CHANGED: Header icon theme is now blue */}
+                <div className="bg-orange-100 p-2 rounded-full">
+                    <UserSearch className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">1. Dead</h3>
+                    <h3 className="text-xl font-bold text-gray-800">
+                        3. Missing
+                    </h3>
                     <p className="text-sm text-gray-600 mt-1">
-                        Record the details for each deceased individual.
+                        Record the details for each missing individual.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                        Note: In the Remarks column - describe what happened to
+                        the victim.
                     </p>
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm">
-                    {/* ✅ THEAD has been updated to match the InjuredForm structure */}
+                    {/* ✅ 2. CHANGED: Thead color is now blue */}
                     <thead className="bg-blue-500 border-b border-gray-200 sticky top-0 z-10">
                         <tr className="text-xs font-medium text-white uppercase tracking-wider border-b">
                             <th
@@ -99,41 +105,35 @@ export default function CasualtyForm({ data, setData, errors }) {
                                 rowSpan="2"
                                 className="p-3 align-middle border-r"
                             >
-                                Cause of Death
-                            </th>
-                            <th
-                                rowSpan="2"
-                                className="p-3 align-middle border-r"
-                            >
-                                Date Died
+                                Cause
                             </th>
                             <th rowSpan="2" className="p-3 align-middle">
-                                Place of Incident
+                                Remarks
                             </th>
                         </tr>
                         <tr className="text-xs font-medium text-white uppercase tracking-wider bg-blue-500">
                             <th className="p-3 font-medium border-r">Age</th>
                             <th className="p-3 font-medium border-r">Sex</th>
                             <th className="p-3 font-medium border-r">
-                                Address (Home)
+                                Address
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
-                        {casualties.length === 0 ? (
+                    <tbody>
+                        {missingList.length === 0 ? (
                             <tr>
-                                {/* Colspan remains 7 because there are 7 columns in the header */}
                                 <td
-                                    colSpan="7"
+                                    colSpan="6"
                                     className="text-center py-12 px-4 text-gray-500"
                                 >
-                                    <UserX
+                                    <UserSearch
                                         size={40}
                                         className="mx-auto text-gray-400"
                                     />
                                     <p className="font-medium mt-2">
-                                        No casualties have been recorded.
+                                        No missing persons have been recorded.
                                     </p>
+                                    {/* ✅ 3. CHANGED: "Add Row" text is now blue */}
                                     <p className="text-xs mt-1">
                                         Click{" "}
                                         <span className="font-semibold text-blue-600">
@@ -144,23 +144,22 @@ export default function CasualtyForm({ data, setData, errors }) {
                                 </td>
                             </tr>
                         ) : (
-                            casualties.map((row, index) => (
+                            missingList.map((row, index) => (
                                 <tr
                                     key={row.id}
-                                    className="hover:bg-gray-50 transition-colors"
+                                    className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
                                 >
                                     {[
                                         "name",
                                         "age",
                                         "sex",
                                         "address",
-                                        "cause_of_death",
-                                        "date_died",
-                                        "place_of_incident",
+                                        "cause",
+                                        "remarks",
                                     ].map((field) => (
                                         <td
                                             key={field}
-                                            className="p-3 align-middle"
+                                            className="p-2 align-middle"
                                         >
                                             {field === "sex" ? (
                                                 <SexSelector
@@ -180,9 +179,7 @@ export default function CasualtyForm({ data, setData, errors }) {
                                             ) : (
                                                 <input
                                                     type={
-                                                        field === "date_died"
-                                                            ? "date"
-                                                            : field === "age"
+                                                        field === "age"
                                                             ? "number"
                                                             : "text"
                                                     }
@@ -204,7 +201,8 @@ export default function CasualtyForm({ data, setData, errors }) {
                                                         .replace(/\b\w/g, (l) =>
                                                             l.toUpperCase()
                                                         )}
-                                                    className="w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition text-gray-700 placeholder-gray-400 hover:border-blue-400"
+                                                    // ✅ 4. CHANGED: Input styling is now blue
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                                 />
                                             )}
                                         </td>
@@ -214,9 +212,9 @@ export default function CasualtyForm({ data, setData, errors }) {
                         )}
                     </tbody>
                 </table>
-                {errors.casualties && (
+                {errors.missing && (
                     <div className="text-red-600 bg-red-50 text-sm mt-2 p-3 border-t border-gray-200">
-                        {errors.casualties}
+                        {errors.missing}
                     </div>
                 )}
             </div>
