@@ -66,14 +66,11 @@ export default function MissingForm({ data, setData, errors }) {
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-                {/* ✅ 1. CHANGED: Header icon theme is now blue */}
                 <div className="bg-orange-100 p-2 rounded-full">
                     <UserSearch className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">
-                        3. Missing
-                    </h3>
+                    <h3 className="text-xl font-bold text-gray-800">Missing</h3>
                     <p className="text-sm text-gray-600 mt-1">
                         Record the details for each missing individual.
                     </p>

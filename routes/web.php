@@ -103,4 +103,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/missing', [\App\Http\Controllers\MissingController::class, 'index'])->name('missing.index');
 });
 
+
+// Affected Tourists
+Route::middleware('auth')->group(function () {
+    Route::resource('affected-tourists', \App\Http\Controllers\AffectedTouristController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'store'])->name('affected-tourists.store');
+    Route::get('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'index'])->name('affected-tourists.index');
+});
 require __DIR__ . '/auth.php';

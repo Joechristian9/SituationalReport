@@ -71,7 +71,7 @@ export default function CasualtyForm({ data, setData, errors }) {
                     <UserX className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">1. Dead</h3>
+                    <h3 className="text-xl font-bold text-gray-800">Dead</h3>
                     <p className="text-sm text-gray-600 mt-1">
                         Record the details for each deceased individual.
                     </p>

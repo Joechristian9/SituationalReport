@@ -72,9 +72,7 @@ export default function InjuredForm({ data, setData, errors }) {
                     <UserPlus className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">
-                        2. Injured
-                    </h3>
+                    <h3 className="text-xl font-bold text-gray-800">Injured</h3>
                     <p className="text-sm text-gray-600 mt-1">
                         Record the details for each injured individual.
                     </p>
