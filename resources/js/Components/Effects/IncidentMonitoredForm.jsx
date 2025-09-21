@@ -1,6 +1,7 @@
 // resources/js/Components/Effects/IncidentMonitoredForm.jsx
 import React from "react";
 import { Plus } from "lucide-react";
+import AddRowButton from "../ui/AddRowButton";
 
 export default function IncidentMonitoredForm({ data, setData, errors }) {
     // ✅ Always fallback to [] if undefined
@@ -121,16 +122,7 @@ export default function IncidentMonitoredForm({ data, setData, errors }) {
                 )}
             </div>
 
-            <div className="flex items-center">
-                <button
-                    type="button"
-                    onClick={handleAddRow}
-                    className="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium transition-colors"
-                >
-                    <Plus size={18} className="stroke-[2]" />
-                    Add Row
-                </button>
-            </div>
+            <AddRowButton onClick={handleAddRow} label="Add Row" />
         </div>
     );
 }

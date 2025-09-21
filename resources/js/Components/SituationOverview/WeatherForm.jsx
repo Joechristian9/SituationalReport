@@ -1,6 +1,7 @@
 // resources/js/Components/SituationOverview/WeatherForm.jsx
 import React from "react";
 import { Plus } from "lucide-react";
+import AddRowButton from "../ui/AddRowButton";
 
 export default function WeatherForm({ data, setData, errors }) {
     const handleInputChange = (index, event) => {
@@ -121,17 +122,8 @@ export default function WeatherForm({ data, setData, errors }) {
                 )}
             </div>
 
-            {/* Add Row Button */}
-            <div className="flex items-center">
-                <button
-                    type="button"
-                    onClick={handleAddRow}
-                    className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-medium transition-colors"
-                >
-                    <Plus size={18} className="stroke-[2]" />
-                    Add Row
-                </button>
-            </div>
+            <AddRowButton onClick={handleAddRow} label="Add Row" />
+
             {/* Info Note */}
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg shadow-sm">
                 <p>

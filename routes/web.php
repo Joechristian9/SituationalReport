@@ -7,6 +7,7 @@ use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\UscDeclarationController;
 use App\Http\Controllers\PrePositioningController;
+use App\Http\Controllers\InjuredController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -82,6 +83,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/casualties', [CasualtyController::class, 'store'])->name('casualties.store');
     Route::get('/casualties', [CasualtyController::class, 'index'])->name('casualties.index');
+});
+
+//Injured
+Route::middleware('auth')->group(function () {
+    Route::resource('injured', \App\Http\Controllers\InjuredController::class)
+        ->only(['index', 'store', 'update']);
+
+    Route::post('/injured', [\App\Http\Controllers\InjuredController::class, 'store'])->name('injured.store');
+    Route::get('/injured', [\App\Http\Controllers\InjuredController::class, 'index'])->name('injured.index');
 });
 
 require __DIR__ . '/auth.php';

@@ -1,29 +1,30 @@
 import React from "react";
-import { Plus, UserX } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 
-export default function CasualtyForm({ data, setData, errors }) {
-    const casualties = data?.casualties ?? [];
+export default function InjuredForm({ data, setData, errors }) {
+    const injuredList = data?.injured ?? [];
 
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
-        const newRows = [...casualties];
+        const newRows = [...injuredList];
         newRows[index][name] = value;
-        setData("casualties", newRows);
+        setData("injured", newRows);
     };
 
     const handleAddRow = () => {
-        setData("casualties", [
-            ...casualties,
+        setData("injured", [
+            ...injuredList,
             {
-                id: casualties.length + 1,
+                id: injuredList.length + 1,
                 name: "",
                 age: "",
                 sex: "",
                 address: "",
-                cause_of_death: "",
-                date_died: "",
+                diagnosis: "",
+                date_admitted: "",
                 place_of_incident: "",
+                remarks: "",
             },
         ]);
     };
@@ -31,15 +32,13 @@ export default function CasualtyForm({ data, setData, errors }) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                    <UserX className="h-6 w-6 text-red-600" />
+                <div className="bg-blue-100 p-2 rounded-full">
+                    <UserPlus className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">
-                        Casualty Report: Deceased
-                    </h3>
+                    <h3 className="text-xl font-bold text-gray-800">Injured</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                        Record the details for each deceased individual.
+                        Record the details for each injured individual.
                     </p>
                 </div>
             </div>
@@ -49,51 +48,68 @@ export default function CasualtyForm({ data, setData, errors }) {
                     <thead className="bg-blue-500 border-b border-gray-200 sticky top-0 z-10">
                         <tr className="text-xs font-medium text-white uppercase tracking-wider border-b">
                             <th
-                                colSpan="4"
+                                rowSpan="2"
+                                className="p-3 align-middle border-r"
+                            >
+                                Name
+                            </th>
+                            <th
+                                colSpan="3"
                                 className="p-3 text-center border-r"
                             >
                                 Profile
                             </th>
-                            <th rowSpan="2" className="p-3 align-middle">
-                                Cause of Death
+                            <th
+                                rowSpan="2"
+                                className="p-3 align-middle border-r"
+                            >
+                                Diagnosis
                             </th>
-                            <th rowSpan="2" className="p-3 align-middle">
-                                Date Died
+                            <th
+                                rowSpan="2"
+                                className="p-3 align-middle border-r"
+                            >
+                                Date Admitted
                             </th>
-                            <th rowSpan="2" className="p-3 align-middle">
+                            <th
+                                rowSpan="2"
+                                className="p-3 align-middle border-r"
+                            >
                                 Place of Incident
+                            </th>
+                            <th rowSpan="2" className="p-3 align-middle">
+                                Remarks
                             </th>
                         </tr>
                         <tr className="text-xs font-medium text-white uppercase tracking-wider bg-blue-500">
-                            <th className="p-3 font-medium border-r">Name</th>
                             <th className="p-3 font-medium border-r">Age</th>
                             <th className="p-3 font-medium border-r">Sex</th>
                             <th className="p-3 font-medium border-r">
-                                Address (Home)
+                                Address
                             </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                        {casualties.length === 0 ? (
+                        {injuredList.length === 0 ? (
                             <tr>
                                 <td
                                     colSpan="8"
                                     className="text-center py-12 px-4 text-gray-500"
                                 >
-                                    <UserX
+                                    <UserPlus
                                         size={40}
                                         className="mx-auto text-gray-400"
                                     />
                                     <p className="font-medium mt-2">
-                                        No casualties have been recorded.
+                                        No injured persons have been recorded.
                                     </p>
                                     <p className="text-xs mt-1">
-                                        Click "Add New Casualty" to begin.
+                                        Click "Add Row" to begin.
                                     </p>
                                 </td>
                             </tr>
                         ) : (
-                            casualties.map((row, index) => (
+                            injuredList.map((row, index) => (
                                 <tr
                                     key={row.id}
                                     className="hover:bg-gray-50 transition-colors"
@@ -103,9 +119,10 @@ export default function CasualtyForm({ data, setData, errors }) {
                                         "age",
                                         "sex",
                                         "address",
-                                        "cause_of_death",
-                                        "date_died",
+                                        "diagnosis",
+                                        "date_admitted",
                                         "place_of_incident",
+                                        "remarks",
                                     ].map((field) => (
                                         <td
                                             key={field}
@@ -113,7 +130,7 @@ export default function CasualtyForm({ data, setData, errors }) {
                                         >
                                             <input
                                                 type={
-                                                    field === "date_died"
+                                                    field === "date_admitted"
                                                         ? "date"
                                                         : "text"
                                                 }
@@ -136,9 +153,9 @@ export default function CasualtyForm({ data, setData, errors }) {
                         )}
                     </tbody>
                 </table>
-                {errors.casualties && (
+                {errors.injured && (
                     <div className="text-red-600 bg-red-50 text-sm mt-2 p-3 border-t border-gray-200">
-                        {errors.casualties}
+                        {errors.injured}
                     </div>
                 )}
             </div>

@@ -19,11 +19,13 @@ import {
     AlertTriangle,
     UserX,
     Loader2,
+    UserPlus,
 } from "lucide-react";
 
 // ✅ Forms
 import IncidentMonitoredForm from "@/Components/Effects/IncidentMonitoredForm";
 import CasualtyForm from "@/Components/Effects/CasualtyForm";
+import InjuredForm from "@/Components/Effects/InjuredForm";
 
 export default function Index() {
     const { flash } = usePage().props;
@@ -33,6 +35,7 @@ export default function Index() {
     const steps = [
         { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
         { label: "Casualties", icon: <UserX size={18} /> },
+        { label: "Injured", icon: <UserPlus size={18} /> },
     ];
 
     // ✅ Form State for both forms
@@ -57,6 +60,19 @@ export default function Index() {
                 cause_of_death: "",
                 date_died: "",
                 place_of_incident: "",
+            },
+        ],
+        injured: [
+            {
+                id: 1,
+                name: "",
+                age: "",
+                sex: "",
+                address: "",
+                diagnosis: "",
+                date_admitted: "",
+                place_of_incident: "",
+                remarks: "",
             },
         ],
     });
@@ -93,6 +109,7 @@ export default function Index() {
         e.preventDefault();
         post(route("casualties.store"), { preserveScroll: true });
         post(route("incident-monitored.store"), { preserveScroll: true });
+        post(route("injured.store"), { preserveScroll: true });
     };
 
     return (
@@ -214,6 +231,21 @@ export default function Index() {
                                             transition={{ duration: 0.3 }}
                                         >
                                             <CasualtyForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+                                    {step === 3 && (
+                                        <motion.div
+                                            key="injured"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <InjuredForm
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
