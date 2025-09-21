@@ -24,11 +24,13 @@ class CasualtyController extends Controller
     /**
      * Store casualties
      */
+    /**
+     * Store casualties
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'casualties' => 'required|array',
-
             'casualties.*.name' => 'nullable|string|max:255',
             'casualties.*.age' => 'nullable|integer',
             'casualties.*.sex' => 'nullable|string|max:255',
@@ -39,31 +41,35 @@ class CasualtyController extends Controller
         ]);
 
         foreach ($validated['casualties'] as $casualty) {
-            // ✅ Skip rows where all values are null or empty
-            $isEmpty = empty(array_filter($casualty, function ($value) {
-                return !is_null($value) && $value !== '';
-            }));
+            // Copy casualty except "sex"
+            $dataToCheck = $casualty;
+            unset($dataToCheck['sex']);
 
-            if ($isEmpty) {
+            // Remove empty values (null, '', whitespace, 0)
+            $dataToCheck = array_filter($dataToCheck, function ($value) {
+                return !is_null($value) && trim((string)$value) !== '' && $value !== 0 && $value !== '0';
+            });
+
+            // If nothing left → means only sex was filled OR everything else empty/zero → skip
+            if (empty($dataToCheck)) {
                 continue;
             }
 
+            // Otherwise save to DB
             Casualty::create([
-                'name' => $casualty['name'] ?? null,
-                'age' => $casualty['age'] ?? null,
-                'sex' => $casualty['sex'] ?? null,
-                'address' => $casualty['address'] ?? null,
-                'cause_of_death' => $casualty['cause_of_death'] ?? null,
-                'date_died' => $casualty['date_died'] ?? null,
+                'name'              => $casualty['name'] ?? null,
+                'age'               => $casualty['age'] ?? null,
+                'sex'               => $casualty['sex'] ?? null,
+                'address'           => $casualty['address'] ?? null,
+                'cause_of_death'    => $casualty['cause_of_death'] ?? null,
+                'date_died'         => $casualty['date_died'] ?? null,
                 'place_of_incident' => $casualty['place_of_incident'] ?? null,
-                'user_id' => Auth::id(),
-                'updated_by' => Auth::id(),
+                'user_id'           => Auth::id(),
+                'updated_by'        => Auth::id(),
             ]);
         }
-
-        return back()->with('success', 'Incidents Report saved successfully.');
+        return back()->with('success', 'Casualties report saved successfully.');
     }
-
     /**
      * Update specific casualty
      */

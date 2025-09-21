@@ -23,7 +23,6 @@ import {
     UserSearch,
     Plane,
     SaveAll,
-    Home,
 } from "lucide-react";
 
 // ✅ Forms
@@ -33,6 +32,7 @@ import InjuredForm from "@/Components/Effects/InjuredForm";
 import MissingForm from "@/Components/Effects/MissingForm";
 import AffectedTouristsForm from "@/Components/Effects/AffectedTouristsForm";
 import DamagedHousesForm from "@/Components/Effects/DamagedHousesForm";
+import { LiaHouseDamageSolid } from "react-icons/lia";
 
 export default function Index() {
     const { flash } = usePage().props;
@@ -45,7 +45,7 @@ export default function Index() {
         { label: "Injured", icon: <UserPlus size={18} /> },
         { label: "Missing", icon: <UserSearch size={18} /> },
         { label: "Affected Tourists", icon: <Plane size={18} /> },
-        { label: "Damaged Houses", icon: <Home size={18} /> },
+        { label: "Damaged Houses", icon: <LiaHouseDamageSolid size={18} /> },
     ];
 
     // ✅ Form State for both forms

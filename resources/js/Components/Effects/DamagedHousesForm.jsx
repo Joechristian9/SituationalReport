@@ -1,6 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AddRowButton from "../ui/AddRowButton"; // Assuming this component exists
+import { LiaHouseDamageSolid } from "react-icons/lia";
 
 export default function DamagedHousesForm({ data, setData, errors }) {
     // ✅ FIX: Use the correct key 'damaged_houses' and provide a fallback empty array
@@ -48,11 +49,15 @@ export default function DamagedHousesForm({ data, setData, errors }) {
 
     return (
         <div className="space-y-4 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
-            {/* Form Header */}
-            <div>
-                <h3 className="text-lg font-bold text-gray-800">
-                    Damaged Houses
-                </h3>
+            <div className="flex items-center gap-3">
+                <div className="bg-orange-100 p-2 rounded-full">
+                    <LiaHouseDamageSolid className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-gray-800">
+                        Damaged Houses
+                    </h3>
+                </div>
             </div>
 
             {/* Table */}
