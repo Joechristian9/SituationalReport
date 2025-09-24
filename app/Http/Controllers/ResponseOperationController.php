@@ -26,22 +26,42 @@ class ResponseOperationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'team_unit' => 'required|string|max:255',
-            'incident' => 'required|string|max:255',
-            'datetime' => 'required|date',
-            'location' => 'nullable|string|max:255',
-            'actions' => 'nullable|string',
-            'remarks' => 'nullable|string',
+            'responses' => 'required|array',
+
+            'responses.*.team_unit' => 'nullable|string|max:255',
+            'responses.*.incident'  => 'nullable|string|max:255',
+            'responses.*.datetime'  => 'nullable|date',
+            'responses.*.location'  => 'nullable|string|max:255',
+            'responses.*.actions'   => 'nullable|string',
+            'responses.*.remarks'   => 'nullable|string',
         ]);
 
-        $operation = ResponseOperation::create([
-            ...$validated,
-            'user_id' => Auth::id(),
-            'updated_by' => Auth::id(),
-        ]);
+        foreach ($validated['responses'] as $response) {
+            // ✅ Skip rows if all values are null/empty
+            $isEmpty = empty(array_filter($response, function ($value) {
+                return !is_null($value) && $value !== '';
+            }));
 
-        return redirect()->back()->with('success', 'Response operation saved successfully.');
+            if ($isEmpty) {
+                continue;
+            }
+
+            ResponseOperation::create([
+                'team_unit' => $response['team_unit'] ?? null,
+                'incident'  => $response['incident'] ?? null,
+                'datetime'  => $response['datetime'] ?? null,
+                'location'  => $response['location'] ?? null,
+                'actions'   => $response['actions'] ?? null,
+                'remarks'   => $response['remarks'] ?? null,
+                'user_id'   => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+        }
+
+        return back()->with('success', 'Response operations saved successfully.');
     }
+
+
 
     /**
      * Update the specified resource in storage.

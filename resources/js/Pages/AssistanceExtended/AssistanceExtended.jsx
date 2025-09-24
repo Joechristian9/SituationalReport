@@ -11,42 +11,40 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function Index() {
+export default function AssistanceExtended() {
     const { flash } = usePage().props;
 
-    // ✅ Form State
+    // ✅ Form state
     const { data, setData, post, processing, errors } = useForm({
-        responses: [
+        assistances: [
             {
                 id: Date.now(),
-                team_unit: "",
-                incident: "",
-                datetime: "",
-                location: "",
-                actions: "",
-                remarks: "",
+                agency_officials_groups: "",
+                type_kind_of_assistance: "",
+                amount: "",
+                beneficiaries: "",
             },
         ],
     });
 
     // ✅ Restore saved form from localStorage
     useEffect(() => {
-        const saved = localStorage.getItem("responseOperations");
+        const saved = localStorage.getItem("assistanceExtendeds");
         if (saved) {
             try {
                 setData(JSON.parse(saved));
             } catch (e) {
-                console.error("Failed to parse saved Response Operations", e);
+                console.error("Failed to parse saved Assistance Extendeds", e);
             }
         }
     }, []);
 
     // ✅ Save form state to localStorage
     useEffect(() => {
-        localStorage.setItem("responseOperations", JSON.stringify(data));
+        localStorage.setItem("assistanceExtendeds", JSON.stringify(data));
     }, [data]);
 
     // ✅ Flash messages
@@ -57,31 +55,28 @@ export default function Index() {
 
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
-        { label: "Response Operations" },
+        { label: "Assistance Extended" },
     ];
 
     // ✅ Handle Row Add
     const addRow = () => {
-        setData("responses", [
-            ...data.responses,
+        setData("assistances", [
+            ...data.assistances,
             {
                 id: Date.now(),
-                team_unit: "",
-                incident: "",
-                datetime: "",
-                location: "",
-                actions: "",
-                remarks: "",
+                agency_officials_groups: "",
+                type_kind_of_assistance: "",
+                amount: "",
+                beneficiaries: "",
             },
         ]);
     };
 
-
     // ✅ Handle Input Change
     const handleChange = (id, field, value) => {
         setData(
-            "responses",
-            data.responses.map((row) =>
+            "assistances",
+            data.assistances.map((row) =>
                 row.id === id ? { ...row, [field]: value } : row
             )
         );
@@ -90,7 +85,7 @@ export default function Index() {
     // ✅ Form Submit
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route("response-operations.store"), { preserveScroll: true });
+        post(route("assistance-extendeds.store"), { preserveScroll: true });
     };
 
     return (
@@ -98,7 +93,7 @@ export default function Index() {
             <Toaster position="top-right" />
             <AppSidebar />
             <Head>
-                <title>Response Operations</title>
+                <title>Assistance Extended</title>
                 <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
             </Head>
             <SidebarInset>
@@ -118,11 +113,10 @@ export default function Index() {
                                 <CardTitle className="flex justify-between items-center">
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                            Response Operations
+                                            Assistance Extended
                                         </h3>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            Record details of emergency response
-                                            operations.
+                                            Record details of assistance provided.
                                         </p>
                                     </div>
                                 </CardTitle>
@@ -130,7 +124,7 @@ export default function Index() {
 
                             <CardContent>
                                 <motion.div
-                                    key="response-operations"
+                                    key="assistance-extended"
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -30 }}
@@ -141,16 +135,14 @@ export default function Index() {
                                             <table className="w-full text-sm">
                                                 <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                                                     <tr className="text-left text-white font-semibold">
-                                                        <th className="p-3 border-r">Team/Unit</th>
-                                                        <th className="p-3 border-r">Incident Responded</th>
-                                                        <th className="p-3 border-r">Time & Date</th>
-                                                        <th className="p-3 border-r">Location</th>
-                                                        <th className="p-3 border-r">Actions Taken</th>
-                                                        <th className="p-3 border-r">Remarks</th>
+                                                        <th className="p-3 border-r">Agency / Officials Groups</th>
+                                                        <th className="p-3 border-r">Type / Kind of Assistance</th>
+                                                        <th className="p-3 border-r">Amount</th>
+                                                        <th className="p-3 border-r">Beneficiaries</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {data.responses.map((row) => (
+                                                    {data.assistances.map((row) => (
                                                         <tr
                                                             key={row.id}
                                                             className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
@@ -158,88 +150,65 @@ export default function Index() {
                                                             <td className="p-3 border-r">
                                                                 <input
                                                                     type="text"
-                                                                    name="team_unit"
-                                                                    value={row.team_unit}
+                                                                    name="agency_officials_groups"
+                                                                    value={row.agency_officials_groups}
                                                                     onChange={(e) =>
-                                                                        handleChange(row.id, "team_unit", e.target.value)
+                                                                        handleChange(row.id, "agency_officials_groups", e.target.value)
                                                                     }
-                                                                    placeholder="Enter team/unit"
+                                                                    placeholder="Enter agency/officials"
                                                                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                                 />
                                                             </td>
                                                             <td className="p-3 border-r">
                                                                 <input
                                                                     type="text"
-                                                                    name="incident"
-                                                                    value={row.incident}
+                                                                    name="type_kind_of_assistance"
+                                                                    value={row.type_kind_of_assistance}
                                                                     onChange={(e) =>
-                                                                        handleChange(row.id, "incident", e.target.value)
+                                                                        handleChange(row.id, "type_kind_of_assistance", e.target.value)
                                                                     }
-                                                                    placeholder="Enter incident responded"
+                                                                    placeholder="Enter type of assistance"
                                                                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                                 />
                                                             </td>
                                                             <td className="p-3 border-r">
                                                                 <input
-                                                                    type="datetime-local"
-                                                                    name="datetime"
-                                                                    value={row.datetime}
+                                                                    type="number"
+                                                                    name="amount"
+                                                                    value={row.amount}
                                                                     onChange={(e) =>
-                                                                        handleChange(row.id, "datetime", e.target.value)
+                                                                        handleChange(row.id, "amount", e.target.value)
                                                                     }
+                                                                    placeholder="0.00"
                                                                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                                 />
                                                             </td>
                                                             <td className="p-3 border-r">
                                                                 <input
                                                                     type="text"
-                                                                    name="location"
-                                                                    value={row.location}
+                                                                    name="beneficiaries"
+                                                                    value={row.beneficiaries}
                                                                     onChange={(e) =>
-                                                                        handleChange(row.id, "location", e.target.value)
+                                                                        handleChange(row.id, "beneficiaries", e.target.value)
                                                                     }
-                                                                    placeholder="Enter location"
+                                                                    placeholder="Enter beneficiaries"
                                                                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                                 />
                                                             </td>
-                                                            <td className="p-3 border-r">
-                                                                <textarea
-                                                                    name="actions"
-                                                                    rows={1}
-                                                                    value={row.actions}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "actions", e.target.value)
-                                                                    }
-                                                                    placeholder="Describe actions taken"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <textarea
-                                                                    name="remarks"
-                                                                    rows={1}
-                                                                    value={row.remarks}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "remarks", e.target.value)
-                                                                    }
-                                                                    placeholder="Additional remarks"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                                                                />
-                                                            </td>
+
+
                                                         </tr>
                                                     ))}
-
                                                 </tbody>
                                             </table>
 
-                                            {errors.responses && (
+                                            {errors.assistances && (
                                                 <div className="text-red-500 text-sm mt-2 px-2">
-                                                    {errors.responses}
+                                                    {errors.assistances}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-
 
                                     {/* Add Row Button */}
                                     <div className="flex justify-start mt-4">
@@ -270,7 +239,7 @@ export default function Index() {
                                             </span>
                                         </>
                                     ) : (
-                                        "Save Operations"
+                                        "Save Assistance"
                                     )}
                                 </Button>
                             </div>

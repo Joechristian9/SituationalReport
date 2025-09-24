@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AffectedTouristController;
+use App\Http\Controllers\AssistanceExtendedController;
 use App\Http\Controllers\CasualtyController;
 use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\IncidentMonitoredController;
@@ -65,6 +66,14 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
         ->name('declaration-usc.index');
 
+    // Response Operations added by kevin
+    Route::resource('response-operations', \App\Http\Controllers\ResponseOperationController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
+        ->name('response-operations.store');
+    Route::get('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'index'])
+        ->name('response-operations.index');
+
     // Deployment of Response Assets
     Route::resource('pre-positioning', PrePositioningController::class)
         ->only(['index', 'store', 'update']);
@@ -120,13 +129,21 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('damaged-houses.store');
     Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
         ->name('damaged-houses.index');
+
+
+    // Assistance Extended
+    Route::resource('assistance-extendeds', AssistanceExtendedController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/assistance-extendeds', [AssistanceExtendedController::class, 'store'])
+        ->name('assistance-extendeds.store');
+    Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
+        ->name('assistance-extendeds.index');
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('admin/dashboard', function () {
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
-
 });
 
 require __DIR__ . '/auth.php';
