@@ -11,6 +11,8 @@ use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\UscDeclarationController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\InjuredController;
+use App\Http\Controllers\SuspensionOfClassController;
+use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -120,13 +122,21 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('damaged-houses.store');
     Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
         ->name('damaged-houses.index');
+
+
+    // Suspension of Classes
+    Route::resource('suspension-of-classes', SuspensionOfClassController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/suspension-of-classes', [SuspensionOfClassController::class, 'store'])
+        ->name('suspension-of-classes.store');
+    Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
+        ->name('suspension-of-classes.index');
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('admin/dashboard', function () {
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
-
 });
 
 require __DIR__ . '/auth.php';

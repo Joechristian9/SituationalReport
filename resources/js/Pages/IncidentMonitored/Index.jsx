@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence, m } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     ChevronLeft,
     ChevronRight,
@@ -19,10 +19,9 @@ import {
     AlertTriangle,
     UserX,
     Loader2,
-    UserPlus,
-    UserSearch,
     Plane,
     SaveAll,
+    School, // ✅ 1. Imported School Icon
 } from "lucide-react";
 
 // ✅ Forms
@@ -32,23 +31,32 @@ import InjuredForm from "@/Components/Effects/InjuredForm";
 import MissingForm from "@/Components/Effects/MissingForm";
 import AffectedTouristsForm from "@/Components/Effects/AffectedTouristsForm";
 import DamagedHousesForm from "@/Components/Effects/DamagedHousesForm";
+import SuspensionOfClassesForm from "@/Components/Effects/SuspensionOfClassesForm"; // ✅ 1. Imported new form
 import { LiaHouseDamageSolid } from "react-icons/lia";
+
+// ✅ Tabs (aliased to avoid conflict)
+import {
+    Tabs as UITabs,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+} from "@/components/ui/tabs";
 
 export default function Index() {
     const { flash } = usePage().props;
 
     // ✅ Stepper state
     const [step, setStep] = useState(1);
+    // ✅ 2. Added new step to the array
     const steps = [
         { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
         { label: "Casualties", icon: <UserX size={18} /> },
-        { label: "Injured", icon: <UserPlus size={18} /> },
-        { label: "Missing", icon: <UserSearch size={18} /> },
         { label: "Affected Tourists", icon: <Plane size={18} /> },
         { label: "Damaged Houses", icon: <LiaHouseDamageSolid size={18} /> },
+        { label: "Suspension of Classes", icon: <School size={18} /> },
     ];
 
-    // ✅ Form State for both forms
+    // ✅ Form State
     const { data, setData, post, processing, errors } = useForm({
         incidents: [
             {
@@ -106,6 +114,16 @@ export default function Index() {
                 remarks: "",
             },
         ],
+        // ✅ 3. Initialized state for the new form
+        suspension_of_classes: [
+            {
+                id: 1,
+                province_city_municipality: "",
+                levels: "",
+                date_of_suspension: "",
+                remarks: "",
+            },
+        ],
         damaged_houses: [
             {
                 id: 1,
@@ -152,6 +170,7 @@ export default function Index() {
         post(route("injured.store"), { preserveScroll: true });
         post(route("missing.store"), { preserveScroll: true });
         post(route("affected-tourists.store"), { preserveScroll: true });
+        post(route("suspension-of-classes.store"), { preserveScroll: true });
         post(route("damaged-houses.store"), { preserveScroll: true });
     };
 
@@ -265,6 +284,7 @@ export default function Index() {
                                             />
                                         </motion.div>
                                     )}
+
                                     {step === 2 && (
                                         <motion.div
                                             key="casualties"
@@ -273,44 +293,52 @@ export default function Index() {
                                             exit={{ opacity: 0, x: -50 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <CasualtyForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
+                                            <UITabs
+                                                defaultValue="dead"
+                                                className="w-full"
+                                            >
+                                                <TabsList className="grid grid-cols-3 w-full mb-6">
+                                                    <TabsTrigger value="dead">
+                                                        Dead (
+                                                        {data.casualties.length}
+                                                        )
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="injured">
+                                                        Injured (
+                                                        {data.injured.length})
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="missing">
+                                                        Missing (
+                                                        {data.missing.length})
+                                                    </TabsTrigger>
+                                                </TabsList>
+
+                                                <TabsContent value="dead">
+                                                    <CasualtyForm
+                                                        data={data}
+                                                        setData={setData}
+                                                        errors={errors}
+                                                    />
+                                                </TabsContent>
+                                                <TabsContent value="injured">
+                                                    <InjuredForm
+                                                        data={data}
+                                                        setData={setData}
+                                                        errors={errors}
+                                                    />
+                                                </TabsContent>
+                                                <TabsContent value="missing">
+                                                    <MissingForm
+                                                        data={data}
+                                                        setData={setData}
+                                                        errors={errors}
+                                                    />
+                                                </TabsContent>
+                                            </UITabs>
                                         </motion.div>
                                     )}
+
                                     {step === 3 && (
-                                        <motion.div
-                                            key="injured"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <InjuredForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 4 && (
-                                        <motion.div
-                                            key="missing"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <MissingForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 5 && (
                                         <motion.div
                                             key="affected_tourists"
                                             initial={{ opacity: 0, x: 50 }}
@@ -325,7 +353,8 @@ export default function Index() {
                                             />
                                         </motion.div>
                                     )}
-                                    {step === 6 && (
+
+                                    {step === 4 && (
                                         <motion.div
                                             key="damaged_houses"
                                             initial={{ opacity: 0, x: 50 }}
@@ -340,6 +369,25 @@ export default function Index() {
                                             />
                                         </motion.div>
                                     )}
+
+                                    {/* ✅ 4. Added new step render logic */}
+                                    {step === 5 && (
+                                        <motion.div
+                                            key="suspension_of_classes"
+                                            initial={{ opacity: 0, x: 50 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <SuspensionOfClassesForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </motion.div>
+                                    )}
+
+                                    {/* ✅ Adjusted step number from 4 to 5 */}
                                 </AnimatePresence>
                             </CardContent>
 
@@ -380,9 +428,8 @@ export default function Index() {
                                             </>
                                         ) : (
                                             <>
-                                                {" "}
-                                                <SaveAll className="w-5 h-5" />{" "}
-                                                <span>Save All Reports</span>{" "}
+                                                <SaveAll className="w-5 h-5" />
+                                                <span>Save All Reports</span>
                                             </>
                                         )}
                                     </Button>
