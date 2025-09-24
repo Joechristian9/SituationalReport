@@ -1,6 +1,5 @@
 import * as React from "react";
 import { usePage } from "@inertiajs/react";
-
 import { RiMenuFold2Fill } from "react-icons/ri";
 
 import { NavMain } from "@/components/nav-main";
@@ -14,61 +13,83 @@ import {
     SidebarHeader,
     SidebarRail,
 } from "@/components/ui/sidebar";
-// The route function is now only used inside the component
 import { route } from "ziggy-js";
 
-// Data that is truly static can remain outside
-const staticTeams = [
-    {
-        name: "SitReps",
-        logo: "/images/ilagan.jpeg",
-    },
-];
-
+// Static
+const staticTeams = [{ name: "SitReps", logo: "/images/ilagan.jpeg" }];
 const staticProjects = [];
 
 export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
+    const userRoles = auth.user.roles.map((r) => r.name);
 
-    // --- MODIFICATION: Define navigation data inside the component ---
-    // This ensures `route()` is called only when the component renders.
+    // --- Define nav items with role restrictions ---
     const navMain = [
         {
             title: "Main Menu",
             url: "#",
             icon: RiMenuFold2Fill,
-            // This now dynamically checks if the current route starts with 'situational-reports'
             isActive: route().current("situation-reports.*"),
+            roles: ["user", "admin"], // 👈 only visible to these roles
             items: [
                 {
                     title: "Situation Overview",
-                    // This is now safe to call here
                     url: route("situation-reports.index"),
+                    roles: ["user"],
                 },
                 {
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
+                    roles: ["user"],
                 },
                 {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
+                    roles: ["user"],
                 },
                 {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
+                    roles: ["user"],
                 },
                 {
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
+                    roles: ["user"],
+                },
+                {
+                    title: "Sample Admin Menu 1",
+                    url: "#",
+                    roles: ["admin"],
+                },
+                {
+                    title: "Sample Admin Menu 2",
+                    url: "#",
+                    roles: ["admin"],
+                },
+                {
+                    title: "Sample Admin Menu 3",
+                    url: "#",
+                    roles: ["admin"],
                 },
             ],
         },
     ];
 
+    // --- Filter menus & submenus based on roles ---
+    const filteredNavMain = navMain
+        .filter((item) => item.roles?.some((r) => userRoles.includes(r)))
+        .map((item) => ({
+            ...item,
+            items: item.items?.filter((sub) =>
+                sub.roles?.some((r) => userRoles.includes(r))
+            ),
+        }));
+
     const data = {
         teams: staticTeams,
         projects: staticProjects,
-        navMain: navMain, // Use the navigation data defined above
+        navMain: filteredNavMain,
         user: {
             name: auth.user.name,
             email: auth.user.email,
@@ -79,20 +100,16 @@ export function AppSidebar({ ...props }) {
     };
 
     return (
-        // Use a solid, modern blue. Remove gradients for a cleaner look.
         <Sidebar collapsible="icon" {...props}>
-            {/* Use a subtle border for separation instead of a harsh gradient */}
-            <SidebarHeader className="bg-blue-600 text-white border-b  border-blue-400">
+            <SidebarHeader className="bg-blue-600 text-white border-b border-blue-400">
                 <TeamSwitcher teams={data.teams} />
             </SidebarHeader>
 
-            {/* Main content area of the sidebar */}
             <SidebarContent className="bg-blue-600 text-white">
                 <NavMain items={data.navMain} />
                 <NavProjects projects={data.projects} />
             </SidebarContent>
 
-            {/* Footer with a top border for clean separation */}
             <SidebarFooter className="bg-blue-600 text-white border-t border-blue-500">
                 <NavUser user={data.user} />
             </SidebarFooter>

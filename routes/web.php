@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\AffectedTouristController;
 use App\Http\Controllers\CasualtyController;
+use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\IncidentMonitoredController;
+use App\Http\Controllers\MissingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\PreEmptiveReportController;
@@ -21,9 +24,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Route::get('/dashboard', function () {
+//     return Inertia::render('Dashboard');
+// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -31,94 +34,99 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-//  Situation Reports
-Route::middleware('auth')->group(function () {
+// Situation Reports
+Route::middleware(['auth', 'role:user'])->group(function () {
+
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
+
     Route::resource('situation-reports', SituationOverviewController::class)
         ->only(['index', 'store', 'update']);
 
-    Route::post('/weather-reports', [SituationOverviewController::class, 'store'])->name('weather-reports.store');
-    Route::get('/situation-reports', [SituationOverviewController::class, 'index'])->name('situation-reports.index');
-});
+    Route::post('/weather-reports', [SituationOverviewController::class, 'store'])
+        ->name('weather-reports.store');
+    Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
+        ->name('situation-reports.index');
 
-//  Pre-Emptive Reports
-Route::middleware('auth')->group(function () {
+    // Pre-Emptive Reports
     Route::resource('preemptive-reports', PreEmptiveReportController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/preemptive-reports', [PreEmptiveReportController::class, 'store'])
+        ->name('preemptive-reports.store');
+    Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])
+        ->name('preemptive-reports.index');
 
-    Route::post('/preemptive-reports', [PreEmptiveReportController::class, 'store'])->name('preemptive-reports.store');
-    Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])->name('preemptive-reports.index');
-});
-
-// Declaration under State of Calamity
-Route::middleware('auth')->group(function () {
+    // Declaration under State of Calamity
     Route::resource('declaration-usc', UscDeclarationController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])
+        ->name('declaration-usc.store');
+    Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
+        ->name('declaration-usc.index');
 
-    Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])->name('declaration-usc.store');
-    Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])->name('declaration-usc.index');
-});
-
-// Deployment of Response Assets
-Route::middleware('auth')->group(function () {
+    // Deployment of Response Assets
     Route::resource('pre-positioning', PrePositioningController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/pre-positioning', [PrePositioningController::class, 'store'])
+        ->name('pre-positioning.store');
+    Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
+        ->name('pre-positioning.index');
 
-    Route::post('/pre-positioning', [PrePositioningController::class, 'store'])->name('pre-positioning.store');
-    Route::get('/pre-positioning', [PrePositioningController::class, 'index'])->name('pre-positioning.index');
-});
-
-//Effects of Incident Monitored
-Route::middleware('auth')->group(function () {
+    // Effects of Incident Monitored
     Route::resource('incident-monitored', IncidentMonitoredController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
+        ->name('incident-monitored.store');
+    Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
+        ->name('incident-monitored.index');
 
-    Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])->name('incident-monitored.store');
-    Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])->name('incident-monitored.index');
-});
-
-//Casualties Dead
-Route::middleware('auth')->group(function () {
+    // Casualties Dead
     Route::resource('casualties', CasualtyController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/casualties', [CasualtyController::class, 'store'])
+        ->name('casualties.store');
+    Route::get('/casualties', [CasualtyController::class, 'index'])
+        ->name('casualties.index');
 
-    Route::post('/casualties', [CasualtyController::class, 'store'])->name('casualties.store');
-    Route::get('/casualties', [CasualtyController::class, 'index'])->name('casualties.index');
-});
-
-//Injured
-Route::middleware('auth')->group(function () {
-    Route::resource('injured', \App\Http\Controllers\InjuredController::class)
+    // Injured
+    Route::resource('injured', InjuredController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/injured', [InjuredController::class, 'store'])
+        ->name('injured.store');
+    Route::get('/injured', [InjuredController::class, 'index'])
+        ->name('injured.index');
 
-    Route::post('/injured', [\App\Http\Controllers\InjuredController::class, 'store'])->name('injured.store');
-    Route::get('/injured', [\App\Http\Controllers\InjuredController::class, 'index'])->name('injured.index');
-});
-
-//Missing Persons
-Route::middleware('auth')->group(function () {
-    Route::resource('missing', \App\Http\Controllers\MissingController::class)
+    // Missing Persons
+    Route::resource('missing', MissingController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/missing', [MissingController::class, 'store'])
+        ->name('missing.store');
+    Route::get('/missing', [MissingController::class, 'index'])
+        ->name('missing.index');
 
-    Route::post('/missing', [\App\Http\Controllers\MissingController::class, 'store'])->name('missing.store');
-    Route::get('/missing', [\App\Http\Controllers\MissingController::class, 'index'])->name('missing.index');
-});
-
-
-// Affected Tourists
-Route::middleware('auth')->group(function () {
-    Route::resource('affected-tourists', \App\Http\Controllers\AffectedTouristController::class)
+    // Affected Tourists
+    Route::resource('affected-tourists', AffectedTouristController::class)
         ->only(['index', 'store', 'update']);
+    Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
+        ->name('affected-tourists.store');
+    Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
+        ->name('affected-tourists.index');
 
-    Route::post('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'store'])->name('affected-tourists.store');
-    Route::get('/affected-tourists', [\App\Http\Controllers\AffectedTouristController::class, 'index'])->name('affected-tourists.index');
-});
-
-// Damaged Houses
-Route::middleware('auth')->group(function () {
-    Route::resource('damaged-houses', \App\Http\Controllers\DamagedHouseReportController::class)
+    // Damaged Houses
+    Route::resource('damaged-houses', DamagedHouseReportController::class)
         ->only(['index', 'store', 'update']);
-
-    Route::post('/damaged-houses', [\App\Http\Controllers\DamagedHouseReportController::class, 'store'])->name('damaged-houses.store');
-    Route::get('/damaged-houses', [\App\Http\Controllers\DamagedHouseReportController::class, 'index'])->name('damaged-houses.index');
+    Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
+        ->name('damaged-houses.store');
+    Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
+        ->name('damaged-houses.index');
 });
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('admin/dashboard', function () {
+        return Inertia::render('Admin/Dashboard');
+    })->name('admin.dashboard');
+
+});
+
 require __DIR__ . '/auth.php';
