@@ -58,6 +58,16 @@ export function AppSidebar({ ...props }) {
                     roles: ["user"],
                 },
                 {
+                    title: "Response Operations",
+                    url: route("response-operations.index"),
+                    roles: ["user"],
+                },
+                {
+                    title: "Assistance Extended",
+                    url: route("assistance-extendeds.index"),
+                    roles: ["user"],
+                },
+                {
                     title: "Sample Admin Menu 1",
                     url: "#",
                     roles: ["admin"],
@@ -72,10 +82,6 @@ export function AppSidebar({ ...props }) {
                     url: "#",
                     roles: ["admin"],
                 },
-                // {
-                //     title: "Response Operations",
-                //     url: route(""),
-                // },
             ],
         },
     ];
