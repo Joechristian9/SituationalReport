@@ -64,7 +64,7 @@ export default function MissingForm({ data, setData, errors }) {
     };
 
     return (
-        <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <div className="space-y-6">
             <div className="flex items-center gap-3">
                 <div className="bg-orange-100 p-2 rounded-full">
                     <UserSearch className="h-6 w-6 text-orange-600" />

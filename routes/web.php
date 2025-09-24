@@ -12,6 +12,8 @@ use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\UscDeclarationController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\InjuredController;
+use App\Http\Controllers\SuspensionOfClassController;
+use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -131,6 +133,7 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('damaged-houses.index');
 
 
+
     // Assistance Extended
     Route::resource('assistance-extendeds', AssistanceExtendedController::class)
         ->only(['index', 'store', 'update']);
@@ -138,6 +141,15 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('assistance-extendeds.store');
     Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
         ->name('assistance-extendeds.index');
+
+    // Suspension of Classes
+    Route::resource('suspension-of-classes', SuspensionOfClassController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/suspension-of-classes', [SuspensionOfClassController::class, 'store'])
+        ->name('suspension-of-classes.store');
+    Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
+        ->name('suspension-of-classes.index');
+
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
