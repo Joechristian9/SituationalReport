@@ -51,6 +51,8 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('weather-reports.store');
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
         ->name('situation-reports.index');
+    Route::get('/weather-modifications', [SituationOverviewController::class, 'weatherModification'])
+        ->name('situation-reports.weather');
 
     // Pre-Emptive Reports
     Route::resource('preemptive-reports', PreEmptiveReportController::class)
