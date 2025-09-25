@@ -76,7 +76,6 @@ export default function Index() {
         ]);
     };
 
-
     // ✅ Handle Input Change
     const handleChange = (id, field, value) => {
         setData(
@@ -141,94 +140,167 @@ export default function Index() {
                                             <table className="w-full text-sm">
                                                 <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                                                     <tr className="text-left text-white font-semibold">
-                                                        <th className="p-3 border-r">Team/Unit</th>
-                                                        <th className="p-3 border-r">Incident Responded</th>
-                                                        <th className="p-3 border-r">Time & Date</th>
-                                                        <th className="p-3 border-r">Location</th>
-                                                        <th className="p-3 border-r">Actions Taken</th>
-                                                        <th className="p-3 border-r">Remarks</th>
+                                                        <th className="p-3 border-r">
+                                                            Team/Unit
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Incident Responded
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Time & Date
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Location
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Actions Taken
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Remarks
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {data.responses.map((row) => (
-                                                        <tr
-                                                            key={row.id}
-                                                            className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
-                                                        >
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="team_unit"
-                                                                    value={row.team_unit}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "team_unit", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter team/unit"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="incident"
-                                                                    value={row.incident}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "incident", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter incident responded"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="datetime-local"
-                                                                    name="datetime"
-                                                                    value={row.datetime}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "datetime", e.target.value)
-                                                                    }
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="location"
-                                                                    value={row.location}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "location", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter location"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <textarea
-                                                                    name="actions"
-                                                                    rows={1}
-                                                                    value={row.actions}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "actions", e.target.value)
-                                                                    }
-                                                                    placeholder="Describe actions taken"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <textarea
-                                                                    name="remarks"
-                                                                    rows={1}
-                                                                    value={row.remarks}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "remarks", e.target.value)
-                                                                    }
-                                                                    placeholder="Additional remarks"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-
+                                                    {data.responses.map(
+                                                        (row) => (
+                                                            <tr
+                                                                key={row.id}
+                                                                className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
+                                                            >
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="team_unit"
+                                                                        value={
+                                                                            row.team_unit
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "team_unit",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter team/unit"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="incident"
+                                                                        value={
+                                                                            row.incident
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "incident",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter incident responded"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="datetime-local"
+                                                                        name="datetime"
+                                                                        value={
+                                                                            row.datetime
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "datetime",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="location"
+                                                                        value={
+                                                                            row.location
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "location",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter location"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <textarea
+                                                                        name="actions"
+                                                                        rows={1}
+                                                                        value={
+                                                                            row.actions
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "actions",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Describe actions taken"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <textarea
+                                                                        name="remarks"
+                                                                        rows={1}
+                                                                        value={
+                                                                            row.remarks
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "remarks",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Additional remarks"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                                                                    />
+                                                                </td>
+                                                            </tr>
+                                                        )
+                                                    )}
                                                 </tbody>
                                             </table>
 
@@ -239,7 +311,6 @@ export default function Index() {
                                             )}
                                         </div>
                                     </div>
-
 
                                     {/* Add Row Button */}
                                     <div className="flex justify-start mt-4">

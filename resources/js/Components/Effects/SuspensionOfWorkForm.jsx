@@ -1,38 +1,25 @@
 import React from "react";
-// Using School icon for "Suspension of Classes"
-import { School } from "lucide-react";
+// Using Briefcase icon for "Suspension of Work"
+import { Briefcase } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 
-export default function SuspensionOfClassesForm({ data, setData, errors }) {
-    // Manages the 'suspension_of_classes' array in the main form's state
-    const suspensionList = data?.suspension_of_classes ?? [];
-
-    // Define the options for the 'Levels' dropdown
-    const suspensionLevels = [
-        "Pre-school",
-        "Elementary",
-        "Junior High School",
-        "Senior High School",
-        "All Levels (K-12)",
-        "College",
-        "All Levels (including College)",
-    ];
+export default function SuspensionOfWorkForm({ data, setData, errors }) {
+    // Manages the 'suspension_of_work' array in the main form's state
+    const suspensionList = data?.suspension_of_work ?? [];
 
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
         const newRows = [...suspensionList];
         newRows[index][name] = value;
-        setData("suspension_of_classes", newRows);
+        setData("suspension_of_work", newRows);
     };
 
     const handleAddRow = () => {
-        setData("suspension_of_classes", [
+        setData("suspension_of_work", [
             ...suspensionList,
             {
-                // New object structure for suspension of classes
                 id: suspensionList.length + 1,
                 province_city_municipality: "",
-                level: "", // Default value for the select dropdown
                 date_of_suspension: "",
                 remarks: "",
             },
@@ -42,26 +29,22 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                    <School className="h-6 w-6 text-red-600" />
+                <div className="bg-blue-100 p-2 rounded-full">
+                    <Briefcase className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
                     <h3 className="text-xl font-bold text-gray-800">
-                        F.1 Suspension of Classes
+                        F.2 Suspension of Work
                     </h3>
                 </div>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm">
-                    {/* Table header built to match the image */}
-                    <thead className="bg-red-500 border-b border-gray-200 sticky top-0 z-10">
+                    <thead className="bg-blue-500 border-b border-gray-200 sticky top-0 z-10">
                         <tr className="text-xs font-medium text-white uppercase tracking-wider border-b">
                             <th className="p-3 align-middle border-r">
                                 Province/ City/ Municipality
-                            </th>
-                            <th className="p-3 align-middle border-r">
-                                Levels
                             </th>
                             <th className="p-3 align-middle border-r">
                                 Date of Suspension
@@ -73,19 +56,19 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
                         {suspensionList.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan="4"
+                                    colSpan="3"
                                     className="text-center py-12 px-4 text-gray-500"
                                 >
-                                    <School
+                                    <Briefcase
                                         size={40}
                                         className="mx-auto text-gray-400"
                                     />
                                     <p className="font-medium mt-2">
-                                        No class suspensions have been recorded.
+                                        No work suspensions have been recorded.
                                     </p>
                                     <p className="text-xs mt-1">
                                         Click{" "}
-                                        <span className="font-semibold text-red-600">
+                                        <span className="font-semibold text-blue-600">
                                             "Add Row"
                                         </span>{" "}
                                         to begin.
@@ -110,30 +93,8 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
                                                 handleInputChange(index, e)
                                             }
                                             placeholder="Province/ City/ Municipality"
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none transition hover:border-red-400"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                         />
-                                    </td>
-                                    <td className="p-2 align-middle">
-                                        <select
-                                            name="level"
-                                            value={row.level}
-                                            onChange={(e) =>
-                                                handleInputChange(index, e)
-                                            }
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none transition hover:border-red-400"
-                                        >
-                                            <option value="" disabled>
-                                                Select Level
-                                            </option>
-                                            {suspensionLevels.map((level) => (
-                                                <option
-                                                    key={level}
-                                                    value={level}
-                                                >
-                                                    {level}
-                                                </option>
-                                            ))}
-                                        </select>
                                     </td>
 
                                     {/* Date of Suspension Input */}
@@ -145,7 +106,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
                                             onChange={(e) =>
                                                 handleInputChange(index, e)
                                             }
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none transition hover:border-red-400"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                         />
                                     </td>
 
@@ -159,7 +120,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
                                                 handleInputChange(index, e)
                                             }
                                             placeholder="Remarks"
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none transition hover:border-red-400"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition hover:border-blue-400"
                                         />
                                     </td>
                                 </tr>
@@ -167,10 +128,10 @@ export default function SuspensionOfClassesForm({ data, setData, errors }) {
                         )}
                     </tbody>
                 </table>
-                {/* Error handling for the 'suspension_of_classes' field */}
-                {errors.suspension_of_classes && (
+                {/* Error handling for the 'suspension_of_work' field */}
+                {errors.suspension_of_work && (
                     <div className="text-red-600 bg-red-50 text-sm mt-2 p-3 border-t border-gray-200">
-                        {errors.suspension_of_classes}
+                        {errors.suspension_of_work}
                     </div>
                 )}
             </div>

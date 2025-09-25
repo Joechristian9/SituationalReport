@@ -14,7 +14,7 @@ class SuspensionOfClass extends Model
 
     protected $fillable = [
         'province_city_municipality',
-        'level', // ✅ use single "level" instead of plural for consistency
+        'level',
         'date_of_suspension',
         'remarks',
         'user_id',

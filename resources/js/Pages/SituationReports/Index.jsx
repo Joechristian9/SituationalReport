@@ -123,22 +123,22 @@ export default function Index() {
         ],
     });
 
-    // ✅ Restore saved form
-    useEffect(() => {
-        const saved = localStorage.getItem("situationReports");
-        if (saved) {
-            try {
-                setData(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse saved reports", e);
-            }
-        }
-    }, []);
+    // // ✅ Restore saved form
+    // useEffect(() => {
+    //     const saved = localStorage.getItem("situationReports");
+    //     if (saved) {
+    //         try {
+    //             setData(JSON.parse(saved));
+    //         } catch (e) {
+    //             console.error("Failed to parse saved reports", e);
+    //         }
+    //     }
+    // }, []);
 
-    // ✅ Save form state
-    useEffect(() => {
-        localStorage.setItem("situationReports", JSON.stringify(data));
-    }, [data]);
+    // // ✅ Save form state
+    // useEffect(() => {
+    //     localStorage.setItem("situationReports", JSON.stringify(data));
+    // }, [data]);
 
     // ✅ Flash messages
     useEffect(() => {
@@ -190,10 +190,11 @@ export default function Index() {
                                         <div
                                             className="h-0.5 bg-blue-600 transition-all duration-500"
                                             style={{
-                                                width: `${((step - 1) /
+                                                width: `${
+                                                    ((step - 1) /
                                                         (steps.length - 1)) *
                                                     100
-                                                    }%`,
+                                                }%`,
                                             }}
                                         ></div>
                                     </div>
@@ -215,12 +216,13 @@ export default function Index() {
                                                     className="flex flex-col items-center focus:outline-none group transition"
                                                 >
                                                     <div
-                                                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${isCompleted
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
+                                                            isCompleted
                                                                 ? "border-emerald-500 bg-emerald-50 text-emerald-500"
                                                                 : isActive
-                                                                    ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
-                                                                    : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
-                                                            }`}
+                                                                ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
+                                                                : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
+                                                        }`}
                                                     >
                                                         {isCompleted ? (
                                                             <CheckCircle2
@@ -231,12 +233,13 @@ export default function Index() {
                                                         )}
                                                     </div>
                                                     <span
-                                                        className={`mt-2 text-xs transition-colors duration-300 ${isCompleted
+                                                        className={`mt-2 text-xs transition-colors duration-300 ${
+                                                            isCompleted
                                                                 ? "text-emerald-600 font-medium"
                                                                 : isActive
-                                                                    ? "text-blue-600 font-semibold"
-                                                                    : "text-gray-500 group-hover:text-blue-500"
-                                                            }`}
+                                                                ? "text-blue-600 font-semibold"
+                                                                : "text-gray-500 group-hover:text-blue-500"
+                                                        }`}
                                                     >
                                                         {item.label}
                                                     </span>

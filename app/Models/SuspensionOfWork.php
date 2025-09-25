@@ -2,27 +2,29 @@
 
 namespace App\Models;
 
-use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
-class WeatherReport extends Model
+class SuspensionOfWork extends Model
 {
-    use HasFactory, LogsModification;
+    use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'municipality',
-        'sky_condition',
-        'wind',
-        'precipitation',
-        'sea_condition',
-        'updated_by',
+        'province_city_municipality',
+        'date_of_suspension',
+        'remarks',
         'user_id',
+        'updated_by',
     ];
 
     /**
-     * Each weather report belongs to a user (creator).
+     * Get the user who created the record.
      */
     public function user()
     {
@@ -30,7 +32,7 @@ class WeatherReport extends Model
     }
 
     /**
-     * User who last updated the report.
+     * Get the user who last updated the record.
      */
     public function updater()
     {
@@ -38,13 +40,13 @@ class WeatherReport extends Model
     }
 
     /**
-     * Boot method to automatically handle updated_by.
+     * The "booted" method of the model.
+     * Automatically sets user_id and updated_by.
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Set user_id and updated_by when creating
         static::creating(function ($model) {
             if (Auth::check()) {
                 $model->user_id = $model->user_id ?? Auth::id();
@@ -52,7 +54,6 @@ class WeatherReport extends Model
             }
         });
 
-        // Always update updated_by when editing
         static::updating(function ($model) {
             if (Auth::check()) {
                 $model->updated_by = Auth::id();
