@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AffectedTouristController;
 use App\Http\Controllers\AssistanceExtendedController;
+use App\Http\Controllers\AssistanceProvidedLguController;
 use App\Http\Controllers\CasualtyController;
 use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\IncidentMonitoredController;
@@ -133,7 +134,6 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         ->name('damaged-houses.index');
 
 
-
     // Assistance Extended
     Route::resource('assistance-extendeds', AssistanceExtendedController::class)
         ->only(['index', 'store', 'update']);
@@ -150,6 +150,17 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
         ->name('suspension-of-classes.index');
 
+    Route::get('/assistance', function () {
+        return inertia('AssistanceExtended/AssistanceIndex');
+    })->name('assistance.index');
+
+    // Assistance Provided LGUs
+    Route::resource('assistance-provided-lgus', AssistanceProvidedLguController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'store'])
+        ->name('assistance-provided-lgus.store');
+    Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
+        ->name('assistance-provided-lgus.index');
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {

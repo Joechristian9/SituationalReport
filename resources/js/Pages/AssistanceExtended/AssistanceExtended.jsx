@@ -1,14 +1,6 @@
 import { useEffect } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
-import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
@@ -17,7 +9,7 @@ import { motion } from "framer-motion";
 export default function AssistanceExtended() {
     const { flash } = usePage().props;
 
-    // ✅ Form state
+    // Form state
     const { data, setData, post, processing, errors } = useForm({
         assistances: [
             {
@@ -30,7 +22,7 @@ export default function AssistanceExtended() {
         ],
     });
 
-    // ✅ Restore saved form from localStorage
+    // Restore saved form from localStorage
     useEffect(() => {
         const saved = localStorage.getItem("assistanceExtendeds");
         if (saved) {
@@ -42,23 +34,17 @@ export default function AssistanceExtended() {
         }
     }, []);
 
-    // ✅ Save form state to localStorage
+    // Save form state to localStorage
     useEffect(() => {
         localStorage.setItem("assistanceExtendeds", JSON.stringify(data));
     }, [data]);
 
-    // ✅ Flash messages
+    // Flash messages
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "Assistance Extended" },
-    ];
-
-    // ✅ Handle Row Add
     const addRow = () => {
         setData("assistances", [
             ...data.assistances,
@@ -72,7 +58,6 @@ export default function AssistanceExtended() {
         ]);
     };
 
-    // ✅ Handle Input Change
     const handleChange = (id, field, value) => {
         setData(
             "assistances",
@@ -82,171 +67,148 @@ export default function AssistanceExtended() {
         );
     };
 
-    // ✅ Form Submit
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("assistance-extendeds.store"), { preserveScroll: true });
     };
 
     return (
-        <SidebarProvider>
+        <>
+            <Head title="Assistance Extended" />
             <Toaster position="top-right" />
-            <AppSidebar />
-            <Head>
-                <title>Assistance Extended</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                {/* ✅ Header with breadcrumbs */}
-                <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
-                    <div className="flex items-center gap-2">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
-                    </div>
-                </header>
 
-                <main className="w-full p-6 h-full bg-gray-50">
-                    <form onSubmit={handleSubmit}>
-                        <Card className="shadow-lg rounded-2xl border">
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                            Assistance Extended
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            Record details of assistance provided.
-                                        </p>
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
+            <main>
+                <form onSubmit={handleSubmit}>
+                    <Card className="shadow-lg rounded-2xl border">
+                        <CardHeader>
+                            <CardTitle>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        Assistance Extended
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Record details of assistance provided.
+                                    </p>
+                                </div>
+                            </CardTitle>
+                        </CardHeader>
 
-                            <CardContent>
-                                <motion.div
-                                    key="assistance-extended"
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -30 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                                        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
-                                                    <tr className="text-left text-white font-semibold">
-                                                        <th className="p-3 border-r">Agency / Officials Groups</th>
-                                                        <th className="p-3 border-r">Type / Kind of Assistance</th>
-                                                        <th className="p-3 border-r">Amount</th>
-                                                        <th className="p-3 border-r">Beneficiaries</th>
+                        <CardContent>
+                            <motion.div
+                                key="assistance-extended"
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -30 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                                    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
+                                                <tr className="text-left text-white font-semibold">
+                                                    <th className="p-3 border-r">Agency / Officials Groups</th>
+                                                    <th className="p-3 border-r">Type / Kind of Assistance</th>
+                                                    <th className="p-3 border-r">Amount</th>
+                                                    <th className="p-3 border-r">Beneficiaries</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.assistances.map((row) => (
+                                                    <tr
+                                                        key={row.id}
+                                                        className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
+                                                    >
+                                                        <td className="p-3 border-r">
+                                                            <input
+                                                                type="text"
+                                                                value={row.agency_officials_groups}
+                                                                onChange={(e) =>
+                                                                    handleChange(row.id, "agency_officials_groups", e.target.value)
+                                                                }
+                                                                placeholder="Enter agency/officials"
+                                                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 border-r">
+                                                            <input
+                                                                type="text"
+                                                                value={row.type_kind_of_assistance}
+                                                                onChange={(e) =>
+                                                                    handleChange(row.id, "type_kind_of_assistance", e.target.value)
+                                                                }
+                                                                placeholder="Enter type of assistance"
+                                                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 border-r">
+                                                            <input
+                                                                type="number"
+                                                                value={row.amount}
+                                                                onChange={(e) =>
+                                                                    handleChange(row.id, "amount", e.target.value)
+                                                                }
+                                                                placeholder="0.00"
+                                                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 border-r">
+                                                            <input
+                                                                type="text"
+                                                                value={row.beneficiaries}
+                                                                onChange={(e) =>
+                                                                    handleChange(row.id, "beneficiaries", e.target.value)
+                                                                }
+                                                                placeholder="Enter beneficiaries"
+                                                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                            />
+                                                        </td>
                                                     </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {data.assistances.map((row) => (
-                                                        <tr
-                                                            key={row.id}
-                                                            className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
-                                                        >
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="agency_officials_groups"
-                                                                    value={row.agency_officials_groups}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "agency_officials_groups", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter agency/officials"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="type_kind_of_assistance"
-                                                                    value={row.type_kind_of_assistance}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "type_kind_of_assistance", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter type of assistance"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="number"
-                                                                    name="amount"
-                                                                    value={row.amount}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "amount", e.target.value)
-                                                                    }
-                                                                    placeholder="0.00"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="beneficiaries"
-                                                                    value={row.beneficiaries}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "beneficiaries", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter beneficiaries"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
+                                                ))}
+                                            </tbody>
+                                        </table>
 
-
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-
-                                            {errors.assistances && (
-                                                <div className="text-red-500 text-sm mt-2 px-2">
-                                                    {errors.assistances}
-                                                </div>
-                                            )}
-                                        </div>
+                                        {errors.assistances && (
+                                            <div className="text-red-500 text-sm mt-2 px-2">
+                                                {errors.assistances}
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
 
-                                    {/* Add Row Button */}
-                                    <div className="flex justify-start mt-4">
-                                        <Button
-                                            type="button"
-                                            onClick={addRow}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                                        >
-                                            <PlusCircle className="w-4 h-4" />
-                                            Add Row
-                                        </Button>
-                                    </div>
-                                </motion.div>
-                            </CardContent>
+                                <div className="flex justify-start mt-4">
+                                    <Button
+                                        type="button"
+                                        onClick={addRow}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                                    >
+                                        <PlusCircle className="w-4 h-4" />
+                                        Add Row
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </CardContent>
 
-                            {/* ✅ Save Button */}
-                            <div className="flex justify-end p-4 border-t bg-gray-50 rounded-b-2xl">
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {processing ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin text-white" />
-                                            <span className="animate-pulse">
-                                                Saving...
-                                            </span>
-                                        </>
-                                    ) : (
-                                        "Save Assistance"
-                                    )}
-                                </Button>
-                            </div>
-                        </Card>
-                    </form>
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
+                        <div className="flex justify-end p-4 border-t bg-gray-50 rounded-b-2xl">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {processing ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                        <span className="animate-pulse">
+                                            Saving...
+                                        </span>
+                                    </>
+                                ) : (
+                                    "Save Assistance"
+                                )}
+                            </Button>
+                        </div>
+                    </Card>
+                </form>
+            </main>
+        </>
     );
 }
