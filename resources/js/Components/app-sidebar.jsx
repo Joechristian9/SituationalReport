@@ -64,7 +64,7 @@ export function AppSidebar({ ...props }) {
                 },
                 {
                     title: "Assistance Extended",
-                    url: route("assistance-extendeds.index"),
+                    url: route("assistance.index"),
                     roles: ["user"],
                 },
                 {

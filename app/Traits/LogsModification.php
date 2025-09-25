@@ -8,16 +8,19 @@ trait LogsModification
 {
     protected static function bootLogsModification()
     {
-        // 🔹 Created
         static::created(function ($model) {
             $fields = [];
 
             foreach ($model->getAttributes() as $field => $value) {
-                if (in_array($field, ['id', 'created_at', 'updated_at'])) continue; // skip unwanted fields
+                if (in_array($field, ['id', 'created_at', 'updated_at'])) continue;
 
                 $fields[$field] = [
-                    'old' => null,   // nothing existed before creation
-                    'new' => $value, // current value
+                    'old'  => null,
+                    'new'  => $value,
+                    'user' => [
+                        'id'   => auth()->id(),
+                        'name' => auth()->user()?->name ?? 'System',
+                    ],
                 ];
             }
 
@@ -30,34 +33,50 @@ trait LogsModification
             ]);
         });
 
-        // 🔹 Updated
         static::updated(function ($model) {
             $changes = [];
 
+            // Get the latest modification for this model to know previous users per field
+            $latestModification = Modification::where('model_type', class_basename($model))
+                ->where('model_id', $model->id)
+                ->latest('created_at')
+                ->first();
+
             foreach ($model->getAttributes() as $field => $newValue) {
-                if (in_array($field, ['id', 'created_at', 'updated_at'])) continue; // skip unwanted fields
+                if (in_array($field, ['id', 'created_at', 'updated_at'])) continue;
 
                 $original = $model->getOriginal($field);
 
-                // Only store if value actually changed
                 if ($newValue != $original) {
+                    // 🔹 Value changed → current user
                     $changes[$field] = [
-                        'old' => $original,
-                        'new' => $newValue,
+                        'old'  => $original,
+                        'new'  => $newValue,
+                        'user' => [
+                            'id'   => auth()->id(),
+                            'name' => auth()->user()?->name,
+                        ],
+                    ];
+                } else {
+                    // 🔹 Value unchanged → keep the last modifier if it exists
+                    $previousUser = $latestModification?->changed_fields[$field]['user']
+                        ?? ['id' => auth()->id(), 'name' => auth()->user()?->name];
+
+                    $changes[$field] = [
+                        'old'  => $original,
+                        'new'  => $newValue,
+                        'user' => $previousUser, // 👈 reuses last modifier, not current user
                     ];
                 }
             }
 
-            // Only create a modification record if there are changes
-            if (!empty($changes)) {
-                Modification::create([
-                    'user_id'        => auth()->id(),
-                    'model_type'     => class_basename($model),
-                    'model_id'       => $model->id,
-                    'action'         => 'updated',
-                    'changed_fields' => $changes,
-                ]);
-            }
+            Modification::create([
+                'user_id'        => auth()->id(),
+                'model_type'     => class_basename($model),
+                'model_id'       => $model->id,
+                'action'         => 'updated',
+                'changed_fields' => $changes,
+            ]);
         });
 
         // 🔹 Deleted

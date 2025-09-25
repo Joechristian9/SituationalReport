@@ -52,21 +52,17 @@ export default function WeatherForm({ data, setData, errors }) {
             },
         ]);
     };
-    if (isError) {
-        return <div className="text-red-500">Error: {error.message}</div>;
-    }
+
     // On component mount, merge latest modification into the report rows
     useEffect(() => {
         if (modificationData?.latest) {
             const updatedReports = data.reports.map((row) => {
                 const newRow = { ...row };
                 Object.keys(row).forEach((field) => {
-                    if (
-                        modificationData.latest.changed_fields?.[field]?.new !==
-                        undefined
-                    ) {
-                        newRow[field] =
-                            modificationData.latest.changed_fields[field].new;
+                    const change =
+                        modificationData.latest.changed_fields?.[field];
+                    if (change) {
+                        newRow[field] = change.new ?? change.old ?? row[field];
                     }
                 });
                 return newRow;
@@ -75,6 +71,9 @@ export default function WeatherForm({ data, setData, errors }) {
         }
     }, [modificationData]);
 
+    if (isError) {
+        return <div className="text-red-500">Error: {error.message}</div>;
+    }
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
             {/* Header */}
@@ -191,58 +190,58 @@ export default function WeatherForm({ data, setData, errors }) {
                                                 {modificationData?.history?.[
                                                     field
                                                 ]?.length > 0 && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Info className="w-4 h-4 text-gray-500 hover:text-blue-600 cursor-pointer absolute top-1 right-1" />
-                                                        </TooltipTrigger>
-                                                        <TooltipContent
-                                                            side="right"
-                                                            className="max-w-xs"
-                                                        >
-                                                            <div className="text-sm space-y-1">
-                                                                {modificationData.history[
-                                                                    field
-                                                                ].map(
-                                                                    (
-                                                                        entry,
-                                                                        i
-                                                                    ) => (
-                                                                        <p
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                        >
-                                                                            <span className="font-semibold">
-                                                                                {
-                                                                                    entry
-                                                                                        .user
-                                                                                        .name
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Info className="w-4 h-4 text-gray-500 hover:text-blue-600 cursor-pointer absolute top-1 right-1" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent
+                                                                side="right"
+                                                                className="max-w-xs"
+                                                            >
+                                                                <div className="text-sm space-y-1">
+                                                                    {modificationData.history[
+                                                                        field
+                                                                    ].map(
+                                                                        (
+                                                                            entry,
+                                                                            i
+                                                                        ) => (
+                                                                            <p
+                                                                                key={
+                                                                                    i
                                                                                 }
-                                                                            </span>{" "}
-                                                                            changed
-                                                                            from{" "}
-                                                                            <span className="text-red-600">
-                                                                                {entry.old ??
-                                                                                    "N/A"}
-                                                                            </span>{" "}
-                                                                            to{" "}
-                                                                            <span className="text-green-600">
-                                                                                {entry.new ??
-                                                                                    "N/A"}
-                                                                            </span>
-                                                                            <br />
-                                                                            <span className="text-xs text-gray-400">
-                                                                                {new Date(
-                                                                                    entry.date
-                                                                                ).toLocaleString()}
-                                                                            </span>
-                                                                        </p>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
+                                                                            >
+                                                                                <span className="font-semibold">
+                                                                                    {
+                                                                                        entry
+                                                                                            .user
+                                                                                            .name
+                                                                                    }
+                                                                                </span>{" "}
+                                                                                changed
+                                                                                from{" "}
+                                                                                <span className="text-red-600">
+                                                                                    {entry.old ??
+                                                                                        "N/A"}
+                                                                                </span>{" "}
+                                                                                to{" "}
+                                                                                <span className="text-green-600">
+                                                                                    {entry.new ??
+                                                                                        "N/A"}
+                                                                                </span>
+                                                                                <br />
+                                                                                <span className="text-xs text-gray-400">
+                                                                                    {new Date(
+                                                                                        entry.date
+                                                                                    ).toLocaleString()}
+                                                                                </span>
+                                                                            </p>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    )}
                                             </td>
                                         );
                                     })}

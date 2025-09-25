@@ -216,46 +216,57 @@ class SituationOverviewController extends Controller
             }
         }
         return redirect()
-                ->route('situation-reports.index')
-                ->with( 'success','Facility(ies) saved successfully.');
+            ->route('situation-reports.index')
+            ->with('success', 'Facility(ies) saved successfully.');
     }
 
     public function weatherModification()
     {
-        $user_id = Auth::id();
-
-        // Get all modifications for WeatherReport
+        // Get all modifications for WeatherReport, latest first
         $modifications = Modification::where('model_type', 'WeatherReport')
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Prepare a structured history array grouped by field
         $history = [];
 
         foreach ($modifications as $mod) {
             foreach ($mod->changed_fields as $field => $change) {
-                $old = $change['old'] ?? null;
-                $new = $change['new'] ?? $old;
-                $modUserId = $mod->user->id ?? null;
-
-                // Skip if old and new are the same AND the user is the same
-                if ($old === $new && $modUserId === $user_id) {
-                    continue;
-                }
+                // Use the user stored in the field change, fallback to the modification's user
+                $fieldUser = $change['user'] ?? [
+                    'id'   => $mod->user->id ?? null,
+                    'name' => $mod->user->name ?? 'Unknown',
+                ];
 
                 $history[$field][] = [
-                    'user' => $mod->user,
-                    'old'  => $old,
-                    'new'  => $new,
+                    'user' => $fieldUser,
+                    'old'  => $change['old'] ?? null,
+                    'new'  => $change['new'] ?? null,
                     'date' => $mod->created_at,
                 ];
             }
         }
 
+        // Get the latest modification and ensure each field includes the user info
+        $latest = $modifications->first();
+        if ($latest) {
+            $latestChangedFields = [];
+            foreach ($latest->changed_fields as $field => $change) {
+                $latestChangedFields[$field] = [
+                    'old'  => $change['old'] ?? null,
+                    'new'  => $change['new'] ?? null,
+                    'user' => $change['user'] ?? [
+                        'id'   => $latest->user->id ?? null,
+                        'name' => $latest->user->name ?? 'Unknown',
+                    ],
+                ];
+            }
+            $latest->changed_fields = $latestChangedFields;
+        }
+
         return response()->json([
             'history' => $history,
-            'latest'  => $modifications->first(), // optional: latest modification
+            'latest'  => $latest,
         ]);
     }
 }
