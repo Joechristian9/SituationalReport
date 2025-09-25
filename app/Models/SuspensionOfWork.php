@@ -6,15 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
-class SuspensionOfClass extends Model
+class SuspensionOfWork extends Model
 {
     use HasFactory;
 
-    protected $table = 'suspension_of_classes';
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'province_city_municipality',
-        'level',
         'date_of_suspension',
         'remarks',
         'user_id',
@@ -22,7 +24,7 @@ class SuspensionOfClass extends Model
     ];
 
     /**
-     * Relationship to creator (user who created the record)
+     * Get the user who created the record.
      */
     public function user()
     {
@@ -30,7 +32,7 @@ class SuspensionOfClass extends Model
     }
 
     /**
-     * Relationship to updater (last user who updated the record)
+     * Get the user who last updated the record.
      */
     public function updater()
     {
@@ -38,7 +40,8 @@ class SuspensionOfClass extends Model
     }
 
     /**
-     * Automatically set `user_id` and `updated_by`
+     * The "booted" method of the model.
+     * Automatically sets user_id and updated_by.
      */
     protected static function boot()
     {

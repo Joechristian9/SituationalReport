@@ -150,6 +150,13 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
         ->name('suspension-of-classes.index');
 
+    // Suspension of Work
+    Route::resource('suspension-of-works', \App\Http\Controllers\SuspensionOfWorkController::class)
+        ->only(['index', 'store', 'update']);
+    Route::post('/suspension-of-works', [\App\Http\Controllers\SuspensionOfWorkController::class, 'store'])
+        ->name('suspension-of-works.store');
+    Route::get('/suspension-of-works', [\App\Http\Controllers\SuspensionOfWorkController::class, 'index'])
+        ->name('suspension-of-works.index');
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {

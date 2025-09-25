@@ -10,75 +10,80 @@ use Inertia\Inertia;
 class SuspensionOfClassController extends Controller
 {
     /**
-     * Show list of class suspensions
+     * Display a listing of the suspension of class records.
      */
     public function index()
     {
-        $suspensions = SuspensionOfClass::latest()->get();
+        $suspensionList = SuspensionOfClass::latest()->get();
 
         return Inertia::render('IncidentMonitored/Index', [
-            'suspensions' => $suspensions,
+            'suspensionList' => $suspensionList,
         ]);
     }
 
     /**
-     * Store multiple suspensions
+     * Store newly created suspension of class records in storage.
+     * Handles bulk creation from the form.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'suspensions' => 'required|array',
-            'suspensions.*.province_city_municipality' => 'nullable|string|max:255',
-            'suspensions.*.level' => 'nullable|string|max:255',
-            'suspensions.*.date_of_suspension' => 'nullable|date',
-            'suspensions.*.remarks' => 'nullable|string',
+            'suspension_of_classes' => 'required|array',
+            'suspension_of_classes.*.province_city_municipality' => 'nullable|string|max:255',
+            'suspension_of_classes.*.level' => 'nullable|string|max:255',
+            'suspension_of_classes.*.date_of_suspension' => 'nullable|date',
+            'suspension_of_classes.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['suspensions'] as $suspension) {
-            // Copy suspension except "level"
-            $dataToCheck = $suspension;
-            unset($dataToCheck['level']);
+        foreach ($validated['suspension_of_classes'] as $suspensionData) {
+            // ✅ Skip rows where all values are null or empty
+            $isEmpty = empty(array_filter($suspensionData, function ($value) {
+                return !is_null($value) && trim((string)$value) !== '';
+            }));
 
-            // Remove empty values (null, '', whitespace, 0)
-            $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return !is_null($value) && trim((string)$value) !== '' && $value !== 0 && $value !== '0';
-            });
-
-            // If nothing left → means only "level" was filled OR everything empty → skip
-            if (empty($dataToCheck)) {
+            if ($isEmpty) {
                 continue;
             }
 
-            // Otherwise save to DB
             SuspensionOfClass::create([
-                'province_city_municipality' => $suspension['province_city_municipality'] ?? null,
-                'level'                      => $suspension['level'] ?? null,
-                'date_of_suspension'         => $suspension['date_of_suspension'] ?? null,
-                'remarks'                    => $suspension['remarks'] ?? null,
+                'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
+                'level'                      => $suspensionData['level'] ?? null,
+                'date_of_suspension'         => $suspensionData['date_of_suspension'] ?? null,
+                'remarks'                    => $suspensionData['remarks'] ?? null,
                 'user_id'                    => Auth::id(),
                 'updated_by'                 => Auth::id(),
             ]);
         }
 
-        return back()->with('success', 'Class suspension records saved successfully.');
+        return back()->with('success', 'Suspension of Class records saved successfully.');
     }
 
     /**
-     * Update specific suspension
+     * Update the specified suspension of class record in storage.
      */
-    public function update(Request $request, SuspensionOfClass $suspension)
+    public function update(Request $request, SuspensionOfClass $suspensionOfClass)
     {
         $validated = $request->validate([
             'province_city_municipality' => 'nullable|string|max:255',
-            'level' => 'nullable|string|max:255',
-            'date_of_suspension' => 'nullable|date',
-            'remarks' => 'nullable|string',
+            'level'                      => 'nullable|string|max:255',
+            'date_of_suspension'         => 'nullable|date',
+            'remarks'                    => 'nullable|string',
         ]);
 
-        $suspension->update(array_merge($validated, [
+        $suspensionOfClass->update(array_merge($validated, [
             'updated_by' => Auth::id(),
         ]));
 
-        return back()->with('success', 'Class suspension updated successfully.');
+        return back()->with('success', 'Incidents Report saved successfully.');
     }
+
+    /**
+     * Remove the specified suspension of class record from storage.
+     */
+    /* public function destroy(SuspensionOfClass $suspensionOfClass)
+    {
+        $suspensionOfClass->delete();
+
+        return back()->with('success', 'Suspension of Class record deleted successfully.');
+    } */
 }

@@ -21,20 +21,19 @@ import {
     Loader2,
     Plane,
     SaveAll,
-    School, // ✅ 1. Imported School Icon
+    School,
 } from "lucide-react";
 
-// ✅ Forms
 import IncidentMonitoredForm from "@/Components/Effects/IncidentMonitoredForm";
 import CasualtyForm from "@/Components/Effects/CasualtyForm";
 import InjuredForm from "@/Components/Effects/InjuredForm";
 import MissingForm from "@/Components/Effects/MissingForm";
 import AffectedTouristsForm from "@/Components/Effects/AffectedTouristsForm";
 import DamagedHousesForm from "@/Components/Effects/DamagedHousesForm";
-import SuspensionOfClassesForm from "@/Components/Effects/SuspensionOfClassesForm"; // ✅ 1. Imported new form
+import SuspensionOfClassesForm from "@/Components/Effects/SuspensionOfClassesForm";
+import SuspensionOfWorkForm from "@/Components/Effects/SuspensionOfWorkForm";
 import { LiaHouseDamageSolid } from "react-icons/lia";
 
-// ✅ Tabs (aliased to avoid conflict)
 import {
     Tabs as UITabs,
     TabsList,
@@ -45,19 +44,18 @@ import {
 export default function Index() {
     const { flash } = usePage().props;
 
-    // ✅ Stepper state
     const [step, setStep] = useState(1);
-    // ✅ 2. Added new step to the array
+
     const steps = [
         { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
         { label: "Casualties", icon: <UserX size={18} /> },
         { label: "Affected Tourists", icon: <Plane size={18} /> },
         { label: "Damaged Houses", icon: <LiaHouseDamageSolid size={18} /> },
-        { label: "Suspension of Classes", icon: <School size={18} /> },
+        { label: "Suspension of Classes & Work", icon: <School size={18} /> },
     ];
 
-    // ✅ Form State
-    const { data, setData, post, processing, errors } = useForm({
+    // Default state
+    const defaultState = {
         incidents: [
             {
                 id: 1,
@@ -114,7 +112,6 @@ export default function Index() {
                 remarks: "",
             },
         ],
-        // ✅ 3. Initialized state for the new form
         suspension_of_classes: [
             {
                 id: 1,
@@ -125,34 +122,39 @@ export default function Index() {
             },
         ],
         damaged_houses: [
+            { id: 1, barangay: "", partially: "", totally: "", total: 0 },
+        ],
+        suspension_of_work: [
             {
                 id: 1,
-                barangay: "",
-                partially: "",
-                totally: "",
-                total: 0,
+                province_city_municipality: "",
+                date_of_suspension: "",
+                remarks: "",
             },
         ],
-    });
+    };
 
-    // ✅ Restore saved form from localStorage
+    const { data, setData, post, processing, errors } = useForm(defaultState);
+
+    // Restore from localStorage
     useEffect(() => {
         const saved = localStorage.getItem("effectsReport");
         if (saved) {
             try {
-                setData(JSON.parse(saved));
+                const parsed = JSON.parse(saved);
+                setData({ ...defaultState, ...parsed }); // merge defaults + saved
             } catch (e) {
                 console.error("Failed to parse saved effects report", e);
             }
         }
     }, []);
 
-    // ✅ Save form state to localStorage
+    // Save to localStorage
     useEffect(() => {
         localStorage.setItem("effectsReport", JSON.stringify(data));
     }, [data]);
 
-    // ✅ Flash messages
+    // Flash messages
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -170,8 +172,9 @@ export default function Index() {
         post(route("injured.store"), { preserveScroll: true });
         post(route("missing.store"), { preserveScroll: true });
         post(route("affected-tourists.store"), { preserveScroll: true });
-        post(route("suspension-of-classes.store"), { preserveScroll: true });
         post(route("damaged-houses.store"), { preserveScroll: true });
+        post(route("suspension-of-classes.store"), { preserveScroll: true });
+        post(route("suspension-of-works.store"), { preserveScroll: true });
     };
 
     return (
@@ -201,7 +204,7 @@ export default function Index() {
                                     </span>
                                 </CardTitle>
 
-                                {/* ✅ Stepper UI */}
+                                {/* Stepper */}
                                 <div className="relative w-full mt-8">
                                     <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
                                         <div
@@ -300,16 +303,21 @@ export default function Index() {
                                                 <TabsList className="grid grid-cols-3 w-full mb-6">
                                                     <TabsTrigger value="dead">
                                                         Dead (
-                                                        {data.casualties.length}
+                                                        {data?.casualties
+                                                            ?.length || 0}
                                                         )
                                                     </TabsTrigger>
                                                     <TabsTrigger value="injured">
                                                         Injured (
-                                                        {data.injured.length})
+                                                        {data?.injured
+                                                            ?.length || 0}
+                                                        )
                                                     </TabsTrigger>
                                                     <TabsTrigger value="missing">
                                                         Missing (
-                                                        {data.missing.length})
+                                                        {data?.missing
+                                                            ?.length || 0}
+                                                        )
                                                     </TabsTrigger>
                                                 </TabsList>
 
@@ -370,24 +378,52 @@ export default function Index() {
                                         </motion.div>
                                     )}
 
-                                    {/* ✅ 4. Added new step render logic */}
                                     {step === 5 && (
                                         <motion.div
-                                            key="suspension_of_classes"
+                                            key="suspension"
                                             initial={{ opacity: 0, x: 50 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, x: -50 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <SuspensionOfClassesForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
+                                            <UITabs
+                                                defaultValue="classes"
+                                                className="w-full"
+                                            >
+                                                <TabsList className="grid grid-cols-2 w-full mb-6">
+                                                    <TabsTrigger value="classes">
+                                                        Suspension of Classes (
+                                                        {data
+                                                            ?.suspension_of_classes
+                                                            ?.length || 0}
+                                                        )
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="work">
+                                                        Suspension of Work (
+                                                        {data
+                                                            ?.suspension_of_work
+                                                            ?.length || 0}
+                                                        )
+                                                    </TabsTrigger>
+                                                </TabsList>
+
+                                                <TabsContent value="classes">
+                                                    <SuspensionOfClassesForm
+                                                        data={data}
+                                                        setData={setData}
+                                                        errors={errors}
+                                                    />
+                                                </TabsContent>
+                                                <TabsContent value="work">
+                                                    <SuspensionOfWorkForm
+                                                        data={data}
+                                                        setData={setData}
+                                                        errors={errors}
+                                                    />
+                                                </TabsContent>
+                                            </UITabs>
                                         </motion.div>
                                     )}
-
-                                    {/* ✅ Adjusted step number from 4 to 5 */}
                                 </AnimatePresence>
                             </CardContent>
 
@@ -399,8 +435,7 @@ export default function Index() {
                                     onClick={() => setStep(step - 1)}
                                     className="flex items-center gap-2"
                                 >
-                                    <ChevronLeft size={16} />
-                                    Back
+                                    <ChevronLeft size={16} /> Back
                                 </Button>
 
                                 {step < steps.length && (
@@ -409,8 +444,7 @@ export default function Index() {
                                         onClick={() => setStep(step + 1)}
                                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                                     >
-                                        Next
-                                        <ChevronRight size={16} />
+                                        Next <ChevronRight size={16} />
                                     </Button>
                                 )}
                                 {step === steps.length && (

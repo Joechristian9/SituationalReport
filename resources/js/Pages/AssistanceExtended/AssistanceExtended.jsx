@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import AddRowButton from "@/Components/ui/AddRowButton";
 
 export default function AssistanceExtended() {
     const { flash } = usePage().props;
@@ -116,7 +117,8 @@ export default function AssistanceExtended() {
                                             Assistance Extended
                                         </h3>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            Record details of assistance provided.
+                                            Record details of assistance
+                                            provided.
                                         </p>
                                     </div>
                                 </CardTitle>
@@ -135,70 +137,120 @@ export default function AssistanceExtended() {
                                             <table className="w-full text-sm">
                                                 <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                                                     <tr className="text-left text-white font-semibold">
-                                                        <th className="p-3 border-r">Agency / Officials Groups</th>
-                                                        <th className="p-3 border-r">Type / Kind of Assistance</th>
-                                                        <th className="p-3 border-r">Amount</th>
-                                                        <th className="p-3 border-r">Beneficiaries</th>
+                                                        <th className="p-3 border-r">
+                                                            Agency / Officials
+                                                            Groups
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Type / Kind of
+                                                            Assistance
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Amount
+                                                        </th>
+                                                        <th className="p-3 border-r">
+                                                            Beneficiaries
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {data.assistances.map((row) => (
-                                                        <tr
-                                                            key={row.id}
-                                                            className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
-                                                        >
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="agency_officials_groups"
-                                                                    value={row.agency_officials_groups}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "agency_officials_groups", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter agency/officials"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="type_kind_of_assistance"
-                                                                    value={row.type_kind_of_assistance}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "type_kind_of_assistance", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter type of assistance"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="number"
-                                                                    name="amount"
-                                                                    value={row.amount}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "amount", e.target.value)
-                                                                    }
-                                                                    placeholder="0.00"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-                                                            <td className="p-3 border-r">
-                                                                <input
-                                                                    type="text"
-                                                                    name="beneficiaries"
-                                                                    value={row.beneficiaries}
-                                                                    onChange={(e) =>
-                                                                        handleChange(row.id, "beneficiaries", e.target.value)
-                                                                    }
-                                                                    placeholder="Enter beneficiaries"
-                                                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                                />
-                                                            </td>
-
-
-                                                        </tr>
-                                                    ))}
+                                                    {data.assistances.map(
+                                                        (row) => (
+                                                            <tr
+                                                                key={row.id}
+                                                                className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
+                                                            >
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="agency_officials_groups"
+                                                                        value={
+                                                                            row.agency_officials_groups
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "agency_officials_groups",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter agency/officials"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="type_kind_of_assistance"
+                                                                        value={
+                                                                            row.type_kind_of_assistance
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "type_kind_of_assistance",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter type of assistance"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="number"
+                                                                        name="amount"
+                                                                        value={
+                                                                            row.amount
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "amount",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="0.00"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-3 border-r">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="beneficiaries"
+                                                                        value={
+                                                                            row.beneficiaries
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            handleChange(
+                                                                                row.id,
+                                                                                "beneficiaries",
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder="Enter beneficiaries"
+                                                                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                    />
+                                                                </td>
+                                                            </tr>
+                                                        )
+                                                    )}
                                                 </tbody>
                                             </table>
 
@@ -212,14 +264,10 @@ export default function AssistanceExtended() {
 
                                     {/* Add Row Button */}
                                     <div className="flex justify-start mt-4">
-                                        <Button
-                                            type="button"
+                                        <AddRowButton
                                             onClick={addRow}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                                        >
-                                            <PlusCircle className="w-4 h-4" />
-                                            Add Row
-                                        </Button>
+                                            label="Add Row"
+                                        />
                                     </div>
                                 </motion.div>
                             </CardContent>
