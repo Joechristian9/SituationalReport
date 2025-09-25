@@ -87,7 +87,7 @@ export default function WeatherForm({ data, setData, errors }) {
                     needed.
                 </p>
             </div>
-            <pre>{JSON.stringify(modificationData, undefined, 3)}</pre>
+            {/* <pre>{JSON.stringify(modificationData, undefined, 3)}</pre> */}
             {/* Table */}
             <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
                 <table className="w-full text-sm border-collapse">
