@@ -199,57 +199,103 @@ export default function WeatherForm({ data, setData, errors }) {
                                                         </p>
                                                     )}
 
-                                                {fieldHistory.length > 0 && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Info className="w-4 h-4 text-gray-500 hover:text-blue-600 cursor-pointer absolute top-1 right-1" />
-                                                        </TooltipTrigger>
-                                                        <TooltipContent
-                                                            side="right"
-                                                            className="max-w-xs"
-                                                        >
-                                                            <div className="text-sm space-y-1">
-                                                                {fieldHistory.map(
-                                                                    (
-                                                                        entry,
-                                                                        i
-                                                                    ) => (
-                                                                        <p
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                        >
-                                                                            <span className="font-semibold">
-                                                                                {
-                                                                                    entry
-                                                                                        .user
-                                                                                        ?.name
-                                                                                }
-                                                                            </span>{" "}
-                                                                            changed
-                                                                            from{" "}
-                                                                            <span className="text-red-600">
-                                                                                {entry.old ??
-                                                                                    "N/A"}
-                                                                            </span>{" "}
-                                                                            to{" "}
-                                                                            <span className="text-green-600">
-                                                                                {entry.new ??
-                                                                                    "N/A"}
-                                                                            </span>
-                                                                            <br />
-                                                                            <span className="text-xs text-gray-400">
+                                                {fieldHistory.length > 0 &&
+                                                    (() => {
+                                                        // Get the latest change (the first item in the sorted array)
+                                                        const latestChange =
+                                                            fieldHistory[0];
+
+                                                        // Get the previous change (the second item), if it exists
+                                                        const previousChange =
+                                                            fieldHistory.length >
+                                                            1
+                                                                ? fieldHistory[1]
+                                                                : null;
+
+                                                        return (
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Info className="w-4 h-4 text-gray-400 absolute top-3 right-2 cursor-pointer" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent
+                                                                    side="right"
+                                                                    className="max-w-xs bg-gray-800 text-white p-3 rounded-lg shadow-lg"
+                                                                >
+                                                                    <div className="text-sm space-y-2">
+                                                                        {/* Display the Latest Change */}
+                                                                        <div>
+                                                                            <p className="text-sm font-bold text-white mb-1">
+                                                                                Latest
+                                                                                Change:
+                                                                            </p>
+                                                                            <p>
+                                                                                <span className="font-semibold text-blue-300">
+                                                                                    {
+                                                                                        latestChange
+                                                                                            .user
+                                                                                            ?.name
+                                                                                    }
+                                                                                </span>{" "}
+                                                                                changed
+                                                                                from{" "}
+                                                                                <span className="text-red-400 font-mono">
+                                                                                    {latestChange.old ??
+                                                                                        "nothing"}
+                                                                                </span>{" "}
+                                                                                to{" "}
+                                                                                <span className="text-green-400 font-mono">
+                                                                                    {latestChange.new ??
+                                                                                        "nothing"}
+                                                                                </span>
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-400">
                                                                                 {new Date(
-                                                                                    entry.date
+                                                                                    latestChange.date
                                                                                 ).toLocaleString()}
-                                                                            </span>
-                                                                        </p>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        {/* Conditionally display the Previous Change if it exists */}
+                                                                        {previousChange && (
+                                                                            <div className="mt-2 pt-2 border-t border-gray-600">
+                                                                                <p className="text-sm font-bold text-gray-300 mb-1">
+                                                                                    Previous
+                                                                                    Change:
+                                                                                </p>
+                                                                                <p>
+                                                                                    <span className="font-semibold text-blue-300">
+                                                                                        {
+                                                                                            previousChange
+                                                                                                .user
+                                                                                                ?.name
+                                                                                        }
+                                                                                    </span>{" "}
+                                                                                    changed
+                                                                                    from{" "}
+                                                                                    <span className="text-red-400 font-mono">
+                                                                                        {previousChange.old ??
+                                                                                            "nothing"}
+                                                                                    </span>{" "}
+                                                                                    to{" "}
+                                                                                    <span className="text-green-400 font-mono">
+                                                                                        {previousChange.new ??
+                                                                                            "nothing"}
+                                                                                    </span>
+                                                                                </p>
+                                                                                <p className="text-xs text-gray-400">
+                                                                                    {new Date(
+                                                                                        previousChange.date
+                                                                                    ).toLocaleString()}
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        );
+                                                    })()}
                                             </td>
                                         );
                                     })}
