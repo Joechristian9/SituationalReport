@@ -45,15 +45,64 @@ Route::middleware(['auth', 'role:user'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    Route::resource('situation-reports', SituationOverviewController::class)
-        ->only(['index', 'store', 'update']);
 
-    Route::post('/weather-reports', [SituationOverviewController::class, 'store'])
-        ->name('weather-reports.store');
+    // Situation Reports Index
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
         ->name('situation-reports.index');
-    Route::get('/weather-modifications', [SituationOverviewController::class, 'weatherModification'])
-        ->name('situation-reports.weather');
+
+    /* ---------------- Weather Reports ---------------- */
+    Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
+        ->name('weather-reports.store');
+    Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
+        ->name('modifications.weather');
+
+    /* ---------------- Water Level Reports ---------------- */
+    Route::post('/water-level-reports', [SituationOverviewController::class, 'storeWaterLevel'])
+        ->name('water-level-reports.store');
+    Route::get('/modifications/water-level', [SituationOverviewController::class, 'waterLevelModification'])
+        ->name('modifications.water-level');
+
+    /* ---------------- Electricity Reports ---------------- */
+    Route::post('/electricity-reports', [SituationOverviewController::class, 'storeElectricity'])
+        ->name('electricity-reports.store');
+    Route::get('/modifications/electricity', [SituationOverviewController::class, 'electricityModification'])
+        ->name('modifications.electricity');
+
+    /* ---------------- Water Service Reports ---------------- */
+    Route::post('/water-service-reports', [SituationOverviewController::class, 'storeWaterService'])
+        ->name('water-service-reports.store');
+    Route::get('/modifications/water-service', [SituationOverviewController::class, 'waterServiceModification'])
+        ->name('modifications.water-service');
+
+    /* ---------------- Communication Reports ---------------- */
+    Route::post('/communication-reports', [SituationOverviewController::class, 'storeCommunication'])
+        ->name('communication-reports.store');
+    Route::get('/modifications/communication', [SituationOverviewController::class, 'communicationModification'])
+        ->name('modifications.communication');
+
+    /* ---------------- Road Reports ---------------- */
+    Route::post('/road-reports', [SituationOverviewController::class, 'storeRoad'])
+        ->name('road-reports.store');
+    Route::get('/modifications/road', [SituationOverviewController::class, 'roadModification'])
+        ->name('modifications.road');
+
+    /* ---------------- Bridge Reports ---------------- */
+    Route::post('/bridge-reports', [SituationOverviewController::class, 'storeBridge'])
+        ->name('bridge-reports.store');
+    Route::get('/modifications/bridge', [SituationOverviewController::class, 'bridgeModification'])
+        ->name('modifications.bridge');
+
+    // Modifications
+    Route::prefix('modifications')->group(function () {
+        Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
+        Route::get('/water-level', [SituationOverviewController::class, 'waterLevelModification'])->name('modifications.water-level');
+        Route::get('/electricity', [SituationOverviewController::class, 'electricityModification'])->name('modifications.electricity');
+        Route::get('/water-service', [SituationOverviewController::class, 'waterServiceModification'])->name('modifications.water-service');
+        Route::get('/communication', [SituationOverviewController::class, 'communicationModification'])->name('modifications.communication');
+        Route::get('/road', [SituationOverviewController::class, 'roadModification'])->name('modifications.road');
+        Route::get('/bridge', [SituationOverviewController::class, 'bridgeModification'])->name('modifications.bridge');
+    });
+
 
     // Pre-Emptive Reports
     Route::resource('preemptive-reports', PreEmptiveReportController::class)

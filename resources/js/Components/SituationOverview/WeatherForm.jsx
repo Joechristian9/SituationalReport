@@ -1,11 +1,11 @@
 // resources/js/Components/SituationOverview/WeatherForm.jsx
-import React, { useEffect } from "react";
-import { Info, Plus } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Info } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import useAppUrl from "@/hooks/useAppUrl";
-import { Clock } from "lucide-react";
+import { toast } from "react-hot-toast";
 import {
     Tooltip,
     TooltipTrigger,
@@ -13,67 +13,97 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function WeatherForm({ data, setData, errors }) {
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newReports = [...data.reports];
-        newReports[index][name] = value;
-        setData("reports", newReports);
-    };
-
     const APP_URL = useAppUrl();
+    const [modifiedFields, setModifiedFields] = useState({}); // Track changed fields per row
+
+    // Fetch modification data with react-query
     const {
         data: modificationData,
-        isLoading,
         isError,
         error,
-        refetch,
     } = useQuery({
-        queryKey: ["weather"],
+        queryKey: ["weather-modifications"],
         queryFn: async () => {
             const { data } = await axios.get(
-                `${APP_URL}/weather-modifications`
+                `${APP_URL}/modifications/weather`
             );
             return data;
         },
-        keepPreviousData: true,
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 1000 * 60 * 5,
     });
 
-    const handleAddRow = () => {
-        setData("reports", [
-            ...data.reports,
-            {
-                id: data.reports.length + 1,
-                municipality: "",
-                sky_condition: "",
-                wind: "",
-                precipitation: "",
-                sea_condition: "",
-            },
-        ]);
-    };
-
-    // On component mount, merge latest modification into the report rows
+    // Merge latest modifications on mount (without overwriting unchanged fields)
     useEffect(() => {
         if (modificationData?.latest) {
-            const updatedReports = data.reports.map((row) => {
+            const updatedReports = (data.reports || []).map((row, rowIndex) => {
                 const newRow = { ...row };
                 Object.keys(row).forEach((field) => {
+                    // Only update if the user hasn't modified this field yet
+                    const rowModifiedFields = modifiedFields[rowIndex] || {};
                     const change =
                         modificationData.latest.changed_fields?.[field];
-                    if (change) {
+                    if (change && !rowModifiedFields[field]) {
                         newRow[field] = change.new ?? change.old ?? row[field];
                     }
                 });
                 return newRow;
             });
-            setData((prev) => ({ ...prev, reports: updatedReports }));
+            setData({ ...data, reports: updatedReports });
         }
     }, [modificationData]);
+
+    // Handle input changes
+    const handleInputChange = (index, event) => {
+        const { name, value } = event.target;
+        const updatedReports = [...data.reports];
+        updatedReports[index][name] = value;
+        setData({ ...data, reports: updatedReports });
+
+        // Mark this field as modified by the user
+        setModifiedFields((prev) => ({
+            ...prev,
+            [index]: {
+                ...prev[index],
+                [name]: true,
+            },
+        }));
+    };
+
+    // Add new row
+    const handleAddRow = () => {
+        setData({
+            ...data,
+            reports: [
+                ...data.reports,
+                {
+                    id: data.reports.length + 1,
+                    municipality: "",
+                    sky_condition: "",
+                    wind: "",
+                    precipitation: "",
+                    sea_condition: "",
+                },
+            ],
+        });
+    };
+
+    // Submit handler
+    const handleSubmit = async () => {
+        try {
+            await axios.post(`${APP_URL}/weather-reports`, {
+                reports: data.reports,
+            });
+            toast.success("Weather reports saved successfully!");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save weather reports.");
+        }
+    };
 
     if (isError) {
         return <div className="text-red-500">Error: {error.message}</div>;
     }
+
     return (
         <div className="space-y-6 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
             {/* Header */}
@@ -86,7 +116,7 @@ export default function WeatherForm({ data, setData, errors }) {
                     needed.
                 </p>
             </div>
-            {/* <pre>{JSON.stringify(modificationData, undefined, 3)}</pre> */}
+
             {/* Table */}
             <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
                 <table className="w-full text-sm border-collapse">
@@ -115,13 +145,17 @@ export default function WeatherForm({ data, setData, errors }) {
                                     className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/40 transition-colors"
                                 >
                                     {fields.map((field) => {
-                                        // Determine the value: use latest modification if exists, else original row value
-                                        const value =
-                                            modificationData?.latest
-                                                ?.changed_fields?.[field]
-                                                ?.new ??
-                                            row[field] ??
-                                            "";
+                                        const fieldHistory =
+                                            modificationData?.history?.[
+                                                field
+                                            ] || [];
+                                        const lastEntry = fieldHistory
+                                            .slice()
+                                            .sort(
+                                                (a, b) =>
+                                                    new Date(b.date) -
+                                                    new Date(a.date)
+                                            )[0];
 
                                         return (
                                             <td
@@ -143,105 +177,79 @@ export default function WeatherForm({ data, setData, errors }) {
                                                     )}`}
                                                     className="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                                 />
-                                                {modificationData?.history?.[
-                                                    field
-                                                ]?.length > 0 &&
-                                                    (() => {
-                                                        const fieldHistory =
-                                                            modificationData
-                                                                .history[field];
 
-                                                        // Sort descending by date
-                                                        const sorted = [
-                                                            ...fieldHistory,
-                                                        ].sort(
-                                                            (a, b) =>
-                                                                new Date(
-                                                                    b.date
-                                                                ) -
-                                                                new Date(a.date)
-                                                        );
-
-                                                        const lastEntry =
-                                                            sorted[0]; // latest modification for this field
-
-                                                        if (!lastEntry)
-                                                            return null;
-
-                                                        return (
-                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                Last modified by{" "}
-                                                                <span className="font-semibold text-blue-600">
-                                                                    {
-                                                                        lastEntry
-                                                                            .user
-                                                                            ?.name
-                                                                    }
-                                                                </span>{" "}
-                                                                on{" "}
-                                                                {new Date(
-                                                                    lastEntry.date
-                                                                ).toLocaleString()}
-                                                            </p>
-                                                        );
-                                                    })()}
-
-                                                {/* Tooltip for full history */}
-                                                {modificationData?.history?.[
-                                                    field
-                                                ]?.length > 0 && (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Info className="w-4 h-4 text-gray-500 hover:text-blue-600 cursor-pointer absolute top-1 right-1" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent
-                                                                side="right"
-                                                                className="max-w-xs"
-                                                            >
-                                                                <div className="text-sm space-y-1">
-                                                                    {modificationData.history[
-                                                                        field
-                                                                    ].map(
-                                                                        (
-                                                                            entry,
-                                                                            i
-                                                                        ) => (
-                                                                            <p
-                                                                                key={
-                                                                                    i
-                                                                                }
-                                                                            >
-                                                                                <span className="font-semibold">
-                                                                                    {
-                                                                                        entry
-                                                                                            .user
-                                                                                            .name
-                                                                                    }
-                                                                                </span>{" "}
-                                                                                changed
-                                                                                from{" "}
-                                                                                <span className="text-red-600">
-                                                                                    {entry.old ??
-                                                                                        "N/A"}
-                                                                                </span>{" "}
-                                                                                to{" "}
-                                                                                <span className="text-green-600">
-                                                                                    {entry.new ??
-                                                                                        "N/A"}
-                                                                                </span>
-                                                                                <br />
-                                                                                <span className="text-xs text-gray-400">
-                                                                                    {new Date(
-                                                                                        entry.date
-                                                                                    ).toLocaleString()}
-                                                                                </span>
-                                                                            </p>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                            </TooltipContent>
-                                                        </Tooltip>
+                                                {/* Show last modified only if this field was updated */}
+                                                {lastEntry &&
+                                                    !modifiedFields[index]?.[
+                                                        field
+                                                    ] && (
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Last modified by{" "}
+                                                            <span className="font-semibold text-blue-600">
+                                                                {
+                                                                    lastEntry
+                                                                        .user
+                                                                        ?.name
+                                                                }
+                                                            </span>{" "}
+                                                            on{" "}
+                                                            {new Date(
+                                                                lastEntry.date
+                                                            ).toLocaleString()}
+                                                        </p>
                                                     )}
+
+                                                {fieldHistory.length > 0 && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-500 hover:text-blue-600 cursor-pointer absolute top-1 right-1" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent
+                                                            side="right"
+                                                            className="max-w-xs"
+                                                        >
+                                                            <div className="text-sm space-y-1">
+                                                                {fieldHistory.map(
+                                                                    (
+                                                                        entry,
+                                                                        i
+                                                                    ) => (
+                                                                        <p
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                        >
+                                                                            <span className="font-semibold">
+                                                                                {
+                                                                                    entry
+                                                                                        .user
+                                                                                        ?.name
+                                                                                }
+                                                                            </span>{" "}
+                                                                            changed
+                                                                            from{" "}
+                                                                            <span className="text-red-600">
+                                                                                {entry.old ??
+                                                                                    "N/A"}
+                                                                            </span>{" "}
+                                                                            to{" "}
+                                                                            <span className="text-green-600">
+                                                                                {entry.new ??
+                                                                                    "N/A"}
+                                                                            </span>
+                                                                            <br />
+                                                                            <span className="text-xs text-gray-400">
+                                                                                {new Date(
+                                                                                    entry.date
+                                                                                ).toLocaleString()}
+                                                                            </span>
+                                                                        </p>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
                                             </td>
                                         );
                                     })}
@@ -251,7 +259,7 @@ export default function WeatherForm({ data, setData, errors }) {
                     </tbody>
                 </table>
 
-                {errors.reports && (
+                {errors?.reports && (
                     <div className="text-red-500 text-sm mt-2 px-3">
                         {errors.reports}
                     </div>
@@ -271,6 +279,14 @@ export default function WeatherForm({ data, setData, errors }) {
                     for Sea Condition.
                 </p>
             </div>
+
+            {/* Save Button */}
+            <button
+                onClick={handleSubmit}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50"
+            >
+                Save Weather Report
+            </button>
         </div>
     );
 }

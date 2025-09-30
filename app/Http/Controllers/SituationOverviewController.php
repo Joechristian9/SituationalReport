@@ -2,155 +2,166 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Modification;
 use App\Models\WeatherReport;
 use App\Models\WaterLevel;
 use App\Models\ElectricityService;
 use App\Models\WaterService;
 use App\Models\Communication;
 use App\Models\Road;
-use App\Models\Bridge; // ✅ Added
+use App\Models\Bridge;
+use App\Models\Modification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class SituationOverviewController extends Controller
 {
+    /* ------------------- INDEX ------------------- */
     public function index()
     {
-        $weatherReports = WeatherReport::latest()->get();
-        $waterLevels    = WaterLevel::latest()->get();
-        $electricity    = ElectricityService::latest()->get();
-        $waterServices  = WaterService::latest()->get();
-        $communications = Communication::latest()->get();
-        $roads          = Road::latest()->get();
-        $bridges        = Bridge::latest()->get(); // ✅ Added
-
         return Inertia::render('SituationReports/Index', [
-            'weatherReports' => $weatherReports,
-            'waterLevels'    => $waterLevels,
-            'electricity'    => $electricity,
-            'waterServices'  => $waterServices,
-            'communications' => $communications,
-            'roads'          => $roads,
-            'bridges'        => $bridges, // ✅ Added
+            'weatherReports' => WeatherReport::latest()->get(),
+            'waterLevels'    => WaterLevel::latest()->get(),
+            'electricity'    => ElectricityService::latest()->get(),
+            'waterServices'  => WaterService::latest()->get(),
+            'communications' => Communication::latest()->get(),
+            'roads'          => Road::latest()->get(),
+            'bridges'        => Bridge::latest()->get(),
         ]);
     }
 
-    public function store(Request $request)
+    /* ------------------- STORE METHODS ------------------- */
+    public function storeWeather(Request $request)
+    {
+        // 1. Stricter Validation Rules
+        $validated = $request->validate([
+            'reports' => 'required|array',
+            // ID must be a valid integer that exists in the weather_reports table, or can be null.
+            'reports.*.id' => [
+                'nullable',
+                'integer',
+                Rule::exists('weather_reports', 'id')
+            ],
+            // Municipality is now required to create a new record.
+            // It can be null only if other fields are also null (which we handle below).
+            'reports.*.municipality'  => 'required|string|max:255',
+            'reports.*.sky_condition' => 'nullable|string|max:255',
+            'reports.*.wind'          => 'nullable|string|max:255',
+            'reports.*.precipitation' => 'nullable|string|max:255',
+            'reports.*.sea_condition' => 'nullable|string|max:255',
+        ]);
+
+        foreach ($validated['reports'] as $reportData) {
+            // 2. More Robust Saving Logic
+
+            // If an ID exists, we find and update that specific record.
+            if (!empty($reportData['id'])) {
+                $weatherReport = WeatherReport::find($reportData['id']);
+                if ($weatherReport) {
+                    $weatherReport->update([
+                        'municipality'  => $reportData['municipality'],
+                        'sky_condition' => $reportData['sky_condition'],
+                        'wind'          => $reportData['wind'],
+                        'precipitation' => $reportData['precipitation'],
+                        'sea_condition' => $reportData['sea_condition'],
+                        'updated_by'    => Auth::id(),
+                    ]);
+                }
+            }
+            // If no ID, it's a new record. We create it.
+            else {
+                // Skip creating a record if the municipality is empty.
+                if (empty($reportData['municipality'])) {
+                    continue;
+                }
+
+                WeatherReport::create([
+                    'municipality'  => $reportData['municipality'],
+                    'sky_condition' => $reportData['sky_condition'],
+                    'wind'          => $reportData['wind'],
+                    'precipitation' => $reportData['precipitation'],
+                    'sea_condition' => $reportData['sea_condition'],
+                    'user_id'       => Auth::id(),
+                    'updated_by'    => Auth::id(),
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Weather reports saved successfully!');
+    }
+
+
+
+    public function storeWaterLevel(Request $request)
     {
         $validated = $request->validate([
-            // Weather
-            'reports' => 'required|array',
-            'reports.*.municipality'   => 'nullable|string|max:255',
-            'reports.*.sky_condition'  => 'nullable|string|max:255',
-            'reports.*.wind'           => 'nullable|string|max:255',
-            'reports.*.precipitation'  => 'nullable|string|max:255',
-            'reports.*.sea_condition'  => 'nullable|string|max:255',
-
-            // Water levels
             'waterLevels' => 'required|array',
             'waterLevels.*.gauging_station' => 'nullable|string|max:255',
             'waterLevels.*.current_level'   => 'nullable|numeric',
             'waterLevels.*.alarm_level'     => 'nullable|numeric',
             'waterLevels.*.critical_level'  => 'nullable|numeric',
             'waterLevels.*.affected_areas'  => 'nullable|string|max:255',
-
-            // Electricity
-            'electricityServices' => 'required|array',
-            'electricityServices.*.status'             => 'nullable|string|max:255',
-            'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
-            'electricityServices.*.remarks'            => 'nullable|string|max:500',
-
-            // Water services
-            'waterServices' => 'required|array',
-            'waterServices.*.source_of_water'   => 'nullable|string|max:255',
-            'waterServices.*.barangays_served'  => 'nullable|string|max:500',
-            'waterServices.*.status'            => 'nullable|string|max:255',
-            'waterServices.*.remarks'           => 'nullable|string|max:500',
-
-            // Communications
-            'communications' => 'required|array',
-            'communications.*.globe'          => 'nullable|string|max:255',
-            'communications.*.smart'          => 'nullable|string|max:255',
-            'communications.*.pldt_landline'  => 'nullable|string|max:255',
-            'communications.*.pldt_internet'  => 'nullable|string|max:255',
-            'communications.*.vhf'            => 'nullable|string|max:255',
-            'communications.*.remarks'        => 'nullable|string|max:500',
-
-            // Roads
-            'roads' => 'required|array',
-            'roads.*.road_classification' => 'nullable|string|max:255',
-            'roads.*.name_of_road'        => 'nullable|string|max:255',
-            'roads.*.status'              => 'nullable|string|max:255',
-            'roads.*.areas_affected'      => 'nullable|string|max:500',
-            'roads.*.re_routing'          => 'nullable|string|max:500',
-            'roads.*.remarks'             => 'nullable|string|max:500',
-
-            // ✅ Bridges
-            'bridges' => 'required|array',
-            'bridges.*.road_classification' => 'nullable|string|max:255',
-            'bridges.*.name_of_bridge'      => 'nullable|string|max:255',
-            'bridges.*.status'              => 'nullable|string|max:255',
-            'bridges.*.areas_affected'      => 'nullable|string|max:500',
-            'bridges.*.re_routing'          => 'nullable|string|max:500',
-            'bridges.*.remarks'             => 'nullable|string|max:500',
         ]);
 
-        // ✅ Weather Reports
-        foreach ($validated['reports'] as $report) {
-            if (!empty(array_filter($report))) {
-                WeatherReport::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
-                    [
-                        'municipality' => $report['municipality'],
-                        'sky_condition' => $report['sky_condition'] ?? null,
-                        'wind'          => $report['wind'] ?? null,
-                        'precipitation' => $report['precipitation'] ?? null,
-                        'sea_condition' => $report['sea_condition'] ?? null,
-                        'updated_by'    => Auth::id(),
-                    ]
-                );
-            }
-        }
-
-        // ✅ Water Levels
         foreach ($validated['waterLevels'] as $station) {
             if (!empty(array_filter($station))) {
                 WaterLevel::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id(), 'gauging_station' => $station['gauging_station']],
                     [
-                        'gauging_station' => $station['gauging_station'] ?? null,
-                        'current_level'   => $station['current_level'] ?? null,
-                        'alarm_level'     => $station['alarm_level'] ?? null,
-                        'critical_level'  => $station['critical_level'] ?? null,
-                        'affected_areas'  => $station['affected_areas'] ?? null,
-                        'updated_by'      => Auth::id(),
+                        'current_level'  => $station['current_level'] ?? null,
+                        'alarm_level'    => $station['alarm_level'] ?? null,
+                        'critical_level' => $station['critical_level'] ?? null,
+                        'affected_areas' => $station['affected_areas'] ?? null,
+                        'updated_by'     => Auth::id(),
                     ]
                 );
             }
         }
 
-        // ✅ Electricity
+        return response()->json(['message' => 'Water level reports saved successfully']);
+    }
+
+    public function storeElectricity(Request $request)
+    {
+        $validated = $request->validate([
+            'electricityServices' => 'required|array',
+            'electricityServices.*.status' => 'nullable|string|max:255',
+            'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
+            'electricityServices.*.remarks' => 'nullable|string|max:500',
+        ]);
+
         foreach ($validated['electricityServices'] as $service) {
             if (!empty(array_filter($service))) {
                 ElectricityService::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id()],
                     [
-                        'status'             => $service['status'] ?? null,
+                        'status' => $service['status'] ?? null,
                         'barangays_affected' => $service['barangays_affected'] ?? null,
-                        'remarks'            => $service['remarks'] ?? null,
-                        'updated_by'         => Auth::id(),
+                        'remarks' => $service['remarks'] ?? null,
+                        'updated_by' => Auth::id(),
                     ]
                 );
             }
         }
 
-        // ✅ Water Services
+        return response()->json(['message' => 'Electricity service reports saved successfully']);
+    }
+
+    public function storeWaterService(Request $request)
+    {
+        $validated = $request->validate([
+            'waterServices' => 'required|array',
+            'waterServices.*.source_of_water'  => 'nullable|string|max:255',
+            'waterServices.*.barangays_served' => 'nullable|string|max:500',
+            'waterServices.*.status'           => 'nullable|string|max:255',
+            'waterServices.*.remarks'          => 'nullable|string|max:500',
+        ]);
+
         foreach ($validated['waterServices'] as $water) {
             if (!empty(array_filter($water))) {
                 WaterService::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id()],
                     [
                         'source_of_water'  => $water['source_of_water'] ?? null,
                         'barangays_served' => $water['barangays_served'] ?? null,
@@ -162,84 +173,116 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // ✅ Communications
+        return response()->json(['message' => 'Water service reports saved successfully']);
+    }
+
+    public function storeCommunication(Request $request)
+    {
+        $validated = $request->validate([
+            'communications' => 'required|array',
+            'communications.*.globe' => 'nullable|string|max:255',
+            'communications.*.smart' => 'nullable|string|max:255',
+            'communications.*.pldt_landline' => 'nullable|string|max:255',
+            'communications.*.pldt_internet' => 'nullable|string|max:255',
+            'communications.*.vhf' => 'nullable|string|max:255',
+            'communications.*.remarks' => 'nullable|string|max:500',
+        ]);
+
         foreach ($validated['communications'] as $comm) {
             if (!empty(array_filter($comm))) {
                 Communication::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id()],
                     [
-                        'globe'         => $comm['globe'] ?? null,
-                        'smart'         => $comm['smart'] ?? null,
+                        'globe' => $comm['globe'] ?? null,
+                        'smart' => $comm['smart'] ?? null,
                         'pldt_landline' => $comm['pldt_landline'] ?? null,
                         'pldt_internet' => $comm['pldt_internet'] ?? null,
-                        'vhf'           => $comm['vhf'] ?? null,
-                        'remarks'       => $comm['remarks'] ?? null,
-                        'updated_by'    => Auth::id(),
+                        'vhf' => $comm['vhf'] ?? null,
+                        'remarks' => $comm['remarks'] ?? null,
+                        'updated_by' => Auth::id(),
                     ]
                 );
             }
         }
 
-        // ✅ Roads
+        return response()->json(['message' => 'Communication reports saved successfully']);
+    }
+
+    public function storeRoad(Request $request)
+    {
+        $validated = $request->validate([
+            'roads' => 'required|array',
+            'roads.*.road_classification' => 'nullable|string|max:255',
+            'roads.*.name_of_road'        => 'nullable|string|max:255',
+            'roads.*.status'              => 'nullable|string|max:255',
+            'roads.*.areas_affected'      => 'nullable|string|max:500',
+            'roads.*.re_routing'          => 'nullable|string|max:500',
+            'roads.*.remarks'             => 'nullable|string|max:500',
+        ]);
+
         foreach ($validated['roads'] as $road) {
             if (!empty(array_filter($road))) {
                 Road::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id(), 'name_of_road' => $road['name_of_road']],
                     [
                         'road_classification' => $road['road_classification'] ?? null,
-                        'name_of_road'        => $road['name_of_road'] ?? null,
-                        'status'              => $road['status'] ?? null,
-                        'areas_affected'      => $road['areas_affected'] ?? null,
-                        're_routing'          => $road['re_routing'] ?? null,
-                        'remarks'             => $road['remarks'] ?? null,
-                        'updated_by'          => Auth::id(),
+                        'status' => $road['status'] ?? null,
+                        'areas_affected' => $road['areas_affected'] ?? null,
+                        're_routing' => $road['re_routing'] ?? null,
+                        'remarks' => $road['remarks'] ?? null,
+                        'updated_by' => Auth::id(),
                     ]
                 );
             }
         }
 
-        // ✅ Bridges
+        return response()->json(['message' => 'Road reports saved successfully']);
+    }
+
+    public function storeBridge(Request $request)
+    {
+        $validated = $request->validate([
+            'bridges' => 'required|array',
+            'bridges.*.road_classification' => 'nullable|string|max:255',
+            'bridges.*.name_of_bridge'     => 'nullable|string|max:255',
+            'bridges.*.status'             => 'nullable|string|max:255',
+            'bridges.*.areas_affected'     => 'nullable|string|max:500',
+            'bridges.*.re_routing'         => 'nullable|string|max:500',
+            'bridges.*.remarks'            => 'nullable|string|max:500',
+        ]);
+
         foreach ($validated['bridges'] as $bridge) {
             if (!empty(array_filter($bridge))) {
                 Bridge::updateOrCreate(
-                    ['user_id' => Auth::id()], // lookup
+                    ['user_id' => Auth::id(), 'name_of_bridge' => $bridge['name_of_bridge']],
                     [
                         'road_classification' => $bridge['road_classification'] ?? null,
-                        'name_of_bridge'      => $bridge['name_of_bridge'] ?? null,
-                        'status'              => $bridge['status'] ?? null,
-                        'areas_affected'      => $bridge['areas_affected'] ?? null,
-                        're_routing'          => $bridge['re_routing'] ?? null,
-                        'remarks'             => $bridge['remarks'] ?? null,
-                        'updated_by'          => Auth::id(),
+                        'status' => $bridge['status'] ?? null,
+                        'areas_affected' => $bridge['areas_affected'] ?? null,
+                        're_routing' => $bridge['re_routing'] ?? null,
+                        'remarks' => $bridge['remarks'] ?? null,
+                        'updated_by' => Auth::id(),
                     ]
                 );
             }
         }
-        return redirect()
-            ->route('situation-reports.index')
-            ->with('success', 'Facility(ies) saved successfully.');
+
+        return response()->json(['message' => 'Bridge reports saved successfully']);
     }
 
-    public function weatherModification()
+    /* ------------------- MODIFICATIONS ------------------- */
+    private function buildModificationResponse($modelType)
     {
-        // Get all modifications for WeatherReport, latest first
-        $modifications = Modification::where('model_type', 'WeatherReport')
+        $modifications = Modification::where('model_type', $modelType)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
 
         $history = [];
-
         foreach ($modifications as $mod) {
             foreach ($mod->changed_fields as $field => $change) {
-                // Use the user stored in the field change, fallback to the modification's user
-                $fieldUser = $change['user'] ?? [
-                    'id'   => $mod->user->id ?? null,
-                    'name' => $mod->user->name ?? 'Unknown',
-                ];
-
                 $history[$field][] = [
-                    'user' => $fieldUser,
+                    'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
                     'old'  => $change['old'] ?? null,
                     'new'  => $change['new'] ?? null,
                     'date' => $mod->created_at,
@@ -247,7 +290,6 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Get the latest modification and ensure each field includes the user info
         $latest = $modifications->first();
         if ($latest) {
             $latestChangedFields = [];
@@ -255,10 +297,7 @@ class SituationOverviewController extends Controller
                 $latestChangedFields[$field] = [
                     'old'  => $change['old'] ?? null,
                     'new'  => $change['new'] ?? null,
-                    'user' => $change['user'] ?? [
-                        'id'   => $latest->user->id ?? null,
-                        'name' => $latest->user->name ?? 'Unknown',
-                    ],
+                    'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
             $latest->changed_fields = $latestChangedFields;
@@ -268,5 +307,34 @@ class SituationOverviewController extends Controller
             'history' => $history,
             'latest'  => $latest,
         ]);
+    }
+
+    public function weatherModification()
+    {
+        return $this->buildModificationResponse('WeatherReport');
+    }
+    public function waterLevelModification()
+    {
+        return $this->buildModificationResponse('WaterLevel');
+    }
+    public function electricityModification()
+    {
+        return $this->buildModificationResponse('ElectricityService');
+    }
+    public function waterServiceModification()
+    {
+        return $this->buildModificationResponse('WaterService');
+    }
+    public function communicationModification()
+    {
+        return $this->buildModificationResponse('Communication');
+    }
+    public function roadModification()
+    {
+        return $this->buildModificationResponse('Road');
+    }
+    public function bridgeModification()
+    {
+        return $this->buildModificationResponse('Bridge');
     }
 }

@@ -1,4 +1,3 @@
-// resources/js/Pages/SituationReports/Index.jsx
 import { useEffect, useState } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
@@ -22,14 +21,11 @@ import {
     Zap,
     Droplet,
     Phone,
-    Route, // ✅ replaced Road with Route
+    Route,
     Landmark,
-    Save,
-    Loader2,
-    SaveAll,
 } from "lucide-react";
 
-// ✅ Forms
+// Import all your form components
 import WeatherForm from "@/Components/SituationOverview/WeatherForm";
 import WaterLevelForm from "@/Components/SituationOverview/WaterLevelForm";
 import ElectricityForm from "@/Components/SituationOverview/ElectricityForm";
@@ -39,10 +35,18 @@ import RoadForm from "@/Components/SituationOverview/RoadForm";
 import BridgeForm from "@/Components/SituationOverview/BridgeForm";
 
 export default function Index() {
-    const { flash } = usePage().props;
+    // 1. Destructure all data props from the controller
+    const {
+        flash,
+        weatherReports,
+        waterLevels,
+        electricity,
+        waterServices,
+        communications,
+        roads,
+        bridges,
+    } = usePage().props;
 
-    //  test
-    // ✅ Stepper state
     const [step, setStep] = useState(1);
     const steps = [
         { label: "Weather", icon: <Cloud size={18} /> },
@@ -54,93 +58,103 @@ export default function Index() {
         { label: "Bridges", icon: <Landmark size={18} /> },
     ];
 
-    // ✅ useForm defaults
-    const { data, setData, post, processing, errors } = useForm({
-        reports: [
-            {
-                id: 1,
-                municipality: "",
-                sky_condition: "",
-                wind: "",
-                precipitation: "",
-                sea_condition: "",
-            },
-        ],
-        waterLevels: [
-            {
-                id: 1,
-                gauging_station: "",
-                current_level: "",
-                alarm_level: "",
-                critical_level: "",
-                affected_areas: "",
-            },
-        ],
-        electricityServices: [
-            { id: 1, status: "", barangays_affected: "", remarks: "" },
-        ],
-        waterServices: [
-            {
-                id: 1,
-                source_of_water: "",
-                barangays_served: "",
-                status: "",
-                remarks: "",
-            },
-        ],
-        communications: [
-            {
-                id: 1,
-                globe: "",
-                smart: "",
-                pldt_landline: "",
-                pldt_internet: "",
-                vhf: "",
-                remarks: "",
-            },
-        ],
-        roads: [
-            {
-                id: 1,
-                road_classification: "",
-                name_of_road: "",
-                status: "",
-                areas_affected: "",
-                re_routing: "",
-                remarks: "",
-            },
-        ],
-        bridges: [
-            {
-                id: 1,
-                road_classification: "",
-                name_of_bridge: "",
-                status: "",
-                areas_affected: "",
-                re_routing: "",
-                remarks: "",
-            },
-        ],
+    // 2. Initialize useForm to manage the shared state for all forms.
+    // This is still essential for passing data down and pre-filling the forms.
+    const { data, setData, errors } = useForm({
+        reports:
+            weatherReports && weatherReports.length > 0
+                ? weatherReports
+                : [
+                      {
+                          id: null,
+                          municipality: "",
+                          sky_condition: "",
+                          wind: "",
+                          precipitation: "",
+                          sea_condition: "",
+                      },
+                  ],
+        waterLevels:
+            waterLevels && waterLevels.length > 0
+                ? waterLevels
+                : [
+                      {
+                          id: null,
+                          gauging_station: "",
+                          current_level: "",
+                          alarm_level: "",
+                          critical_level: "",
+                          affected_areas: "",
+                      },
+                  ],
+        electricityServices:
+            electricity && electricity.length > 0
+                ? electricity
+                : [
+                      {
+                          id: null,
+                          status: "",
+                          barangays_affected: "",
+                          remarks: "",
+                      },
+                  ],
+        waterServices:
+            waterServices && waterServices.length > 0
+                ? waterServices
+                : [
+                      {
+                          id: null,
+                          source_of_water: "",
+                          barangays_served: "",
+                          status: "",
+                          remarks: "",
+                      },
+                  ],
+        communications:
+            communications && communications.length > 0
+                ? communications
+                : [
+                      {
+                          id: null,
+                          globe: "",
+                          smart: "",
+                          pldt_landline: "",
+                          pldt_internet: "",
+                          vhf: "",
+                          remarks: "",
+                      },
+                  ],
+        roads:
+            roads && roads.length > 0
+                ? roads
+                : [
+                      {
+                          id: null,
+                          road_classification: "",
+                          name_of_road: "",
+                          status: "",
+                          areas_affected: "",
+                          re_routing: "",
+                          remarks: "",
+                      },
+                  ],
+        bridges:
+            bridges && bridges.length > 0
+                ? bridges
+                : [
+                      {
+                          id: null,
+                          road_classification: "",
+                          name_of_bridge: "",
+                          status: "",
+                          areas_affected: "",
+                          re_routing: "",
+                          remarks: "",
+                      },
+                  ],
     });
 
-    // // ✅ Restore saved form
-    // useEffect(() => {
-    //     const saved = localStorage.getItem("situationReports");
-    //     if (saved) {
-    //         try {
-    //             setData(JSON.parse(saved));
-    //         } catch (e) {
-    //             console.error("Failed to parse saved reports", e);
-    //         }
-    //     }
-    // }, []);
-
-    // // ✅ Save form state
-    // useEffect(() => {
-    //     localStorage.setItem("situationReports", JSON.stringify(data));
-    // }, [data]);
-
-    // ✅ Flash messages
+    // Flash messages handler
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -150,11 +164,6 @@ export default function Index() {
         { href: route("dashboard"), label: "Dashboard" },
         { label: "Create Situational Report" },
     ];
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post(route("situation-reports.store"), { preserveScroll: true });
-    };
 
     return (
         <SidebarProvider>
@@ -173,243 +182,212 @@ export default function Index() {
                     </div>
                 </header>
 
-                {/* ✅ ENHANCEMENT: Softer, neutral background */}
                 <main className="w-full p-6 h-full bg-gray-50">
-                    <form onSubmit={handleSubmit}>
-                        <Card className="shadow-lg rounded-2xl border">
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-500">
-                                        Step {step} of {steps.length}
-                                    </span>
-                                </CardTitle>
-
-                                {/* ✅ ENHANCEMENT: Refined stepper UI with better colors */}
-                                <div className="relative w-full mt-8">
-                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
-                                        <div
-                                            className="h-0.5 bg-blue-600 transition-all duration-500"
-                                            style={{
-                                                width: `${
-                                                    ((step - 1) /
-                                                        (steps.length - 1)) *
-                                                    100
-                                                }%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                    <div className="relative flex justify-between z-10">
-                                        {steps.map((item, index) => {
-                                            const stepNumber = index + 1;
-                                            const isCompleted =
-                                                step > stepNumber;
-                                            const isActive =
-                                                step === stepNumber;
-
-                                            return (
-                                                <button
-                                                    key={index}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setStep(stepNumber)
-                                                    }
-                                                    className="flex flex-col items-center focus:outline-none group transition"
-                                                >
-                                                    <div
-                                                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
-                                                            isCompleted
-                                                                ? "border-emerald-500 bg-emerald-50 text-emerald-500"
-                                                                : isActive
-                                                                ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
-                                                                : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
-                                                        }`}
-                                                    >
-                                                        {isCompleted ? (
-                                                            <CheckCircle2
-                                                                size={22}
-                                                            />
-                                                        ) : (
-                                                            item.icon
-                                                        )}
-                                                    </div>
-                                                    <span
-                                                        className={`mt-2 text-xs transition-colors duration-300 ${
-                                                            isCompleted
-                                                                ? "text-emerald-600 font-medium"
-                                                                : isActive
-                                                                ? "text-blue-600 font-semibold"
-                                                                : "text-gray-500 group-hover:text-blue-500"
-                                                        }`}
-                                                    >
-                                                        {item.label}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                    <Card className="shadow-lg rounded-2xl border">
+                        <CardHeader>
+                            <CardTitle className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-500">
+                                    Step {step} of {steps.length}
+                                </span>
+                            </CardTitle>
+                            {/* Stepper UI */}
+                            <div className="relative w-full mt-8">
+                                <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
+                                    <div
+                                        className="h-0.5 bg-blue-600 transition-all duration-500"
+                                        style={{
+                                            width: `${
+                                                ((step - 1) /
+                                                    (steps.length - 1)) *
+                                                100
+                                            }%`,
+                                        }}
+                                    ></div>
                                 </div>
-                            </CardHeader>
+                                <div className="relative flex justify-between z-10">
+                                    {steps.map((item, index) => {
+                                        const stepNumber = index + 1;
+                                        const isCompleted = step > stepNumber;
+                                        const isActive = step === stepNumber;
+                                        return (
+                                            <button
+                                                key={index}
+                                                type="button"
+                                                onClick={() =>
+                                                    setStep(stepNumber)
+                                                }
+                                                className="flex flex-col items-center focus:outline-none group transition"
+                                            >
+                                                <div
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
+                                                        isCompleted
+                                                            ? "border-emerald-500 bg-emerald-50 text-emerald-500"
+                                                            : isActive
+                                                            ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
+                                                            : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
+                                                    }`}
+                                                >
+                                                    {isCompleted ? (
+                                                        <CheckCircle2
+                                                            size={22}
+                                                        />
+                                                    ) : (
+                                                        item.icon
+                                                    )}
+                                                </div>
+                                                <span
+                                                    className={`mt-2 text-xs transition-colors duration-300 ${
+                                                        isCompleted
+                                                            ? "text-emerald-600 font-medium"
+                                                            : isActive
+                                                            ? "text-blue-600 font-semibold"
+                                                            : "text-gray-500 group-hover:text-blue-500"
+                                                    }`}
+                                                >
+                                                    {item.label}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </CardHeader>
 
-                            <CardContent className="space-y-8 min-h-[300px]">
-                                <AnimatePresence mode="wait">
-                                    {step === 1 && (
-                                        <motion.div
-                                            key="weather"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <WeatherForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 2 && (
-                                        <motion.div
-                                            key="water"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <WaterLevelForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 3 && (
-                                        <motion.div
-                                            key="electricity"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <ElectricityForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 4 && (
-                                        <motion.div
-                                            key="waterService"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <WaterForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 5 && (
-                                        <motion.div
-                                            key="comm"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <CommunicationForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 6 && (
-                                        <motion.div
-                                            key="roads"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <RoadForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                    {step === 7 && (
-                                        <motion.div
-                                            key="bridges"
-                                            initial={{ opacity: 0, x: 50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <BridgeForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </CardContent>
+                        <CardContent className="space-y-8 min-h-[300px]">
+                            <AnimatePresence mode="wait">
+                                {step === 1 && (
+                                    <motion.div
+                                        key="weather"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <WeatherForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 2 && (
+                                    <motion.div
+                                        key="water"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <WaterLevelForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 3 && (
+                                    <motion.div
+                                        key="electricity"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <ElectricityForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 4 && (
+                                    <motion.div
+                                        key="waterService"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <WaterForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 5 && (
+                                    <motion.div
+                                        key="comm"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <CommunicationForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 6 && (
+                                    <motion.div
+                                        key="roads"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <RoadForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                                {step === 7 && (
+                                    <motion.div
+                                        key="bridges"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <BridgeForm
+                                            data={data}
+                                            setData={setData}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </CardContent>
 
-                            {/* ✅ ENHANCEMENT: Standardized button styles */}
-                            <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
+                        {/* 3. Footer now only contains navigation buttons */}
+                        <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={step === 1}
+                                onClick={() => setStep(step - 1)}
+                                className="flex items-center gap-2"
+                            >
+                                <ChevronLeft size={16} />
+                                Back
+                            </Button>
+
+                            {step < steps.length && (
                                 <Button
                                     type="button"
-                                    variant="outline"
-                                    disabled={step === 1}
-                                    onClick={() => setStep(step - 1)}
-                                    className="flex items-center gap-2"
+                                    onClick={() => setStep(step + 1)}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                                 >
-                                    <ChevronLeft size={16} />
-                                    Back
+                                    Next
+                                    <ChevronRight size={16} />
                                 </Button>
-
-                                {step < steps.length && (
-                                    <Button
-                                        type="button"
-                                        onClick={() => setStep(step + 1)}
-                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                                    >
-                                        Next
-                                        <ChevronRight size={16} />
-                                    </Button>
-                                )}
-
-                                {/* ✅ ENHANCEMENT: Consistent primary action button with icon */}
-                                {step === steps.length && (
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin text-white" />
-                                                <span className="animate-pulse">
-                                                    Saving...
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {" "}
-                                                <SaveAll className="w-5 h-5" />{" "}
-                                                <span>Save All Reports</span>{" "}
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </div>
-                        </Card>
-                    </form>
+                            )}
+                        </div>
+                    </Card>
                 </main>
             </SidebarInset>
         </SidebarProvider>
