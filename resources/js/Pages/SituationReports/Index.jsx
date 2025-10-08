@@ -23,6 +23,7 @@ import {
     Phone,
     Route,
     Landmark,
+    HelpCircle,
 } from "lucide-react";
 
 // Import all your form components
@@ -35,7 +36,6 @@ import RoadForm from "@/Components/SituationOverview/RoadForm";
 import BridgeForm from "@/Components/SituationOverview/BridgeForm";
 
 export default function Index() {
-    // 1. Destructure all data props from the controller
     const {
         flash,
         weatherReports,
@@ -58,8 +58,6 @@ export default function Index() {
         { label: "Bridges", icon: <Landmark size={18} /> },
     ];
 
-    // 2. Initialize useForm to manage the shared state for all forms.
-    // This is still essential for passing data down and pre-filling the forms.
     const { data, setData, errors } = useForm({
         reports:
             weatherReports && weatherReports.length > 0
@@ -154,18 +152,78 @@ export default function Index() {
                   ],
     });
 
-    // Flash messages handler
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    /* const breadcrumbs = [
-        { href: route("admin.dashboard"), label: "Dashboard" },
-        { label: "Situational Report" },
-    ]; */
-
-    /* console.log("Current user role:", usePage().props.auth.user); */
+    // ✅ Helper function to check if a step’s form data is empty
+    const isStepEmpty = (stepNumber) => {
+        switch (stepNumber) {
+            case 1:
+                return data.reports.every(
+                    (r) =>
+                        !r.municipality &&
+                        !r.sky_condition &&
+                        !r.wind &&
+                        !r.precipitation &&
+                        !r.sea_condition
+                );
+            case 2:
+                return data.waterLevels.every(
+                    (r) =>
+                        !r.gauging_station &&
+                        !r.current_level &&
+                        !r.alarm_level &&
+                        !r.critical_level &&
+                        !r.affected_areas
+                );
+            case 3:
+                return data.electricityServices.every(
+                    (r) => !r.status && !r.barangays_affected && !r.remarks
+                );
+            case 4:
+                return data.waterServices.every(
+                    (r) =>
+                        !r.source_of_water &&
+                        !r.barangays_served &&
+                        !r.status &&
+                        !r.remarks
+                );
+            case 5:
+                return data.communications.every(
+                    (r) =>
+                        !r.globe &&
+                        !r.smart &&
+                        !r.pldt_landline &&
+                        !r.pldt_internet &&
+                        !r.vhf &&
+                        !r.remarks
+                );
+            case 6:
+                return data.roads.every(
+                    (r) =>
+                        !r.road_classification &&
+                        !r.name_of_road &&
+                        !r.status &&
+                        !r.areas_affected &&
+                        !r.re_routing &&
+                        !r.remarks
+                );
+            case 7:
+                return data.bridges.every(
+                    (r) =>
+                        !r.road_classification &&
+                        !r.name_of_bridge &&
+                        !r.status &&
+                        !r.areas_affected &&
+                        !r.re_routing &&
+                        !r.remarks
+                );
+            default:
+                return true;
+        }
+    };
 
     return (
         <SidebarProvider>
@@ -187,21 +245,24 @@ export default function Index() {
                                 (r) => r.name?.toLowerCase() === "admin"
                             );
 
-                            return isAdmin ? (
-                                <Breadcrumbs
-                                    crumbs={[
-                                        {
-                                            href: route("admin.dashboard"),
-                                            label: "Dashboard",
-                                        },
-                                        { label: "Situational Report" },
-                                    ]}
-                                />
-                            ) : (
-                                <Breadcrumbs
-                                    crumbs={[{ label: "Situational Report" }]}
-                                />
-                            );
+                            const currentStepLabel =
+                                steps[step - 1]?.label || "Situational Report";
+
+                            const crumbs = isAdmin
+                                ? [
+                                      {
+                                          href: route("admin.dashboard"),
+                                          label: "Dashboard",
+                                      },
+                                      { label: "Situational Report" },
+                                      { label: currentStepLabel },
+                                  ]
+                                : [
+                                      { label: "Situational Report" },
+                                      { label: currentStepLabel },
+                                  ];
+
+                            return <Breadcrumbs crumbs={crumbs} />;
                         })()}
                     </div>
                 </header>
@@ -214,7 +275,8 @@ export default function Index() {
                                     Step {step} of {steps.length}
                                 </span>
                             </CardTitle>
-                            {/* Stepper UI */}
+
+                            {/* Stepper */}
                             <div className="relative w-full mt-8">
                                 <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
                                     <div
@@ -228,11 +290,38 @@ export default function Index() {
                                         }}
                                     ></div>
                                 </div>
+
                                 <div className="relative flex justify-between z-10">
                                     {steps.map((item, index) => {
                                         const stepNumber = index + 1;
-                                        const isCompleted = step > stepNumber;
                                         const isActive = step === stepNumber;
+                                        const isPast = step > stepNumber;
+
+                                        // 🧠 determine if user passed this step AND left it empty
+                                        const wasVisited = step > stepNumber;
+                                        const empty =
+                                            wasVisited &&
+                                            isStepEmpty(stepNumber);
+
+                                        // 🔘 Which icon to show
+                                        const renderIcon = () => {
+                                            if (empty)
+                                                return (
+                                                    <HelpCircle
+                                                        size={20}
+                                                        className="text-gray-400"
+                                                    />
+                                                );
+                                            if (wasVisited && !empty)
+                                                return (
+                                                    <CheckCircle2
+                                                        size={22}
+                                                        className="text-emerald-500"
+                                                    />
+                                                );
+                                            return item.icon;
+                                        };
+
                                         return (
                                             <button
                                                 key={index}
@@ -243,25 +332,25 @@ export default function Index() {
                                                 className="flex flex-col items-center focus:outline-none group transition"
                                             >
                                                 <div
-                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 relative z-10 transition-all duration-300 ${
-                                                        isCompleted
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                                                        empty
+                                                            ? "border-gray-300 bg-gray-50 text-gray-400"
+                                                            : wasVisited &&
+                                                              !empty
                                                             ? "border-emerald-500 bg-emerald-50 text-emerald-500"
                                                             : isActive
                                                             ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
                                                             : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
                                                     }`}
                                                 >
-                                                    {isCompleted ? (
-                                                        <CheckCircle2
-                                                            size={22}
-                                                        />
-                                                    ) : (
-                                                        item.icon
-                                                    )}
+                                                    {renderIcon()}
                                                 </div>
                                                 <span
                                                     className={`mt-2 text-xs transition-colors duration-300 ${
-                                                        isCompleted
+                                                        empty
+                                                            ? "text-gray-400"
+                                                            : wasVisited &&
+                                                              !empty
                                                             ? "text-emerald-600 font-medium"
                                                             : isActive
                                                             ? "text-blue-600 font-semibold"
@@ -387,7 +476,6 @@ export default function Index() {
                             </AnimatePresence>
                         </CardContent>
 
-                        {/* 3. Footer now only contains navigation buttons */}
                         <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
                             <Button
                                 type="button"
