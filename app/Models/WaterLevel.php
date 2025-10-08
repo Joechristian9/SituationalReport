@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class WaterLevel extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModification;
 
     protected $fillable = [
         'gauging_station',

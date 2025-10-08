@@ -39,7 +39,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Situation Reports
-Route::middleware(['auth', 'role:user'])->group(function () {
+Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');

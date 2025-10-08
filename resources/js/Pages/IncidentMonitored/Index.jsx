@@ -160,11 +160,6 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "Effects Report" },
-    ];
-
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("casualties.store"), { preserveScroll: true });
@@ -190,7 +185,31 @@ export default function Index() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
+
+                        {(() => {
+                            const user = usePage().props.auth.user;
+                            const isAdmin = user.roles?.some(
+                                (r) => r.name?.toLowerCase() === "admin"
+                            );
+
+                            return isAdmin ? (
+                                <Breadcrumbs
+                                    crumbs={[
+                                        {
+                                            href: route("admin.dashboard"),
+                                            label: "Dashboard",
+                                        },
+                                        { label: "Effects Report" },
+                                    ]}
+                                    Effects
+                                    Report
+                                />
+                            ) : (
+                                <Breadcrumbs
+                                    crumbs={[{ label: "Effects Report" }]}
+                                />
+                            );
+                        })()}
                     </div>
                 </header>
 

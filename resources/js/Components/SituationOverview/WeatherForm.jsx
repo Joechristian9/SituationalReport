@@ -118,11 +118,11 @@ export default function WeatherForm({ data, setData, errors }) {
                         {/* Table head with original color theme, hidden on mobile */}
                         <thead className="hidden md:table-header-group bg-blue-500">
                             <tr className="text-left text-white font-semibold">
-                                <th className="p-3">Municipality</th>
-                                <th className="p-3">Sky Condition</th>
-                                <th className="p-3">Wind</th>
-                                <th className="p-3">Precipitation</th>
-                                <th className="p-3">Sea Condition</th>
+                                <th className="p-3 border-r">Municipality</th>
+                                <th className="p-3 border-r">Sky Condition</th>
+                                <th className="p-3 border-r">Wind</th>
+                                <th className="p-3 border-r">Precipitation</th>
+                                <th className="p-3 border-r">Sea Condition</th>
                             </tr>
                         </thead>
                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">

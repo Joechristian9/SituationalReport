@@ -58,11 +58,6 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "Pre-Positioning" },
-    ];
-
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("pre-positioning.store"), { preserveScroll: true });
@@ -82,7 +77,30 @@ export default function Index() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
+
+                        {(() => {
+                            const user = usePage().props.auth.user;
+                            const isAdmin = user.roles?.some(
+                                (r) => r.name?.toLowerCase() === "admin"
+                            );
+
+                            return isAdmin ? (
+                                <Breadcrumbs
+                                    crumbs={[
+                                        {
+                                            href: route("admin.dashboard"),
+                                            label: "Dashboard",
+                                        },
+                                        { label: "Pre-Positioning" },
+                                    ]}
+                                    Pre-Positioning
+                                />
+                            ) : (
+                                <Breadcrumbs
+                                    crumbs={[{ label: "Pre-Positioning" }]}
+                                />
+                            );
+                        })()}
                     </div>
                 </header>
 

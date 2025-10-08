@@ -30,57 +30,47 @@ export function AppSidebar({ ...props }) {
             url: "#",
             icon: RiMenuFold2Fill,
             isActive: route().current("situation-reports.*"),
-            roles: ["user", "admin"], // 👈 only visible to these roles
+            roles: ["user", "admin"],
             items: [
+                {
+                    title: "Dashboard",
+                    url: route("admin.dashboard"),
+                    roles: ["admin"],
+                },
                 {
                     title: "Situation Overview",
                     url: route("situation-reports.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Response Operations",
                     url: route("response-operations.index"),
-                    roles: ["user"],
+                    roles: ["user", "admin"],
                 },
                 {
                     title: "Assistance Extended",
                     url: route("assistance.index"),
-                    roles: ["user"],
-                },
-                {
-                    title: "Sample Admin Menu 1",
-                    url: "#",
-                    roles: ["admin"],
-                },
-                {
-                    title: "Sample Admin Menu 2",
-                    url: "#",
-                    roles: ["admin"],
-                },
-                {
-                    title: "Sample Admin Menu 3",
-                    url: "#",
-                    roles: ["admin"],
+                    roles: ["user", "admin"],
                 },
             ],
         },

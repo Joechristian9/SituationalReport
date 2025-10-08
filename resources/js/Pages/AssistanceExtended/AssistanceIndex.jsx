@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { Head } from "@inertiajs/react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Head, usePage } from "@inertiajs/react"; // ✅ include usePage
+import {
+    SidebarProvider,
+    SidebarInset,
+    SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -10,12 +14,14 @@ import AssistanceExtended from "./AssistanceExtended";
 import AssistanceProvidedLgu from "./AssistanceProvidedLgu";
 
 export default function AssistanceIndex() {
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "Assistance" },
-    ];
-
     const [activeTab, setActiveTab] = useState("extended");
+
+    // ✅ get authenticated user
+    const { auth } = usePage().props;
+    const user = auth.user;
+
+    // ✅ determine if user is an admin (works with Spatie roles)
+    const isAdmin = user.roles?.some((r) => r.name?.toLowerCase() === "admin");
 
     return (
         <SidebarProvider>
@@ -31,7 +37,20 @@ export default function AssistanceIndex() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
+
+                        {isAdmin ? (
+                            <Breadcrumbs
+                                crumbs={[
+                                    {
+                                        href: route("admin.dashboard"),
+                                        label: "Dashboard",
+                                    },
+                                    { label: "Assistance" },
+                                ]}
+                            />
+                        ) : (
+                            <Breadcrumbs crumbs={[{ label: "Assistance" }]} />
+                        )}
                     </div>
                 </header>
 
@@ -39,18 +58,31 @@ export default function AssistanceIndex() {
                 <main className="w-full p-6 h-full bg-gray-50">
                     <div className="bg-white rounded-lg border p-4">
                         <div className="mb-6">
-                            <h1 className="text-2xl font-bold text-gray-800">Assistance Records</h1>
+                            <h1 className="text-2xl font-bold text-gray-800">
+                                Assistance Records
+                            </h1>
                             <p className="text-gray-600 mt-1">
-                                View and manage assistance provided to individuals, families, and LGUs.
+                                View and manage assistance provided to
+                                individuals, families, and LGUs.
                             </p>
                         </div>
 
                         {/* Tabs for different assistance forms */}
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <Tabs
+                            value={activeTab}
+                            onValueChange={setActiveTab}
+                            className="w-full"
+                        >
                             <TabsList className="mb-4 bg-white p-2 rounded-xl shadow-sm border">
-                                <TabsTrigger value="extended">Assistance Extended</TabsTrigger>
-                                <TabsTrigger value="lgu">Assistance Provided to LGUs</TabsTrigger>
-                                <TabsTrigger value="families">Assistance Provided to Families</TabsTrigger>
+                                <TabsTrigger value="extended">
+                                    Assistance Extended
+                                </TabsTrigger>
+                                <TabsTrigger value="lgu">
+                                    Assistance Provided to LGUs
+                                </TabsTrigger>
+                                <TabsTrigger value="families">
+                                    Assistance Provided to Families
+                                </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="extended">
@@ -62,7 +94,6 @@ export default function AssistanceIndex() {
                             </TabsContent>
                         </Tabs>
                     </div>
-
                 </main>
             </SidebarInset>
         </SidebarProvider>

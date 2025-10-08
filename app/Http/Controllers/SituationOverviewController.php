@@ -95,31 +95,55 @@ class SituationOverviewController extends Controller
 
     public function storeWaterLevel(Request $request)
     {
+        // 1. Stricter Validation Rules, expecting a 'reports' array
         $validated = $request->validate([
-            'waterLevels' => 'required|array',
-            'waterLevels.*.gauging_station' => 'nullable|string|max:255',
-            'waterLevels.*.current_level'   => 'nullable|numeric',
-            'waterLevels.*.alarm_level'     => 'nullable|numeric',
-            'waterLevels.*.critical_level'  => 'nullable|numeric',
-            'waterLevels.*.affected_areas'  => 'nullable|string|max:255',
+            'reports' => 'required|array',
+            'reports.*.id' => [ // ID must be a valid integer that exists in the water_levels table, or can be null.
+                'nullable',
+                'integer',
+                Rule::exists('water_levels', 'id')
+            ],
+            // Gauging Station is now required to create a new record.
+            'reports.*.gauging_station' => 'required|string|max:255',
+            'reports.*.current_level'   => 'nullable|numeric',
+            'reports.*.alarm_level'     => 'nullable|numeric',
+            'reports.*.critical_level'  => 'nullable|numeric',
+            'reports.*.affected_areas'  => 'nullable|string',
         ]);
 
-        foreach ($validated['waterLevels'] as $station) {
-            if (!empty(array_filter($station))) {
-                WaterLevel::updateOrCreate(
-                    ['user_id' => Auth::id(), 'gauging_station' => $station['gauging_station']],
-                    [
-                        'current_level'  => $station['current_level'] ?? null,
-                        'alarm_level'    => $station['alarm_level'] ?? null,
-                        'critical_level' => $station['critical_level'] ?? null,
-                        'affected_areas' => $station['affected_areas'] ?? null,
-                        'updated_by'     => Auth::id(),
-                    ]
-                );
+        foreach ($validated['reports'] as $reportData) {
+            // 2. More Robust Saving Logic (Adopted from storeWeather)
+            if (!empty($reportData['id'])) {
+                $waterLevel = WaterLevel::find($reportData['id']);
+                if ($waterLevel) {
+                    $waterLevel->update([
+                        'gauging_station' => $reportData['gauging_station'],
+                        'current_level'   => $reportData['current_level'],
+                        'alarm_level'     => $reportData['alarm_level'],
+                        'critical_level'  => $reportData['critical_level'],
+                        'affected_areas'  => $reportData['affected_areas'],
+                        'updated_by'      => Auth::id(),
+                    ]);
+                }
+            } else {
+                // Skip creating a record if the main identifier is empty.
+                if (empty($reportData['gauging_station'])) {
+                    continue;
+                }
+                WaterLevel::create([
+                    'gauging_station' => $reportData['gauging_station'],
+                    'current_level'   => $reportData['current_level'],
+                    'alarm_level'     => $reportData['alarm_level'],
+                    'critical_level'  => $reportData['critical_level'],
+                    'affected_areas'  => $reportData['affected_areas'],
+                    'user_id'         => Auth::id(),
+                    'updated_by'      => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Water level reports saved successfully']);
+        // Return a JSON response, which is better for Axios/AJAX calls
+        return response()->json(['message' => 'Water level reports saved successfully!']);
     }
 
     public function storeElectricity(Request $request)
@@ -175,6 +199,7 @@ class SituationOverviewController extends Controller
 
         return response()->json(['message' => 'Water service reports saved successfully']);
     }
+
 
     public function storeCommunication(Request $request)
     {

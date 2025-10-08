@@ -160,17 +160,19 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "Create Situational Report" },
-    ];
+    /* const breadcrumbs = [
+        { href: route("admin.dashboard"), label: "Dashboard" },
+        { label: "Situational Report" },
+    ]; */
+
+    /* console.log("Current user role:", usePage().props.auth.user); */
 
     return (
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
             <Head>
-                <title>Create Situational Report</title>
+                <title>Situational Report</title>
                 <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
             </Head>
             <SidebarInset>
@@ -178,7 +180,29 @@ export default function Index() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
+
+                        {(() => {
+                            const user = usePage().props.auth.user;
+                            const isAdmin = user.roles?.some(
+                                (r) => r.name?.toLowerCase() === "admin"
+                            );
+
+                            return isAdmin ? (
+                                <Breadcrumbs
+                                    crumbs={[
+                                        {
+                                            href: route("admin.dashboard"),
+                                            label: "Dashboard",
+                                        },
+                                        { label: "Situational Report" },
+                                    ]}
+                                />
+                            ) : (
+                                <Breadcrumbs
+                                    crumbs={[{ label: "Situational Report" }]}
+                                />
+                            );
+                        })()}
                     </div>
                 </header>
 
