@@ -7,6 +7,7 @@ use App\Models\PreEmptiveReport;
 use App\Models\Casualty;
 use Inertia\Inertia;
 use App\Models\Injured;
+use App\Models\Missing;
 
 class DashboardController extends Controller
 {
@@ -22,6 +23,7 @@ class DashboardController extends Controller
             'preEmptiveReports' => PreEmptiveReport::all(),
             'casualties' => Casualty::all(),
             'injured' => Injured::all(),
+            'missing' => Missing::all(),
         ]);
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import {
     BarChart,
     Bar,
@@ -9,20 +9,18 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
-import { Search, Filter, Check } from "lucide-react"; // Import Filter and Check icons
+import { Search, Filter, Check } from "lucide-react";
 
 // =================================================================================
-// 1. A new, reusable FilterDropdown component defined within the same file
+// Reusable Sub-Components (No changes needed here)
 // =================================================================================
 const FilterDropdown = ({ options, selectedOption, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-
     const selectedLabel = options.find(
         (opt) => opt.value === selectedOption
     )?.label;
 
-    // Effect to handle clicking outside of the dropdown to close it
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -44,7 +42,6 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
 
     return (
         <div className="relative" ref={dropdownRef}>
-            {/* The button that triggers the dropdown */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center justify-between w-full sm:w-48 p-2 bg-white border border-gray-300 rounded-lg shadow-sm text-left focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -56,8 +53,6 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
                     </span>
                 </div>
             </button>
-
-            {/* The dropdown panel */}
             {isOpen && (
                 <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-10">
                     {options.map((option) => (
@@ -78,11 +73,7 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
     );
 };
 
-// =================================================================================
-// 2. The main EvacuationGraph component, now using the FilterDropdown
-// =================================================================================
 const CustomTooltip = ({ active, payload, label }) => {
-    // ... (This component is unchanged)
     if (active && payload && payload.length) {
         return (
             <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200">
@@ -98,8 +89,17 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const EvacuationGraph = ({ preEmptiveReports = [] }) => {
-    const [evacuationType, setEvacuationType] = useState("total");
+// =================================================================================
+// The main EvacuationGraph component (MODIFIED)
+// =================================================================================
+const EvacuationGraph = ({
+    preEmptiveReports = [],
+    // ✅ 1. RECEIVE PROPS: Accept the active filter and a function to change it.
+    evacuationType,
+    onEvacuationTypeChange,
+}) => {
+    // ❌ 2. REMOVED STATE: The filter state is now managed by the Dashboard parent.
+    // const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
 
     const aggregatedData = useMemo(() => {
@@ -141,15 +141,14 @@ const EvacuationGraph = ({ preEmptiveReports = [] }) => {
     }, [preEmptiveReports]);
 
     const filteredGraphData = useMemo(() => {
-        // ... (This logic is unchanged)
         if (!searchQuery) return aggregatedData;
         return aggregatedData.filter((item) =>
             item.barangay.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [aggregatedData, searchQuery]);
 
+    // This logic now correctly uses the `evacuationType` prop
     let personsDataKey, familiesDataKey, personsBarName, familiesBarName;
-    // ... (This switch statement is unchanged)
     switch (evacuationType) {
         case "inside":
             personsDataKey = "inside_persons";
@@ -171,7 +170,6 @@ const EvacuationGraph = ({ preEmptiveReports = [] }) => {
             break;
     }
 
-    // ✅ 3. Define the options for our new dropdown
     const filterOptions = [
         { value: "total", label: "Total Evacuated" },
         { value: "inside", label: "Inside Centers" },
@@ -185,14 +183,13 @@ const EvacuationGraph = ({ preEmptiveReports = [] }) => {
                     Evacuation Overview
                 </h2>
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    {/* ✅ 4. Use the new FilterDropdown component */}
+                    {/* ✅ 3. USE PROPS: The dropdown is now controlled by the parent Dashboard */}
                     <FilterDropdown
                         options={filterOptions}
                         selectedOption={evacuationType}
-                        onSelect={setEvacuationType}
+                        onSelect={onEvacuationTypeChange}
                     />
 
-                    {/* Search Bar (unchanged) */}
                     <div className="relative w-full sm:w-64">
                         <input
                             type="text"
@@ -207,11 +204,8 @@ const EvacuationGraph = ({ preEmptiveReports = [] }) => {
             </div>
 
             <ResponsiveContainer width="100%" height={400}>
-                <BarChart
-                    data={
-                        filteredGraphData
-                    } /* ... (rest of the chart is unchanged) ... */
-                >
+                {/* ... (The BarChart JSX remains completely unchanged) ... */}
+                <BarChart data={filteredGraphData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
                         dataKey="barangay"

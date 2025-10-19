@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { AppSidebar } from "@/Components/app-sidebar";
 import {
     SidebarInset,
@@ -13,122 +13,137 @@ import WeatherGraph from "@/Components/Graphs/WeatherGraph";
 import EvacuationGraph from "@/Components/Graphs/EvacuationGraph";
 import CasualtyGraph from "@/Components/Graphs/CasualtyGraph";
 import InjuredGraph from "@/Components/Graphs/InjuredGraph";
+import MissingGraph from "@/Components/Graphs/MissingGraph";
 
 // Import all necessary icons
 import {
     Users,
     Home,
-    Wind,
-    CloudRain,
     UserX,
     UserPlus,
-    HeartPulse,
-    CloudSun,
     UserCheck,
+    UserSearch,
 } from "lucide-react";
 
 // =================================================================================
 // Reusable Sub-Components for the Dashboard UI
 // =================================================================================
-
-/**
- * A reusable card for displaying a single statistic.
- */
-const StatCard = ({ icon, title, value, themeColor = "gray" }) => {
-    const colorVariants = {
-        blue: {
-            border: "border-blue-500",
-            bg: "bg-blue-100",
-            text: "text-blue-600",
+const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
+    const themes = {
+        red: {
+            bg: "bg-red-100",
+            text: "text-red-600",
+            border: "border-red-500",
         },
-        emerald: {
-            border: "border-emerald-500",
-            bg: "bg-emerald-100",
-            text: "text-emerald-600",
+        amber: {
+            bg: "bg-amber-100",
+            text: "text-amber-600",
+            border: "border-amber-500",
+        },
+        orange: {
+            bg: "bg-orange-100",
+            text: "text-orange-600",
+            border: "border-orange-500",
+        },
+        gray: {
+            bg: "bg-gray-100",
+            text: "text-gray-600",
+            border: "border-gray-500",
         },
     };
-    const theme = colorVariants[themeColor] || {
-        border: "border-gray-500",
-        bg: "bg-gray-100",
-        text: "text-gray-600",
-    };
-
+    const theme = themes[themeColor];
     return (
         <div
-            className={`bg-white shadow-md rounded-xl p-6 flex items-center gap-6 border-l-4 transition-transform transform hover:-translate-y-1 ${theme.border}`}
+            className={`bg-white shadow-lg rounded-2xl p-6 border-l-4 transition-transform transform hover:-translate-y-1 ${theme.border}`}
         >
-            <div className={`p-4 rounded-full ${theme.bg}`}>
-                <div className={theme.text}>{icon}</div>
-            </div>
-            <div>
-                <p className="text-sm font-medium text-gray-500">{title}</p>
-                <p className="text-2xl font-bold text-gray-800">{value}</p>
-            </div>
+            {" "}
+            <div className="flex items-start justify-between">
+                {" "}
+                <div className="flex flex-col">
+                    {" "}
+                    <p className="text-sm font-medium text-gray-500">
+                        {title}
+                    </p>{" "}
+                    <p className="text-3xl font-bold text-gray-800 mt-1">
+                        {value}
+                    </p>{" "}
+                    <p className="text-xs text-gray-400 mt-2">{description}</p>{" "}
+                </div>{" "}
+                <div className={`p-4 rounded-xl ${theme.bg}`}>
+                    {" "}
+                    <div className={theme.text}>{icon}</div>{" "}
+                </div>{" "}
+            </div>{" "}
         </div>
     );
 };
 
-/**
- * A reusable card for displaying two related statistics.
- */
-const CombinedStatCard = ({
-    icon,
-    title,
-    metric1_icon,
-    metric1_title,
-    metric1_value,
-    metric2_icon,
-    metric2_title,
-    metric2_value,
-    themeColor = "gray",
-}) => {
-    const colorVariants = {
-        red: {
-            border: "border-red-500",
-            bg: "bg-red-100",
-            text: "text-red-600",
-        },
-        sky: {
-            border: "border-sky-500",
-            bg: "bg-sky-100",
-            text: "text-sky-600",
-        },
-    };
-    const theme = colorVariants[themeColor] || {
-        border: "border-gray-500",
-        bg: "bg-gray-100",
-        text: "text-gray-600",
-    };
+// ✅ 1. NEW DYNAMIC COMPONENT: Calculates and displays totals based on the active filter.
+const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
+    const { persons, families, title } = useMemo(() => {
+        let personCount = 0;
+        let familyCount = 0;
+        let cardTitle = "Evacuation Summary";
+
+        const personKey =
+            activeFilter === "inside"
+                ? "persons"
+                : activeFilter === "outside"
+                ? "outside_persons"
+                : "total_persons";
+        const familyKey =
+            activeFilter === "inside"
+                ? "families"
+                : activeFilter === "outside"
+                ? "outside_families"
+                : "total_families";
+
+        if (Array.isArray(reports)) {
+            personCount = reports.reduce(
+                (sum, report) => sum + (parseInt(report[personKey], 10) || 0),
+                0
+            );
+            familyCount = reports.reduce(
+                (sum, report) => sum + (parseInt(report[familyKey], 10) || 0),
+                0
+            );
+        }
+
+        if (activeFilter === "inside") cardTitle = "Evacuated (Inside Centers)";
+        else if (activeFilter === "outside")
+            cardTitle = "Evacuated (Outside Centers)";
+        else cardTitle = "Total Evacuated";
+
+        return {
+            persons: personCount.toLocaleString(),
+            families: familyCount.toLocaleString(),
+            title: cardTitle,
+        };
+    }, [reports, activeFilter]);
 
     return (
-        <div
-            className={`bg-white shadow-md rounded-xl p-6 flex items-center gap-6 border-l-4 transition-transform transform hover:-translate-y-1 ${theme.border}`}
-        >
-            <div className={`p-4 rounded-full ${theme.bg}`}>
-                <div className={theme.text}>{icon}</div>
+        <div className="bg-white shadow-lg rounded-2xl p-6 flex items-center gap-6 border-l-4 border-blue-500 transition-all">
+            <div className="p-4 rounded-xl bg-blue-100 text-blue-600">
+                <Users size={28} />
             </div>
             <div className="flex-1">
                 <p className="font-bold text-gray-800 text-lg">{title}</p>
                 <div className="mt-2 space-y-2">
-                    {/* Metric 1 */}
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
-                            {metric1_icon}
-                            <span>{metric1_title}</span>
+                            <UserCheck size={16} className="text-blue-500" />
+                            <span>Persons</span>
                         </div>
-                        <p className="font-semibold text-gray-700">
-                            {metric1_value}
-                        </p>
+                        <p className="font-semibold text-gray-700">{persons}</p>
                     </div>
                     <hr />
-                    {/* Metric 2 */}
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
-                            {metric2_icon}
-                            <span>{metric2_title}</span>
+                            <Home size={16} className="text-emerald-500" />
+                            <span>Families</span>
                         </div>
                         <p className="font-semibold text-gray-700">
-                            {metric2_value}
+                            {families}
                         </p>
                     </div>
                 </div>
@@ -138,55 +153,36 @@ const CombinedStatCard = ({
 };
 
 // =================================================================================
-// Main Dashboard Component
+// Main Dashboard Component (MODIFIED)
 // =================================================================================
 export default function Dashboard({
     weatherReports = [],
     preEmptiveReports = [],
     casualties = [],
     injured = [],
+    missing = [],
 }) {
-    // Memoized calculation for all summary statistics
+    // ✅ 2. ADD STATE: The dashboard now manages the active evacuation filter.
+    const [evacuationType, setEvacuationType] = useState("total");
+
     const summaryStats = useMemo(() => {
-        const totalEvacuatedPersons = preEmptiveReports.reduce(
-            (sum, report) => sum + (parseInt(report.total_persons, 10) || 0),
-            0
-        );
-        const totalEvacuatedFamilies = preEmptiveReports.reduce(
-            (sum, report) => sum + (parseInt(report.total_families, 10) || 0),
-            0
-        );
+        // NOTE: Evacuation totals are removed from here as the new card handles them.
         const totalCasualties = casualties.length;
         const totalInjured = injured.length;
-        const latestWeather =
-            weatherReports.length > 0
-                ? [...weatherReports].sort(
-                      (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
-                  )[0]
-                : { wind: "N/A", precipitation: "N/A" };
-
+        const totalMissing = missing.length;
         return {
-            persons: totalEvacuatedPersons.toLocaleString(),
-            families: totalEvacuatedFamilies.toLocaleString(),
             casualties: totalCasualties.toLocaleString(),
             injured: totalInjured.toLocaleString(),
-            wind:
-                latestWeather.wind !== "N/A"
-                    ? `${latestWeather.wind} km/h`
-                    : "N/A",
-            precipitation:
-                latestWeather.precipitation !== "N/A"
-                    ? `${latestWeather.precipitation} mm`
-                    : "N/A",
+            missing: totalMissing.toLocaleString(),
         };
-    }, [weatherReports, preEmptiveReports, casualties, injured]);
+    }, [casualties, injured, missing]);
 
     return (
         <SidebarProvider>
             <AppSidebar />
             <Head title="Dashboard" />
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-white sticky top-0 z-20">
+                <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="h-6" />
                     <div>
@@ -200,82 +196,54 @@ export default function Dashboard({
                 </header>
 
                 <main className="w-full p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
-                    {/* Summary Stats Section */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <CombinedStatCard
-                            icon={<CloudSun size={24} />}
-                            title="Weather Conditions"
-                            metric1_icon={
-                                <Wind size={16} className="text-sky-500" />
-                            }
-                            metric1_title="Wind Speed"
-                            metric1_value={summaryStats.wind}
-                            metric2_icon={
-                                <CloudRain
-                                    size={16}
-                                    className="text-indigo-500"
+                    <div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                            <div className="lg:col-span-2">
+                                {/* ✅ 3. USE DYNAMIC CARD: Replace the old static card. */}
+                                <EvacuationSummaryCard
+                                    reports={preEmptiveReports}
+                                    activeFilter={evacuationType}
                                 />
-                            }
-                            metric2_title="Precipitation"
-                            metric2_value={summaryStats.precipitation}
-                            themeColor="sky"
-                        />
-                        <CombinedStatCard
-                            icon={<Users size={24} />}
-                            title="Evacuation Summary"
-                            metric1_icon={
-                                <UserCheck
-                                    size={16}
-                                    className="text-blue-500"
+                            </div>
+                            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <StatCard
+                                    icon={<UserX size={24} />}
+                                    title="Dead"
+                                    value={summaryStats.casualties}
+                                    description="Total recorded fatalities."
+                                    themeColor="red"
                                 />
-                            }
-                            metric1_title="Evacuated Persons"
-                            metric1_value={summaryStats.persons}
-                            metric2_icon={
-                                <Home size={16} className="text-emerald-500" />
-                            }
-                            metric2_title="Evacuated Families"
-                            metric2_value={summaryStats.families}
-                            themeColor="blue"
-                        />
-
-                        <CombinedStatCard
-                            icon={<HeartPulse size={24} />}
-                            title="Human Impact"
-                            metric1_icon={
-                                <UserX size={16} className="text-red-500" />
-                            }
-                            metric1_title="Casualties"
-                            metric1_value={summaryStats.casualties}
-                            metric2_icon={
-                                <UserPlus
-                                    size={16}
-                                    className="text-amber-500"
+                                <StatCard
+                                    icon={<UserPlus size={24} />}
+                                    title="Injured"
+                                    value={summaryStats.injured}
+                                    description="Individuals needing medical care."
+                                    themeColor="amber"
                                 />
-                            }
-                            metric2_title="Injured"
-                            metric2_value={summaryStats.injured}
-                            themeColor="red"
-                        />
+                                <StatCard
+                                    icon={<UserSearch size={24} />}
+                                    title="Missing"
+                                    value={summaryStats.missing}
+                                    description="Persons currently unaccounted for."
+                                    themeColor="orange"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Graphs Section */}
                     <div className="space-y-8">
                         <div>
                             <h2 className="text-xl font-bold text-gray-700 mb-4">
                                 Live Situational Overview
                             </h2>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
-                                    <WeatherGraph
-                                        weatherReports={weatherReports}
-                                    />
-                                </div>
-                                <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
-                                    <EvacuationGraph
-                                        preEmptiveReports={preEmptiveReports}
-                                    />
-                                </div>
+                                <WeatherGraph weatherReports={weatherReports} />
+                                {/* ✅ 4. PASS PROPS: Pass the state and the updater function to the graph. */}
+                                <EvacuationGraph
+                                    preEmptiveReports={preEmptiveReports}
+                                    evacuationType={evacuationType}
+                                    onEvacuationTypeChange={setEvacuationType}
+                                />
                             </div>
                         </div>
 
@@ -284,11 +252,10 @@ export default function Dashboard({
                                 Human Impact Analysis
                             </h2>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
-                                    <CasualtyGraph casualties={casualties} />
-                                </div>
-                                <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
-                                    <InjuredGraph injuredList={injured} />
+                                <CasualtyGraph casualties={casualties} />
+                                <InjuredGraph injuredList={injured} />
+                                <div className="lg:col-span-2">
+                                    <MissingGraph missingList={missing} />
                                 </div>
                             </div>
                         </div>

@@ -8,203 +8,17 @@ import {
     Tooltip,
     Legend,
     ResponsiveContainer,
-    Dot,
 } from "recharts";
 import dayjs from "dayjs";
-import { Filter, Check } from "lucide-react"; // Search icon removed from imports
+import { Filter, Check, Wind, CloudRain, CloudOff } from "lucide-react";
 
 // =================================================================================
-// Main WeatherGraph component
+// Reusable Sub-Components
 // =================================================================================
-const WeatherGraph = ({ weatherReports = [] }) => {
-    const [selectedMunicipality, setSelectedMunicipality] = useState("All");
 
-    const municipalities = useMemo(() => {
-        if (!Array.isArray(weatherReports)) return [];
-        return [
-            "All",
-            ...new Set(weatherReports.map((report) => report.municipality)),
-        ];
-    }, [weatherReports]);
-
-    const filteredReports = useMemo(() => {
-        if (selectedMunicipality === "All") {
-            return weatherReports;
-        }
-        return weatherReports.filter(
-            (report) => report.municipality === selectedMunicipality
-        );
-    }, [weatherReports, selectedMunicipality]);
-
-    const data = useMemo(() => {
-        return filteredReports
-            .map((report) => ({
-                name: dayjs(report.updated_at).format("MMM D, HH:mm"),
-                precipitation: report.precipitation
-                    ? parseFloat(report.precipitation)
-                    : 0,
-                wind: report.wind ? parseFloat(report.wind) : 0,
-                updated_at: report.updated_at,
-                municipality: report.municipality,
-            }))
-            .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
-    }, [filteredReports]);
-
-    const latest = data.length > 0 ? data[data.length - 1] : null;
-
-    return (
-        <div className="w-full bg-white rounded-2xl shadow p-6">
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                    Weather Trend Overview
-                </h2>
-                <div className="flex w-full md:w-auto">
-                    <FilterDropdown
-                        options={municipalities}
-                        selectedOption={selectedMunicipality}
-                        onSelect={setSelectedMunicipality}
-                    />
-                </div>
-            </div>
-
-            {!data || data.length === 0 ? (
-                <div className="text-center text-gray-500 py-16">
-                    No weather data available for the selected municipality.
-                </div>
-            ) : (
-                <>
-                    <ResponsiveContainer width="100%" height={400}>
-                        <LineChart
-                            data={data}
-                            margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                                dataKey="name"
-                                angle={-25}
-                                textAnchor="end"
-                                height={60}
-                                interval="preserveStartEnd"
-                            />
-                            <YAxis
-                                label={{
-                                    value: "Measurement",
-                                    angle: -90,
-                                    position: "insideLeft",
-                                }}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "#fff",
-                                    borderRadius: "10px",
-                                }}
-                                formatter={(value, name) =>
-                                    name === "precipitation"
-                                        ? [`${value} mm`, "Precipitation (mm)"]
-                                        : [`${value} km/h`, "Wind Speed (km/h)"]
-                                }
-                                labelFormatter={(label, payload) => {
-                                    if (payload && payload.length > 0) {
-                                        const dataPoint = payload[0].payload;
-                                        const date = dayjs(
-                                            dataPoint.updated_at
-                                        ).format("MMM D, YYYY HH:mm");
-                                        if (selectedMunicipality === "All") {
-                                            return `${dataPoint.municipality} - ${date}`;
-                                        }
-                                        return date;
-                                    }
-                                    return label;
-                                }}
-                            />
-                            <Legend verticalAlign="top" height={36} />
-                            <Line
-                                type="monotone"
-                                dataKey="wind"
-                                name="Wind Speed (km/h)"
-                                stroke="#3B82F6"
-                                strokeWidth={2}
-                                // ✅ FIX: Add a unique key to each Dot component
-                                dot={({ cx, cy, payload }) =>
-                                    latest &&
-                                    payload.updated_at === latest.updated_at ? (
-                                        <Dot
-                                            key={`latest-wind-${payload.updated_at}`}
-                                            cx={cx}
-                                            cy={cy}
-                                            r={6}
-                                            fill="#1D4ED8"
-                                        />
-                                    ) : (
-                                        <Dot
-                                            key={`wind-${payload.updated_at}`}
-                                            cx={cx}
-                                            cy={cy}
-                                            r={4}
-                                            fill="#60A5FA"
-                                        />
-                                    )
-                                }
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="precipitation"
-                                name="Precipitation (mm)"
-                                stroke="#22C55E"
-                                strokeWidth={2}
-                                // ✅ FIX: Add a unique key to each Dot component
-                                dot={({ cx, cy, payload }) =>
-                                    latest &&
-                                    payload.updated_at === latest.updated_at ? (
-                                        <Dot
-                                            key={`latest-precip-${payload.updated_at}`}
-                                            cx={cx}
-                                            cy={cy}
-                                            r={6}
-                                            fill="#15803D"
-                                        />
-                                    ) : (
-                                        <Dot
-                                            key={`precip-${payload.updated_at}`}
-                                            cx={cx}
-                                            cy={cy}
-                                            r={4}
-                                            fill="#4ADE80"
-                                        />
-                                    )
-                                }
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    {latest && (
-                        <div className="text-sm text-gray-700 mt-4">
-                            <p>
-                                <strong>
-                                    Latest Update ({latest.municipality}):
-                                </strong>{" "}
-                                {dayjs(latest.updated_at).format(
-                                    "MMM D, YYYY — HH:mm:ss"
-                                )}
-                            </p>
-                            <p>
-                                <span className="text-blue-600 font-semibold">
-                                    Wind Speed: {latest.wind} km/h
-                                </span>
-                                {" | "}
-                                <span className="text-green-600 font-semibold">
-                                    Precipitation: {latest.precipitation} mm
-                                </span>
-                            </p>
-                        </div>
-                    )}
-                </>
-            )}
-        </div>
-    );
-};
-
-// You need to include the FilterDropdown component definition here
-// since it was removed for brevity. I am adding it back for a complete file.
+/**
+ * A reusable dropdown for filtering.
+ */
 const FilterDropdown = ({ options, selectedOption, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -232,11 +46,11 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full sm:w-48 p-2 bg-white border border-gray-300 rounded-lg shadow-sm text-left focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="flex items-center justify-between w-full sm:w-52 p-2 bg-white border border-gray-300 rounded-lg shadow-sm text-left focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             >
                 <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 truncate">
                         {selectedOption}
                     </span>
                 </div>
@@ -256,6 +70,239 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
                         </button>
                     ))}
                 </div>
+            )}
+        </div>
+    );
+};
+
+/**
+ * A beautifully styled custom tooltip for the chart.
+ */
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+                <p className="font-bold text-gray-800">{data.municipality}</p>
+                <p className="text-sm text-gray-500 mb-2">{label}</p>
+                {payload.map((p, index) => (
+                    <div key={index} className="flex items-center">
+                        <span
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: p.stroke }}
+                        ></span>
+                        <span className="text-sm text-gray-700">{`${p.name}: ${p.value}`}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
+};
+
+// =================================================================================
+// Main WeatherGraph Component
+// =================================================================================
+const WeatherGraph = ({ weatherReports = [] }) => {
+    const [selectedMunicipality, setSelectedMunicipality] = useState("All");
+
+    const municipalities = useMemo(() => {
+        if (!Array.isArray(weatherReports)) return [];
+        return [
+            "All",
+            ...new Set(weatherReports.map((report) => report.municipality)),
+        ];
+    }, [weatherReports]);
+
+    // This is the core logic for processing data.
+    // It now handles the "All" case by averaging the data.
+    const data = useMemo(() => {
+        const reportsToProcess =
+            selectedMunicipality === "All"
+                ? weatherReports
+                : weatherReports.filter(
+                      (report) => report.municipality === selectedMunicipality
+                  );
+
+        if (selectedMunicipality === "All") {
+            // Aggregate data for the "All" view
+            const aggregator = reportsToProcess.reduce((acc, report) => {
+                const timestamp = report.updated_at;
+                if (!acc[timestamp]) {
+                    acc[timestamp] = {
+                        windSum: 0,
+                        precipSum: 0,
+                        count: 0,
+                        date: timestamp,
+                    };
+                }
+                acc[timestamp].windSum += parseFloat(report.wind) || 0;
+                acc[timestamp].precipSum +=
+                    parseFloat(report.precipitation) || 0;
+                acc[timestamp].count += 1;
+                return acc;
+            }, {});
+
+            return Object.values(aggregator)
+                .map((data) => ({
+                    name: dayjs(data.date).format("MMM D, HH:mm"),
+                    wind: (data.windSum / data.count).toFixed(2),
+                    precipitation: (data.precipSum / data.count).toFixed(2),
+                    updated_at: data.date,
+                    municipality: "Average of All",
+                }))
+                .sort(
+                    (a, b) => new Date(a.updated_at) - new Date(b.updated_at)
+                );
+        }
+
+        // Process data for a single selected municipality
+        return reportsToProcess
+            .map((report) => ({
+                name: dayjs(report.updated_at).format("MMM D, HH:mm"),
+                precipitation: parseFloat(report.precipitation) || 0,
+                wind: parseFloat(report.wind) || 0,
+                updated_at: report.updated_at,
+                municipality: report.municipality,
+            }))
+            .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+    }, [weatherReports, selectedMunicipality]);
+
+    const latest = data.length > 0 ? data[data.length - 1] : null;
+
+    return (
+        <div className="w-full bg-white rounded-2xl shadow p-6">
+            <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                    Weather Trend Overview
+                </h2>
+                <FilterDropdown
+                    options={municipalities}
+                    selectedOption={selectedMunicipality}
+                    onSelect={setSelectedMunicipality}
+                />
+            </div>
+
+            {!data || data.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[400px] text-center text-gray-500">
+                    <CloudOff size={48} className="mb-4 text-gray-400" />
+                    <p className="font-semibold text-gray-700">
+                        No Weather Data Available
+                    </p>
+                    <p className="text-sm">
+                        There are no reports for the selected municipality.
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <ResponsiveContainer width="100%" height={400}>
+                        <LineChart
+                            data={data}
+                            margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
+                        >
+                            {/* Defining gradients for the lines */}
+                            <defs>
+                                <linearGradient
+                                    id="colorWind"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="5%"
+                                        stopColor="#3B82F6"
+                                        stopOpacity={0.8}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="#3B82F6"
+                                        stopOpacity={0}
+                                    />
+                                </linearGradient>
+                                <linearGradient
+                                    id="colorPrecip"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="5%"
+                                        stopColor="#22C55E"
+                                        stopOpacity={0.8}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="#22C55E"
+                                        stopOpacity={0}
+                                    />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                                dataKey="name"
+                                angle={-25}
+                                textAnchor="end"
+                                height={60}
+                                interval="preserveStartEnd"
+                            />
+                            <YAxis
+                                label={{
+                                    value: "Measurement",
+                                    angle: -90,
+                                    position: "insideLeft",
+                                }}
+                            />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend verticalAlign="top" height={36} />
+                            <Line
+                                type="monotone"
+                                dataKey="wind"
+                                name="Wind Speed (km/h)"
+                                stroke="#3B82F6"
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 8 }}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="precipitation"
+                                name="Precipitation (mm)"
+                                stroke="#22C55E"
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 8 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                    {latest && (
+                        <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
+                            <h3 className="font-bold text-gray-800 mb-2">
+                                Latest Update ({latest.municipality})
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                                {dayjs(latest.updated_at).format(
+                                    "MMMM D, YYYY — HH:mm:ss"
+                                )}
+                            </p>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Wind className="h-5 w-5 text-blue-500" />
+                                    <span className="text-blue-600 font-semibold">
+                                        {latest.wind} km/h
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CloudRain className="h-5 w-5 text-green-500" />
+                                    <span className="text-green-600 font-semibold">
+                                        {latest.precipitation} mm
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
