@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 // =================================================================================
-// Reusable Sub-Components for the Enhanced UI (Copied from InjuredGraph)
+// Reusable Sub-Components for the Enhanced UI
 // =================================================================================
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -34,9 +34,9 @@ const CustomTooltip = ({ active, payload, label }) => {
         return (
             <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200">
                 <p className="font-bold text-gray-800">{label}</p>
-                <p
-                    style={{ color: color }}
-                >{`${name}: ${value.toLocaleString()}`}</p>
+                <p style={{ color: color }}>
+                    {`${name}: ${value.toLocaleString()}`}
+                </p>
             </div>
         );
     }
@@ -190,27 +190,26 @@ const AgeFilterDropdown = ({ options, selectedOption, onSelect }) => {
 };
 
 // =================================================================================
-// Main Enhanced CasualtyGraph Component
+// Main Enhanced InjuredGraph Component
 // =================================================================================
-const CasualtyGraph = ({ casualties = [] }) => {
+const InjuredGraph = ({ injuredList = [] }) => {
     const [selectedSex, setSelectedSex] = useState("All");
     const [selectedAgeGroup, setSelectedAgeGroup] = useState("All");
     const [currentView, setCurrentView] = useState("bar");
 
     const ageBrackets = ["All", "0-17", "18-30", "31-50", "51-65", "66+"];
 
-    // Memoized data for the BAR CHART (Cause of Death view)
-    const filteredCauseData = useMemo(() => {
-        if (!Array.isArray(casualties)) return [];
-        const data = casualties
+    const filteredDiagnosisData = useMemo(() => {
+        if (!Array.isArray(injuredList)) return [];
+        const data = injuredList
             .filter(
-                (casualty) =>
+                (injured) =>
                     selectedSex === "All" ||
-                    casualty.sex?.toLowerCase() === selectedSex.toLowerCase()
+                    injured.sex?.toLowerCase() === selectedSex.toLowerCase()
             )
-            .filter((casualty) => {
+            .filter((injured) => {
                 if (selectedAgeGroup === "All") return true;
-                const age = parseInt(casualty.age, 10);
+                const age = parseInt(injured.age, 10);
                 if (isNaN(age)) return false;
                 switch (selectedAgeGroup) {
                     case "0-17":
@@ -227,22 +226,21 @@ const CasualtyGraph = ({ casualties = [] }) => {
                         return true;
                 }
             })
-            .reduce((acc, casualty) => {
-                const cause = casualty.cause_of_death?.trim() || "Unknown";
-                if (!acc[cause]) {
-                    acc[cause] = { cause, count: 0 };
+            .reduce((acc, injured) => {
+                const diagnosis = injured.diagnosis?.trim() || "Unknown";
+                if (!acc[diagnosis]) {
+                    acc[diagnosis] = { diagnosis, count: 0 };
                 }
-                acc[cause].count += 1;
+                acc[diagnosis].count += 1;
                 return acc;
             }, {});
         return Object.values(data).sort((a, b) => a.count - b.count);
-    }, [casualties, selectedSex, selectedAgeGroup]);
+    }, [injuredList, selectedSex, selectedAgeGroup]);
 
-    // Memoized data for the PIE CHART (Sex Distribution view)
     const sexDistributionData = useMemo(() => {
-        const filteredByAge = casualties.filter((casualty) => {
+        const filteredByAge = injuredList.filter((injured) => {
             if (selectedAgeGroup === "All") return true;
-            const age = parseInt(casualty.age, 10);
+            const age = parseInt(injured.age, 10);
             if (isNaN(age)) return false;
             switch (selectedAgeGroup) {
                 case "0-17":
@@ -259,9 +257,10 @@ const CasualtyGraph = ({ casualties = [] }) => {
                     return true;
             }
         });
+
         const sexAggregator = filteredByAge.reduce(
-            (acc, casualty) => {
-                const sex = casualty.sex;
+            (acc, injured) => {
+                const sex = injured.sex;
                 if (sex?.toLowerCase() === "male") {
                     acc.Male.value += 1;
                 } else if (sex?.toLowerCase() === "female") {
@@ -274,8 +273,9 @@ const CasualtyGraph = ({ casualties = [] }) => {
                 Female: { name: "Female", value: 0 },
             }
         );
+
         return Object.values(sexAggregator).filter((s) => s.value > 0);
-    }, [casualties, selectedAgeGroup]);
+    }, [injuredList, selectedAgeGroup]);
 
     return (
         <div className="w-full bg-white rounded-2xl shadow p-6">
@@ -283,8 +283,8 @@ const CasualtyGraph = ({ casualties = [] }) => {
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">
                         {currentView === "bar"
-                            ? "Casualties by Cause of Death"
-                            : "Casualties by Sex"}
+                            ? "Injured Persons by Diagnosis"
+                            : "Injured Persons by Sex"}
                     </h2>
                     <p className="text-sm text-gray-500">
                         {currentView === "bar"
@@ -312,13 +312,16 @@ const CasualtyGraph = ({ casualties = [] }) => {
                                 : "Switch to Bar Chart"}
                         </div>
                     </button>
+
                     {currentView === "bar" && (
                         <SexFilterPopover
                             selectedSex={selectedSex}
                             onSelect={setSelectedSex}
                         />
                     )}
+
                     <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
                     <AgeFilterDropdown
                         options={ageBrackets}
                         selectedOption={selectedAgeGroup}
@@ -330,10 +333,10 @@ const CasualtyGraph = ({ casualties = [] }) => {
             <div className="mt-6">
                 <ResponsiveContainer width="100%" height={400}>
                     {currentView === "bar" ? (
-                        filteredCauseData.length > 0 ? (
+                        filteredDiagnosisData.length > 0 ? (
                             <BarChart
                                 layout="vertical"
-                                data={filteredCauseData}
+                                data={filteredDiagnosisData}
                             >
                                 <CartesianGrid
                                     strokeDasharray="3 3"
@@ -342,18 +345,20 @@ const CasualtyGraph = ({ casualties = [] }) => {
                                 <XAxis type="number" allowDecimals={false} />
                                 <YAxis
                                     type="category"
-                                    dataKey="cause"
+                                    dataKey="diagnosis"
                                     width={150}
                                     tick={{ fontSize: 12 }}
                                 />
                                 <Tooltip
                                     content={<CustomTooltip />}
-                                    cursor={{ fill: "rgba(239, 68, 68, 0.1)" }}
+                                    cursor={{
+                                        fill: "rgba(253, 230, 138, 0.4)",
+                                    }}
                                 />
                                 <Bar
                                     dataKey="count"
-                                    name="Casualties"
-                                    fill="#EF4444"
+                                    name="Injured"
+                                    fill="#F59E0B"
                                     radius={[0, 4, 4, 0]}
                                 />
                             </BarChart>
@@ -367,8 +372,8 @@ const CasualtyGraph = ({ casualties = [] }) => {
                                     No Data for Selected Filters
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                    {casualties.length === 0
-                                        ? "No casualties have been recorded."
+                                    {injuredList.length === 0
+                                        ? "No injured persons recorded."
                                         : "Try adjusting filters."}
                                 </p>
                             </div>
@@ -415,4 +420,4 @@ const CasualtyGraph = ({ casualties = [] }) => {
     );
 };
 
-export default CasualtyGraph;
+export default InjuredGraph;

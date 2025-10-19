@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\WeatherReport;
 use App\Models\PreEmptiveReport;
-use App\Models\Casualty; // Assuming this is your model name
+use App\Models\Casualty;
 use Inertia\Inertia;
+use App\Models\Injured;
 
 class DashboardController extends Controller
 {
@@ -19,7 +20,8 @@ class DashboardController extends Controller
                 'updated_at'
             )->get(),
             'preEmptiveReports' => PreEmptiveReport::all(),
-            'casualties' => Casualty::all(), // Add this line to pass casualty data
+            'casualties' => Casualty::all(),
+            'injured' => Injured::all(),
         ]);
     }
 }

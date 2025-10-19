@@ -9,8 +9,9 @@ import { Head } from "@inertiajs/react";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import WeatherGraph from "@/Components/Graphs/WeatherGraph";
 import EvacuationGraph from "@/Components/Graphs/EvacuationGraph";
-import CasualtyGraph from "@/Components/Graphs/CasualtyGraph"; // 1. Import the new graph
-import { Users, Home, Wind, CloudRain, UserX } from "lucide-react"; // 2. Add UserX icon
+import CasualtyGraph from "@/Components/Graphs/CasualtyGraph";
+import InjuredGraph from "@/Components/Graphs/InjuredGraph"; // 1. Import InjuredGraph
+import { Users, Home, Wind, CloudRain, UserX, UserPlus } from "lucide-react"; // 2. Import UserPlus icon
 
 const StatCard = ({
     icon,
@@ -35,13 +36,14 @@ const StatCard = ({
     </div>
 );
 
-// 3. Accept `casualties` as a prop
+// 3. Accept `injured` prop
 export default function Dashboard({
     weatherReports = [],
     preEmptiveReports = [],
     casualties = [],
+    injured = [],
 }) {
-    // 4. Update summary stats to include total casualties
+    // 4. Update summary stats to include total injured
     const summaryStats = useMemo(() => {
         const totalEvacuatedPersons = preEmptiveReports.reduce(
             (sum, report) => sum + (parseInt(report.total_persons, 10) || 0),
@@ -52,6 +54,7 @@ export default function Dashboard({
             0
         );
         const totalCasualties = casualties.length;
+        const totalInjured = injured.length; // Calculate total injured
 
         const latestWeather =
             weatherReports.length > 0
@@ -64,6 +67,7 @@ export default function Dashboard({
             persons: totalEvacuatedPersons.toLocaleString(),
             families: totalEvacuatedFamilies.toLocaleString(),
             casualties: totalCasualties.toLocaleString(),
+            injured: totalInjured.toLocaleString(), // Add injured to stats
             wind:
                 latestWeather.wind !== "N/A"
                     ? `${latestWeather.wind} km/h`
@@ -73,7 +77,7 @@ export default function Dashboard({
                     ? `${latestWeather.precipitation} mm`
                     : "N/A",
         };
-    }, [weatherReports, preEmptiveReports, casualties]);
+    }, [weatherReports, preEmptiveReports, casualties, injured]); // Add injured to dependency array
 
     return (
         <SidebarProvider>
@@ -89,8 +93,8 @@ export default function Dashboard({
                 </header>
 
                 <main className="w-full p-6 space-y-6 bg-gray-50/50">
-                    {/* 5. Add the new casualty StatCard to the grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    {/* 5. Updated Summary Grid with "Total Injured" card */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                         <StatCard
                             icon={<Users size={24} />}
                             title="Evacuated Persons"
@@ -110,6 +114,12 @@ export default function Dashboard({
                             borderColor="border-red-500"
                         />
                         <StatCard
+                            icon={<UserPlus size={24} />}
+                            title="Total Injured"
+                            value={summaryStats.injured}
+                            borderColor="border-amber-500"
+                        />
+                        <StatCard
                             icon={<Wind size={24} />}
                             title="Latest Wind Speed"
                             value={summaryStats.wind}
@@ -123,8 +133,9 @@ export default function Dashboard({
                         />
                     </div>
 
-                    {/* Graphs Section */}
+                    {/* 6. Improved Graphs Layout */}
                     <div className="space-y-6">
+                        {/* Top Row: Weather and Evacuation */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
                                 <WeatherGraph weatherReports={weatherReports} />
@@ -135,9 +146,15 @@ export default function Dashboard({
                                 />
                             </div>
                         </div>
-                        {/* 6. Add the new CasualtyGraph in its own card */}
-                        <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
-                            <CasualtyGraph casualties={casualties} />
+
+                        {/* Bottom Row: Casualties and Injured */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
+                                <CasualtyGraph casualties={casualties} />
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-0 overflow-hidden border border-gray-100">
+                                <InjuredGraph injuredList={injured} />
+                            </div>
                         </div>
                     </div>
                 </main>
