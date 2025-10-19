@@ -214,10 +214,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('assistance-provided-lgus.index');
 });
 
+use App\Http\Controllers\DashboardController;
+
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('admin/dashboard', function () {
-        return Inertia::render('Admin/Dashboard');
-    })->name('admin.dashboard');
+    Route::get('admin/dashboard', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
 });
 
 require __DIR__ . '/auth.php';

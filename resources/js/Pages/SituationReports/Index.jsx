@@ -161,65 +161,72 @@ export default function Index() {
     const isStepEmpty = (stepNumber) => {
         switch (stepNumber) {
             case 1:
-                return data.reports.every(
+                return !data.reports.some(
                     (r) =>
-                        !r.municipality &&
-                        !r.sky_condition &&
-                        !r.wind &&
-                        !r.precipitation &&
-                        !r.sea_condition
+                        r.municipality ||
+                        r.sky_condition ||
+                        r.wind ||
+                        r.precipitation ||
+                        r.sea_condition
                 );
+
             case 2:
-                return data.waterLevels.every(
+                return !data.waterLevels.some(
                     (r) =>
-                        !r.gauging_station &&
-                        !r.current_level &&
-                        !r.alarm_level &&
-                        !r.critical_level &&
-                        !r.affected_areas
+                        r.gauging_station ||
+                        r.current_level ||
+                        r.alarm_level ||
+                        r.critical_level ||
+                        r.affected_areas
                 );
+
             case 3:
-                return data.electricityServices.every(
-                    (r) => !r.status && !r.barangays_affected && !r.remarks
+                return !data.electricityServices.some(
+                    (r) => r.status || r.barangays_affected || r.remarks
                 );
+
             case 4:
-                return data.waterServices.every(
+                return !data.waterServices.some(
                     (r) =>
-                        !r.source_of_water &&
-                        !r.barangays_served &&
-                        !r.status &&
-                        !r.remarks
+                        r.source_of_water ||
+                        r.barangays_served ||
+                        r.status ||
+                        r.remarks
                 );
+
             case 5:
-                return data.communications.every(
+                return !data.communications.some(
                     (r) =>
-                        !r.globe &&
-                        !r.smart &&
-                        !r.pldt_landline &&
-                        !r.pldt_internet &&
-                        !r.vhf &&
-                        !r.remarks
+                        r.globe ||
+                        r.smart ||
+                        r.pldt_landline ||
+                        r.pldt_internet ||
+                        r.vhf ||
+                        r.remarks
                 );
+
             case 6:
-                return data.roads.every(
+                return !data.roads.some(
                     (r) =>
-                        !r.road_classification &&
-                        !r.name_of_road &&
-                        !r.status &&
-                        !r.areas_affected &&
-                        !r.re_routing &&
-                        !r.remarks
+                        r.road_classification ||
+                        r.name_of_road ||
+                        r.status ||
+                        r.areas_affected ||
+                        r.re_routing ||
+                        r.remarks
                 );
+
             case 7:
-                return data.bridges.every(
+                return !data.bridges.some(
                     (r) =>
-                        !r.road_classification &&
-                        !r.name_of_bridge &&
-                        !r.status &&
-                        !r.areas_affected &&
-                        !r.re_routing &&
-                        !r.remarks
+                        r.road_classification ||
+                        r.name_of_bridge ||
+                        r.status ||
+                        r.areas_affected ||
+                        r.re_routing ||
+                        r.remarks
                 );
+
             default:
                 return true;
         }

@@ -49,6 +49,10 @@ class WeatherReport extends Model
             if (Auth::check()) {
                 $model->user_id = $model->user_id ?? Auth::id();
                 $model->updated_by = Auth::id();
+            } else {
+                // Fallback when running in CLI or seeding
+                $model->user_id = $model->user_id ?? 1;
+                $model->updated_by = 1;
             }
         });
 

@@ -21,13 +21,13 @@ class SituationOverviewController extends Controller
     public function index()
     {
         return Inertia::render('SituationReports/Index', [
-            'weatherReports' => WeatherReport::latest()->get(),
-            'waterLevels'    => WaterLevel::latest()->get(),
-            'electricity'    => ElectricityService::latest()->get(),
-            'waterServices'  => WaterService::latest()->get(),
-            'communications' => Communication::latest()->get(),
-            'roads'          => Road::latest()->get(),
-            'bridges'        => Bridge::latest()->get(),
+            'weatherReports' => WeatherReport::orderBy('updated_at', 'asc')->get(),
+            'waterLevels'    => WaterLevel::orderBy('updated_at', 'asc')->get(),
+            'electricity'    => ElectricityService::orderBy('updated_at', 'asc')->get(),
+            'waterServices'  => WaterService::orderBy('updated_at', 'asc')->get(),
+            'communications' => Communication::orderBy('updated_at', 'asc')->get(),
+            'roads'          => Road::orderBy('updated_at', 'asc')->get(),
+            'bridges'        => Bridge::orderBy('updated_at', 'asc')->get(),
         ]);
     }
 

@@ -46,5 +46,9 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('admin123'),
         ]);
         $admin->assignRole($adminRole);
+
+        $this->call(WeatherReportSeeder::class);
+        $this->call(CasualtySeeder::class);
+        $this->call(PreEmptiveReportSeeder::class);
     }
 }

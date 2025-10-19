@@ -181,39 +181,31 @@ export default function Index() {
                         !r.description &&
                         !r.remarks
                 );
-            case 2:
-                return (
-                    data.casualties.every(
-                        (r) =>
-                            !r.name &&
-                            !r.age &&
-                            !r.sex &&
-                            !r.address &&
-                            !r.cause_of_death &&
-                            !r.date_died &&
-                            !r.place_of_incident
-                    ) &&
-                    data.injured.every(
-                        (r) =>
-                            !r.name &&
-                            !r.age &&
-                            !r.sex &&
-                            !r.address &&
-                            !r.diagnosis &&
-                            !r.date_admitted &&
-                            !r.place_of_incident &&
-                            !r.remarks
-                    ) &&
-                    data.missing.every(
-                        (r) =>
-                            !r.name &&
-                            !r.age &&
-                            !r.sex &&
-                            !r.address &&
-                            !r.cause &&
-                            !r.remarks
-                    )
+
+            case 2: {
+                // --- DEAD ---
+                const allDeadNamesEmpty = data.casualties.every(
+                    (r) => !r.name?.trim()
                 );
+
+                // --- INJURED ---
+                const allInjuredNamesEmpty = data.injured.every(
+                    (r) => !r.name?.trim()
+                );
+
+                // --- MISSING ---
+                const allMissingNamesEmpty = data.missing.every(
+                    (r) => !r.name?.trim()
+                );
+
+                // Step 2 is empty if *all three tabs* have all empty names
+                return (
+                    allDeadNamesEmpty &&
+                    allInjuredNamesEmpty &&
+                    allMissingNamesEmpty
+                );
+            }
+
             case 3:
                 return data.affected_tourists.every(
                     (r) =>
@@ -223,10 +215,12 @@ export default function Index() {
                         !r.foreign_tourists &&
                         !r.remarks
                 );
+
             case 4:
                 return data.damaged_houses.every(
                     (r) => !r.barangay && !r.partially && !r.totally && !r.total
                 );
+
             case 5:
                 return (
                     data.suspension_of_classes.every(
@@ -243,6 +237,7 @@ export default function Index() {
                             !r.remarks
                     )
                 );
+
             default:
                 return true;
         }
