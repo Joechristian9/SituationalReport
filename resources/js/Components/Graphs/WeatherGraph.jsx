@@ -14,66 +14,6 @@ import dayjs from "dayjs";
 import { Filter, Check } from "lucide-react"; // Search icon removed from imports
 
 // =================================================================================
-// Reusable FilterDropdown component
-// =================================================================================
-const FilterDropdown = ({ options, selectedOption, onSelect }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
-
-    // Effect to handle clicking outside of the dropdown to close it
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target)
-            ) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const handleSelect = (value) => {
-        onSelect(value);
-        setIsOpen(false);
-    };
-
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full sm:w-48 p-2 bg-white border border-gray-300 rounded-lg shadow-sm text-left focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">
-                        {selectedOption}
-                    </span>
-                </div>
-            </button>
-            {isOpen && (
-                <div className="absolute top-full mt-2 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl z-10">
-                    {options.map((option) => (
-                        <button
-                            key={option}
-                            onClick={() => handleSelect(option)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 flex items-center justify-between"
-                        >
-                            {option}
-                            {selectedOption === option && (
-                                <Check className="h-4 w-4 text-indigo-600" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-// =================================================================================
 // Main WeatherGraph component
 // =================================================================================
 const WeatherGraph = ({ weatherReports = [] }) => {
@@ -87,7 +27,6 @@ const WeatherGraph = ({ weatherReports = [] }) => {
         ];
     }, [weatherReports]);
 
-    // ✅ Filtering logic is now simplified back to only use the dropdown selection
     const filteredReports = useMemo(() => {
         if (selectedMunicipality === "All") {
             return weatherReports;
@@ -115,7 +54,6 @@ const WeatherGraph = ({ weatherReports = [] }) => {
 
     return (
         <div className="w-full bg-white rounded-2xl shadow p-6">
-            {/* ✅ Simplified Header */}
             <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
                 <h2 className="text-lg font-semibold text-gray-800">
                     Weather Trend Overview
@@ -186,10 +124,12 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                 name="Wind Speed (km/h)"
                                 stroke="#3B82F6"
                                 strokeWidth={2}
+                                // ✅ FIX: Add a unique key to each Dot component
                                 dot={({ cx, cy, payload }) =>
                                     latest &&
                                     payload.updated_at === latest.updated_at ? (
                                         <Dot
+                                            key={`latest-wind-${payload.updated_at}`}
                                             cx={cx}
                                             cy={cy}
                                             r={6}
@@ -197,6 +137,7 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                         />
                                     ) : (
                                         <Dot
+                                            key={`wind-${payload.updated_at}`}
                                             cx={cx}
                                             cy={cy}
                                             r={4}
@@ -211,10 +152,12 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                 name="Precipitation (mm)"
                                 stroke="#22C55E"
                                 strokeWidth={2}
+                                // ✅ FIX: Add a unique key to each Dot component
                                 dot={({ cx, cy, payload }) =>
                                     latest &&
                                     payload.updated_at === latest.updated_at ? (
                                         <Dot
+                                            key={`latest-precip-${payload.updated_at}`}
                                             cx={cx}
                                             cy={cy}
                                             r={6}
@@ -222,6 +165,7 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                         />
                                     ) : (
                                         <Dot
+                                            key={`precip-${payload.updated_at}`}
                                             cx={cx}
                                             cy={cy}
                                             r={4}
@@ -254,6 +198,64 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                         </div>
                     )}
                 </>
+            )}
+        </div>
+    );
+};
+
+// You need to include the FilterDropdown component definition here
+// since it was removed for brevity. I am adding it back for a complete file.
+const FilterDropdown = ({ options, selectedOption, onSelect }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target)
+            ) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleSelect = (value) => {
+        onSelect(value);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center justify-between w-full sm:w-48 p-2 bg-white border border-gray-300 rounded-lg shadow-sm text-left focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-700">
+                        {selectedOption}
+                    </span>
+                </div>
+            </button>
+            {isOpen && (
+                <div className="absolute top-full mt-2 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl z-10">
+                    {options.map((option) => (
+                        <button
+                            key={option}
+                            onClick={() => handleSelect(option)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 flex items-center justify-between"
+                        >
+                            {option}
+                            {selectedOption === option && (
+                                <Check className="h-4 w-4 text-indigo-600" />
+                            )}
+                        </button>
+                    ))}
+                </div>
             )}
         </div>
     );
