@@ -90,22 +90,22 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // =================================================================================
-// The main EvacuationGraph component (MODIFIED)
+// MAIN COMPONENT (WITH CORRECTIONS)
 // =================================================================================
 const EvacuationGraph = ({
     preEmptiveReports = [],
-    // ✅ 1. RECEIVE PROPS: Accept the active filter and a function to change it.
     evacuationType,
     onEvacuationTypeChange,
+    searchQuery, // ✅ USE this prop from Dashboard
+    onSearchChange, // ✅ USE this prop to notify Dashboard
 }) => {
-    // ❌ 2. REMOVED STATE: The filter state is now managed by the Dashboard parent.
-    // const [evacuationType, setEvacuationType] = useState("total");
-    const [searchQuery, setSearchQuery] = useState("");
+    // ❌ REMOVED: No longer need local state for the search query
+    // const [searchQuery, setSearchQuery] = useState("");
 
     const aggregatedData = useMemo(() => {
-        // ... (This logic is unchanged)
         if (!Array.isArray(preEmptiveReports) || preEmptiveReports.length === 0)
             return [];
+
         const aggregator = preEmptiveReports.reduce((acc, report) => {
             const {
                 barangay,
@@ -117,6 +117,7 @@ const EvacuationGraph = ({
                 total_families,
             } = report;
             if (!barangay) return acc;
+
             if (!acc[barangay]) {
                 acc[barangay] = {
                     barangay,
@@ -128,6 +129,7 @@ const EvacuationGraph = ({
                     total_families: 0,
                 };
             }
+
             acc[barangay].inside_persons += parseInt(persons, 10) || 0;
             acc[barangay].inside_families += parseInt(families, 10) || 0;
             acc[barangay].outside_persons += parseInt(outside_persons, 10) || 0;
@@ -137,17 +139,26 @@ const EvacuationGraph = ({
             acc[barangay].total_families += parseInt(total_families, 10) || 0;
             return acc;
         }, {});
+
         return Object.values(aggregator);
     }, [preEmptiveReports]);
 
     const filteredGraphData = useMemo(() => {
+        // This logic remains the same, but now `searchQuery` is a prop
         if (!searchQuery) return aggregatedData;
         return aggregatedData.filter((item) =>
             item.barangay.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [aggregatedData, searchQuery]);
 
-    // This logic now correctly uses the `evacuationType` prop
+    // This useEffect is optional for your primary goal, but good practice
+    // It's not part of the fix, so no changes needed
+    useEffect(() => {
+        // This callback was named onFilteredReportsChange in your code,
+        // which could be confusing. It doesn't affect the summary card.
+    }, [filteredGraphData]);
+
+    // This logic remains the same
     let personsDataKey, familiesDataKey, personsBarName, familiesBarName;
     switch (evacuationType) {
         case "inside":
@@ -183,7 +194,6 @@ const EvacuationGraph = ({
                     Evacuation Overview
                 </h2>
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    {/* ✅ 3. USE PROPS: The dropdown is now controlled by the parent Dashboard */}
                     <FilterDropdown
                         options={filterOptions}
                         selectedOption={evacuationType}
@@ -193,8 +203,9 @@ const EvacuationGraph = ({
                     <div className="relative w-full sm:w-64">
                         <input
                             type="text"
+                            // ✅ CHANGED: Use the props for value and onChange
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => onSearchChange(e.target.value)}
                             placeholder="Search Barangay..."
                             className="w-full p-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         />
@@ -204,7 +215,7 @@ const EvacuationGraph = ({
             </div>
 
             <ResponsiveContainer width="100%" height={400}>
-                {/* ... (The BarChart JSX remains completely unchanged) ... */}
+                {/* The BarChart itself needs no changes */}
                 <BarChart data={filteredGraphData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis

@@ -2,6 +2,8 @@
 import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
+import DownloadExcelButton from "../ui/DownloadExcelButton";
+import DownloadPDFButton from "../ui/DownloadPDFButton";
 
 import React, { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +11,6 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 
-// Import icons for better visual feedback and clarity
 import { Cloud, History, Loader2, PlusCircle, Save } from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 import {
@@ -19,7 +20,6 @@ import {
     TooltipProvider,
 } from "@/components/ui/tooltip";
 
-// A helper to format field names nicely
 const formatFieldName = (field) => {
     return field
         .replace(/_/g, " ")
@@ -29,13 +29,9 @@ const formatFieldName = (field) => {
 export default function WeatherForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
     const [isSaving, setIsSaving] = useState(false);
-
-    // Filter and pagination states
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(5);
-
-    // --- NEW: dropdown open state + ref for click-outside ---
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -53,7 +49,6 @@ export default function WeatherForm({ data, setData, errors }) {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Fetch modification data (Functionality unchanged)
     const {
         data: modificationData,
         isError,
@@ -69,7 +64,6 @@ export default function WeatherForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5,
     });
 
-    // Handle input changes
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
         const updatedReports = [...data.reports];
@@ -77,7 +71,6 @@ export default function WeatherForm({ data, setData, errors }) {
         setData({ ...data, reports: updatedReports });
     };
 
-    // Add new row
     const handleAddRow = () => {
         setData({
             ...data,
@@ -95,7 +88,6 @@ export default function WeatherForm({ data, setData, errors }) {
         });
     };
 
-    // Submit handler
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
@@ -113,7 +105,6 @@ export default function WeatherForm({ data, setData, errors }) {
         }
     };
 
-    // Derived (filtered + paginated) reports
     const filteredReports = data.reports.filter((report) =>
         report.municipality?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -134,7 +125,7 @@ export default function WeatherForm({ data, setData, errors }) {
 
     return (
         <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl">
+            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
@@ -152,6 +143,7 @@ export default function WeatherForm({ data, setData, errors }) {
 
                 {/* Filter Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+                    {/* Left: Search bar */}
                     <SearchBar
                         value={searchTerm}
                         onChange={(val) => {
@@ -160,10 +152,24 @@ export default function WeatherForm({ data, setData, errors }) {
                         }}
                         placeholder="Search municipality..."
                     />
-                    <RowsPerPage
-                        rowsPerPage={rowsPerPage}
-                        setRowsPerPage={setRowsPerPage}
-                    />
+
+                    {/* Right: Rows dropdown + download button side-by-side */}
+                    <div className="flex items-center gap-3">
+                        <RowsPerPage
+                            rowsPerPage={rowsPerPage}
+                            setRowsPerPage={setRowsPerPage}
+                        />
+                        <DownloadExcelButton
+                            data={data.reports}
+                            fileName="Present_Weather_Conditions"
+                            sheetName="Weather Reports"
+                        />
+                        <DownloadPDFButton
+                            data={data.reports}
+                            fileName="Present_Weather_Conditions"
+                            title="Present Weather Conditions Report"
+                        />
+                    </div>
                 </div>
 
                 {/* Table */}
@@ -339,14 +345,17 @@ export default function WeatherForm({ data, setData, errors }) {
                         setCurrentPage(Math.max(1, Math.min(page, totalPages)))
                     }
                 />
+
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <AddRowButton
-                        onClick={handleAddRow}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
-                    >
-                        <PlusCircle size={16} /> Add Row
-                    </AddRowButton>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <AddRowButton
+                            onClick={handleAddRow}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        >
+                            <PlusCircle size={16} /> Add Row
+                        </AddRowButton>
+                    </div>
 
                     <button
                         onClick={handleSubmit}

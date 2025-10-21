@@ -8,14 +8,12 @@ import {
 import { Head } from "@inertiajs/react";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 
-// Import all the graph components
 import WeatherGraph from "@/Components/Graphs/WeatherGraph";
 import EvacuationGraph from "@/Components/Graphs/EvacuationGraph";
 import CasualtyGraph from "@/Components/Graphs/CasualtyGraph";
 import InjuredGraph from "@/Components/Graphs/InjuredGraph";
 import MissingGraph from "@/Components/Graphs/MissingGraph";
 
-// Import all necessary icons
 import {
     Users,
     Home,
@@ -25,9 +23,9 @@ import {
     UserSearch,
 } from "lucide-react";
 
-// =================================================================================
-// Reusable Sub-Components for the Dashboard UI
-// =================================================================================
+// ============================================================
+// Reusable Stat Card
+// ============================================================
 const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
     const themes = {
         red: {
@@ -54,31 +52,27 @@ const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
     const theme = themes[themeColor];
     return (
         <div
-            className={`bg-white shadow-lg rounded-2xl p-6 border-l-4 transition-transform transform hover:-translate-y-1 ${theme.border}`}
+            className={`bg-white shadow-lg rounded-2xl p-6 border-l-4 ${theme.border}`}
         >
-            {" "}
             <div className="flex items-start justify-between">
-                {" "}
-                <div className="flex flex-col">
-                    {" "}
-                    <p className="text-sm font-medium text-gray-500">
-                        {title}
-                    </p>{" "}
+                <div>
+                    <p className="text-sm font-medium text-gray-500">{title}</p>
                     <p className="text-3xl font-bold text-gray-800 mt-1">
                         {value}
-                    </p>{" "}
-                    <p className="text-xs text-gray-400 mt-2">{description}</p>{" "}
-                </div>{" "}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">{description}</p>
+                </div>
                 <div className={`p-4 rounded-xl ${theme.bg}`}>
-                    {" "}
-                    <div className={theme.text}>{icon}</div>{" "}
-                </div>{" "}
-            </div>{" "}
+                    <div className={theme.text}>{icon}</div>
+                </div>
+            </div>
         </div>
     );
 };
 
-// ✅ 1. NEW DYNAMIC COMPONENT: Calculates and displays totals based on the active filter.
+// ============================================================
+// Evacuation Summary Card (unchanged logic)
+// ============================================================
 const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     const { persons, families, title } = useMemo(() => {
         let personCount = 0;
@@ -122,7 +116,7 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     }, [reports, activeFilter]);
 
     return (
-        <div className="bg-white shadow-lg rounded-2xl p-6 flex items-center gap-6 border-l-4 border-blue-500 transition-all">
+        <div className="bg-white shadow-lg rounded-2xl p-6 flex items-center gap-6 border-l-4 border-blue-500">
             <div className="p-4 rounded-xl bg-blue-100 text-blue-600">
                 <Users size={28} />
             </div>
@@ -152,9 +146,9 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     );
 };
 
-// =================================================================================
-// Main Dashboard Component (MODIFIED)
-// =================================================================================
+// ============================================================
+// MAIN DASHBOARD
+// ============================================================
 export default function Dashboard({
     weatherReports = [],
     preEmptiveReports = [],
@@ -162,27 +156,32 @@ export default function Dashboard({
     injured = [],
     missing = [],
 }) {
-    // ✅ 2. ADD STATE: The dashboard now manages the active evacuation filter.
     const [evacuationType, setEvacuationType] = useState("total");
+    const [searchQuery, setSearchQuery] = useState("");
 
-    const summaryStats = useMemo(() => {
-        // NOTE: Evacuation totals are removed from here as the new card handles them.
-        const totalCasualties = casualties.length;
-        const totalInjured = injured.length;
-        const totalMissing = missing.length;
-        return {
-            casualties: totalCasualties.toLocaleString(),
-            injured: totalInjured.toLocaleString(),
-            missing: totalMissing.toLocaleString(),
-        };
-    }, [casualties, injured, missing]);
+    // ✅ Filter reports based on search (barangay)
+    const filteredReports = useMemo(() => {
+        if (!searchQuery) return preEmptiveReports;
+        return preEmptiveReports.filter((report) =>
+            report.barangay?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [preEmptiveReports, searchQuery]);
+
+    const summaryStats = useMemo(
+        () => ({
+            casualties: casualties.length.toLocaleString(),
+            injured: injured.length.toLocaleString(),
+            missing: missing.length.toLocaleString(),
+        }),
+        [casualties, injured, missing]
+    );
 
     return (
         <SidebarProvider>
             <AppSidebar />
             <Head title="Dashboard" />
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+                <header className="flex h-16 items-center gap-2 px-4 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="h-6" />
                     <div>
@@ -196,67 +195,61 @@ export default function Dashboard({
                 </header>
 
                 <main className="w-full p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
-                    <div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                            <div className="lg:col-span-2">
-                                {/* ✅ 3. USE DYNAMIC CARD: Replace the old static card. */}
-                                <EvacuationSummaryCard
-                                    reports={preEmptiveReports}
-                                    activeFilter={evacuationType}
-                                />
-                            </div>
-                            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <StatCard
-                                    icon={<UserX size={24} />}
-                                    title="Dead"
-                                    value={summaryStats.casualties}
-                                    description="Total recorded fatalities."
-                                    themeColor="red"
-                                />
-                                <StatCard
-                                    icon={<UserPlus size={24} />}
-                                    title="Injured"
-                                    value={summaryStats.injured}
-                                    description="Individuals needing medical care."
-                                    themeColor="amber"
-                                />
-                                <StatCard
-                                    icon={<UserSearch size={24} />}
-                                    title="Missing"
-                                    value={summaryStats.missing}
-                                    description="Persons currently unaccounted for."
-                                    themeColor="orange"
-                                />
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        <div className="lg:col-span-2">
+                            <EvacuationSummaryCard
+                                reports={filteredReports} // ✅ shows only barangay search results
+                                activeFilter={evacuationType}
+                            />
+                        </div>
+                        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <StatCard
+                                icon={<UserX size={24} />}
+                                title="Dead"
+                                value={summaryStats.casualties}
+                                description="Total recorded fatalities."
+                                themeColor="red"
+                            />
+                            <StatCard
+                                icon={<UserPlus size={24} />}
+                                title="Injured"
+                                value={summaryStats.injured}
+                                description="Individuals needing medical care."
+                                themeColor="amber"
+                            />
+                            <StatCard
+                                icon={<UserSearch size={24} />}
+                                title="Missing"
+                                value={summaryStats.missing}
+                                description="Persons currently unaccounted for."
+                                themeColor="orange"
+                            />
                         </div>
                     </div>
 
                     <div className="space-y-8">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-700 mb-4">
-                                Live Situational Overview
-                            </h2>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <WeatherGraph weatherReports={weatherReports} />
-                                {/* ✅ 4. PASS PROPS: Pass the state and the updater function to the graph. */}
-                                <EvacuationGraph
-                                    preEmptiveReports={preEmptiveReports}
-                                    evacuationType={evacuationType}
-                                    onEvacuationTypeChange={setEvacuationType}
-                                />
-                            </div>
+                        <h2 className="text-xl font-bold text-gray-700 mb-4">
+                            Live Situational Overview
+                        </h2>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <WeatherGraph weatherReports={weatherReports} />
+                            <EvacuationGraph
+                                preEmptiveReports={preEmptiveReports}
+                                evacuationType={evacuationType}
+                                onEvacuationTypeChange={setEvacuationType}
+                                searchQuery={searchQuery}
+                                onSearchChange={setSearchQuery} // ✅ pass control down
+                            />
                         </div>
 
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-700 mb-4">
-                                Human Impact Analysis
-                            </h2>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <CasualtyGraph casualties={casualties} />
-                                <InjuredGraph injuredList={injured} />
-                                <div className="lg:col-span-2">
-                                    <MissingGraph missingList={missing} />
-                                </div>
+                        <h2 className="text-xl font-bold text-gray-700 mb-4">
+                            Human Impact Analysis
+                        </h2>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <CasualtyGraph casualties={casualties} />
+                            <InjuredGraph injuredList={injured} />
+                            <div className="lg:col-span-2">
+                                <MissingGraph missingList={missing} />
                             </div>
                         </div>
                     </div>
