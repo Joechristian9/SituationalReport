@@ -195,6 +195,32 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                 </div>
             ) : (
                 <>
+                    {latest && (
+                        <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
+                            <h3 className="font-bold text-gray-800 mb-2">
+                                Latest Update ({latest.municipality})
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                                {dayjs(latest.updated_at).format(
+                                    "MMMM D, YYYY — HH:mm:ss"
+                                )}
+                            </p>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Wind className="h-5 w-5 text-blue-500" />
+                                    <span className="text-blue-600 font-semibold">
+                                        {latest.wind} km/h
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CloudRain className="h-5 w-5 text-green-500" />
+                                    <span className="text-green-600 font-semibold">
+                                        {latest.precipitation} mm
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <ResponsiveContainer width="100%" height={400}>
                         <LineChart
                             data={data}
@@ -276,32 +302,6 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                             />
                         </LineChart>
                     </ResponsiveContainer>
-                    {latest && (
-                        <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
-                            <h3 className="font-bold text-gray-800 mb-2">
-                                Latest Update ({latest.municipality})
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                                {dayjs(latest.updated_at).format(
-                                    "MMMM D, YYYY — HH:mm:ss"
-                                )}
-                            </p>
-                            <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Wind className="h-5 w-5 text-blue-500" />
-                                    <span className="text-blue-600 font-semibold">
-                                        {latest.wind} km/h
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CloudRain className="h-5 w-5 text-green-500" />
-                                    <span className="text-green-600 font-semibold">
-                                        {latest.precipitation} mm
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </>
             )}
         </div>

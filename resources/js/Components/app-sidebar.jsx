@@ -14,6 +14,17 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 import { route } from "ziggy-js";
+import {
+    Home,
+    BarChart3,
+    FileWarning,
+    ClipboardList,
+    MapPin,
+    Flame,
+    Users,
+    HeartHandshake,
+} from "lucide-react";
+import { TbLayoutDashboard } from "react-icons/tb";
 
 // Static
 const staticTeams = [{ name: "SitReps", logo: "/images/ilagan.jpeg" }];
@@ -36,41 +47,49 @@ export function AppSidebar({ ...props }) {
                     title: "Dashboard",
                     url: route("admin.dashboard"),
                     roles: ["admin"],
+                    icon: TbLayoutDashboard, // 🏠 Dashboard icon
                 },
                 {
                     title: "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user", "admin"],
+                    icon: BarChart3, // 📊 Analytics/overview
                 },
                 {
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                     roles: ["user", "admin"],
+                    icon: ClipboardList, // 🗒️ Report icon
                 },
                 {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                     roles: ["user", "admin"],
+                    icon: FileWarning, // ⚠️ Declaration/alert
                 },
                 {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user", "admin"],
+                    icon: MapPin, // 📍 Deployment/location
                 },
                 {
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
                     roles: ["user", "admin"],
+                    icon: Flame, // 🔥 Incident/fire
                 },
                 {
                     title: "Response Operations",
                     url: route("response-operations.index"),
                     roles: ["user", "admin"],
+                    icon: Users, // 👥 Operations/team
                 },
                 {
                     title: "Assistance Extended",
                     url: route("assistance.index"),
                     roles: ["user", "admin"],
+                    icon: HeartHandshake, // ❤️‍🤝 Assistance/help
                 },
             ],
         },

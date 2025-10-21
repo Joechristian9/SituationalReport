@@ -1,5 +1,9 @@
 // resources/js/Components/SituationOverview/WeatherForm.jsx
-import React, { useState } from "react";
+import SearchBar from "../ui/SearchBar";
+import RowsPerPage from "../ui/RowsPerPage";
+import Pagination from "../ui/Pagination";
+
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -26,6 +30,29 @@ export default function WeatherForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
     const [isSaving, setIsSaving] = useState(false);
 
+    // Filter and pagination states
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+
+    // --- NEW: dropdown open state + ref for click-outside ---
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target)
+            ) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     // Fetch modification data (Functionality unchanged)
     const {
         data: modificationData,
@@ -42,7 +69,7 @@ export default function WeatherForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5,
     });
 
-    // Handle input changes (Functionality unchanged)
+    // Handle input changes
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
         const updatedReports = [...data.reports];
@@ -50,7 +77,7 @@ export default function WeatherForm({ data, setData, errors }) {
         setData({ ...data, reports: updatedReports });
     };
 
-    // Add new row (Functionality unchanged)
+    // Add new row
     const handleAddRow = () => {
         setData({
             ...data,
@@ -68,7 +95,7 @@ export default function WeatherForm({ data, setData, errors }) {
         });
     };
 
-    // Submit handler (Functionality unchanged)
+    // Submit handler
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
@@ -86,6 +113,17 @@ export default function WeatherForm({ data, setData, errors }) {
         }
     };
 
+    // Derived (filtered + paginated) reports
+    const filteredReports = data.reports.filter((report) =>
+        report.municipality?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredReports.length / rowsPerPage);
+    const paginatedReports = filteredReports.slice(
+        (currentPage - 1) * rowsPerPage,
+        currentPage * rowsPerPage
+    );
+
     if (isError) {
         return (
             <div className="text-red-500 p-4">
@@ -97,7 +135,7 @@ export default function WeatherForm({ data, setData, errors }) {
     return (
         <TooltipProvider>
             <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl">
-                {/* Header with original color theme */}
+                {/* Header */}
                 <div className="flex items-center gap-3">
                     <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
                         <Cloud size={24} />
@@ -112,10 +150,25 @@ export default function WeatherForm({ data, setData, errors }) {
                     </div>
                 </div>
 
-                {/* Responsive Container */}
+                {/* Filter Controls */}
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+                    <SearchBar
+                        value={searchTerm}
+                        onChange={(val) => {
+                            setSearchTerm(val);
+                            setCurrentPage(1);
+                        }}
+                        placeholder="Search municipality..."
+                    />
+                    <RowsPerPage
+                        rowsPerPage={rowsPerPage}
+                        setRowsPerPage={setRowsPerPage}
+                    />
+                </div>
+
+                {/* Table */}
                 <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
                     <table className="w-full text-sm">
-                        {/* Table head with original color theme, hidden on mobile */}
                         <thead className="hidden md:table-header-group bg-blue-500">
                             <tr className="text-left text-white font-semibold">
                                 <th className="p-3 border-r">Municipality</th>
@@ -126,7 +179,7 @@ export default function WeatherForm({ data, setData, errors }) {
                             </tr>
                         </thead>
                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {(data.reports || []).map((row, index) => {
+                            {paginatedReports.map((row, index) => {
                                 const fields = [
                                     "municipality",
                                     "sky_condition",
@@ -135,7 +188,6 @@ export default function WeatherForm({ data, setData, errors }) {
                                     "sea_condition",
                                 ];
                                 return (
-                                    // Each row becomes a bordered "card" on mobile
                                     <tr
                                         key={row.id}
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
@@ -187,7 +239,6 @@ export default function WeatherForm({ data, setData, errors }) {
                                                                         side="right"
                                                                         className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
                                                                     >
-                                                                        {/* ... Tooltip content is unchanged ... */}
                                                                         <div className="text-sm space-y-2">
                                                                             <div>
                                                                                 <p className="text-sm font-bold text-white mb-1">
@@ -281,7 +332,14 @@ export default function WeatherForm({ data, setData, errors }) {
                     </table>
                 </div>
 
-                {/* Responsive Buttons Container with original color theme */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) =>
+                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+                    }
+                />
+                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
                     <AddRowButton
                         onClick={handleAddRow}

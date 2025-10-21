@@ -295,7 +295,7 @@ export default function Index() {
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
                                     <span className="text-sm font-medium text-gray-500">
-                                        Step {step} of {steps.length}
+                                        Report {step} of {steps.length}
                                     </span>
                                 </CardTitle>
 
