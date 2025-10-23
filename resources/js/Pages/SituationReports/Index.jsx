@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { usePage, Head, useForm } from "@inertiajs/react";
+import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import {
     SidebarProvider,
@@ -157,7 +157,7 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    // ✅ Helper function to check if a step’s form data is empty
+    // Helper function to check if a step’s form data is empty
     const isStepEmpty = (stepNumber) => {
         switch (stepNumber) {
             case 1:
@@ -169,7 +169,6 @@ export default function Index() {
                         r.precipitation ||
                         r.sea_condition
                 );
-
             case 2:
                 return !data.waterLevels.some(
                     (r) =>
@@ -179,12 +178,10 @@ export default function Index() {
                         r.critical_level ||
                         r.affected_areas
                 );
-
             case 3:
                 return !data.electricityServices.some(
                     (r) => r.status || r.barangays_affected || r.remarks
                 );
-
             case 4:
                 return !data.waterServices.some(
                     (r) =>
@@ -193,7 +190,6 @@ export default function Index() {
                         r.status ||
                         r.remarks
                 );
-
             case 5:
                 return !data.communications.some(
                     (r) =>
@@ -204,7 +200,6 @@ export default function Index() {
                         r.vhf ||
                         r.remarks
                 );
-
             case 6:
                 return !data.roads.some(
                     (r) =>
@@ -215,7 +210,6 @@ export default function Index() {
                         r.re_routing ||
                         r.remarks
                 );
-
             case 7:
                 return !data.bridges.some(
                     (r) =>
@@ -226,10 +220,17 @@ export default function Index() {
                         r.re_routing ||
                         r.remarks
                 );
-
             default:
                 return true;
         }
+    };
+
+    const motionProps = {
+        key: step,
+        initial: { opacity: 0, x: 50 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: -50 },
+        transition: { duration: 0.3 },
     };
 
     return (
@@ -245,7 +246,6 @@ export default function Index() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="h-6" />
-
                         {(() => {
                             const user = usePage().props.auth.user;
                             const isAdmin = user.roles?.some(
@@ -282,8 +282,6 @@ export default function Index() {
                                     Report {step} of {steps.length}
                                 </span>
                             </CardTitle>
-
-                            {/* Stepper */}
                             <div className="relative w-full mt-8">
                                 <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
                                     <div
@@ -297,20 +295,15 @@ export default function Index() {
                                         }}
                                     ></div>
                                 </div>
-
                                 <div className="relative flex justify-between z-10">
                                     {steps.map((item, index) => {
                                         const stepNumber = index + 1;
                                         const isActive = step === stepNumber;
                                         const isPast = step > stepNumber;
-
-                                        // 🧠 determine if user passed this step AND left it empty
                                         const wasVisited = step > stepNumber;
                                         const empty =
                                             wasVisited &&
                                             isStepEmpty(stepNumber);
-
-                                        // 🔘 Which icon to show
                                         const renderIcon = () => {
                                             if (empty)
                                                 return (
@@ -328,7 +321,6 @@ export default function Index() {
                                                 );
                                             return item.icon;
                                         };
-
                                         return (
                                             <button
                                                 key={index}
@@ -376,13 +368,7 @@ export default function Index() {
                         <CardContent className="space-y-8 min-h-[300px]">
                             <AnimatePresence mode="wait">
                                 {step === 1 && (
-                                    <motion.div
-                                        key="weather"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <WeatherForm
                                             data={data}
                                             setData={setData}
@@ -391,91 +377,106 @@ export default function Index() {
                                     </motion.div>
                                 )}
                                 {step === 2 && (
-                                    <motion.div
-                                        key="water"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <WaterLevelForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{ reports: data.waterLevels }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports: data.waterLevels,
+                                                }).reports;
+                                                setData(
+                                                    "waterLevels",
+                                                    newReports
+                                                );
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 3 && (
-                                    <motion.div
-                                        key="electricity"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <ElectricityForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{
+                                                reports:
+                                                    data.electricityServices,
+                                            }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports:
+                                                        data.electricityServices,
+                                                }).reports;
+                                                setData(
+                                                    "electricityServices",
+                                                    newReports
+                                                );
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 4 && (
-                                    <motion.div
-                                        key="waterService"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <WaterForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{
+                                                reports: data.waterServices,
+                                            }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports: data.waterServices,
+                                                }).reports;
+                                                setData(
+                                                    "waterServices",
+                                                    newReports
+                                                );
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 5 && (
-                                    <motion.div
-                                        key="comm"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <CommunicationForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{
+                                                reports: data.communications,
+                                            }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports:
+                                                        data.communications,
+                                                }).reports;
+                                                setData(
+                                                    "communications",
+                                                    newReports
+                                                );
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 6 && (
-                                    <motion.div
-                                        key="roads"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <RoadForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{ reports: data.roads }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports: data.roads,
+                                                }).reports;
+                                                setData("roads", newReports);
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 7 && (
-                                    <motion.div
-                                        key="bridges"
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
+                                    <motion.div {...motionProps}>
                                         <BridgeForm
-                                            data={data}
-                                            setData={setData}
+                                            data={{ reports: data.bridges }}
+                                            setData={(updater) => {
+                                                const newReports = updater({
+                                                    reports: data.bridges,
+                                                }).reports;
+                                                setData("bridges", newReports);
+                                            }}
                                             errors={errors}
                                         />
                                     </motion.div>

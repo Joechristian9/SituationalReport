@@ -95,25 +95,19 @@ class SituationOverviewController extends Controller
 
     public function storeWaterLevel(Request $request)
     {
-        // 1. Stricter Validation Rules, expecting a 'reports' array
         $validated = $request->validate([
-            'reports' => 'required|array',
-            'reports.*.id' => [ // ID must be a valid integer that exists in the water_levels table, or can be null.
-                'nullable',
-                'integer',
-                Rule::exists('water_levels', 'id')
-            ],
-            // Gauging Station is now required to create a new record.
-            'reports.*.gauging_station' => 'required|string|max:255',
-            'reports.*.current_level'   => 'nullable|numeric',
-            'reports.*.alarm_level'     => 'nullable|numeric',
-            'reports.*.critical_level'  => 'nullable|numeric',
-            'reports.*.affected_areas'  => 'nullable|string',
+            'reports' => ['required', 'array'],
+            'reports.*.id' => ['nullable'],
+            'reports.*.gauging_station' => ['required', 'string'],
+            'reports.*.current_level' => ['nullable', 'numeric'],
+            'reports.*.alarm_level' => ['nullable', 'numeric'],
+            'reports.*.critical_level' => ['nullable', 'numeric'],
+            'reports.*.affected_areas' => ['nullable', 'string'],
         ]);
 
         foreach ($validated['reports'] as $reportData) {
-            // 2. More Robust Saving Logic (Adopted from storeWeather)
-            if (!empty($reportData['id'])) {
+            // If ID is numeric, update existing record
+            if (!empty($reportData['id']) && is_numeric($reportData['id'])) {
                 $waterLevel = WaterLevel::find($reportData['id']);
                 if ($waterLevel) {
                     $waterLevel->update([
@@ -126,10 +120,11 @@ class SituationOverviewController extends Controller
                     ]);
                 }
             } else {
-                // Skip creating a record if the main identifier is empty.
+                // Create new record
                 if (empty($reportData['gauging_station'])) {
                     continue;
                 }
+
                 WaterLevel::create([
                     'gauging_station' => $reportData['gauging_station'],
                     'current_level'   => $reportData['current_level'],
@@ -142,9 +137,9 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return a JSON response, which is better for Axios/AJAX calls
         return response()->json(['message' => 'Water level reports saved successfully!']);
     }
+
 
     public function storeElectricity(Request $request)
     {

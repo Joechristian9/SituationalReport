@@ -52,5 +52,6 @@ class DatabaseSeeder extends Seeder
         $this->call(PreEmptiveReportSeeder::class);
         $this->call(InjuredSeeder::class);
         $this->call(MissingSeeder::class);
+        $this->call(WaterLevelSeeder::class);
     }
 }
