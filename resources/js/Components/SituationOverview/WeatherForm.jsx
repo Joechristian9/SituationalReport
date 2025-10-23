@@ -186,6 +186,8 @@ export default function WeatherForm({ data, setData, errors }) {
                         </thead>
                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
                             {paginatedReports.map((row, index) => {
+                                const actualIndex =
+                                    (currentPage - 1) * rowsPerPage + index;
                                 const fields = [
                                     "municipality",
                                     "sky_condition",
@@ -225,7 +227,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                                             }
                                                             onChange={(e) =>
                                                                 handleInputChange(
-                                                                    index,
+                                                                    actualIndex,
                                                                     e
                                                                 )
                                                             }

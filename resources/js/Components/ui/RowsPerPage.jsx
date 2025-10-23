@@ -1,7 +1,10 @@
-// resources/js/Components/ui/RowsPerPage.jsx
 import React, { useRef, useState, useEffect } from "react";
 
-export default function RowsPerPage({ rowsPerPage, setRowsPerPage }) {
+export default function RowsPerPage({
+    rowsPerPage,
+    setRowsPerPage,
+    totalRows,
+}) {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -18,6 +21,26 @@ export default function RowsPerPage({ rowsPerPage, setRowsPerPage }) {
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const generateRowsPerPageOptions = () => {
+        const defaultOptions = [5, 10, 20];
+        const dynamicOptions = new Set(defaultOptions); // Use a Set to avoid duplicates
+
+        if (totalRows > 20) {
+            for (let i = 25; i <= totalRows; i += 5) {
+                dynamicOptions.add(i);
+            }
+        }
+
+        // Add the totalRows as an option if it's not already included
+        if (totalRows > 0) {
+            dynamicOptions.add(totalRows);
+        }
+
+        return Array.from(dynamicOptions).sort((a, b) => a - b);
+    };
+
+    const rowsPerPageOptions = generateRowsPerPageOptions();
 
     return (
         <div className="flex items-center gap-2 text-sm" ref={dropdownRef}>
@@ -48,7 +71,7 @@ export default function RowsPerPage({ rowsPerPage, setRowsPerPage }) {
 
                 {showDropdown && (
                     <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
-                        {[5, 10, 20].map((num) => (
+                        {rowsPerPageOptions.map((num) => (
                             <button
                                 key={num}
                                 onClick={() => {

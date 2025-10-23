@@ -80,18 +80,29 @@ const FilterDropdown = ({ options, selectedOption, onSelect }) => {
  */
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-        const data = payload[0].payload;
+        const data = payload[0]?.payload || {};
+        const municipality = data.municipality || "Unknown Municipality"; // fallback in case it's missing
+
         return (
             <div className="p-4 bg-white rounded-lg shadow-lg border border-gray-200">
-                <p className="font-bold text-gray-800">{data.municipality}</p>
+                {/* Municipality */}
+                <p className="font-bold text-gray-800">
+                    {data.municipality || "Unknown Municipality"}
+                </p>
+
+                {/* Label (e.g., date or x-axis label) */}
                 <p className="text-sm text-gray-500 mb-2">{label}</p>
+
+                {/* Tooltip content for each data series */}
                 {payload.map((p, index) => (
                     <div key={index} className="flex items-center">
                         <span
                             className="w-3 h-3 rounded-full mr-2"
                             style={{ backgroundColor: p.stroke }}
                         ></span>
-                        <span className="text-sm text-gray-700">{`${p.name}: ${p.value}`}</span>
+                        <span className="text-sm text-gray-700">
+                            {`${p.name}: ${p.value}`}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -134,12 +145,15 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                         precipSum: 0,
                         count: 0,
                         date: timestamp,
+                        municipalities: new Set(), // ✅ initialize a Set to collect names
                     };
                 }
+
                 acc[timestamp].windSum += parseFloat(report.wind) || 0;
                 acc[timestamp].precipSum +=
                     parseFloat(report.precipitation) || 0;
                 acc[timestamp].count += 1;
+                acc[timestamp].municipalities.add(report.municipality); // ✅ collect municipality name
                 return acc;
             }, {});
 
@@ -149,7 +163,9 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                     wind: (data.windSum / data.count).toFixed(2),
                     precipitation: (data.precipSum / data.count).toFixed(2),
                     updated_at: data.date,
-                    municipality: "Average of All",
+                    municipality:
+                        Array.from(data.municipalities).join(", ") ||
+                        "Average of All", // ✅ safe conversion
                 }))
                 .sort(
                     (a, b) => new Date(a.updated_at) - new Date(b.updated_at)
@@ -280,7 +296,7 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                     position: "insideLeft",
                                 }}
                             />
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={CustomTooltip} />
                             <Legend verticalAlign="top" height={36} />
                             <Line
                                 type="monotone"
