@@ -1,3 +1,5 @@
+// resources/js/Pages/SituationReports/Index.jsx
+
 import { useEffect, useState } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
@@ -225,8 +227,8 @@ export default function Index() {
         }
     };
 
+    // CORRECTED: 'key' is removed from this object
     const motionProps = {
-        key: step,
         initial: { opacity: 0, x: 50 },
         animate: { opacity: 1, x: 0 },
         exit: { opacity: 0, x: -50 },
@@ -368,7 +370,8 @@ export default function Index() {
                         <CardContent className="space-y-8 min-h-[300px]">
                             <AnimatePresence mode="wait">
                                 {step === 1 && (
-                                    <motion.div {...motionProps}>
+                                    // CORRECTED: 'key' prop is now passed directly
+                                    <motion.div key={step} {...motionProps}>
                                         <WeatherForm
                                             data={data}
                                             setData={setData}
@@ -377,7 +380,7 @@ export default function Index() {
                                     </motion.div>
                                 )}
                                 {step === 2 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <WaterLevelForm
                                             data={{ reports: data.waterLevels }}
                                             setData={(updater) => {
@@ -394,89 +397,46 @@ export default function Index() {
                                     </motion.div>
                                 )}
                                 {step === 3 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <ElectricityForm
-                                            data={{
-                                                reports:
-                                                    data.electricityServices,
-                                            }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports:
-                                                        data.electricityServices,
-                                                }).reports;
-                                                setData(
-                                                    "electricityServices",
-                                                    newReports
-                                                );
-                                            }}
+                                            data={data}
+                                            setData={setData}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 4 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <WaterForm
-                                            data={{
-                                                reports: data.waterServices,
-                                            }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports: data.waterServices,
-                                                }).reports;
-                                                setData(
-                                                    "waterServices",
-                                                    newReports
-                                                );
-                                            }}
+                                            data={data}
+                                            setData={setData}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 5 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <CommunicationForm
-                                            data={{
-                                                reports: data.communications,
-                                            }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports:
-                                                        data.communications,
-                                                }).reports;
-                                                setData(
-                                                    "communications",
-                                                    newReports
-                                                );
-                                            }}
+                                            data={data}
+                                            setData={setData}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 6 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <RoadForm
-                                            data={{ reports: data.roads }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports: data.roads,
-                                                }).reports;
-                                                setData("roads", newReports);
-                                            }}
+                                            data={data}
+                                            setData={setData}
                                             errors={errors}
                                         />
                                     </motion.div>
                                 )}
                                 {step === 7 && (
-                                    <motion.div {...motionProps}>
+                                    <motion.div key={step} {...motionProps}>
                                         <BridgeForm
-                                            data={{ reports: data.bridges }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports: data.bridges,
-                                                }).reports;
-                                                setData("bridges", newReports);
-                                            }}
+                                            data={data}
+                                            setData={setData}
                                             errors={errors}
                                         />
                                     </motion.div>

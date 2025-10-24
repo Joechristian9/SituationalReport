@@ -6,8 +6,11 @@ import {
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
 import { Head, usePage } from "@inertiajs/react";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Import the Weather Dashboard
+import WeatherDashboard from "@/Components/Weather/WeatherDashboard";
 
 // Import Graph Components
 import WeatherGraph from "@/Components/Graphs/WeatherGraph";
@@ -17,6 +20,7 @@ import CasualtyGraph from "@/Components/Graphs/CasualtyGraph";
 import InjuredGraph from "@/Components/Graphs/InjuredGraph";
 import MissingGraph from "@/Components/Graphs/MissingGraph";
 
+// --- 1. IMPORT THE NEW ICON FOR THE WEATHER TAB ---
 import {
     Users,
     Home,
@@ -25,9 +29,10 @@ import {
     UserCheck,
     UserSearch,
     Sun,
+    CloudSun,
 } from "lucide-react";
 
-// StatCard and EvacuationSummaryCard components (full implementation)
+// (Your StatCard and EvacuationSummaryCard components remain here, unchanged)
 const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
     const themes = {
         red: {
@@ -64,7 +69,6 @@ const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
         </div>
     );
 };
-
 const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     const { persons, families, title } = useMemo(() => {
         let personCount = 0,
@@ -134,7 +138,6 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
         </div>
     );
 };
-
 const Tab = ({ label, icon, isActive, onClick }) => (
     <button
         onClick={onClick}
@@ -157,7 +160,8 @@ export default function Dashboard({
     missing = [],
 }) {
     const { auth } = usePage().props;
-    const [activeTab, setActiveTab] = useState("environment");
+    // --- 2. SET THE DEFAULT ACTIVE TAB TO "weather" ---
+    const [activeTab, setActiveTab] = useState("weather");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -200,14 +204,14 @@ export default function Dashboard({
                                 Welcome, {auth.user.name}!
                             </h1>
                             <p className="text-xs text-gray-500">
-                                Here is your real-time situational overview.
+                                Glad to have you back! Here’s what’s happening
+                                right now.
                             </p>
                         </div>
                     </div>
                 </header>
 
                 <main className="w-full p-4 sm:p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
-                    {/* Top Stats Section */}
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-2">
                             <EvacuationSummaryCard
@@ -239,11 +243,16 @@ export default function Dashboard({
                             />
                         </div>
                     </div>
-
-                    {/* Tab Navigation */}
-                    <div className="flex justify-center p-1.5 bg-gray-100 rounded-full">
+                    <div className="flex p-1.5 bg-gray-100 rounded-full">
+                        {/* --- 3. ADD THE NEW TAB FOR THE WEATHER FORECAST --- */}
                         <Tab
-                            label="Environment"
+                            label="Weather Forecast"
+                            icon={<CloudSun size={16} />}
+                            isActive={activeTab === "weather"}
+                            onClick={() => setActiveTab("weather")}
+                        />
+                        <Tab
+                            label="Environment Graphs"
                             icon={<Sun size={16} />}
                             isActive={activeTab === "environment"}
                             onClick={() => setActiveTab("environment")}
@@ -255,8 +264,6 @@ export default function Dashboard({
                             onClick={() => setActiveTab("impact")}
                         />
                     </div>
-
-                    {/* Tab Content */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
@@ -266,33 +273,34 @@ export default function Dashboard({
                             variants={pageVariants}
                             transition={{ duration: 0.3 }}
                         >
-                            {activeTab === "environment" && (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-1 xl:col-span-1">
-                                        <WeatherGraph
-                                            weatherReports={weatherReports}
-                                        />
-                                    </div>
-                                    <div className="lg:col-span-1 xl:col-span-1">
-                                        <WaterLevelGraph
-                                            waterLevels={waterLevels}
-                                        />
-                                    </div>
-                                    <div className="lg:col-span-2 xl:col-span-1">
-                                        <EvacuationGraph
-                                            preEmptiveReports={
-                                                preEmptiveReports
-                                            }
-                                            evacuationType={evacuationType}
-                                            onEvacuationTypeChange={
-                                                setEvacuationType
-                                            }
-                                            searchQuery={searchQuery}
-                                            onSearchChange={setSearchQuery}
-                                        />
-                                    </div>
+                            {/* --- 4. CREATE A NEW CONTENT PANE FOR THE WEATHER TAB --- */}
+                            {activeTab === "weather" && (
+                                <div>
+                                    <WeatherDashboard />
                                 </div>
                             )}
+
+                            {/* --- 5. REMOVE WeatherDashboard FROM THIS TAB --- */}
+                            {activeTab === "environment" && (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <WeatherGraph
+                                        weatherReports={weatherReports}
+                                    />
+                                    <WaterLevelGraph
+                                        waterLevels={waterLevels}
+                                    />
+                                    <EvacuationGraph
+                                        preEmptiveReports={preEmptiveReports}
+                                        evacuationType={evacuationType}
+                                        onEvacuationTypeChange={
+                                            setEvacuationType
+                                        }
+                                        searchQuery={searchQuery}
+                                        onSearchChange={setSearchQuery}
+                                    />
+                                </div>
+                            )}
+
                             {activeTab === "impact" && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <CasualtyGraph casualties={casualties} />

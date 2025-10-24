@@ -11,7 +11,7 @@ import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
-import DownloadPDFButton from "../ui/DownloadPDFButton";
+/* import DownloadPDFButton from "../ui/DownloadPDFButton"; */
 import AddRowButton from "../ui/AddRowButton";
 
 import {
@@ -225,18 +225,18 @@ export default function WaterLevelForm({ data, setData }) {
                             fileName="Water_Level_Reports"
                             sheetName="Water Levels"
                         />
-                        <DownloadPDFButton
+                        {/* <DownloadPDFButton
                             data={data.reports}
                             fileName="Water_Level_Reports"
                             title="Water Level Reports"
-                        />
+                        /> */}
                     </div>
                 </div>
 
                 {/* Table */}
                 <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-cyan-600">
+                        <thead className="hidden md:table-header-group bg-blue-500">
                             <tr className="text-left text-white font-semibold">
                                 <th className="p-3 border-r">
                                     Gauging Station
@@ -323,13 +323,14 @@ export default function WaterLevelForm({ data, setData }) {
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
                     <AddRowButton
                         onClick={handleAddRow}
-                        label="Add Row"
-                        icon={<PlusCircle size={16} />}
-                    />
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                    >
+                        <PlusCircle size={16} /> Add Row
+                    </AddRowButton>
                     <button
                         onClick={handleSubmit}
                         disabled={isSaving}
-                        className="w-full sm:w-auto px-6 py-2 bg-cyan-600 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
                             <>
