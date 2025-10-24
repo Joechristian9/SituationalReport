@@ -32,6 +32,7 @@ class DashboardController extends Controller
             'casualties' => Casualty::all(),
             'injured' => Injured::all(),
             'missing' => Missing::all(),
+            'waterlevel' => WaterLevel::all(),
         ]);
     }
 }

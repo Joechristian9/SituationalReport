@@ -5,10 +5,13 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { Head } from "@inertiajs/react";
-import { Separator } from "@radix-ui/react-dropdown-menu";
+import { Head, usePage } from "@inertiajs/react";
+import { Separator } from "@/components/ui/separator";
+import { motion, AnimatePresence } from "framer-motion";
 
+// Import Graph Components
 import WeatherGraph from "@/Components/Graphs/WeatherGraph";
+import WaterLevelGraph from "@/Components/Graphs/WaterLevelGraph";
 import EvacuationGraph from "@/Components/Graphs/EvacuationGraph";
 import CasualtyGraph from "@/Components/Graphs/CasualtyGraph";
 import InjuredGraph from "@/Components/Graphs/InjuredGraph";
@@ -21,11 +24,10 @@ import {
     UserPlus,
     UserCheck,
     UserSearch,
+    Sun,
 } from "lucide-react";
 
-// ============================================================
-// Reusable Stat Card
-// ============================================================
+// StatCard and EvacuationSummaryCard components (full implementation)
 const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
     const themes = {
         red: {
@@ -43,16 +45,11 @@ const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
             text: "text-orange-600",
             border: "border-orange-500",
         },
-        gray: {
-            bg: "bg-gray-100",
-            text: "text-gray-600",
-            border: "border-gray-500",
-        },
     };
     const theme = themes[themeColor];
     return (
         <div
-            className={`bg-white shadow-lg rounded-2xl p-6 border-l-4 ${theme.border}`}
+            className={`bg-white shadow-lg rounded-2xl p-6 border-l-4 ${theme.border} transition-transform duration-300 hover:scale-105`}
         >
             <div className="flex items-start justify-between">
                 <div>
@@ -62,23 +59,16 @@ const StatCard = ({ icon, title, value, description, themeColor = "gray" }) => {
                     </p>
                     <p className="text-xs text-gray-400 mt-2">{description}</p>
                 </div>
-                <div className={`p-4 rounded-xl ${theme.bg}`}>
-                    <div className={theme.text}>{icon}</div>
-                </div>
+                <div className={`p-3 rounded-xl ${theme.bg}`}>{icon}</div>
             </div>
         </div>
     );
 };
 
-// ============================================================
-// Evacuation Summary Card (unchanged logic)
-// ============================================================
 const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     const { persons, families, title } = useMemo(() => {
-        let personCount = 0;
-        let familyCount = 0;
-        let cardTitle = "Evacuation Summary";
-
+        let personCount = 0,
+            familyCount = 0;
         const personKey =
             activeFilter === "inside"
                 ? "persons"
@@ -91,23 +81,22 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
                 : activeFilter === "outside"
                 ? "outside_families"
                 : "total_families";
-
         if (Array.isArray(reports)) {
             personCount = reports.reduce(
-                (sum, report) => sum + (parseInt(report[personKey], 10) || 0),
+                (sum, r) => sum + (parseInt(r[personKey], 10) || 0),
                 0
             );
             familyCount = reports.reduce(
-                (sum, report) => sum + (parseInt(report[familyKey], 10) || 0),
+                (sum, r) => sum + (parseInt(r[familyKey], 10) || 0),
                 0
             );
         }
-
-        if (activeFilter === "inside") cardTitle = "Evacuated (Inside Centers)";
-        else if (activeFilter === "outside")
-            cardTitle = "Evacuated (Outside Centers)";
-        else cardTitle = "Total Evacuated";
-
+        const cardTitle =
+            activeFilter === "inside"
+                ? "Evacuated (Inside)"
+                : activeFilter === "outside"
+                ? "Evacuated (Outside)"
+                : "Total Evacuated";
         return {
             persons: personCount.toLocaleString(),
             families: familyCount.toLocaleString(),
@@ -116,7 +105,7 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     }, [reports, activeFilter]);
 
     return (
-        <div className="bg-white shadow-lg rounded-2xl p-6 flex items-center gap-6 border-l-4 border-blue-500">
+        <div className="bg-white shadow-lg rounded-2xl p-6 flex items-center gap-6 border-l-4 border-blue-500 h-full">
             <div className="p-4 rounded-xl bg-blue-100 text-blue-600">
                 <Users size={28} />
             </div>
@@ -130,7 +119,7 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
                         </div>
                         <p className="font-semibold text-gray-700">{persons}</p>
                     </div>
-                    <hr />
+                    <div className="border-t my-1"></div>
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
                             <Home size={16} className="text-emerald-500" />
@@ -146,113 +135,173 @@ const EvacuationSummaryCard = ({ reports = [], activeFilter = "total" }) => {
     );
 };
 
-// ============================================================
-// MAIN DASHBOARD
-// ============================================================
+const Tab = ({ label, icon, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
+            isActive
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-gray-600 hover:bg-gray-200"
+        }`}
+    >
+        {icon} <span className="hidden sm:inline">{label}</span>
+    </button>
+);
+
 export default function Dashboard({
     weatherReports = [],
+    waterLevels = [],
     preEmptiveReports = [],
     casualties = [],
     injured = [],
     missing = [],
 }) {
+    const { auth } = usePage().props;
+    const [activeTab, setActiveTab] = useState("environment");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
 
-    // ✅ Filter reports based on search (barangay)
     const filteredReports = useMemo(() => {
         if (!searchQuery) return preEmptiveReports;
-        return preEmptiveReports.filter((report) =>
-            report.barangay?.toLowerCase().includes(searchQuery.toLowerCase())
+        return preEmptiveReports.filter((r) =>
+            r.barangay?.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [preEmptiveReports, searchQuery]);
 
     const summaryStats = useMemo(
         () => ({
-            casualties: casualties.length.toLocaleString(),
-            injured: injured.length.toLocaleString(),
-            missing: missing.length.toLocaleString(),
+            casualties: casualties.length,
+            injured: injured.length,
+            missing: missing.length,
         }),
         [casualties, injured, missing]
     );
+
+    const pageVariants = {
+        initial: { opacity: 0, y: 20 },
+        in: { opacity: 1, y: 0 },
+        out: { opacity: 0, y: -20 },
+    };
 
     return (
         <SidebarProvider>
             <AppSidebar />
             <Head title="Dashboard" />
             <SidebarInset>
-                <header className="flex h-16 items-center gap-2 px-4 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="h-6" />
-                    <div>
-                        <h1 className="text-xl font-semibold text-gray-800">
-                            Dashboard
-                        </h1>
-                        <p className="text-xs text-gray-500">
-                            Welcome back, here is your situational overview.
-                        </p>
+                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+                    <div className="flex items-center gap-2">
+                        <SidebarTrigger className="lg:hidden -ml-2" />
+                        <Separator
+                            orientation="vertical"
+                            className="h-6 mx-2 hidden lg:block"
+                        />
+                        <div>
+                            <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
+                                Welcome, {auth.user.name}!
+                            </h1>
+                            <p className="text-xs text-gray-500">
+                                Here is your real-time situational overview.
+                            </p>
+                        </div>
                     </div>
                 </header>
 
-                <main className="w-full p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                        <div className="lg:col-span-2">
+                <main className="w-full p-4 sm:p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
+                    {/* Top Stats Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                        <div className="md:col-span-2">
                             <EvacuationSummaryCard
-                                reports={filteredReports} // ✅ shows only barangay search results
+                                reports={filteredReports}
                                 activeFilter={evacuationType}
                             />
                         </div>
-                        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <StatCard
                                 icon={<UserX size={24} />}
                                 title="Dead"
                                 value={summaryStats.casualties}
-                                description="Total recorded fatalities."
+                                description="Total fatalities."
                                 themeColor="red"
                             />
                             <StatCard
                                 icon={<UserPlus size={24} />}
                                 title="Injured"
                                 value={summaryStats.injured}
-                                description="Individuals needing medical care."
+                                description="Needing medical care."
                                 themeColor="amber"
                             />
                             <StatCard
                                 icon={<UserSearch size={24} />}
                                 title="Missing"
                                 value={summaryStats.missing}
-                                description="Persons currently unaccounted for."
+                                description="Currently unaccounted for."
                                 themeColor="orange"
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-8">
-                        <h2 className="text-xl font-bold text-gray-700 mb-4">
-                            Live Situational Overview
-                        </h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <WeatherGraph weatherReports={weatherReports} />
-                            <EvacuationGraph
-                                preEmptiveReports={preEmptiveReports}
-                                evacuationType={evacuationType}
-                                onEvacuationTypeChange={setEvacuationType}
-                                searchQuery={searchQuery}
-                                onSearchChange={setSearchQuery} // ✅ pass control down
-                            />
-                        </div>
-
-                        <h2 className="text-xl font-bold text-gray-700 mb-4">
-                            Human Impact Analysis
-                        </h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <CasualtyGraph casualties={casualties} />
-                            <InjuredGraph injuredList={injured} />
-                            <div className="lg:col-span-2">
-                                <MissingGraph missingList={missing} />
-                            </div>
-                        </div>
+                    {/* Tab Navigation */}
+                    <div className="flex justify-center p-1.5 bg-gray-100 rounded-full">
+                        <Tab
+                            label="Environment"
+                            icon={<Sun size={16} />}
+                            isActive={activeTab === "environment"}
+                            onClick={() => setActiveTab("environment")}
+                        />
+                        <Tab
+                            label="Human Impact"
+                            icon={<Users size={16} />}
+                            isActive={activeTab === "impact"}
+                            onClick={() => setActiveTab("impact")}
+                        />
                     </div>
+
+                    {/* Tab Content */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial="initial"
+                            animate="in"
+                            exit="out"
+                            variants={pageVariants}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {activeTab === "environment" && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1 xl:col-span-1">
+                                        <WeatherGraph
+                                            weatherReports={weatherReports}
+                                        />
+                                    </div>
+                                    <div className="lg:col-span-1 xl:col-span-1">
+                                        <WaterLevelGraph
+                                            waterLevels={waterLevels}
+                                        />
+                                    </div>
+                                    <div className="lg:col-span-2 xl:col-span-1">
+                                        <EvacuationGraph
+                                            preEmptiveReports={
+                                                preEmptiveReports
+                                            }
+                                            evacuationType={evacuationType}
+                                            onEvacuationTypeChange={
+                                                setEvacuationType
+                                            }
+                                            searchQuery={searchQuery}
+                                            onSearchChange={setSearchQuery}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {activeTab === "impact" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <CasualtyGraph casualties={casualties} />
+                                    <InjuredGraph injuredList={injured} />
+                                    <MissingGraph missingList={missing} />
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </main>
             </SidebarInset>
         </SidebarProvider>

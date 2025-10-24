@@ -20,7 +20,9 @@ import {
     User,
     UserRound,
     CircleUserRound,
+    UserX,
 } from "lucide-react";
+import GraphCard from "../ui/GraphCard";
 
 // =================================================================================
 // Reusable Sub-Components for the Enhanced UI (Copied from InjuredGraph)
@@ -196,77 +198,42 @@ const CasualtyGraph = ({ casualties = [] }) => {
     const [selectedSex, setSelectedSex] = useState("All");
     const [selectedAgeGroup, setSelectedAgeGroup] = useState("All");
     const [currentView, setCurrentView] = useState("bar");
-
     const ageBrackets = ["All", "0-17", "18-30", "31-50", "51-65", "66+"];
 
-    // Memoized data for the BAR CHART (Cause of Death view)
-    const filteredCauseData = useMemo(() => {
-        if (!Array.isArray(casualties)) return [];
-        const data = casualties
+    const filteredData = useMemo(() => {
+        return casualties
             .filter(
-                (casualty) =>
+                (item) =>
                     selectedSex === "All" ||
-                    casualty.sex?.toLowerCase() === selectedSex.toLowerCase()
+                    item.sex?.toLowerCase() === selectedSex.toLowerCase()
             )
-            .filter((casualty) => {
+            .filter((item) => {
                 if (selectedAgeGroup === "All") return true;
-                const age = parseInt(casualty.age, 10);
+                const age = parseInt(item.age, 10);
                 if (isNaN(age)) return false;
-                switch (selectedAgeGroup) {
-                    case "0-17":
-                        return age <= 17;
-                    case "18-30":
-                        return age >= 18 && age <= 30;
-                    case "31-50":
-                        return age >= 31 && age <= 50;
-                    case "51-65":
-                        return age >= 51 && age <= 65;
-                    case "66+":
-                        return age >= 66;
-                    default:
-                        return true;
-                }
-            })
-            .reduce((acc, casualty) => {
-                const cause = casualty.cause_of_death?.trim() || "Unknown";
-                if (!acc[cause]) {
-                    acc[cause] = { cause, count: 0 };
-                }
-                acc[cause].count += 1;
-                return acc;
-            }, {});
-        return Object.values(data).sort((a, b) => a.count - b.count);
+                const [min, max] = selectedAgeGroup.split("-").map(Number);
+                if (max) return age >= min && age <= max;
+                return age >= 66; // For "66+"
+            });
     }, [casualties, selectedSex, selectedAgeGroup]);
 
-    // Memoized data for the PIE CHART (Sex Distribution view)
-    const sexDistributionData = useMemo(() => {
-        const filteredByAge = casualties.filter((casualty) => {
-            if (selectedAgeGroup === "All") return true;
-            const age = parseInt(casualty.age, 10);
-            if (isNaN(age)) return false;
-            switch (selectedAgeGroup) {
-                case "0-17":
-                    return age <= 17;
-                case "18-30":
-                    return age >= 18 && age <= 30;
-                case "31-50":
-                    return age >= 31 && age <= 50;
-                case "51-65":
-                    return age >= 51 && age <= 65;
-                case "66+":
-                    return age >= 66;
-                default:
-                    return true;
-            }
-        });
-        const sexAggregator = filteredByAge.reduce(
-            (acc, casualty) => {
-                const sex = casualty.sex;
-                if (sex?.toLowerCase() === "male") {
-                    acc.Male.value += 1;
-                } else if (sex?.toLowerCase() === "female") {
-                    acc.Female.value += 1;
-                }
+    const causeData = useMemo(() => {
+        const aggregator = filteredData.reduce((acc, item) => {
+            const cause = item.cause_of_death?.trim() || "Unknown";
+            acc[cause] = (acc[cause] || 0) + 1;
+            return acc;
+        }, {});
+        return Object.entries(aggregator)
+            .map(([cause, count]) => ({ cause, count }))
+            .sort((a, b) => a.count - b.count);
+    }, [filteredData]);
+
+    const sexData = useMemo(() => {
+        const aggregator = filteredData.reduce(
+            (acc, item) => {
+                const sex = item.sex?.toLowerCase();
+                if (sex === "male") acc.Male.value += 1;
+                else if (sex === "female") acc.Female.value += 1;
                 return acc;
             },
             {
@@ -274,144 +241,135 @@ const CasualtyGraph = ({ casualties = [] }) => {
                 Female: { name: "Female", value: 0 },
             }
         );
-        return Object.values(sexAggregator).filter((s) => s.value > 0);
-    }, [casualties, selectedAgeGroup]);
+        return Object.values(aggregator).filter((s) => s.value > 0);
+    }, [filteredData]);
+
+    const graphActions = (
+        <div className="flex items-center justify-start sm:justify-end gap-2 flex-wrap">
+            <button
+                onClick={() =>
+                    setCurrentView(currentView === "bar" ? "pie" : "bar")
+                }
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors group relative"
+            >
+                {currentView === "bar" ? (
+                    <PieChartIcon size={20} />
+                ) : (
+                    <BarChart2 size={20} />
+                )}
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    {currentView === "bar" ? "View by Sex" : "View by Cause"}
+                </div>
+            </button>
+            {currentView === "bar" && (
+                <SexFilterPopover
+                    selectedSex={selectedSex}
+                    onSelect={setSelectedSex}
+                />
+            )}
+            <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+            <AgeFilterDropdown
+                options={ageBrackets}
+                selectedOption={selectedAgeGroup}
+                onSelect={setSelectedAgeGroup}
+            />
+        </div>
+    );
+
+    const subtitle =
+        currentView === "bar"
+            ? `By Cause | Sex: ${selectedSex} | Age: ${selectedAgeGroup}`
+            : `By Sex | Age: ${selectedAgeGroup}`;
 
     return (
-        <div className="w-full bg-white rounded-2xl shadow p-6">
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        {currentView === "bar"
-                            ? "Casualties by Cause of Death"
-                            : "Casualties by Sex"}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                        {currentView === "bar"
-                            ? `Showing: ${selectedSex} / Age Group: ${selectedAgeGroup}`
-                            : `Showing Age Group: ${selectedAgeGroup}`}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() =>
-                            setCurrentView(
-                                currentView === "bar" ? "pie" : "bar"
-                            )
-                        }
-                        className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors relative group"
-                    >
-                        {currentView === "bar" ? (
-                            <PieChartIcon size={20} />
-                        ) : (
-                            <BarChart2 size={20} />
-                        )}
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            {currentView === "bar"
-                                ? "Switch to Pie Chart"
-                                : "Switch to Bar Chart"}
-                        </div>
-                    </button>
-                    {currentView === "bar" && (
-                        <SexFilterPopover
-                            selectedSex={selectedSex}
-                            onSelect={setSelectedSex}
-                        />
-                    )}
-                    <div className="h-6 w-px bg-gray-200 mx-2"></div>
-                    <AgeFilterDropdown
-                        options={ageBrackets}
-                        selectedOption={selectedAgeGroup}
-                        onSelect={setSelectedAgeGroup}
-                    />
-                </div>
-            </div>
-
-            <div className="mt-6">
-                <ResponsiveContainer width="100%" height={400}>
-                    {currentView === "bar" ? (
-                        filteredCauseData.length > 0 ? (
-                            <BarChart
-                                layout="vertical"
-                                data={filteredCauseData}
-                            >
-                                <CartesianGrid
-                                    strokeDasharray="3 3"
-                                    horizontal={false}
-                                />
-                                <XAxis type="number" allowDecimals={false} />
-                                <YAxis
-                                    type="category"
-                                    dataKey="cause"
-                                    width={150}
-                                    tick={{ fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    content={<CustomTooltip />}
-                                    cursor={{ fill: "rgba(239, 68, 68, 0.1)" }}
-                                />
-                                <Bar
-                                    dataKey="count"
-                                    name="Casualties"
-                                    fill="#EF4444"
-                                    radius={[0, 4, 4, 0]}
-                                />
-                            </BarChart>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-                                <BarChart2
-                                    size={40}
-                                    className="text-gray-400"
-                                />
-                                <p className="mt-4 font-semibold text-gray-700">
-                                    No Data for Selected Filters
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                    {casualties.length === 0
-                                        ? "No casualties have been recorded."
-                                        : "Try adjusting filters."}
-                                </p>
-                            </div>
-                        )
-                    ) : sexDistributionData.length > 0 ? (
-                        <PieChart>
-                            <Pie
-                                data={sexDistributionData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={80}
-                                outerRadius={150}
-                                paddingAngle={5}
-                                label={renderCustomizedLabel}
-                                labelLine={false}
-                            >
-                                {sexDistributionData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={
-                                            SEX_COLORS[
-                                                index % SEX_COLORS.length
-                                            ]
-                                        }
-                                    />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                        </PieChart>
+        <GraphCard
+            title="Casualties"
+            icon={<UserX size={24} />}
+            actions={graphActions}
+        >
+            <p className="text-xs text-gray-500 -mt-3 mb-3">{subtitle}</p>
+            <ResponsiveContainer width="100%" height={300}>
+                {currentView === "bar" ? (
+                    causeData.length > 0 ? (
+                        <BarChart
+                            layout="vertical"
+                            data={causeData}
+                            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                        >
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                horizontal={false}
+                            />
+                            <XAxis
+                                type="number"
+                                allowDecimals={false}
+                                tick={{ fontSize: 12 }}
+                            />
+                            <YAxis
+                                type="category"
+                                dataKey="cause"
+                                width={100}
+                                tick={{ fontSize: 11 }}
+                            />
+                            <Tooltip
+                                content={<CustomTooltip />}
+                                cursor={{ fill: "rgba(239, 68, 68, 0.1)" }}
+                            />
+                            <Bar
+                                dataKey="count"
+                                name="Casualties"
+                                fill="#EF4444"
+                                radius={[0, 4, 4, 0]}
+                                maxBarSize={30}
+                            />
+                        </BarChart>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-                            <PieChartIcon size={40} className="text-gray-400" />
-                            <p className="mt-4 font-semibold text-gray-700">
-                                No Gender Data for Selected Age Group
+                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                            <UserX size={48} className="mb-4 text-gray-400" />
+                            <p className="font-semibold">
+                                {casualties.length === 0
+                                    ? "No Casualties Data"
+                                    : "No data for selected filters"}
                             </p>
                         </div>
-                    )}
-                </ResponsiveContainer>
-            </div>
-        </div>
+                    )
+                ) : sexData.length > 0 ? (
+                    <PieChart>
+                        <Pie
+                            data={sexData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={5}
+                            labelLine={false}
+                            label={renderCustomizedLabel}
+                        >
+                            {sexData.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={SEX_COLORS[index % SEX_COLORS.length]}
+                                />
+                            ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                    </PieChart>
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                        <PieChartIcon
+                            size={48}
+                            className="mb-4 text-gray-400"
+                        />
+                        <p className="font-semibold">
+                            No gender data for this filter
+                        </p>
+                    </div>
+                )}
+            </ResponsiveContainer>
+        </GraphCard>
     );
 };
 
