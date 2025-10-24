@@ -26,8 +26,9 @@ const WeatherDashboard = () => {
 
     useEffect(() => {
         const fetchWeather = async () => {
-            const lat = 14.5995;
-            const lon = 120.9842;
+            // --- 1. UPDATE THE COORDINATES HERE ---
+            const lat = 17.15; // Ilagan Latitude
+            const lon = 121.89; // Ilagan Longitude
             const timezone = "Asia/Manila";
             const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,visibility,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=${timezone}`;
 
@@ -120,8 +121,9 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
         <div>
             <div className="flex justify-between items-start">
                 <div>
+                    {/* --- 2. UPDATE THE DISPLAYED LOCATION NAME HERE --- */}
                     <h2 className="text-xl font-bold text-gray-800">
-                        Manila, Philippines
+                        Ilagan, Cagayan Valley
                     </h2>
                     <p className="text-sm text-gray-500">
                         {lastUpdated
@@ -132,7 +134,6 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
                 <div className="text-4xl text-gray-700">{icon}</div>
             </div>
             <div className="flex items-center gap-4 mt-2">
-                {/* --- THIS IS THE CORRECTED LINE --- */}
                 <p className="text-7xl font-bold text-gray-900">
                     {Math.round(current.temperature_2m)}°C
                 </p>
@@ -150,7 +151,7 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
     );
 };
 
-// ... The rest of the sub-components are unchanged
+// (The rest of the sub-components are unchanged)
 const HourlyForecastChart = ({ hourly }) => {
     const now = new Date();
     const startIndex = hourly.time.findIndex((t) => new Date(t) >= now);
