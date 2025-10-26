@@ -3,7 +3,6 @@ import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
-/* import DownloadPDFButton from "../ui/DownloadPDFButton"; */
 
 import React, { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +10,14 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 
-import { Cloud, History, Loader2, PlusCircle, Save } from "lucide-react";
+import {
+    Cloud,
+    Download,
+    History,
+    Loader2,
+    PlusCircle,
+    Save,
+} from "lucide-react";
 import AddRowButton from "../ui/AddRowButton";
 import {
     Tooltip,
@@ -122,6 +128,27 @@ export default function WeatherForm({ data, setData, errors }) {
             </div>
         );
     }
+    const handleDownloadPDF = async () => {
+        try {
+            const response = await axios.post(
+                `${APP_URL}/generate-weather-report-pdf`,
+                { reports: data.reports },
+                { responseType: "blob" } // Important for handling file downloads
+            );
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "weather-report.pdf");
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            toast.success("PDF downloaded successfully!");
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            toast.error("Failed to download PDF.");
+        }
+    };
 
     return (
         <TooltipProvider>
@@ -164,11 +191,6 @@ export default function WeatherForm({ data, setData, errors }) {
                             fileName="Present_Weather_Conditions"
                             sheetName="Weather Reports"
                         />
-                        {/* <DownloadPDFButton
-                            data={data.reports}
-                            fileName="Present_Weather_Conditions"
-                            title="Present Weather Conditions Report"
-                        /> */}
                     </div>
                 </div>
 

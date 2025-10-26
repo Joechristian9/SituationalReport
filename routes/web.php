@@ -13,6 +13,8 @@ use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\UscDeclarationController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\InjuredController;
+use App\Http\Controllers\PDFController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
@@ -46,6 +48,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     })->name('dashboard');
 
 
+    Route::get('/reports/view', [ReportController::class, 'view'])->name('reports.view');
+    Route::get('/reports/download', [ReportController::class, 'download'])->name('reports.download');
+
     // Situation Reports Index
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
         ->name('situation-reports.index');
@@ -56,11 +61,13 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
         ->name('modifications.weather');
 
+
     /* ---------------- Water Level Reports ---------------- */
     Route::post('/water-level-reports', [SituationOverviewController::class, 'storeWaterLevel'])
         ->name('water-level-reports.store');
     Route::get('/modifications/water-level', [SituationOverviewController::class, 'waterLevelModification'])
         ->name('modifications.water-level');
+
 
     /* ---------------- Electricity Reports ---------------- */
     Route::post('/electricity-reports', [SituationOverviewController::class, 'storeElectricity'])

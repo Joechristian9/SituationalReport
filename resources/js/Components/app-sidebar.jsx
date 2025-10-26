@@ -23,6 +23,7 @@ import {
     Flame,
     Users,
     HeartHandshake,
+    Download,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -90,6 +91,21 @@ export function AppSidebar({ ...props }) {
                     url: route("assistance.index"),
                     roles: ["user", "admin"],
                     icon: HeartHandshake, // ❤️‍🤝 Assistance/help
+                },
+            ],
+        },
+        {
+            title: "Reports",
+            url: "#",
+            icon: FileWarning, // You can choose a more appropriate icon
+            isActive: route().current("reports.*"),
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Download Reports",
+                    url: route("reports.download"), // This route will handle the download
+                    roles: ["user", "admin"],
+                    icon: Download, // Download icon
                 },
             ],
         },

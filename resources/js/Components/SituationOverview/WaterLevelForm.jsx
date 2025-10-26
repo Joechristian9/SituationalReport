@@ -5,13 +5,12 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 
-import { Droplets, Loader2, PlusCircle, Save } from "lucide-react";
+import { Download, Droplets, Loader2, PlusCircle, Save } from "lucide-react";
 
 import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
-/* import DownloadPDFButton from "../ui/DownloadPDFButton"; */
 import AddRowButton from "../ui/AddRowButton";
 
 import {
@@ -185,6 +184,32 @@ export default function WaterLevelForm({ data, setData }) {
             </div>
         );
     }
+    const handleDownloadPDF = async () => {
+        try {
+            const response = await axios.post(
+                `${APP_URL}/generate-water-level-report-pdf`,
+                { reports: data.reports },
+                { responseType: "blob" } // This is crucial for file downloads
+            );
+
+            // Create a temporary link to trigger the download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "water-level-report.pdf");
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up the temporary link
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success("PDF downloaded successfully!");
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            toast.error("Failed to download PDF. Please check the console.");
+        }
+    };
 
     return (
         <TooltipProvider>
@@ -225,11 +250,6 @@ export default function WaterLevelForm({ data, setData }) {
                             fileName="Water_Level_Reports"
                             sheetName="Water Levels"
                         />
-                        {/* <DownloadPDFButton
-                            data={data.reports}
-                            fileName="Water_Level_Reports"
-                            title="Water Level Reports"
-                        /> */}
                     </div>
                 </div>
 
