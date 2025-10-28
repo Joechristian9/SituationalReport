@@ -82,14 +82,43 @@
         SITUATION OVERVIEW
     </div>
 
-     <!-- Include Weather Report Table -->
+    {{-- weather --}}
     @include('reports.partials.weather')
 
-    <!-- Include Water Level Table -->
+   {{--  water level --}}
     @include('reports.partials.water_level')
 
-    <!-- Include Electricity Services Table -->
+    {{-- electricity --}}
     @include('reports.partials.electricity')
 
+    {{-- water services --}}
+    @include('reports.partials.water_services')
+
+    {{-- roads and bridges --}}
+    @include('reports.partials.roads_and_bridges')
+
+    {{-- pre-emptive evacuation --}}
+    @include('reports.partials.pre_emptive_evacuation')
+
+    {{-- declaration of state of calamity --}}
+    @include('reports.partials.declaration_state_of_calamity')
+
+    {{-- pre-positioning of response assets --}}
+    @include('reports.partials.pre_positioning_of_assets')
+
+    {{-- incidents monitored --}}
+    @include('reports.partials.incidents_monitored')
+
+    {{-- casualties --}}
+    @include('reports.partials.casualties')
+
+    {{-- affected tourists --}}
+    @include('reports.partials.affected_tourists')
+
+    {{-- damaged houses --}}
+    @include('reports.partials.damaged_houses') 
+
+    {{-- suspension of classes and work --}}
+    @include('reports.partials.suspension_of_classes_and_work')
 </body>
 </html>
