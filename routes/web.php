@@ -48,8 +48,15 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     })->name('dashboard');
 
 
-    Route::get('/reports/view', [ReportController::class, 'view'])->name('reports.view');
-    Route::get('/reports/download', [ReportController::class, 'download'])->name('reports.download');
+    // Route to display the HTML overview of the report for a specific year
+    Route::get('/reports/view', [ReportController::class, 'view'])
+        ->name('reports.view')
+        ->middleware(['auth']); // Or your preferred auth middleware
+
+    // Route to handle the PDF download for a specific year
+    Route::get('/reports/download', [ReportController::class, 'download'])
+        ->name('reports.download')
+        ->middleware(['auth']);
 
     // Situation Reports Index
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])

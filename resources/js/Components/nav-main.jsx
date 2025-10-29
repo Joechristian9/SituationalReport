@@ -1,7 +1,7 @@
-// nav-main.jsx
 "use client";
 
 import * as React from "react";
+import { usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -17,6 +17,7 @@ import {
 
 export function NavMain({ items = [] }) {
     const { isCollapsed } = useSidebar();
+    const { url: currentUrl } = usePage();
 
     return (
         <SidebarGroup>
@@ -31,9 +32,16 @@ export function NavMain({ items = [] }) {
                             <SidebarMenuSub className="mt-1 space-y-1">
                                 {item.items.map((subItem) => {
                                     const SubIcon = subItem.icon;
-                                    const isActive = route().current(
-                                        subItem.url?.split("/").pop() + ".*"
-                                    );
+                                    const isActive = currentUrl === subItem.url;
+
+                                    // ================================================================
+                                    // == START: Logic to conditionally open links in a new tab      ==
+                                    // ================================================================
+
+                                    // Check if the parent item is the "Annual Reports" menu.
+                                    // This title comes from your AppSidebar.jsx component.
+                                    const isReportLink =
+                                        item.title === "Annual Reports";
 
                                     return (
                                         <SidebarMenuSubItem key={subItem.title}>
@@ -43,18 +51,28 @@ export function NavMain({ items = [] }) {
                                                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 
                                                     ${
                                                         isActive
-                                                            ? // When Active: white background, black text
-                                                              "bg-white text-black shadow-sm"
-                                                            : // Default State: transparent bg, white text
-                                                              "text-white/80 hover:bg-white/10 hover:text-white"
+                                                            ? "bg-white text-black shadow-sm"
+                                                            : "text-white/80 hover:bg-white/10 hover:text-white"
                                                     }`}
                                             >
-                                                <a href={subItem.url || "#"}>
+                                                <a
+                                                    href={subItem.url || "#"}
+                                                    // Only add target="_blank" if it's a report link
+                                                    target={
+                                                        isReportLink
+                                                            ? "_blank"
+                                                            : undefined
+                                                    }
+                                                    // Only add rel if target="_blank" is also present
+                                                    rel={
+                                                        isReportLink
+                                                            ? "noopener noreferrer"
+                                                            : undefined
+                                                    }
+                                                >
                                                     {SubIcon && (
                                                         <SubIcon
                                                             className="h-4 w-4"
-                                                            // ✅ THE FINAL FIX:
-                                                            // If active, color is "black". Otherwise, it's "white".
                                                             color={
                                                                 isActive
                                                                     ? "black"
@@ -70,6 +88,9 @@ export function NavMain({ items = [] }) {
                                 })}
                             </SidebarMenuSub>
                         );
+                        // ================================================================
+                        // == END: Conditional logic                                     ==
+                        // ================================================================
 
                         if (item.title === "Main Menu") {
                             return (
@@ -78,7 +99,6 @@ export function NavMain({ items = [] }) {
                                         disabled
                                         className="flex items-center px-3 py-2 text-xs font-bold uppercase tracking-wider text-white/60 cursor-default hover:bg-transparent"
                                     >
-                                        {/* Main "hamburger" icon is always white */}
                                         {Icon && (
                                             <Icon
                                                 className="mr-2 h-5 w-5"
@@ -94,7 +114,7 @@ export function NavMain({ items = [] }) {
                             );
                         }
 
-                        // Fallback logic for any other potential top-level items
+                        // Fallback logic for all other top-level items
                         const isActive = route().current(
                             item.url?.split("/").pop() + ".*"
                         );

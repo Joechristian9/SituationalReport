@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 import { route } from "ziggy-js";
 import {
-    Home,
     BarChart3,
     FileWarning,
     ClipboardList,
@@ -24,6 +23,7 @@ import {
     Users,
     HeartHandshake,
     Download,
+    Calendar, // Import a calendar or year icon
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -35,7 +35,20 @@ export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
     const userRoles = auth.user.roles.map((r) => r.name);
 
-    // --- Define nav items with role restrictions ---
+    // --- Dynamically generate the last 5 years ---
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+    // --- Create menu items for each year ---
+    const reportItems = years.map((year) => ({
+        title: `${year} Report`,
+        // IMPORTANT: This now points to the 'view' route, not 'download'.
+        // This will generate a URL like: /reports/view?year=2025
+        url: route("reports.view", { year: year }),
+        roles: ["user", "admin"],
+        icon: Calendar,
+    }));
+
     const navMain = [
         {
             title: "Main Menu",
@@ -48,13 +61,13 @@ export function AppSidebar({ ...props }) {
                     title: "Dashboard",
                     url: route("admin.dashboard"),
                     roles: ["admin"],
-                    icon: TbLayoutDashboard, // 🏠 Dashboard icon
+                    icon: TbLayoutDashboard,
                 },
                 {
                     title: "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user", "admin"],
-                    icon: BarChart3, // 📊 Analytics/overview
+                    icon: BarChart3,
                 },
                 {
                     title: "Pre-Emptive Reports",
@@ -95,19 +108,12 @@ export function AppSidebar({ ...props }) {
             ],
         },
         {
-            title: "Reports",
+            title: "Annual Reports", // Changed title for clarity
             url: "#",
-            icon: FileWarning, // You can choose a more appropriate icon
+            icon: Download, // The main icon for the group
             isActive: route().current("reports.*"),
             roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Download Reports",
-                    url: route("reports.download"), // This route will handle the download
-                    roles: ["user", "admin"],
-                    icon: Download, // Download icon
-                },
-            ],
+            items: reportItems, // Assign the dynamically generated year links here
         },
     ];
 
