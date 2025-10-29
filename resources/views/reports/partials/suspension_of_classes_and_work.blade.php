@@ -1,4 +1,4 @@
-<div class="section-title" style="page-break-before: auto;">
+<div class="section-title">
     F. Suspension of Classes and Work
 </div>
 

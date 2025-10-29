@@ -25,22 +25,24 @@
         
         /* --- Shared Header Styles (for Web & PDF) --- */
         .report-header {
-            text-align: center;
+            display: flex; /* Use flexbox for alignment */
+            align-items: center; /* Vertically center items */
             border-bottom: 1px solid #e0e0e0; /* A soft separator line */
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
-        .report-header .logo-title {
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-            text-align: left;
-        }
+
         .report-header img {
             width: 50px;
             height: 50px;
             border-radius: 50%;
+            margin-right: 15px; /* Add space between logo and title */
         }
+
+        .report-header .title-container {
+            text-align: left; /* Ensure text is left-aligned */
+        }
+
         /* --- Main Title Styling --- */
         .report-header h1 {
             font-size: 26px; /* Larger font for more impact */
@@ -98,31 +100,14 @@
 
 <div class="report-container">
 
-    {{-- The centered header for the WEB VIEW --}}
-    @if(!isset($isDownloading) || !$isDownloading)
-        <header class="report-header no-print">
-            <div class="logo-title">
-                <img src="/images/ilagan.jpeg" alt="City Logo">
-                <div>
-                    <h1>Situational Report</h1>
-                    <p>For the Year: <strong>{{ $selectedYear }}</strong></p>
-                </div>
-            </div>
-        </header>
-    @endif
-
-    {{-- The new header for the PDF DOCUMENT --}}
-    @if(isset($isDownloading) && $isDownloading)
-        <header class="report-header">
-            <div class="logo-title">
-                <img src="{{ public_path('/images/ilagan.jpeg') }}" alt="City Logo">
-                <div>
-                    <h1>Situational Report</h1>
-                    <p>For the Year: <strong>{{ $selectedYear }}</strong></p>
-                </div>
-            </div>
-        </header>
-    @endif
+    {{-- Header for both WEB and PDF --}}
+    <header class="report-header">
+        
+        <div class="title-container">
+            <h1>Situational Report</h1>
+            <p>For the Year: <strong>{{ $selectedYear }}</strong></p>
+        </div>
+    </header>
     
     <div class="pdf-header-info">
         <p>As of: {{ now()->format('h:i A, F d, Y') }}</p>

@@ -1,5 +1,5 @@
 <!-- =========== F.2 SUSPENSION OF WORK SECTION =========== -->
-<div class="section-title" style="page-break-before: auto;">
+<div class="section-title" style="font-weight: bold; margin-bottom: 10px;">
     F.2 Suspension of Work
 </div>
 
