@@ -88,7 +88,15 @@ class SituationOverviewController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Weather reports saved successfully!');
+        // Return the fresh data after save
+        $updatedReports = WeatherReport::with('user:id,name')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Weather reports saved successfully!',
+            'reports' => $updatedReports
+        ]);
     }
 
 
@@ -137,7 +145,15 @@ class SituationOverviewController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Water level reports saved successfully!']);
+        // Return the fresh data after save
+        $updatedReports = WaterLevel::with('user:id,name')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Water level reports saved successfully!',
+            'reports' => $updatedReports
+        ]);
     }
 
 

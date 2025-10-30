@@ -5,7 +5,7 @@ import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
@@ -34,6 +34,7 @@ const formatFieldName = (field) => {
 
 export default function WeatherForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -97,9 +98,24 @@ export default function WeatherForm({ data, setData, errors }) {
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
-            await axios.post(`${APP_URL}/weather-reports`, {
-                reports: data.reports,
+            // Clean the data: convert string IDs (like "new-123") to null for new rows
+            const cleanedReports = data.reports.map(report => ({
+                ...report,
+                id: typeof report.id === 'string' ? null : report.id
+            }));
+            
+            const response = await axios.post(`${APP_URL}/weather-reports`, {
+                reports: cleanedReports,
             });
+            
+            // Invalidate and refetch modification history
+            await queryClient.invalidateQueries(['weather-modifications']);
+            
+            // Update local state with the response data from server
+            if (response.data && response.data.reports) {
+                setData({ ...data, reports: response.data.reports });
+            }
+            
             toast.success("Weather reports saved successfully!");
         } catch (err) {
             console.error(err);
@@ -108,6 +124,10 @@ export default function WeatherForm({ data, setData, errors }) {
             );
         } finally {
             setIsSaving(false);
+            // Force a small delay to ensure state updates
+            setTimeout(() => {
+                queryClient.invalidateQueries(['weather-modifications']);
+            }, 100);
         }
     };
 

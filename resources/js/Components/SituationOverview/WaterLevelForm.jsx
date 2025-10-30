@@ -1,11 +1,11 @@
 // resources/js/Components/SituationOverview/WaterLevelForm.jsx
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 
-import { Download, Droplets, Loader2, PlusCircle, Save } from "lucide-react";
+import { Download, Droplets, Loader2, PlusCircle, Save, History } from "lucide-react";
 
 import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
@@ -26,6 +26,7 @@ const formatFieldName = (field) =>
 
 export default function WaterLevelForm({ data, setData }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -144,7 +145,7 @@ export default function WaterLevelForm({ data, setData }) {
         try {
             // IMPORTANT: send only expected fields if backend requires it
             const cleaned = data.reports.map((r) => ({
-                id: r.id ?? null,
+                id: (typeof r.id === 'string' || !r.id) ? null : r.id,
                 gauging_station: r.gauging_station ?? "",
                 current_level:
                     r.current_level === "" ? null : parseFloat(r.current_level),
@@ -158,9 +159,18 @@ export default function WaterLevelForm({ data, setData }) {
             }));
 
             console.log("Submitting cleaned payload:", cleaned);
-            await axios.post(`${APP_URL}/water-level-reports`, {
+            const response = await axios.post(`${APP_URL}/water-level-reports`, {
                 reports: cleaned,
             });
+            
+            // Invalidate and refetch modification history
+            await queryClient.invalidateQueries(['water-level-modifications']);
+            
+            // Update local state with the response data from server
+            if (response.data && response.data.reports) {
+                setData({ ...data, reports: response.data.reports });
+            }
+            
             toast.success("Water level reports saved successfully!");
         } catch (err) {
             console.error("Save error:", err.response?.data || err);
@@ -174,6 +184,10 @@ export default function WaterLevelForm({ data, setData }) {
             }
         } finally {
             setIsSaving(false);
+            // Force a small delay to ensure state updates
+            setTimeout(() => {
+                queryClient.invalidateQueries(['water-level-modifications']);
+            }, 100);
         }
     };
 
@@ -291,38 +305,122 @@ export default function WaterLevelForm({ data, setData }) {
                                         key={row.id ?? `new-${absoluteIndex}`} // stable key
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
-                                        {fields.map((field) => (
-                                            <td
-                                                key={field}
-                                                className="block md:table-cell p-3 border-b border-slate-200 last:border-b-0"
-                                            >
-                                                <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                    {formatFieldName(field)}
-                                                </label>
+                                        {fields.map((field) => {
+                                            // Use row ID + field to get modification history for this specific cell
+                                            const historyKey = `${row.id}_${field}`;
+                                            const fieldHistory =
+                                                modificationData?.history?.[historyKey] || [];
+                                            const latestChange = fieldHistory[0];
+                                            const previousChange =
+                                                fieldHistory.length > 1 ? fieldHistory[1] : null;
 
-                                                <input
-                                                    name={field}
-                                                    type={
-                                                        field.includes("_level")
-                                                            ? "number"
-                                                            : "text"
-                                                    }
-                                                    value={
-                                                        data.reports[
-                                                            absoluteIndex
-                                                        ]?.[field] ?? ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleInputChange(
-                                                            absoluteIndex,
-                                                            e
-                                                        )
-                                                    }
-                                                    placeholder="Enter value..."
-                                                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 focus:outline-none transition"
-                                                />
-                                            </td>
-                                        ))}
+                                            return (
+                                                <td
+                                                    key={field}
+                                                    className="block md:table-cell p-3 border-b border-slate-200 last:border-b-0"
+                                                >
+                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
+                                                        {formatFieldName(field)}
+                                                    </label>
+
+                                                    <div className="relative mt-1 md:mt-0">
+                                                        <input
+                                                            name={field}
+                                                            type={
+                                                                field.includes("_level")
+                                                                    ? "number"
+                                                                    : "text"
+                                                            }
+                                                            value={
+                                                                data.reports[
+                                                                    absoluteIndex
+                                                                ]?.[field] ?? ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleInputChange(
+                                                                    absoluteIndex,
+                                                                    e
+                                                                )
+                                                            }
+                                                            placeholder="Enter value..."
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 focus:outline-none transition pr-10"
+                                                        />
+                                                        {fieldHistory.length > 0 && (
+                                                            <div className="absolute top-1/2 -translate-y-1/2 right-3">
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <History className="w-5 h-5 text-slate-400 hover:text-cyan-600" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent
+                                                                        side="right"
+                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
+                                                                    >
+                                                                        <div className="text-sm space-y-2">
+                                                                            <div>
+                                                                                <p className="text-sm font-bold text-white mb-1">
+                                                                                    Latest Change:
+                                                                                </p>
+                                                                                <p>
+                                                                                    <span className="font-semibold text-blue-300">
+                                                                                        {latestChange.user?.name}
+                                                                                    </span>{" "}
+                                                                                    changed from{" "}
+                                                                                    <span className="text-red-400 font-mono">
+                                                                                        {latestChange.old ?? "nothing"}
+                                                                                    </span>{" "}
+                                                                                    to{" "}
+                                                                                    <span className="text-green-400 font-mono">
+                                                                                        {latestChange.new ?? "nothing"}
+                                                                                    </span>
+                                                                                </p>
+                                                                                <p className="text-xs text-gray-400">
+                                                                                    {new Date(
+                                                                                        latestChange.date
+                                                                                    ).toLocaleString()}
+                                                                                </p>
+                                                                            </div>
+                                                                            {previousChange && (
+                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
+                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
+                                                                                        Previous Change:
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        <span className="font-semibold text-blue-300">
+                                                                                            {previousChange.user?.name}
+                                                                                        </span>{" "}
+                                                                                        changed from{" "}
+                                                                                        <span className="text-red-400 font-mono">
+                                                                                            {previousChange.old ?? "nothing"}
+                                                                                        </span>{" "}
+                                                                                        to{" "}
+                                                                                        <span className="text-green-400 font-mono">
+                                                                                            {previousChange.new ?? "nothing"}
+                                                                                        </span>
+                                                                                    </p>
+                                                                                    <p className="text-xs text-gray-400">
+                                                                                        {new Date(
+                                                                                            previousChange.date
+                                                                                        ).toLocaleString()}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {latestChange && (
+                                                        <p className="text-xs text-slate-500 mt-2">
+                                                            Last modified by{" "}
+                                                            <span className="font-medium text-blue-700">
+                                                                {latestChange.user?.name}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 );
                             })}
