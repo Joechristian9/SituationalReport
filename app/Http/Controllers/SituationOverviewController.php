@@ -161,54 +161,105 @@ class SituationOverviewController extends Controller
     {
         $validated = $request->validate([
             'electricityServices' => 'required|array',
+            'electricityServices.*.id' => ['nullable', 'integer'],
             'electricityServices.*.status' => 'nullable|string|max:255',
             'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
             'electricityServices.*.remarks' => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['electricityServices'] as $service) {
-            if (!empty(array_filter($service))) {
-                ElectricityService::updateOrCreate(
-                    ['user_id' => Auth::id()],
-                    [
-                        'status' => $service['status'] ?? null,
-                        'barangays_affected' => $service['barangays_affected'] ?? null,
-                        'remarks' => $service['remarks'] ?? null,
+        foreach ($validated['electricityServices'] as $serviceData) {
+            // Skip empty rows
+            if (empty(array_filter($serviceData))) {
+                continue;
+            }
+
+            // If ID exists and is numeric, update existing record
+            if (!empty($serviceData['id']) && is_numeric($serviceData['id'])) {
+                $service = ElectricityService::find($serviceData['id']);
+                if ($service) {
+                    $service->update([
+                        'status' => $serviceData['status'] ?? null,
+                        'barangays_affected' => $serviceData['barangays_affected'] ?? null,
+                        'remarks' => $serviceData['remarks'] ?? null,
                         'updated_by' => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
+            } else {
+                // Create new record
+                ElectricityService::create([
+                    'status' => $serviceData['status'] ?? null,
+                    'barangays_affected' => $serviceData['barangays_affected'] ?? null,
+                    'remarks' => $serviceData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Electricity service reports saved successfully']);
+        // Return fresh data after save
+        $updatedServices = ElectricityService::with('user:id,name')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Electricity service reports saved successfully',
+            'electricityServices' => $updatedServices
+        ]);
     }
 
     public function storeWaterService(Request $request)
     {
         $validated = $request->validate([
             'waterServices' => 'required|array',
+            'waterServices.*.id' => ['nullable', 'integer'],
             'waterServices.*.source_of_water'  => 'nullable|string|max:255',
             'waterServices.*.barangays_served' => 'nullable|string|max:500',
             'waterServices.*.status'           => 'nullable|string|max:255',
             'waterServices.*.remarks'          => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['waterServices'] as $water) {
-            if (!empty(array_filter($water))) {
-                WaterService::updateOrCreate(
-                    ['user_id' => Auth::id()],
-                    [
-                        'source_of_water'  => $water['source_of_water'] ?? null,
-                        'barangays_served' => $water['barangays_served'] ?? null,
-                        'status'           => $water['status'] ?? null,
-                        'remarks'          => $water['remarks'] ?? null,
+        foreach ($validated['waterServices'] as $waterData) {
+            // Skip empty rows
+            if (empty(array_filter($waterData))) {
+                continue;
+            }
+
+            // If ID exists and is numeric, update existing record
+            if (!empty($waterData['id']) && is_numeric($waterData['id'])) {
+                $water = WaterService::find($waterData['id']);
+                if ($water) {
+                    $water->update([
+                        'source_of_water'  => $waterData['source_of_water'] ?? null,
+                        'barangays_served' => $waterData['barangays_served'] ?? null,
+                        'status'           => $waterData['status'] ?? null,
+                        'remarks'          => $waterData['remarks'] ?? null,
                         'updated_by'       => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
+            } else {
+                // Create new record
+                WaterService::create([
+                    'source_of_water'  => $waterData['source_of_water'] ?? null,
+                    'barangays_served' => $waterData['barangays_served'] ?? null,
+                    'status'           => $waterData['status'] ?? null,
+                    'remarks'          => $waterData['remarks'] ?? null,
+                    'user_id'          => Auth::id(),
+                    'updated_by'       => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Water service reports saved successfully']);
+        // Return fresh data after save
+        $updatedServices = WaterService::with('user:id,name')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Water service reports saved successfully',
+            'waterServices' => $updatedServices
+        ]);
     }
 
 

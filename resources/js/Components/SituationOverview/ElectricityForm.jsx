@@ -7,8 +7,8 @@ import DownloadExcelButton from "../ui/DownloadExcelButton";
 /* import DownloadPDFButton from "../ui/DownloadPDFButton"; */
 import AddRowButton from "../ui/AddRowButton";
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useRef, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
@@ -29,10 +29,27 @@ const formatFieldName = (field) => {
 
 export default function ElectricityForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target)
+            ) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Using a safe default for data.electricityServices
     const services = data.electricityServices ?? [];
@@ -74,9 +91,24 @@ export default function ElectricityForm({ data, setData, errors }) {
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
-            await axios.post(`${APP_URL}/electricity-reports`, {
-                electricityServices: services,
+            // Clean string IDs for new rows
+            const cleanedServices = services.map(service => ({
+                ...service,
+                id: typeof service.id === 'string' ? null : service.id
+            }));
+            
+            const response = await axios.post(`${APP_URL}/electricity-reports`, {
+                electricityServices: cleanedServices,
             });
+            
+            // Invalidate and refetch modification history
+            await queryClient.invalidateQueries(['electricity-modifications']);
+            
+            // Update local state with server response if available
+            if (response.data && response.data.electricityServices) {
+                setData("electricityServices", response.data.electricityServices);
+            }
+            
             toast.success("Electricity services saved successfully!");
         } catch (err) {
             console.error(err);
@@ -92,6 +124,10 @@ export default function ElectricityForm({ data, setData, errors }) {
             }
         } finally {
             setIsSaving(false);
+            // Force refetch after small delay
+            setTimeout(() => {
+                queryClient.invalidateQueries(['electricity-modifications']);
+            }, 100);
         }
     };
 
@@ -189,10 +225,10 @@ export default function ElectricityForm({ data, setData, errors }) {
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
                                         {fields.map((field) => {
+                                            // Use row ID + field for row-specific tracking
+                                            const historyKey = `${row.id}_${field}`;
                                             const fieldHistory =
-                                                modificationData?.history?.[
-                                                    field
-                                                ] || [];
+                                                modificationData?.history?.[historyKey] || [];
                                             const latestChange =
                                                 fieldHistory[0];
                                             const previousChange =
