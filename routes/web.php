@@ -67,6 +67,10 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('weather-reports.store');
     Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
         ->name('modifications.weather');
+    
+    /* ---------------- Real-time Typing Indicator ---------------- */
+    Route::post('/broadcast-typing', [SituationOverviewController::class, 'broadcastTyping'])
+        ->name('broadcast.typing');
 
 
     /* ---------------- Water Level Reports ---------------- */

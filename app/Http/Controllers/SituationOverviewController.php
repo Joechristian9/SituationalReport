@@ -10,6 +10,7 @@ use App\Models\Communication;
 use App\Models\Road;
 use App\Models\Bridge;
 use App\Models\Modification;
+use App\Events\UserTyping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -428,5 +429,28 @@ class SituationOverviewController extends Controller
     public function bridgeModification()
     {
         return $this->buildModificationResponse('Bridge');
+    }
+
+    /* ------------------- REAL-TIME TYPING BROADCAST ------------------- */
+    public function broadcastTyping(Request $request)
+    {
+        $validated = $request->validate([
+            'userId' => 'required|integer',
+            'userName' => 'required|string',
+            'fieldKey' => 'required|string',
+            'isTyping' => 'required|boolean',
+            'channel' => 'required|string',
+        ]);
+
+        // Broadcast the typing event
+        broadcast(new UserTyping(
+            $validated['userId'],
+            $validated['userName'],
+            $validated['fieldKey'],
+            $validated['isTyping'],
+            $validated['channel']
+        ))->toOthers();
+
+        return response()->json(['status' => 'success']);
     }
 }
