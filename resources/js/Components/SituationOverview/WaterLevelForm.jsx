@@ -1,11 +1,14 @@
 // resources/js/Components/SituationOverview/WaterLevelForm.jsx
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
+import { usePage } from "@inertiajs/react";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 
-import { Download, Droplets, Loader2, PlusCircle, Save, History } from "lucide-react";
+import { Download, Droplets, Loader2, PlusCircle, Save, History, User } from "lucide-react";
 
 import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
@@ -27,10 +30,100 @@ const formatFieldName = (field) =>
 export default function WaterLevelForm({ data, setData }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
+    const { auth } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const [typingUsers, setTypingUsers] = useState({});
+    const channelRef = useRef(null);
+    const typingTimeoutRef = useRef({});
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target)
+            ) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Real-time typing indicator
+    useEffect(() => {
+        if (!window.Echo) {
+            window.Pusher = Pusher;
+            window.Echo = new Echo({
+                broadcaster: 'reverb',
+                key: import.meta.env.VITE_REVERB_APP_KEY,
+                wsHost: import.meta.env.VITE_REVERB_HOST || '127.0.0.1',
+                wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+                wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+                forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+                enabledTransports: ['ws', 'wss'],
+            });
+        }
+        
+        const channel = window.Echo.private('water-level-form-typing');
+        channelRef.current = channel;
+        
+        channel.listen('.typing', (data) => {
+            const { userId, userName, fieldKey, isTyping } = data;
+            if (userId === auth.user.id) return;
+            
+            setTypingUsers(prev => {
+                const newState = { ...prev };
+                if (isTyping) {
+                    newState[fieldKey] = { userId, userName };
+                } else {
+                    delete newState[fieldKey];
+                }
+                return newState;
+            });
+            
+            if (isTyping) {
+                if (typingTimeoutRef.current[fieldKey]) {
+                    clearTimeout(typingTimeoutRef.current[fieldKey]);
+                }
+                typingTimeoutRef.current[fieldKey] = setTimeout(() => {
+                    setTypingUsers(prev => {
+                        const newState = { ...prev };
+                        delete newState[fieldKey];
+                        return newState;
+                    });
+                }, 3000);
+            }
+        });
+        
+        return () => {
+            if (channelRef.current) {
+                channel.stopListening('.typing');
+                window.Echo.leave('water-level-form-typing');
+            }
+            Object.values(typingTimeoutRef.current).forEach(clearTimeout);
+        };
+    }, [auth.user.id]);
+
+    const broadcastTyping = async (rowId, field, isTyping) => {
+        try {
+            const fieldKey = `${rowId}_${field}`;
+            await axios.post(`${APP_URL}/broadcast-typing`, {
+                userId: auth.user.id,
+                userName: auth.user.name,
+                fieldKey,
+                isTyping,
+                channel: 'water-level-form-typing'
+            });
+        } catch (error) {
+            console.error('Failed to broadcast typing:', error);
+        }
+    };
 
     // Fetch modification history (unchanged)
     const {
@@ -98,6 +191,20 @@ export default function WaterLevelForm({ data, setData }) {
                 ...updatedReports[absoluteIndex],
                 [name]: value,
             };
+            
+            // Broadcast typing event
+            const row = updatedReports[absoluteIndex];
+            broadcastTyping(row.id, name, true);
+            
+            // Clear typing indicator after user stops typing
+            const fieldKey = `${row.id}_${name}`;
+            if (typingTimeoutRef.current[fieldKey]) {
+                clearTimeout(typingTimeoutRef.current[fieldKey]);
+            }
+            typingTimeoutRef.current[fieldKey] = setTimeout(() => {
+                broadcastTyping(row.id, name, false);
+            }, 1000);
+            
             return { ...prev, reports: updatedReports };
         });
     };
@@ -313,6 +420,8 @@ export default function WaterLevelForm({ data, setData }) {
                                             const latestChange = fieldHistory[0];
                                             const previousChange =
                                                 fieldHistory.length > 1 ? fieldHistory[1] : null;
+                                            const fieldKey = `${row.id}_${field}`;
+                                            const typingUser = typingUsers[fieldKey];
 
                                             return (
                                                 <td
@@ -324,6 +433,13 @@ export default function WaterLevelForm({ data, setData }) {
                                                     </label>
 
                                                     <div className="relative mt-1 md:mt-0">
+                                                        {typingUser && (
+                                                            <div className="absolute -top-6 left-0 flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs z-10">
+                                                                <User className="w-3 h-3" />
+                                                                <span className="font-medium">{typingUser.userName}</span>
+                                                                <span className="text-blue-500">is typing...</span>
+                                                            </div>
+                                                        )}
                                                         <input
                                                             name={field}
                                                             type={

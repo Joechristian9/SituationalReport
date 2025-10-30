@@ -300,6 +300,7 @@ class SituationOverviewController extends Controller
     {
         $validated = $request->validate([
             'roads' => 'required|array',
+            'roads.*.id' => ['nullable', 'integer'],
             'roads.*.road_classification' => 'nullable|string|max:255',
             'roads.*.name_of_road'        => 'nullable|string|max:255',
             'roads.*.status'              => 'nullable|string|max:255',
@@ -308,29 +309,58 @@ class SituationOverviewController extends Controller
             'roads.*.remarks'             => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['roads'] as $road) {
-            if (!empty(array_filter($road))) {
-                Road::updateOrCreate(
-                    ['user_id' => Auth::id(), 'name_of_road' => $road['name_of_road']],
-                    [
-                        'road_classification' => $road['road_classification'] ?? null,
-                        'status' => $road['status'] ?? null,
-                        'areas_affected' => $road['areas_affected'] ?? null,
-                        're_routing' => $road['re_routing'] ?? null,
-                        'remarks' => $road['remarks'] ?? null,
+        foreach ($validated['roads'] as $roadData) {
+            // Skip empty rows
+            if (empty(array_filter($roadData))) {
+                continue;
+            }
+
+            // If ID exists and is numeric, update existing record
+            if (!empty($roadData['id']) && is_numeric($roadData['id'])) {
+                $road = Road::find($roadData['id']);
+                if ($road) {
+                    $road->update([
+                        'road_classification' => $roadData['road_classification'] ?? null,
+                        'name_of_road' => $roadData['name_of_road'] ?? null,
+                        'status' => $roadData['status'] ?? null,
+                        'areas_affected' => $roadData['areas_affected'] ?? null,
+                        're_routing' => $roadData['re_routing'] ?? null,
+                        'remarks' => $roadData['remarks'] ?? null,
                         'updated_by' => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
+            } else {
+                // Create new record
+                Road::create([
+                    'road_classification' => $roadData['road_classification'] ?? null,
+                    'name_of_road' => $roadData['name_of_road'] ?? null,
+                    'status' => $roadData['status'] ?? null,
+                    'areas_affected' => $roadData['areas_affected'] ?? null,
+                    're_routing' => $roadData['re_routing'] ?? null,
+                    'remarks' => $roadData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Road reports saved successfully']);
+        // Return fresh data after save
+        $updatedRoads = Road::with('user:id,name')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Road reports saved successfully',
+            'roads' => $updatedRoads
+        ]);
     }
 
     public function storeBridge(Request $request)
     {
         $validated = $request->validate([
             'bridges' => 'required|array',
+            'bridges.*.id' => ['nullable', 'integer'],
             'bridges.*.road_classification' => 'nullable|string|max:255',
             'bridges.*.name_of_bridge'     => 'nullable|string|max:255',
             'bridges.*.status'             => 'nullable|string|max:255',
@@ -339,23 +369,51 @@ class SituationOverviewController extends Controller
             'bridges.*.remarks'            => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['bridges'] as $bridge) {
-            if (!empty(array_filter($bridge))) {
-                Bridge::updateOrCreate(
-                    ['user_id' => Auth::id(), 'name_of_bridge' => $bridge['name_of_bridge']],
-                    [
-                        'road_classification' => $bridge['road_classification'] ?? null,
-                        'status' => $bridge['status'] ?? null,
-                        'areas_affected' => $bridge['areas_affected'] ?? null,
-                        're_routing' => $bridge['re_routing'] ?? null,
-                        'remarks' => $bridge['remarks'] ?? null,
+        foreach ($validated['bridges'] as $bridgeData) {
+            // Skip empty rows
+            if (empty(array_filter($bridgeData))) {
+                continue;
+            }
+
+            // If ID exists and is numeric, update existing record
+            if (!empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
+                $bridge = Bridge::find($bridgeData['id']);
+                if ($bridge) {
+                    $bridge->update([
+                        'road_classification' => $bridgeData['road_classification'] ?? null,
+                        'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
+                        'status' => $bridgeData['status'] ?? null,
+                        'areas_affected' => $bridgeData['areas_affected'] ?? null,
+                        're_routing' => $bridgeData['re_routing'] ?? null,
+                        'remarks' => $bridgeData['remarks'] ?? null,
                         'updated_by' => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
+            } else {
+                // Create new record
+                Bridge::create([
+                    'road_classification' => $bridgeData['road_classification'] ?? null,
+                    'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
+                    'status' => $bridgeData['status'] ?? null,
+                    'areas_affected' => $bridgeData['areas_affected'] ?? null,
+                    're_routing' => $bridgeData['re_routing'] ?? null,
+                    'remarks' => $bridgeData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Bridge reports saved successfully']);
+        // Return fresh data after save
+        $updatedBridges = Bridge::with('user:id,name')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'message' => 'Bridge reports saved successfully',
+            'bridges' => $updatedBridges
+        ]);
     }
 
     /* ------------------- MODIFICATIONS ------------------- */

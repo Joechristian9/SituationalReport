@@ -298,63 +298,74 @@ export default function WaterForm({ data, setData, errors }) {
                                                                     </TooltipTrigger>
                                                                     <TooltipContent
                                                                         side="right"
-                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg border-slate-700"
+                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
                                                                     >
-                                                                        {latestChange ? (
-                                                                            <div className="space-y-2 text-sm">
-                                                                                <h4 className="font-semibold text-slate-200 border-b border-slate-600 pb-1 mb-2">
-                                                                                    Modification
-                                                                                    History
-                                                                                </h4>
-                                                                                <div>
-                                                                                    <p className="text-xs text-slate-400">
-                                                                                        Latest
-                                                                                        Value:
-                                                                                    </p>
-                                                                                    <p className="font-medium text-amber-300 break-words">
-                                                                                        "
-                                                                                        {latestChange.new ||
-                                                                                            "Empty"}
-                                                                                        "
-                                                                                    </p>
-                                                                                    <p className="text-xs text-slate-400 mt-1">
-                                                                                        Changed
-                                                                                        by{" "}
-                                                                                        <span className="font-semibold text-cyan-300">
-                                                                                            {latestChange
+                                                                        <div className="text-sm space-y-2">
+                                                                            <div>
+                                                                                <p className="text-sm font-bold text-white mb-1">
+                                                                                    Latest
+                                                                                    Change:
+                                                                                </p>
+                                                                                <p>
+                                                                                    <span className="font-semibold text-blue-300">
+                                                                                        {
+                                                                                            latestChange
                                                                                                 .user
-                                                                                                ?.name ||
-                                                                                                "Unknown"}
+                                                                                                ?.name
+                                                                                        }
+                                                                                    </span>{" "}
+                                                                                    changed
+                                                                                    from{" "}
+                                                                                    <span className="text-red-400 font-mono">
+                                                                                        {latestChange.old ??
+                                                                                            "nothing"}
+                                                                                    </span>{" "}
+                                                                                    to{" "}
+                                                                                    <span className="text-green-400 font-mono">
+                                                                                        {latestChange.new ??
+                                                                                            "nothing"}
+                                                                                    </span>
+                                                                                </p>
+                                                                                <p className="text-xs text-gray-400">
+                                                                                    {new Date(
+                                                                                        latestChange.date
+                                                                                    ).toLocaleString()}
+                                                                                </p>
+                                                                            </div>
+                                                                            {previousChange && (
+                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
+                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
+                                                                                        Previous
+                                                                                        Change:
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        <span className="font-semibold text-blue-300">
+                                                                                            {
+                                                                                                previousChange
+                                                                                                    .user
+                                                                                                    ?.name
+                                                                                            }
                                                                                         </span>{" "}
-                                                                                        on{" "}
+                                                                                        changed
+                                                                                        from{" "}
+                                                                                        <span className="text-red-400 font-mono">
+                                                                                            {previousChange.old ??
+                                                                                                "nothing"}
+                                                                                        </span>{" "}
+                                                                                        to{" "}
+                                                                                        <span className="text-green-400 font-mono">
+                                                                                            {previousChange.new ??
+                                                                                                "nothing"}
+                                                                                        </span>
+                                                                                    </p>
+                                                                                    <p className="text-xs text-gray-400">
                                                                                         {new Date(
-                                                                                            latestChange.date
+                                                                                            previousChange.date
                                                                                         ).toLocaleString()}
                                                                                     </p>
                                                                                 </div>
-                                                                                {previousChange && (
-                                                                                    <div className="pt-2 border-t border-slate-600">
-                                                                                        <p className="text-xs text-slate-400">
-                                                                                            Previous
-                                                                                            Value:
-                                                                                        </p>
-                                                                                        <p className="font-medium text-slate-300 break-words">
-                                                                                            "
-                                                                                            {latestChange.old ||
-                                                                                                "Empty"}
-                                                                                            "
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <p className="text-sm">
-                                                                                No
-                                                                                modification
-                                                                                history
-                                                                                available.
-                                                                            </p>
-                                                                        )}
+                                                                            )}
+                                                                        </div>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </div>

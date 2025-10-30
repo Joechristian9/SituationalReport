@@ -6,13 +6,16 @@ import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useRef, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
+import { usePage } from "@inertiajs/react";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 
-import { Landmark, History, Loader2, PlusCircle, Save } from "lucide-react";
+import { Landmark, History, Loader2, PlusCircle, Save, User } from "lucide-react";
 import {
     Tooltip,
     TooltipTrigger,
@@ -28,10 +31,101 @@ const formatFieldName = (field) => {
 
 export default function BridgeForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
+    const { auth } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const [typingUsers, setTypingUsers] = useState({});
+    const channelRef = useRef(null);
+    const typingTimeoutRef = useRef({});
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target)
+            ) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Real-time typing indicator
+    useEffect(() => {
+        if (!window.Echo) {
+            window.Pusher = Pusher;
+            window.Echo = new Echo({
+                broadcaster: 'reverb',
+                key: import.meta.env.VITE_REVERB_APP_KEY,
+                wsHost: import.meta.env.VITE_REVERB_HOST || '127.0.0.1',
+                wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+                wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+                forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+                enabledTransports: ['ws', 'wss'],
+            });
+        }
+        
+        const channel = window.Echo.private('bridge-form-typing');
+        channelRef.current = channel;
+        
+        channel.listen('.typing', (data) => {
+            const { userId, userName, fieldKey, isTyping } = data;
+            if (userId === auth.user.id) return;
+            
+            setTypingUsers(prev => {
+                const newState = { ...prev };
+                if (isTyping) {
+                    newState[fieldKey] = { userId, userName };
+                } else {
+                    delete newState[fieldKey];
+                }
+                return newState;
+            });
+            
+            if (isTyping) {
+                if (typingTimeoutRef.current[fieldKey]) {
+                    clearTimeout(typingTimeoutRef.current[fieldKey]);
+                }
+                typingTimeoutRef.current[fieldKey] = setTimeout(() => {
+                    setTypingUsers(prev => {
+                        const newState = { ...prev };
+                        delete newState[fieldKey];
+                        return newState;
+                    });
+                }, 3000);
+            }
+        });
+        
+        return () => {
+            if (channelRef.current) {
+                channel.stopListening('.typing');
+                window.Echo.leave('bridge-form-typing');
+            }
+            Object.values(typingTimeoutRef.current).forEach(clearTimeout);
+        };
+    }, [auth.user.id]);
+
+    const broadcastTyping = async (rowId, field, isTyping) => {
+        try {
+            const fieldKey = `${rowId}_${field}`;
+            await axios.post(`${APP_URL}/broadcast-typing`, {
+                userId: auth.user.id,
+                userName: auth.user.name,
+                fieldKey,
+                isTyping,
+                channel: 'bridge-form-typing'
+            });
+        } catch (error) {
+            console.error('Failed to broadcast typing:', error);
+        }
+    };
 
     const bridges = data?.bridges ?? [];
 
@@ -53,6 +147,19 @@ export default function BridgeForm({ data, setData, errors }) {
         const newRows = [...bridges];
         newRows[index][name] = value;
         setData("bridges", newRows);
+        
+        // Broadcast typing event
+        const row = newRows[index];
+        broadcastTyping(row.id, name, true);
+        
+        // Clear typing indicator after user stops typing
+        const fieldKey = `${row.id}_${name}`;
+        if (typingTimeoutRef.current[fieldKey]) {
+            clearTimeout(typingTimeoutRef.current[fieldKey]);
+        }
+        typingTimeoutRef.current[fieldKey] = setTimeout(() => {
+            broadcastTyping(row.id, name, false);
+        }, 1000);
     };
 
     const handleAddRow = () => {
@@ -73,9 +180,24 @@ export default function BridgeForm({ data, setData, errors }) {
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
-            await axios.post(`${APP_URL}/bridge-reports`, {
-                bridges: bridges,
+            // Clean string IDs for new rows
+            const cleanedBridges = bridges.map(bridge => ({
+                ...bridge,
+                id: typeof bridge.id === 'string' ? null : bridge.id
+            }));
+            
+            const response = await axios.post(`${APP_URL}/bridge-reports`, {
+                bridges: cleanedBridges,
             });
+            
+            // Invalidate and refetch modification history
+            await queryClient.invalidateQueries(['bridge-modifications']);
+            
+            // Update local state with server response if available
+            if (response.data && response.data.bridges) {
+                setData("bridges", response.data.bridges);
+            }
+            
             toast.success("Bridge reports saved successfully!");
         } catch (err) {
             console.error(err);
@@ -91,6 +213,10 @@ export default function BridgeForm({ data, setData, errors }) {
             }
         } finally {
             setIsSaving(false);
+            // Force refetch after small delay
+            setTimeout(() => {
+                queryClient.invalidateQueries(['bridge-modifications']);
+            }, 100);
         }
     };
 
@@ -191,16 +317,18 @@ export default function BridgeForm({ data, setData, errors }) {
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
                                         {fields.map((field) => {
+                                            // Use row ID + field for row-specific tracking
+                                            const historyKey = `${row.id}_${field}`;
                                             const fieldHistory =
-                                                modificationData?.history?.[
-                                                    field
-                                                ] || [];
+                                                modificationData?.history?.[historyKey] || [];
                                             const latestChange =
                                                 fieldHistory[0];
                                             const previousChange =
                                                 fieldHistory.length > 1
                                                     ? fieldHistory[1]
                                                     : null;
+                                            const fieldKey = `${row.id}_${field}`;
+                                            const typingUser = typingUsers[fieldKey];
 
                                             const commonProps = {
                                                 name: field,
@@ -223,6 +351,13 @@ export default function BridgeForm({ data, setData, errors }) {
                                                         {formatFieldName(field)}
                                                     </label>
                                                     <div className="relative mt-1 md:mt-0">
+                                                        {typingUser && (
+                                                            <div className="absolute -top-6 left-0 flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs z-10">
+                                                                <User className="w-3 h-3" />
+                                                                <span className="font-medium">{typingUser.userName}</span>
+                                                                <span className="text-blue-500">is typing...</span>
+                                                            </div>
+                                                        )}
                                                         {field ===
                                                         "road_classification" ? (
                                                             <select
@@ -283,65 +418,74 @@ export default function BridgeForm({ data, setData, errors }) {
                                                                     </TooltipTrigger>
                                                                     <TooltipContent
                                                                         side="right"
-                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg border-slate-700"
+                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
                                                                     >
-                                                                        {latestChange ? (
-                                                                            <div className="space-y-2 text-sm">
-                                                                                <h4 className="font-semibold text-slate-200 border-b border-slate-600 pb-1 mb-2">
-                                                                                    Modification
-                                                                                    History
-                                                                                </h4>
-                                                                                <div>
-                                                                                    <p className="text-xs text-slate-400">
-                                                                                        Latest
-                                                                                        Value:
-                                                                                    </p>
-                                                                                    <p className="font-medium text-amber-300 break-words">
-                                                                                        "
-                                                                                        {latestChange.new ||
-                                                                                            "Empty"}
-
-                                                                                        "
-                                                                                    </p>
-                                                                                    <p className="text-xs text-slate-400 mt-1">
-                                                                                        Changed
-                                                                                        by{" "}
-                                                                                        <span className="font-semibold text-cyan-300">
-                                                                                            {latestChange
+                                                                        <div className="text-sm space-y-2">
+                                                                            <div>
+                                                                                <p className="text-sm font-bold text-white mb-1">
+                                                                                    Latest
+                                                                                    Change:
+                                                                                </p>
+                                                                                <p>
+                                                                                    <span className="font-semibold text-blue-300">
+                                                                                        {
+                                                                                            latestChange
                                                                                                 .user
-                                                                                                ?.name ||
-                                                                                                "Unknown"}
+                                                                                                ?.name
+                                                                                        }
+                                                                                    </span>{" "}
+                                                                                    changed
+                                                                                    from{" "}
+                                                                                    <span className="text-red-400 font-mono">
+                                                                                        {latestChange.old ??
+                                                                                            "nothing"}
+                                                                                    </span>{" "}
+                                                                                    to{" "}
+                                                                                    <span className="text-green-400 font-mono">
+                                                                                        {latestChange.new ??
+                                                                                            "nothing"}
+                                                                                    </span>
+                                                                                </p>
+                                                                                <p className="text-xs text-gray-400">
+                                                                                    {new Date(
+                                                                                        latestChange.date
+                                                                                    ).toLocaleString()}
+                                                                                </p>
+                                                                            </div>
+                                                                            {previousChange && (
+                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
+                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
+                                                                                        Previous
+                                                                                        Change:
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        <span className="font-semibold text-blue-300">
+                                                                                            {
+                                                                                                previousChange
+                                                                                                    .user
+                                                                                                    ?.name
+                                                                                            }
                                                                                         </span>{" "}
-                                                                                        on{" "}
+                                                                                        changed
+                                                                                        from{" "}
+                                                                                        <span className="text-red-400 font-mono">
+                                                                                            {previousChange.old ??
+                                                                                                "nothing"}
+                                                                                        </span>{" "}
+                                                                                        to{" "}
+                                                                                        <span className="text-green-400 font-mono">
+                                                                                            {previousChange.new ??
+                                                                                                "nothing"}
+                                                                                        </span>
+                                                                                    </p>
+                                                                                    <p className="text-xs text-gray-400">
                                                                                         {new Date(
-                                                                                            latestChange.date
+                                                                                            previousChange.date
                                                                                         ).toLocaleString()}
                                                                                     </p>
                                                                                 </div>
-                                                                                {previousChange && (
-                                                                                    <div className="pt-2 border-t border-slate-600">
-                                                                                        <p className="text-xs text-slate-400">
-                                                                                            Previous
-                                                                                            Value:
-                                                                                        </p>
-                                                                                        <p className="font-medium text-slate-300 break-words">
-                                                                                            "
-                                                                                            {latestChange.old ||
-                                                                                                "Empty"}
-
-                                                                                            "
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <p className="text-sm">
-                                                                                No
-                                                                                modification
-                                                                                history
-                                                                                available.
-                                                                            </p>
-                                                                        )}
+                                                                            )}
+                                                                        </div>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </div>

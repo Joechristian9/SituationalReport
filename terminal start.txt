@@ -1,0 +1,4 @@
+3 terminal(1 terminal each)
+php artisan reverb:start
+php artisan serve
+npm run dev
