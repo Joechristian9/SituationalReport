@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 import { RiMenuFold2Fill } from "react-icons/ri";
 
@@ -35,18 +36,66 @@ export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
     const userRoles = auth.user.roles.map((r) => r.name);
 
+    // --- State for custom years ---
+    const [customYears, setCustomYears] = useState([]);
+
+    // Load custom years from localStorage on mount
+    useEffect(() => {
+        const stored = localStorage.getItem('customReportYears');
+        if (stored) {
+            try {
+                setCustomYears(JSON.parse(stored));
+            } catch (e) {
+                console.error('Failed to parse custom years:', e);
+            }
+        }
+    }, []);
+
+    // Save custom years to localStorage whenever they change
+    useEffect(() => {
+        if (customYears.length > 0) {
+            localStorage.setItem('customReportYears', JSON.stringify(customYears));
+        }
+    }, [customYears]);
+
     // --- Dynamically generate the last 5 years ---
     const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+    const defaultYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
+    
+    // Combine default years with custom years and remove duplicates
+    const allYears = [...new Set([...defaultYears, ...customYears])].sort((a, b) => b - a);
+
+    // Function to add a new year
+    const addYear = (year) => {
+        const yearNum = parseInt(year, 10);
+        if (!isNaN(yearNum) && yearNum > 1900 && yearNum <= currentYear + 10) {
+            if (!allYears.includes(yearNum)) {
+                setCustomYears(prev => [...prev, yearNum]);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Function to remove a custom year
+    const removeYear = (year) => {
+        setCustomYears(prev => prev.filter(y => y !== year));
+        // Also remove from localStorage if no custom years remain
+        if (customYears.length === 1 && customYears[0] === year) {
+            localStorage.removeItem('customReportYears');
+        }
+    };
 
     // --- Create menu items for each year ---
-    const reportItems = years.map((year) => ({
+    const reportItems = allYears.map((year) => ({
         title: `${year} Report`,
         // IMPORTANT: This now points to the 'view' route, not 'download'.
         // This will generate a URL like: /reports/view?year=2025
         url: route("reports.view", { year: year }),
         roles: ["user", "admin"],
         icon: Calendar,
+        isCustom: customYears.includes(year),
+        onRemove: () => removeYear(year),
     }));
 
     const navMain = [
@@ -114,6 +163,7 @@ export function AppSidebar({ ...props }) {
             isActive: route().current("reports.*"),
             roles: ["user", "admin"],
             items: reportItems, // Assign the dynamically generated year links here
+            addYear: addYear, // Pass the addYear function
         },
     ];
 

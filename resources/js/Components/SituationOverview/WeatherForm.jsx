@@ -223,9 +223,11 @@ export default function WeatherForm({ data, setData, errors }) {
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
                                         {fields.map((field) => {
+                                            // Use row ID + field to get modification history for this specific cell
+                                            const historyKey = `${row.id}_${field}`;
                                             const fieldHistory =
                                                 modificationData?.history?.[
-                                                    field
+                                                    historyKey
                                                 ] || [];
                                             const latestChange =
                                                 fieldHistory[0];

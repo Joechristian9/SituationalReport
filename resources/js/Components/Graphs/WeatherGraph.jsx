@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
     LineChart,
     Line,
@@ -37,20 +37,64 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const WeatherGraph = ({ weatherReports = [] }) => {
     const [selectedMunicipality, setSelectedMunicipality] = useState("All");
-
-    const municipalities = useMemo(
-        () => ["All", ...new Set(weatherReports.map((r) => r.municipality))],
-        [weatherReports]
+    const [windowWidth, setWindowWidth] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
     );
+    const [chartKey, setChartKey] = useState(0);
 
+    // Handle window resize for responsive behavior (debounced)
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                setWindowWidth(window.innerWidth);
+            }, 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    // Force chart update when weatherReports changes
+    useEffect(() => {
+        if (weatherReports && weatherReports.length > 0) {
+            setChartKey(prev => prev + 1);
+        }
+    }, [weatherReports]);
+
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth >= 640 && windowWidth < 1024;
+
+    // Memoize municipalities list with proper deep comparison
+    const municipalities = useMemo(() => {
+        if (!weatherReports || weatherReports.length === 0) return ["All"];
+        const uniqueMunicipalities = new Set(
+            weatherReports
+                .filter(r => r.municipality)
+                .map((r) => r.municipality)
+        );
+        return ["All", ...Array.from(uniqueMunicipalities).sort()];
+    }, [weatherReports.length, JSON.stringify(weatherReports.map(r => r.municipality))]);
+
+    // Optimized data processing with proper memoization
     const data = useMemo(() => {
+        if (!weatherReports || weatherReports.length === 0) return [];
+
         const reports =
             selectedMunicipality === "All"
                 ? weatherReports
                 : weatherReports.filter(
                       (r) => r.municipality === selectedMunicipality
                   );
+
+        if (reports.length === 0) return [];
+
         const aggregator = reports.reduce((acc, report) => {
+            if (!report.updated_at) return acc;
+
             const timestamp = report.updated_at;
             if (!acc[timestamp]) {
                 acc[timestamp] = {
@@ -64,23 +108,75 @@ const WeatherGraph = ({ weatherReports = [] }) => {
             acc[timestamp].windSum += parseFloat(report.wind) || 0;
             acc[timestamp].precipSum += parseFloat(report.precipitation) || 0;
             acc[timestamp].count += 1;
-            acc[timestamp].municipalities.add(report.municipality);
+            if (report.municipality) {
+                acc[timestamp].municipalities.add(report.municipality);
+            }
             return acc;
         }, {});
 
         return Object.values(aggregator)
             .map((d) => ({
                 name: dayjs(d.date).format("MMM D, HH:mm"),
-                wind: (d.windSum / d.count).toFixed(2),
-                precipitation: (d.precipSum / d.count).toFixed(2),
+                wind: parseFloat((d.windSum / d.count).toFixed(2)),
+                precipitation: parseFloat((d.precipSum / d.count).toFixed(2)),
                 updated_at: d.date,
                 municipality:
                     Array.from(d.municipalities).join(", ") || "Average",
             }))
             .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
-    }, [weatherReports, selectedMunicipality]);
+    }, [
+        weatherReports.length,
+        selectedMunicipality,
+        JSON.stringify(weatherReports.map(r => ({
+            id: r.id,
+            wind: r.wind,
+            precipitation: r.precipitation,
+            updated_at: r.updated_at
+        })))
+    ]);
 
-    const latest = data.length > 0 ? data[data.length - 1] : null;
+    // Get the actual latest updated reports (not aggregated by timestamp)
+    const latest = useMemo(() => {
+        if (!weatherReports || weatherReports.length === 0) return null;
+        
+        // Filter by selected municipality if not "All"
+        const filteredReports = selectedMunicipality === "All"
+            ? weatherReports
+            : weatherReports.filter(r => r.municipality === selectedMunicipality);
+        
+        if (filteredReports.length === 0) return null;
+        
+        // Find the most recent update timestamp
+        const latestTimestamp = filteredReports.reduce((max, report) => {
+            const reportTime = new Date(report.updated_at).getTime();
+            return reportTime > max ? reportTime : max;
+        }, 0);
+        
+        // Get all reports with that timestamp (the actual latest updates)
+        const latestReports = filteredReports.filter(
+            r => new Date(r.updated_at).getTime() === latestTimestamp
+        );
+        
+        // Calculate averages only from the latest updated reports
+        const windSum = latestReports.reduce((sum, r) => sum + (parseFloat(r.wind) || 0), 0);
+        const precipSum = latestReports.reduce((sum, r) => sum + (parseFloat(r.precipitation) || 0), 0);
+        const municipalities = [...new Set(latestReports.map(r => r.municipality).filter(Boolean))];
+        
+        return {
+            wind: parseFloat((windSum / latestReports.length).toFixed(2)),
+            precipitation: parseFloat((precipSum / latestReports.length).toFixed(2)),
+            updated_at: new Date(latestTimestamp).toISOString(),
+            municipality: municipalities.join(", "),
+        };
+    }, [
+        weatherReports.length,
+        selectedMunicipality,
+        JSON.stringify(weatherReports.map(r => ({
+            id: r.id,
+            municipality: r.municipality,
+            updated_at: r.updated_at
+        })))
+    ]);
 
     const filterControl = (
         <div className="flex items-center gap-2">
@@ -138,7 +234,11 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                             </div>
                         </div>
                     )}
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer
+                        width="100%"
+                        height={isMobile ? 280 : isTablet ? 320 : 350}
+                        key={chartKey}
+                    >
                         <LineChart
                             data={data}
                             margin={{

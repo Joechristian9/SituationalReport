@@ -298,14 +298,19 @@ class SituationOverviewController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Group by model_id and field to track modifications per row
         $history = [];
         foreach ($modifications as $mod) {
+            $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
-                $history[$field][] = [
+                // Key format: "modelId_field" to track each row+field combination
+                $key = $modelId . '_' . $field;
+                $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
                     'old'  => $change['old'] ?? null,
                     'new'  => $change['new'] ?? null,
                     'date' => $mod->created_at,
+                    'model_id' => $modelId,
                 ];
             }
         }
