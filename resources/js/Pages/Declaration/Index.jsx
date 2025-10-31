@@ -10,60 +10,40 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 // ✅ Import Declaration USC Form
 import DeclarationUSCForm from "@/Components/Declaration/DeclarationUSCForm";
-import { Loader2 } from "lucide-react";
 
 export default function Index() {
-    const { flash } = usePage().props;
+    const { flash, declarations } = usePage().props;
 
-    // ✅ Form State
-    const { data, setData, post, processing, errors } = useForm({
-        declarations: [
-            {
-                id: 1,
-                declared_by: "",
-                resolution_number: "",
-                date_approved: "",
-            },
-        ],
+    // ✅ Form State - Initialize with declarations from database
+    const { data, setData, errors } = useForm({
+        usc_declarations: declarations && declarations.length > 0 
+            ? declarations 
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    declared_by: "",
+                    resolution_number: "",
+                    date_approved: "",
+                },
+            ],
     });
 
-    // ✅ Restore saved form from localStorage
+    // ✅ Update form data when declarations from backend change
     useEffect(() => {
-        const saved = localStorage.getItem("uscDeclarations");
-        if (saved) {
-            try {
-                setData(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse saved USC Declarations", e);
-            }
+        if (declarations && declarations.length > 0) {
+            setData('usc_declarations', declarations);
         }
-    }, []);
-
-    // ✅ Save form state to localStorage
-    useEffect(() => {
-        localStorage.setItem("uscDeclarations", JSON.stringify(data));
-    }, [data]);
+    }, [declarations]);
 
     // ✅ Flash messages
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
-
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { label: "USC Declarations" },
-    ];
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post(route("declaration-usc.store"), { preserveScroll: true });
-    };
 
     return (
         <SidebarProvider>
@@ -108,60 +88,38 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    <form onSubmit={handleSubmit}>
-                        <Card className="shadow-lg rounded-2xl border">
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                            Declaration under State of Calamity
-                                            (USC)
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            Record details of declarations under
-                                            a state of calamity.
-                                        </p>
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
+                    <Card className="shadow-lg rounded-2xl border">
+                        <CardHeader>
+                            <CardTitle className="flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        Declaration under State of Calamity
+                                        (USC)
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Record details of declarations under
+                                        a state of calamity.
+                                    </p>
+                                </div>
+                            </CardTitle>
+                        </CardHeader>
 
-                            <CardContent>
-                                <motion.div
-                                    key="usc-declarations"
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -30 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <DeclarationUSCForm
-                                        data={data}
-                                        setData={setData}
-                                        errors={errors}
-                                    />
-                                </motion.div>
-                            </CardContent>
-
-                            {/* ✅ Save Button */}
-                            <div className="flex justify-end p-4 border-t bg-gray-50 rounded-b-2xl">
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="relative flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {processing ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin text-white" />
-                                            <span className="animate-pulse">
-                                                Saving...
-                                            </span>
-                                        </>
-                                    ) : (
-                                        "Save Declarations"
-                                    )}
-                                </Button>
-                            </div>
-                        </Card>
-                    </form>
+                        <CardContent>
+                            <motion.div
+                                key="usc-declarations"
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -30 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <DeclarationUSCForm
+                                    data={data}
+                                    setData={setData}
+                                    errors={errors}
+                                />
+                            </motion.div>
+                        </CardContent>
+                    </Card>
                 </main>
             </SidebarInset>
         </SidebarProvider>
