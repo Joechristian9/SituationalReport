@@ -13,8 +13,11 @@ trait LogsModification
         static::created(function (Model $model) {
             $fields = [];
             foreach ($model->getFillable() as $field) {
-                // Ensure there is a value to log and it's not a password field for security
-                if ($model->isDirty($field) && !in_array($field, ['password', 'remember_token'])) {
+                // Only log fields with actual values (not null/empty) and exclude sensitive fields
+                if ($model->isDirty($field) 
+                    && !in_array($field, ['password', 'remember_token'])
+                    && $model->{$field} !== null 
+                    && $model->{$field} !== '') {
                     $fields[$field] = [
                         'old'  => null,
                         'new'  => $model->{$field},
