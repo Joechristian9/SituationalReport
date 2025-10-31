@@ -405,22 +405,30 @@ export default function PreEmptiveForm({ data, setData, errors }) {
             />
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                <AddRowButton onClick={handleAddRow} label="Add Row" />
+            <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <AddRowButton
+                        onClick={handleAddRow}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                    >
+                        <PlusCircle size={16} /> Add Row
+                    </AddRowButton>
+                </div>
+
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                 >
                     {isSaving ? (
                         <>
-                            <Loader2 className="animate-spin" size={18} />
+                            <Loader2 className="w-5 h-5 animate-spin" />
                             <span>Saving...</span>
                         </>
                     ) : (
                         <>
-                            <Save size={18} />
-                            <span>Save Reports</span>
+                            <Save className="w-5 h-5" />
+                            <span>Save Pre-Emptive Reports</span>
                         </>
                     )}
                 </button>

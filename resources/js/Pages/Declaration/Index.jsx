@@ -9,8 +9,6 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
 
 // ✅ Import Declaration USC Form
 import DeclarationUSCForm from "@/Components/Declaration/DeclarationUSCForm";
@@ -88,38 +86,11 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    <Card className="shadow-lg rounded-2xl border">
-                        <CardHeader>
-                            <CardTitle className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                        Declaration under State of Calamity
-                                        (USC)
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        Record details of declarations under
-                                        a state of calamity.
-                                    </p>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent>
-                            <motion.div
-                                key="usc-declarations"
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -30 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <DeclarationUSCForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                />
-                            </motion.div>
-                        </CardContent>
-                    </Card>
+                    <DeclarationUSCForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                    />
                 </main>
             </SidebarInset>
         </SidebarProvider>
