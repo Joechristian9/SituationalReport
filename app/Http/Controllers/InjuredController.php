@@ -29,6 +29,7 @@ class InjuredController extends Controller
     {
         $validated = $request->validate([
             'injured' => 'required|array',
+            'injured.*.id'              => 'nullable',
             'injured.*.name'            => 'nullable|string|max:255',
             'injured.*.age'             => 'nullable|integer',
             'injured.*.sex'             => 'nullable|string|max:255',
@@ -39,10 +40,13 @@ class InjuredController extends Controller
             'injured.*.remarks'         => 'nullable|string',
         ]);
 
+        $savedInjured = [];
+
         foreach ($validated['injured'] as $injuredData) {
-            // Copy injured data but exclude sex for empty check
+            // Copy injured data but exclude sex and id for empty check
             $dataToCheck = $injuredData;
             unset($dataToCheck['sex']);
+            unset($dataToCheck['id']);
 
             // Remove empty values (null, '', whitespace, 0, '0')
             $dataToCheck = array_filter($dataToCheck, function ($value) {
@@ -57,8 +61,7 @@ class InjuredController extends Controller
                 continue;
             }
 
-            // Save injured record
-            Injured::create([
+            $data = [
                 'name'              => $injuredData['name'] ?? null,
                 'age'               => $injuredData['age'] ?? null,
                 'sex'               => $injuredData['sex'] ?? null,
@@ -67,12 +70,34 @@ class InjuredController extends Controller
                 'date_admitted'     => $injuredData['date_admitted'] ?? null,
                 'place_of_incident' => $injuredData['place_of_incident'] ?? null,
                 'remarks'           => $injuredData['remarks'] ?? null,
-                'user_id'           => Auth::id(),
                 'updated_by'        => Auth::id(),
+            ];
+
+            // Check if this is an update or create
+            if (!empty($injuredData['id']) && is_numeric($injuredData['id'])) {
+                // Update existing record
+                $injuredRecord = Injured::find($injuredData['id']);
+                if ($injuredRecord) {
+                    $injuredRecord->update($data);
+                    $savedInjured[] = $injuredRecord->fresh();
+                }
+            } else {
+                // Create new record
+                $data['user_id'] = Auth::id();
+                $savedInjured[] = Injured::create($data);
+            }
+        }
+
+        // Return JSON response with saved records
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Injured report saved successfully.',
+                'injured' => $savedInjured,
             ]);
         }
 
-        return back()->with('success', 'Incidents Report saved successfully.');
+        return back()->with('success', 'Injured report saved successfully.');
     }
 
     /**
@@ -106,5 +131,40 @@ class InjuredController extends Controller
         $injured->delete();
 
         return back()->with('success', 'Injured record deleted successfully.');
+    }
+
+    /**
+     * Get modification history for Injured records
+     */
+    public function getModifications()
+    {
+        $modifications = \App\Models\Modification::where('model_type', 'Injured')
+            ->with('user')
+            ->latest()
+            ->get();
+
+        $history = [];
+
+        foreach ($modifications as $mod) {
+            foreach ($mod->changed_fields as $field => $change) {
+                $key = "{$mod->model_id}_{$field}";
+
+                if (!isset($history[$key])) {
+                    $history[$key] = [];
+                }
+
+                $history[$key][] = [
+                    'old'  => $change['old'] ?? null,
+                    'new'  => $change['new'] ?? null,
+                    'user' => [
+                        'id'   => $change['user']['id'] ?? null,
+                        'name' => $change['user']['name'] ?? 'Unknown',
+                    ],
+                    'date' => $mod->created_at,
+                ];
+            }
+        }
+
+        return response()->json(['history' => $history]);
     }
 }

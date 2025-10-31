@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tabs";
 
 export default function Index() {
-    const { flash, incidents } = usePage().props;
+    const { flash, incidents, casualties, injured } = usePage().props;
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -69,31 +69,35 @@ export default function Index() {
                     remarks: "",
                 },
             ],
-        casualties: [
-            {
-                id: 1,
-                name: "",
-                age: "",
-                sex: "",
-                address: "",
-                cause_of_death: "",
-                date_died: "",
-                place_of_incident: "",
-            },
-        ],
-        injured: [
-            {
-                id: 1,
-                name: "",
-                age: "",
-                sex: "",
-                address: "",
-                diagnosis: "",
-                date_admitted: "",
-                place_of_incident: "",
-                remarks: "",
-            },
-        ],
+        casualties: casualties && casualties.length > 0
+            ? casualties
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    name: "",
+                    age: "",
+                    sex: "",
+                    address: "",
+                    cause_of_death: "",
+                    date_died: "",
+                    place_of_incident: "",
+                },
+            ],
+        injured: injured && injured.length > 0
+            ? injured
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    name: "",
+                    age: "",
+                    sex: "",
+                    address: "",
+                    diagnosis: "",
+                    date_admitted: "",
+                    place_of_incident: "",
+                    remarks: "",
+                },
+            ],
         missing: [
             {
                 id: 1,
@@ -145,6 +149,20 @@ export default function Index() {
             setData('incidents', incidents);
         }
     }, [incidents]);
+
+    // Update casualties from backend when data changes
+    useEffect(() => {
+        if (casualties && casualties.length > 0) {
+            setData('casualties', casualties);
+        }
+    }, [casualties]);
+
+    // Update injured from backend when data changes
+    useEffect(() => {
+        if (injured && injured.length > 0) {
+            setData('injured', injured);
+        }
+    }, [injured]);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);

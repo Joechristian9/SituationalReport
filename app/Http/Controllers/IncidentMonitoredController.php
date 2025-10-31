@@ -15,9 +15,13 @@ class IncidentMonitoredController extends Controller
     public function index()
     {
         $incidents = IncidentMonitored::latest()->get();
+        $casualties = \App\Models\Casualty::latest()->get();
+        $injured = \App\Models\Injured::latest()->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'incidents' => $incidents,
+            'casualties' => $casualties,
+            'injured' => $injured,
         ]);
     }
 

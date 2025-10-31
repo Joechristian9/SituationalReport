@@ -179,6 +179,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('casualties.store');
     Route::get('/casualties', [CasualtyController::class, 'index'])
         ->name('casualties.index');
+    Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
+        ->name('modifications.casualties');
 
     // Injured
     Route::resource('injured', InjuredController::class)
@@ -187,6 +189,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('injured.store');
     Route::get('/injured', [InjuredController::class, 'index'])
         ->name('injured.index');
+    Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
+        ->name('modifications.injured');
 
     // Missing Persons
     Route::resource('missing', MissingController::class)
