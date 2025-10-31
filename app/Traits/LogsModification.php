@@ -11,6 +11,11 @@ trait LogsModification
     {
         // The 'created' function is perfect. No changes needed here.
         static::created(function (Model $model) {
+            // Skip logging if no authenticated user (e.g., during seeding)
+            if (!auth()->check()) {
+                return;
+            }
+
             $fields = [];
             foreach ($model->getFillable() as $field) {
                 // Only log fields with actual values (not null/empty) and exclude sensitive fields
@@ -23,7 +28,7 @@ trait LogsModification
                         'new'  => $model->{$field},
                         'user' => [
                             'id'   => auth()->id(),
-                            'name' => auth()->user()?->name ?? 'System',
+                            'name' => auth()->user()->name,
                         ],
                     ];
                 }
@@ -43,6 +48,11 @@ trait LogsModification
         // THIS IS THE FIX: Use the `updating` event instead of `updated`.
         // This event fires *before* the save, guaranteeing we can see the changes.
         static::updating(function (Model $model) {
+            // Skip logging if no authenticated user (e.g., during seeding)
+            if (!auth()->check()) {
+                return;
+            }
+
             $changes = [];
 
             // getDirty() correctly identifies fields that have new values set on the model instance.
@@ -62,7 +72,7 @@ trait LogsModification
                         'new'  => $newValue,
                         'user' => [
                             'id'   => auth()->id(),
-                            'name' => auth()->user()?->name ?? 'System',
+                            'name' => auth()->user()->name,
                         ],
                     ];
                 }
