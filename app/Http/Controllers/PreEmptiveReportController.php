@@ -176,25 +176,40 @@ class PreEmptiveReportController extends Controller
     {
         try {
             // Fetch modifications for pre-emptive reports
-            $modifications = Modification::where('model_type', PreEmptiveReport::class)
+            $modifications = Modification::where('model_type', 'PreEmptiveReport')
                 ->with('user:id,name')
                 ->latest()
                 ->get();
 
             // Group by row ID and field
             $history = [];
+            
             foreach ($modifications as $mod) {
-                $key = "{$mod->model_id}_{$mod->field_name}";
-                if (!isset($history[$key])) {
-                    $history[$key] = [];
+                // Parse the changed_fields JSON
+                $changedFields = is_string($mod->changed_fields) 
+                    ? json_decode($mod->changed_fields, true) 
+                    : $mod->changed_fields;
+                
+                if (!is_array($changedFields)) {
+                    continue;
                 }
-                $history[$key][] = [
-                    'user' => $mod->user,
-                    'field' => $mod->field_name,
-                    'old' => $mod->old_value,
-                    'new' => $mod->new_value,
-                    'date' => $mod->created_at,
-                ];
+                
+                // Each modification can have multiple field changes
+                foreach ($changedFields as $fieldName => $fieldData) {
+                    $key = "{$mod->model_id}_{$fieldName}";
+                    
+                    if (!isset($history[$key])) {
+                        $history[$key] = [];
+                    }
+                    
+                    $history[$key][] = [
+                        'user' => $mod->user ?? ['name' => $fieldData['user']['name'] ?? 'Unknown'],
+                        'field' => $fieldName,
+                        'old' => $fieldData['old'] ?? null,
+                        'new' => $fieldData['new'] ?? null,
+                        'date' => $mod->created_at,
+                    ];
+                }
             }
 
             // Force JSON to return an object, not an array, even when empty
@@ -202,9 +217,10 @@ class PreEmptiveReportController extends Controller
                 'history' => (object)$history,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error fetching modifications: ' . $e->getMessage());
+            \Log::error('Error fetching PreEmptive modifications: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
             return response()->json([
-                'history' => [],
+                'history' => (object)[],
                 'error' => $e->getMessage()
             ]);
         }
