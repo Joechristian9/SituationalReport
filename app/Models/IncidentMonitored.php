@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\LogsModification;
 
 class IncidentMonitored extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModification;
     protected $table = 'incident_monitored';
     protected $fillable = [
         'kinds_of_incident',

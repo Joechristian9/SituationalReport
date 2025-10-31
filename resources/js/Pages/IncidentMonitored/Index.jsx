@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tabs";
 
 export default function Index() {
-    const { flash } = usePage().props;
+    const { flash, incidents } = usePage().props;
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -57,16 +57,18 @@ export default function Index() {
     ];
 
     const defaultState = {
-        incidents: [
-            {
-                id: 1,
-                kinds_of_incident: "",
-                date_time: "",
-                location: "",
-                description: "",
-                remarks: "",
-            },
-        ],
+        incidents: incidents && incidents.length > 0
+            ? incidents
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    kinds_of_incident: "",
+                    date_time: "",
+                    location: "",
+                    description: "",
+                    remarks: "",
+                },
+            ],
         casualties: [
             {
                 id: 1,
@@ -137,21 +139,12 @@ export default function Index() {
 
     const { data, setData, post, processing, errors } = useForm(defaultState);
 
+    // Update incidents from backend when data changes
     useEffect(() => {
-        const saved = localStorage.getItem("effectsReport");
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setData({ ...defaultState, ...parsed });
-            } catch (e) {
-                console.error("Failed to parse saved report", e);
-            }
+        if (incidents && incidents.length > 0) {
+            setData('incidents', incidents);
         }
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem("effectsReport", JSON.stringify(data));
-    }, [data]);
+    }, [incidents]);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);

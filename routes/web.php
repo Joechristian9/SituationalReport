@@ -169,6 +169,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('incident-monitored.store');
     Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
         ->name('incident-monitored.index');
+    Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
+        ->name('modifications.incident-monitored');
 
     // Casualties Dead
     Route::resource('casualties', CasualtyController::class)

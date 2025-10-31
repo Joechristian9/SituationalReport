@@ -28,7 +28,7 @@ class IncidentMonitoredController extends Controller
     {
         $validated = $request->validate([
             'incidents' => 'required|array',
-
+            'incidents.*.id'                => 'nullable',
             'incidents.*.kinds_of_incident' => 'nullable|string|max:255',
             'incidents.*.date_time'         => 'nullable|date',
             'incidents.*.location'          => 'nullable|string|max:255',
@@ -36,24 +36,52 @@ class IncidentMonitoredController extends Controller
             'incidents.*.remarks'           => 'nullable|string|max:500',
         ]);
 
+        $savedIncidents = [];
+
         foreach ($validated['incidents'] as $incident) {
             // ✅ Skip rows where all values are null or empty
-            $isEmpty = empty(array_filter($incident, function ($value) {
-                return !is_null($value) && $value !== '';
-            }));
+            $isEmpty = empty(array_filter([
+                $incident['kinds_of_incident'] ?? null,
+                $incident['date_time'] ?? null,
+                $incident['location'] ?? null,
+                $incident['description'] ?? null,
+                $incident['remarks'] ?? null,
+            ]));
 
             if ($isEmpty) {
                 continue;
             }
 
-            IncidentMonitored::create([
+            $data = [
                 'kinds_of_incident' => $incident['kinds_of_incident'] ?? null,
                 'date_time'         => $incident['date_time'] ?? null,
                 'location'          => $incident['location'] ?? null,
                 'description'       => $incident['description'] ?? null,
                 'remarks'           => $incident['remarks'] ?? null,
-                'user_id'           => Auth::id(),
                 'updated_by'        => Auth::id(),
+            ];
+
+            // Check if this is an update or create
+            if (!empty($incident['id']) && is_numeric($incident['id'])) {
+                // Update existing record
+                $incidentMonitored = IncidentMonitored::find($incident['id']);
+                if ($incidentMonitored) {
+                    $incidentMonitored->update($data);
+                    $savedIncidents[] = $incidentMonitored->fresh();
+                }
+            } else {
+                // Create new record
+                $data['user_id'] = Auth::id();
+                $savedIncidents[] = IncidentMonitored::create($data);
+            }
+        }
+
+        // Return JSON response with saved records
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Incidents Report saved successfully.',
+                'incidents' => $savedIncidents,
             ]);
         }
 
@@ -78,5 +106,40 @@ class IncidentMonitoredController extends Controller
         ]));
 
         return back()->with('success', 'Incident updated successfully.');
+    }
+
+    /**
+     * Get modification history for Incidents
+     */
+    public function getModifications()
+    {
+        $modifications = \App\Models\Modification::where('model_type', 'IncidentMonitored')
+            ->with('user')
+            ->latest()
+            ->get();
+
+        $history = [];
+
+        foreach ($modifications as $mod) {
+            foreach ($mod->changed_fields as $field => $change) {
+                $key = "{$mod->model_id}_{$field}";
+
+                if (!isset($history[$key])) {
+                    $history[$key] = [];
+                }
+
+                $history[$key][] = [
+                    'old'  => $change['old'] ?? null,
+                    'new'  => $change['new'] ?? null,
+                    'user' => [
+                        'id'   => $change['user']['id'] ?? null,
+                        'name' => $change['user']['name'] ?? 'Unknown',
+                    ],
+                    'date' => $mod->created_at,
+                ];
+            }
+        }
+
+        return response()->json(['history' => $history]);
     }
 }
