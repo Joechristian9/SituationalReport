@@ -141,6 +141,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('declaration-usc.store');
     Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
         ->name('declaration-usc.index');
+    Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
+        ->name('modifications.usc-declaration');
 
     // Response Operations added by kevin
     Route::resource('response-operations', \App\Http\Controllers\ResponseOperationController::class)

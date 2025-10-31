@@ -315,7 +315,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                                         </div>
                                                     )}
                                                 </div>
-                                                {latestChange && (
+                                                {latestChange && row[field] && row[field] !== '' && (
                                                     <p className="text-xs text-slate-500 mt-1">
                                                         Last modified by{" "}
                                                         <span className="font-medium text-blue-700">
