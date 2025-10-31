@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
+import useTableFilter from "@/hooks/useTableFilter";
 
 import { Droplet, History, Loader2, PlusCircle, Save } from "lucide-react";
 import {
@@ -30,11 +31,22 @@ export default function WaterForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    
+    const waterServices = data?.waterServices ?? [];
+    
+    // Enhanced search and filtering across multiple fields
+    const {
+        paginatedData: paginatedServices,
+        searchTerm,
+        setSearchTerm,
+        currentPage,
+        setCurrentPage,
+        rowsPerPage,
+        setRowsPerPage,
+        totalPages,
+    } = useTableFilter(waterServices, ['source_of_water'], 5);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -49,8 +61,6 @@ export default function WaterForm({ data, setData, errors }) {
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    const waterServices = data?.waterServices ?? [];
 
     const {
         data: modificationData,
@@ -130,21 +140,6 @@ export default function WaterForm({ data, setData, errors }) {
         }
     };
 
-    const filteredServices = waterServices.filter(
-        (service) =>
-            service.source_of_water
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            service.barangays_served
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase())
-    );
-
-    const totalPages = Math.ceil(filteredServices.length / rowsPerPage);
-    const paginatedServices = filteredServices.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage
-    );
 
     if (isError) {
         return (
@@ -177,11 +172,8 @@ export default function WaterForm({ data, setData, errors }) {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
                     <SearchBar
                         value={searchTerm}
-                        onChange={(val) => {
-                            setSearchTerm(val);
-                            setCurrentPage(1);
-                        }}
-                        placeholder="Search source or barangays..."
+                        onChange={setSearchTerm}
+                        placeholder="Search by water source..."
                     />
                     <div className="flex items-center gap-3">
                         <RowsPerPage

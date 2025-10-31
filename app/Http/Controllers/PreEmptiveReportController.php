@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PreEmptiveReport;
+use App\Models\Modification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class PreEmptiveReportController extends Controller
         $reports = PreEmptiveReport::latest()->get();
 
         return Inertia::render('PreEmptiveReports/Index', [
-            'reports' => $reports,
+            'initialReports' => $reports,
         ]);
     }
 
@@ -90,5 +91,122 @@ class PreEmptiveReportController extends Controller
         ]));
 
         return back()->with('success', 'Pre-Emptive Report updated successfully.');
+    }
+
+    /**
+     * Save Pre-Emptive Reports (Modern Form API)
+     */
+    public function saveReports(Request $request)
+    {
+        $validated = $request->validate([
+            'reports' => 'required|array',
+            'reports.*.id' => 'nullable',
+            'reports.*.barangay' => 'nullable|string|max:255',
+            'reports.*.evacuation_center' => 'nullable|string|max:255',
+            'reports.*.families' => 'nullable|integer|min:0',
+            'reports.*.persons' => 'nullable|integer|min:0',
+            'reports.*.outside_center' => 'nullable|string|max:255',
+            'reports.*.outside_families' => 'nullable|integer|min:0',
+            'reports.*.outside_persons' => 'nullable|integer|min:0',
+            'reports.*.total_families' => 'nullable|integer|min:0',
+            'reports.*.total_persons' => 'nullable|integer|min:0',
+        ]);
+
+        $savedReports = [];
+
+        foreach ($validated['reports'] as $reportData) {
+            // Skip empty rows
+            $isEmpty = empty(array_filter($reportData, function ($value, $key) {
+                return $key !== 'id' && !is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
+            }, ARRAY_FILTER_USE_BOTH));
+
+            if ($isEmpty) {
+                continue;
+            }
+
+            $reportId = $reportData['id'] ?? null;
+            
+            if ($reportId && is_numeric($reportId)) {
+                // Update existing report
+                $report = PreEmptiveReport::find($reportId);
+                if ($report) {
+                    $report->update([
+                        'barangay' => $reportData['barangay'] ?? null,
+                        'evacuation_center' => $reportData['evacuation_center'] ?? null,
+                        'families' => $reportData['families'] ?? null,
+                        'persons' => $reportData['persons'] ?? null,
+                        'outside_center' => $reportData['outside_center'] ?? null,
+                        'outside_families' => $reportData['outside_families'] ?? null,
+                        'outside_persons' => $reportData['outside_persons'] ?? null,
+                        'total_families' => $reportData['total_families'] ?? null,
+                        'total_persons' => $reportData['total_persons'] ?? null,
+                        'updated_by' => Auth::id(),
+                    ]);
+                    $savedReports[] = $report->fresh();
+                }
+            } else {
+                // Create new report
+                $report = PreEmptiveReport::create([
+                    'barangay' => $reportData['barangay'] ?? null,
+                    'evacuation_center' => $reportData['evacuation_center'] ?? null,
+                    'families' => $reportData['families'] ?? null,
+                    'persons' => $reportData['persons'] ?? null,
+                    'outside_center' => $reportData['outside_center'] ?? null,
+                    'outside_families' => $reportData['outside_families'] ?? null,
+                    'outside_persons' => $reportData['outside_persons'] ?? null,
+                    'total_families' => $reportData['total_families'] ?? null,
+                    'total_persons' => $reportData['total_persons'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
+                $savedReports[] = $report;
+            }
+        }
+
+        return response()->json([
+            'message' => 'Pre-Emptive Reports saved successfully.',
+            'reports' => $savedReports,
+        ]);
+    }
+
+    /**
+     * Get modification history (Modern Form API)
+     */
+    public function getModifications()
+    {
+        try {
+            // Fetch modifications for pre-emptive reports
+            $modifications = Modification::where('model_type', PreEmptiveReport::class)
+                ->with('user:id,name')
+                ->latest()
+                ->get();
+
+            // Group by row ID and field
+            $history = [];
+            foreach ($modifications as $mod) {
+                $key = "{$mod->model_id}_{$mod->field_name}";
+                if (!isset($history[$key])) {
+                    $history[$key] = [];
+                }
+                $history[$key][] = [
+                    'user' => $mod->user,
+                    'field' => $mod->field_name,
+                    'old' => $mod->old_value,
+                    'new' => $mod->new_value,
+                    'date' => $mod->created_at,
+                ];
+            }
+
+            // Force JSON to return an object, not an array, even when empty
+            return response()->json([
+                'history' => (object)$history,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching modifications: ' . $e->getMessage());
+            return response()->json([
+                'history' => [],
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

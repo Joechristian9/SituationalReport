@@ -5,10 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\LogsModification;
 
 class PreEmptiveReport extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModification;
+
+    /**
+     * Fields to track modifications for
+     */
+    protected $trackedFields = [
+        'barangay',
+        'evacuation_center',
+        'families',
+        'persons',
+        'outside_center',
+        'outside_families',
+        'outside_persons',
+    ];
 
     protected $fillable = [
         'barangay',

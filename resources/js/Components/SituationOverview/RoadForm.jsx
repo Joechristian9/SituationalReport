@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
+import useTableFilter from "@/hooks/useTableFilter";
 
 import { Route, History, Loader2, PlusCircle, Save } from "lucide-react";
 import {
@@ -30,11 +31,22 @@ export default function RoadForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    
+    const roads = data?.roads ?? [];
+    
+    // Enhanced search and filtering across multiple fields
+    const {
+        paginatedData: paginatedRoads,
+        searchTerm,
+        setSearchTerm,
+        currentPage,
+        setCurrentPage,
+        rowsPerPage,
+        setRowsPerPage,
+        totalPages,
+    } = useTableFilter(roads, ['name_of_road'], 5);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -49,8 +61,6 @@ export default function RoadForm({ data, setData, errors }) {
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    const roads = data?.roads ?? [];
 
     const {
         data: modificationData,
@@ -130,21 +140,6 @@ export default function RoadForm({ data, setData, errors }) {
         }
     };
 
-    const filteredRoads = roads.filter(
-        (road) =>
-            road.name_of_road
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            road.areas_affected
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase())
-    );
-
-    const totalPages = Math.ceil(filteredRoads.length / rowsPerPage);
-    const paginatedRoads = filteredRoads.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage
-    );
 
     if (isError) {
         return (
@@ -176,11 +171,8 @@ export default function RoadForm({ data, setData, errors }) {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
                     <SearchBar
                         value={searchTerm}
-                        onChange={(val) => {
-                            setSearchTerm(val);
-                            setCurrentPage(1);
-                        }}
-                        placeholder="Search by road name or area..."
+                        onChange={setSearchTerm}
+                        placeholder="Search by road name..."
                     />
                     <div className="flex items-center gap-3">
                         <RowsPerPage

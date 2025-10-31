@@ -129,6 +129,10 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('preemptive-reports.store');
     Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])
         ->name('preemptive-reports.index');
+    
+    // Pre-Emptive Reports - New API routes for modernized form
+    Route::post('/pre-emptive-reports', [PreEmptiveReportController::class, 'saveReports']);
+    Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications']);
 
     // Declaration under State of Calamity
     Route::resource('declaration-usc', UscDeclarationController::class)
