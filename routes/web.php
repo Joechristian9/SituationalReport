@@ -159,6 +159,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('pre-positioning.store');
     Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
         ->name('pre-positioning.index');
+    Route::get('/modifications/pre-positioning', [PrePositioningController::class, 'getModifications'])
+        ->name('modifications.pre-positioning');
 
     // Effects of Incident Monitored
     Route::resource('incident-monitored', IncidentMonitoredController::class)

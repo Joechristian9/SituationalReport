@@ -28,7 +28,7 @@ class PrePositioningController extends Controller
     {
         $validated = $request->validate([
             'pre_positionings' => 'required|array',
-
+            'pre_positionings.*.id'                 => 'nullable',
             'pre_positionings.*.team_units'         => 'nullable|string|max:255',
             'pre_positionings.*.team_leader'        => 'nullable|string|max:255',
             'pre_positionings.*.personnel_deployed' => 'nullable|integer|min:0',
@@ -37,25 +37,54 @@ class PrePositioningController extends Controller
             'pre_positionings.*.area_of_deployment' => 'nullable|string|max:255',
         ]);
 
+        $savedRecords = [];
+
         foreach ($validated['pre_positionings'] as $row) {
             // ✅ Skip rows if all values are null/empty
-            $isEmpty = empty(array_filter($row, function ($value) {
-                return !is_null($value) && $value !== '' && $value !== 0;
-            }));
+            $isEmpty = empty(array_filter([
+                $row['team_units'] ?? null,
+                $row['team_leader'] ?? null,
+                $row['personnel_deployed'] ?? null,
+                $row['response_assets'] ?? null,
+                $row['capability'] ?? null,
+                $row['area_of_deployment'] ?? null,
+            ]));
 
             if ($isEmpty) {
                 continue;
             }
 
-            PrePositioning::create([
+            $data = [
                 'team_units'         => $row['team_units'] ?? null,
                 'team_leader'        => $row['team_leader'] ?? null,
                 'personnel_deployed' => $row['personnel_deployed'] ?? null,
                 'response_assets'    => $row['response_assets'] ?? null,
                 'capability'         => $row['capability'] ?? null,
                 'area_of_deployment' => $row['area_of_deployment'] ?? null,
-                'user_id'            => Auth::id(),
                 'updated_by'         => Auth::id(),
+            ];
+
+            // Check if this is an update or create
+            if (!empty($row['id']) && is_numeric($row['id'])) {
+                // Update existing record
+                $prePositioning = PrePositioning::find($row['id']);
+                if ($prePositioning) {
+                    $prePositioning->update($data);
+                    $savedRecords[] = $prePositioning->fresh();
+                }
+            } else {
+                // Create new record
+                $data['user_id'] = Auth::id();
+                $savedRecords[] = PrePositioning::create($data);
+            }
+        }
+
+        // Return JSON response with saved records
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pre-Positioning records saved successfully.',
+                'pre_positionings' => $savedRecords,
             ]);
         }
 
@@ -81,5 +110,40 @@ class PrePositioningController extends Controller
         ]));
 
         return back()->with('success', 'Pre-Positioning updated successfully.');
+    }
+
+    /**
+     * Get modification history for Pre-Positionings
+     */
+    public function getModifications()
+    {
+        $modifications = \App\Models\Modification::where('model_type', 'PrePositioning')
+            ->with('user')
+            ->latest()
+            ->get();
+
+        $history = [];
+
+        foreach ($modifications as $mod) {
+            foreach ($mod->changed_fields as $field => $change) {
+                $key = "{$mod->model_id}_{$field}";
+
+                if (!isset($history[$key])) {
+                    $history[$key] = [];
+                }
+
+                $history[$key][] = [
+                    'old'  => $change['old'] ?? null,
+                    'new'  => $change['new'] ?? null,
+                    'user' => [
+                        'id'   => $change['user']['id'] ?? null,
+                        'name' => $change['user']['name'] ?? 'Unknown',
+                    ],
+                    'date' => $mod->created_at,
+                ];
+            }
+        }
+
+        return response()->json(['history' => $history]);
     }
 }
