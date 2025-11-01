@@ -20,6 +20,8 @@ class IncidentMonitoredController extends Controller
         $missing = \App\Models\Missing::latest()->get();
         $affectedTourists = \App\Models\AffectedTourist::latest()->get();
         $damagedHouses = \App\Models\DamagedHouseReport::latest()->get();
+        $suspensionOfClasses = \App\Models\SuspensionOfClass::latest()->get();
+        $suspensionOfWork = \App\Models\SuspensionOfWork::latest()->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'incidents' => $incidents,
@@ -28,6 +30,8 @@ class IncidentMonitoredController extends Controller
             'missing' => $missing,
             'affectedTourists' => $affectedTourists,
             'damagedHouses' => $damagedHouses,
+            'suspensionOfClasses' => $suspensionOfClasses,
+            'suspensionOfWork' => $suspensionOfWork,
         ]);
     }
 

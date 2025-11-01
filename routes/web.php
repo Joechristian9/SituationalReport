@@ -16,6 +16,7 @@ use App\Http\Controllers\InjuredController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuspensionOfClassController;
+use App\Http\Controllers\SuspensionOfWorkController;
 use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -246,6 +247,18 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('suspension-of-classes.store');
     Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
         ->name('suspension-of-classes.index');
+    
+    /* ---------------- Suspension of Classes Reports (new API routes) ---------------- */
+    Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
+        ->name('suspension-classes-reports.store');
+    Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
+        ->name('modifications.suspension-classes');
+
+    /* ---------------- Suspension of Work Reports (new API routes) ---------------- */
+    Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
+        ->name('suspension-work-reports.store');
+    Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
+        ->name('modifications.suspension-work');
 
     Route::get('/assistance', function () {
         return inertia('AssistanceExtended/AssistanceIndex');

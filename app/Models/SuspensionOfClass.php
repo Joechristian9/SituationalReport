@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class SuspensionOfClass extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModification;
 
     protected $table = 'suspension_of_classes';
 
@@ -39,11 +40,10 @@ class SuspensionOfClass extends Model
 
     /**
      * Automatically set `user_id` and `updated_by`
+     * Note: LogsModification trait also handles tracking changes.
      */
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
-
         static::creating(function ($model) {
             if (Auth::check()) {
                 $model->user_id = $model->user_id ?? Auth::id();

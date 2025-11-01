@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tabs";
 
 export default function Index() {
-    const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses } = usePage().props;
+    const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses, suspensionOfClasses, suspensionOfWork } = usePage().props;
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -134,23 +134,27 @@ export default function Index() {
                     total: 0 
                 },
             ],
-        suspension_of_classes: [
-            {
-                id: 1,
-                province_city_municipality: "",
-                levels: "",
-                date_of_suspension: "",
-                remarks: "",
-            },
-        ],
-        suspension_of_work: [
-            {
-                id: 1,
-                province_city_municipality: "",
-                date_of_suspension: "",
-                remarks: "",
-            },
-        ],
+        suspension_of_classes: suspensionOfClasses && suspensionOfClasses.length > 0
+            ? suspensionOfClasses
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    province_city_municipality: "",
+                    level: "",
+                    date_of_suspension: "",
+                    remarks: "",
+                },
+            ],
+        suspension_of_work: suspensionOfWork && suspensionOfWork.length > 0
+            ? suspensionOfWork
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    province_city_municipality: "",
+                    date_of_suspension: "",
+                    remarks: "",
+                },
+            ],
     };
 
     const { data, setData, post, processing, errors } = useForm(defaultState);
@@ -196,6 +200,20 @@ export default function Index() {
             setData('damaged_houses', damagedHouses);
         }
     }, [damagedHouses]);
+
+    // Update suspension of classes from backend when data changes
+    useEffect(() => {
+        if (suspensionOfClasses && suspensionOfClasses.length > 0) {
+            setData('suspension_of_classes', suspensionOfClasses);
+        }
+    }, [suspensionOfClasses]);
+
+    // Update suspension of work from backend when data changes
+    useEffect(() => {
+        if (suspensionOfWork && suspensionOfWork.length > 0) {
+            setData('suspension_of_work', suspensionOfWork);
+        }
+    }, [suspensionOfWork]);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
