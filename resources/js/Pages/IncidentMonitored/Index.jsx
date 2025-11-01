@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tabs";
 
 export default function Index() {
-    const { flash, incidents, casualties, injured, missing } = usePage().props;
+    const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses } = usePage().props;
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -111,19 +111,29 @@ export default function Index() {
                     remarks: "",
                 },
             ],
-        affected_tourists: [
-            {
-                id: 1,
-                province_city_municipality: "",
-                location: "",
-                local_tourists: "",
-                foreign_tourists: "",
-                remarks: "",
-            },
-        ],
-        damaged_houses: [
-            { id: 1, barangay: "", partially: "", totally: "", total: 0 },
-        ],
+        affected_tourists: affectedTourists && affectedTourists.length > 0
+            ? affectedTourists
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    province_city_municipality: "",
+                    location: "",
+                    local_tourists: "",
+                    foreign_tourists: "",
+                    remarks: "",
+                },
+            ],
+        damaged_houses: damagedHouses && damagedHouses.length > 0
+            ? damagedHouses
+            : [
+                { 
+                    id: `new-${Date.now()}`, 
+                    barangay: "", 
+                    partially: "", 
+                    totally: "", 
+                    total: 0 
+                },
+            ],
         suspension_of_classes: [
             {
                 id: 1,
@@ -172,6 +182,20 @@ export default function Index() {
             setData('missing', missing);
         }
     }, [missing]);
+
+    // Update affected tourists from backend when data changes
+    useEffect(() => {
+        if (affectedTourists && affectedTourists.length > 0) {
+            setData('affected_tourists', affectedTourists);
+        }
+    }, [affectedTourists]);
+
+    // Update damaged houses from backend when data changes
+    useEffect(() => {
+        if (damagedHouses && damagedHouses.length > 0) {
+            setData('damaged_houses', damagedHouses);
+        }
+    }, [damagedHouses]);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);

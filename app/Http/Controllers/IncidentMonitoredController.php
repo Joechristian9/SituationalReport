@@ -18,12 +18,16 @@ class IncidentMonitoredController extends Controller
         $casualties = \App\Models\Casualty::latest()->get();
         $injured = \App\Models\Injured::latest()->get();
         $missing = \App\Models\Missing::latest()->get();
+        $affectedTourists = \App\Models\AffectedTourist::latest()->get();
+        $damagedHouses = \App\Models\DamagedHouseReport::latest()->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'incidents' => $incidents,
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,
+            'affectedTourists' => $affectedTourists,
+            'damagedHouses' => $damagedHouses,
         ]);
     }
 

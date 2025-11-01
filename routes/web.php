@@ -223,6 +223,12 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('damaged-houses.store');
     Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
         ->name('damaged-houses.index');
+    
+    /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
+    Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])
+        ->name('damaged-houses-reports.store');
+    Route::get('/modifications/damaged-houses', [DamagedHouseReportController::class, 'getModifications'])
+        ->name('modifications.damaged-houses');
 
 
     // Assistance Extended
