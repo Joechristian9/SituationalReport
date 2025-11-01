@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ResponseOperation extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModification;
 
     protected $fillable = [
         'team_unit',
@@ -31,10 +32,8 @@ class ResponseOperation extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
-
         static::creating(function ($model) {
             if (Auth::check()) {
                 $model->user_id = $model->user_id ?? Auth::id();

@@ -145,13 +145,13 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
         ->name('modifications.usc-declaration');
 
-    // Response Operations added by kevin
-    Route::resource('response-operations', \App\Http\Controllers\ResponseOperationController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
-        ->name('response-operations.store');
+    /* ---------------- Response Operations (API routes) ---------------- */
     Route::get('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'index'])
         ->name('response-operations.index');
+    Route::post('/response-operations-reports', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
+        ->name('response-operations-reports.store');
+    Route::get('/modifications/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'getModifications'])
+        ->name('modifications.response-operations');
 
     // Deployment of Response Assets
     Route::resource('pre-positioning', PrePositioningController::class)
