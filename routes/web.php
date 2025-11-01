@@ -209,6 +209,12 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('affected-tourists.store');
     Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
         ->name('affected-tourists.index');
+    
+    /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
+    Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
+        ->name('affected-tourists-reports.store');
+    Route::get('/modifications/affected-tourists', [AffectedTouristController::class, 'getModifications'])
+        ->name('modifications.affected-tourists');
 
     // Damaged Houses
     Route::resource('damaged-houses', DamagedHouseReportController::class)
