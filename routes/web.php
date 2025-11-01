@@ -63,9 +63,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
         ->name('situation-reports.index');
 
-    /* ---------------- Weather Reports ---------------- */
+    /* ---------------- Weather Reports (new API routes) ---------------- */
     Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
         ->name('weather-reports.store');
+    Route::get('/api/weather-reports', [SituationOverviewController::class, 'getReports'])
+        ->name('api.weather-reports');
     Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
         ->name('modifications.weather');
     

@@ -12,6 +12,9 @@ import {
 import dayjs from "dayjs";
 import { Filter, Wind, CloudRain, CloudOff, Sun } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import useAppUrl from "@/hooks/useAppUrl";
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -35,12 +38,31 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const WeatherGraph = ({ weatherReports = [] }) => {
+const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
+    const APP_URL = useAppUrl();
     const [selectedMunicipality, setSelectedMunicipality] = useState("All");
     const [windowWidth, setWindowWidth] = useState(
         typeof window !== 'undefined' ? window.innerWidth : 1024
     );
     const [chartKey, setChartKey] = useState(0);
+    
+    // Fetch weather reports with React Query - syncs with WeatherForm updates
+    const {
+        data: fetchedReports,
+        isLoading,
+    } = useQuery({
+        queryKey: ["weather-modifications"], // Same key as WeatherForm
+        queryFn: async () => {
+            const { data } = await axios.get(`${APP_URL}/api/weather-reports`);
+            return data.reports || [];
+        },
+        staleTime: 1000 * 60 * 2, // 2 minutes
+        refetchInterval: 1000 * 30, // Auto-refresh every 30 seconds
+        initialData: initialReports,
+    });
+    
+    // Use fetched reports if available, otherwise use initial reports
+    const weatherReports = fetchedReports || initialReports;
 
     // Handle window resize for responsive behavior (debounced)
     useEffect(() => {
@@ -201,7 +223,12 @@ const WeatherGraph = ({ weatherReports = [] }) => {
             icon={<Sun size={24} />}
             actions={filterControl}
         >
-            {!data || data.length === 0 ? (
+            {isLoading && (!data || data.length === 0) ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="font-semibold">Loading Weather Data...</p>
+                </div>
+            ) : !data || data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     <CloudOff size={48} className="mb-4 text-gray-400" />
                     <p className="font-semibold">No Weather Data</p>

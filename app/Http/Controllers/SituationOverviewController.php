@@ -489,6 +489,18 @@ class SituationOverviewController extends Controller
         return $this->buildModificationResponse('Bridge');
     }
 
+    /* ------------------- API: GET WEATHER REPORTS ------------------- */
+    public function getReports()
+    {
+        $weatherReports = WeatherReport::with('user:id,name')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'reports' => $weatherReports
+        ]);
+    }
+
     /* ------------------- REAL-TIME TYPING BROADCAST ------------------- */
     public function broadcastTyping(Request $request)
     {
