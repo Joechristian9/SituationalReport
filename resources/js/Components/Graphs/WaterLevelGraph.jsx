@@ -9,8 +9,9 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
-import { Waves, Filter } from "lucide-react";
+import { Filter, Droplet, TrendingUp } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
+import ModernSelect from "@/Components/ui/ModernSelect";
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -63,27 +64,21 @@ const WaterLevelGraph = ({ waterLevels = [] }) => {
         );
     }, [waterLevels, selectedStation]);
 
+    const stations = useMemo(() => stationOptions, [stationOptions]);
+
     const stationFilter = (
-        <div className="flex items-center gap-2 border border-gray-300 rounded-md px-2 py-1 shadow-sm">
-            <Filter size={16} className="text-gray-500" />
-            <select
-                value={selectedStation}
-                onChange={(e) => setSelectedStation(e.target.value)}
-                className="w-full bg-transparent text-sm border-0 focus:ring-0 focus:outline-none"
-            >
-                {stationOptions.map((station) => (
-                    <option key={station} value={station}>
-                        {station}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <ModernSelect
+            value={selectedStation}
+            onChange={setSelectedStation}
+            options={stations.map((s) => ({ value: s, label: s }))}
+            className="w-44"
+        />
     );
 
     return (
         <GraphCard
             title="Water Level"
-            icon={<Waves size={24} />}
+            icon={<Droplet size={24} />}
             actions={stationFilter}
         >
             {selectedStation === "All" && (

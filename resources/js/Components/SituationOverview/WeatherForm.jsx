@@ -267,6 +267,7 @@ export default function WeatherForm({ data, setData, errors }) {
                                                     </label>
                                                     <div className="relative mt-1 md:mt-0">
                                                         <input
+                                                            type={field === 'wind' || field === 'precipitation' ? 'number' : 'text'}
                                                             name={field}
                                                             value={
                                                                 row[field] ?? ""
@@ -278,6 +279,8 @@ export default function WeatherForm({ data, setData, errors }) {
                                                                 )
                                                             }
                                                             placeholder="Enter value..."
+                                                            step={field === 'wind' || field === 'precipitation' ? '0.01' : undefined}
+                                                            min={field === 'wind' || field === 'precipitation' ? '0' : undefined}
                                                             className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-10"
                                                         />
                                                         {fieldHistory.length >

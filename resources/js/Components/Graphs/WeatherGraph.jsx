@@ -12,6 +12,7 @@ import {
 import dayjs from "dayjs";
 import { Filter, Wind, CloudRain, CloudOff, Sun } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
+import ModernSelect from "@/Components/ui/ModernSelect";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import useAppUrl from "@/hooks/useAppUrl";
@@ -201,20 +202,12 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
     ]);
 
     const filterControl = (
-        <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-500" />
-            <select
-                value={selectedMunicipality}
-                onChange={(e) => setSelectedMunicipality(e.target.value)}
-                className="w-full sm:w-auto text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-            >
-                {municipalities.map((m) => (
-                    <option key={m} value={m}>
-                        {m}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <ModernSelect
+            value={selectedMunicipality}
+            onChange={setSelectedMunicipality}
+            options={municipalities.map(m => ({ value: m, label: m }))}
+            className="w-44"
+        />
     );
 
     return (

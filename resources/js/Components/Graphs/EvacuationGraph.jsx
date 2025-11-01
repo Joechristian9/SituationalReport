@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Search, Filter, Users } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
+import ModernSelect from "@/Components/ui/ModernSelect";
 
 // The CustomTooltip component remains unchanged.
 const CustomTooltip = ({ active, payload, label }) => {
@@ -123,31 +124,21 @@ const EvacuationGraph = ({
     // ✅ ENHANCED: A single, responsive flex container for controls.
     const graphActions = (
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center border border-gray-300 rounded-md shadow-sm overflow-hidden">
-                <div className="pl-2 pr-1 text-gray-500">
-                    <Filter size={16} />
-                </div>
-                <select
-                    value={evacuationType}
-                    onChange={(e) => onEvacuationTypeChange(e.target.value)}
-                    className="text-sm border-0 focus:ring-0 focus:outline-none py-1"
-                >
-                    {filterOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <ModernSelect
+                value={evacuationType}
+                onChange={onEvacuationTypeChange}
+                options={filterOptions}
+                className="w-36"
+            />
             <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
                 <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder="Search..."
-                    className="w-full p-2 pl-8 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 />
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
         </div>
     );
