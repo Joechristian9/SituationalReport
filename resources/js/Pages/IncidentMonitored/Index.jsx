@@ -630,25 +630,6 @@ export default function Index() {
                                         Next <ChevronRight size={16} />
                                     </Button>
                                 )}
-                                {step === steps.length && (
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                <span>Saving...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <SaveAll className="w-5 h-5" />
-                                                <span>Save All Reports</span>
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
                             </div>
                         </Card>
                     </form>

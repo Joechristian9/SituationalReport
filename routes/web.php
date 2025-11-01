@@ -240,21 +240,13 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
         ->name('assistance-extendeds.index');
 
-    // Suspension of Classes
-    Route::resource('suspension-of-classes', SuspensionOfClassController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/suspension-of-classes', [SuspensionOfClassController::class, 'store'])
-        ->name('suspension-of-classes.store');
-    Route::get('/suspension-of-classes', [SuspensionOfClassController::class, 'index'])
-        ->name('suspension-of-classes.index');
-    
-    /* ---------------- Suspension of Classes Reports (new API routes) ---------------- */
+    /* ---------------- Suspension of Classes (API routes) ---------------- */
     Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
         ->name('suspension-classes-reports.store');
     Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
         ->name('modifications.suspension-classes');
 
-    /* ---------------- Suspension of Work Reports (new API routes) ---------------- */
+    /* ---------------- Suspension of Work (API routes) ---------------- */
     Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
         ->name('suspension-work-reports.store');
     Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
