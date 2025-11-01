@@ -199,6 +199,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('missing.store');
     Route::get('/missing', [MissingController::class, 'index'])
         ->name('missing.index');
+    Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
+        ->name('modifications.missing');
 
     // Affected Tourists
     Route::resource('affected-tourists', AffectedTouristController::class)

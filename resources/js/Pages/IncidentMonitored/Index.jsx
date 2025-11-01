@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tabs";
 
 export default function Index() {
-    const { flash, incidents, casualties, injured } = usePage().props;
+    const { flash, incidents, casualties, injured, missing } = usePage().props;
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -98,17 +98,19 @@ export default function Index() {
                     remarks: "",
                 },
             ],
-        missing: [
-            {
-                id: 1,
-                name: "",
-                age: "",
-                sex: "",
-                address: "",
-                cause: "",
-                remarks: "",
-            },
-        ],
+        missing: missing && missing.length > 0
+            ? missing
+            : [
+                {
+                    id: `new-${Date.now()}`,
+                    name: "",
+                    age: "",
+                    sex: "",
+                    address: "",
+                    cause: "",
+                    remarks: "",
+                },
+            ],
         affected_tourists: [
             {
                 id: 1,
@@ -163,6 +165,13 @@ export default function Index() {
             setData('injured', injured);
         }
     }, [injured]);
+
+    // Update missing from backend when data changes
+    useEffect(() => {
+        if (missing && missing.length > 0) {
+            setData('missing', missing);
+        }
+    }, [missing]);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
