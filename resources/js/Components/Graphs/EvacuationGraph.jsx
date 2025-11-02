@@ -9,7 +9,7 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
-import { Search, Filter, Users } from "lucide-react";
+import { Search, Filter, Users, Home, MapPin, TrendingUp } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
 import ModernSelect from "@/Components/ui/ModernSelect";
 
@@ -115,6 +115,29 @@ const EvacuationGraph = ({
             }
         }, [evacuationType]);
 
+    // Calculate summary statistics
+    const stats = useMemo(() => {
+        if (!filteredGraphData || filteredGraphData.length === 0) return null;
+        
+        const totalPersons = filteredGraphData.reduce((sum, item) => sum + (item[personsDataKey] || 0), 0);
+        const totalFamilies = filteredGraphData.reduce((sum, item) => sum + (item[familiesDataKey] || 0), 0);
+        const totalBarangays = filteredGraphData.length;
+        
+        // Find highest evacuated barangay
+        const maxEvacuated = filteredGraphData.reduce((max, item) => 
+            (item[personsDataKey] || 0) > max.persons 
+                ? { barangay: item.barangay, persons: item[personsDataKey] || 0 }
+                : max
+        , { barangay: '', persons: 0 });
+        
+        return {
+            totalPersons,
+            totalFamilies,
+            totalBarangays,
+            maxEvacuated,
+        };
+    }, [filteredGraphData, personsDataKey, familiesDataKey]);
+
     const filterOptions = [
         { value: "total", label: "Total" },
         { value: "inside", label: "Inside" },
@@ -159,7 +182,44 @@ const EvacuationGraph = ({
                     </p>
                 </div>
             ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <>
+                    {/* Statistics Summary Cards */}
+                    {stats && (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Users size={14} className="text-blue-600" />
+                                    <span className="text-xs font-medium text-blue-700">Total Persons</span>
+                                </div>
+                                <p className="text-xl font-bold text-blue-900">{stats.totalPersons.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Home size={14} className="text-green-600" />
+                                    <span className="text-xs font-medium text-green-700">Total Families</span>
+                                </div>
+                                <p className="text-xl font-bold text-green-900">{stats.totalFamilies.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <MapPin size={14} className="text-purple-600" />
+                                    <span className="text-xs font-medium text-purple-700">Barangays</span>
+                                </div>
+                                <p className="text-xl font-bold text-purple-900">{stats.totalBarangays}</p>
+                            </div>
+                            <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <TrendingUp size={14} className="text-orange-600" />
+                                    <span className="text-xs font-medium text-orange-700">Highest</span>
+                                </div>
+                                <p className="text-sm font-bold text-orange-900 truncate" title={stats.maxEvacuated.barangay}>
+                                    {stats.maxEvacuated.barangay}
+                                </p>
+                                <p className="text-xs text-orange-600">{stats.maxEvacuated.persons.toLocaleString()} persons</p>
+                            </div>
+                        </div>
+                    )}
+                    <ResponsiveContainer width="100%" height={300}>
                     <BarChart
                         data={filteredGraphData}
                         margin={{ top: 5, right: 10, left: -15, bottom: 50 }}
@@ -202,6 +262,7 @@ const EvacuationGraph = ({
                         />
                     </BarChart>
                 </ResponsiveContainer>
+                </>
             )}
         </GraphCard>
     );

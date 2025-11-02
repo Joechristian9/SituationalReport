@@ -211,7 +211,7 @@ export default function Dashboard({
                     </div>
                 </header>
 
-                <main className="w-full p-4 sm:p-6 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100">
+                <main className="w-full p-4 sm:p-6 lg:p-8 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-2">
                             <EvacuationSummaryCard
@@ -280,29 +280,36 @@ export default function Dashboard({
                                 </div>
                             )}
 
-                            {/* --- 5. REMOVE WeatherDashboard FROM THIS TAB --- */}
+                            {/* Environment Graphs - Optimized Layout */}
                             {activeTab === "environment" && (
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <WeatherGraph
-                                        weatherReports={weatherReports}
-                                    />
-                                    <WaterLevelGraph
-                                        waterLevels={waterLevels}
-                                    />
-                                    <EvacuationGraph
-                                        preEmptiveReports={preEmptiveReports}
-                                        evacuationType={evacuationType}
-                                        onEvacuationTypeChange={
-                                            setEvacuationType
-                                        }
-                                        searchQuery={searchQuery}
-                                        onSearchChange={setSearchQuery}
-                                    />
+                                <div className="space-y-6">
+                                    {/* Top Row - Weather & Evacuation */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <WeatherGraph
+                                            weatherReports={weatherReports}
+                                        />
+                                        <EvacuationGraph
+                                            preEmptiveReports={preEmptiveReports}
+                                            evacuationType={evacuationType}
+                                            onEvacuationTypeChange={
+                                                setEvacuationType
+                                            }
+                                            searchQuery={searchQuery}
+                                            onSearchChange={setSearchQuery}
+                                        />
+                                    </div>
+                                    {/* Bottom Row - Full Width Water Level */}
+                                    <div className="grid grid-cols-1">
+                                        <WaterLevelGraph
+                                            waterLevels={waterLevels}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
+                            {/* Human Impact - Balanced 3-Column Layout */}
                             {activeTab === "impact" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <CasualtyGraph casualties={casualties} />
                                     <InjuredGraph injuredList={injured} />
                                     <MissingGraph missingList={missing} />
