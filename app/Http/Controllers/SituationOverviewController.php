@@ -61,14 +61,20 @@ class SituationOverviewController extends Controller
             if (!empty($reportData['id'])) {
                 $weatherReport = WeatherReport::find($reportData['id']);
                 if ($weatherReport) {
-                    $weatherReport->update([
+                    // Fill the model with new data (doesn't save yet)
+                    $weatherReport->fill([
                         'municipality'  => $reportData['municipality'],
                         'sky_condition' => $reportData['sky_condition'],
                         'wind'          => $reportData['wind'],
                         'precipitation' => $reportData['precipitation'],
                         'sea_condition' => $reportData['sea_condition'],
-                        'updated_by'    => Auth::id(),
                     ]);
+                    
+                    // Only save if actual data fields changed (excluding updated_by and timestamps)
+                    if ($weatherReport->isDirty(['municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition'])) {
+                        $weatherReport->updated_by = Auth::id();
+                        $weatherReport->save();
+                    }
                 }
             }
             // If no ID, it's a new record. We create it.

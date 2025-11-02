@@ -34,6 +34,18 @@ const formatFieldName = (field) => {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
+const sanitizeNumericValue = (value) => {
+    if (!value || value === '') return '';
+    // Convert to string and remove any non-numeric characters except decimal point
+    const cleaned = String(value).replace(/[^\d.-]/g, '');
+    // Ensure only one decimal point
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+        return parts[0] + '.' + parts.slice(1).join('');
+    }
+    return cleaned;
+};
+
 export default function WeatherForm({ data, setData, errors }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
@@ -85,9 +97,22 @@ export default function WeatherForm({ data, setData, errors }) {
 
     const handleInputChange = (rowId, event) => {
         const { name, value } = event.target;
+        
+        // For number fields (wind, precipitation), ensure valid numeric format
+        let sanitizedValue = value;
+        if ((name === 'wind' || name === 'precipitation') && value) {
+            // Remove any non-numeric characters except decimal point and negative sign
+            sanitizedValue = value.replace(/[^\d.-]/g, '');
+            // Ensure only one decimal point
+            const parts = sanitizedValue.split('.');
+            if (parts.length > 2) {
+                sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+        }
+        
         const updatedReports = data.reports.map(report => 
             report.id === rowId 
-                ? { ...report, [name]: value }
+                ? { ...report, [name]: sanitizedValue }
                 : report
         );
         setData({ ...data, reports: updatedReports });
@@ -270,7 +295,9 @@ export default function WeatherForm({ data, setData, errors }) {
                                                             type={field === 'wind' || field === 'precipitation' ? 'number' : 'text'}
                                                             name={field}
                                                             value={
-                                                                row[field] ?? ""
+                                                                field === 'wind' || field === 'precipitation'
+                                                                    ? sanitizeNumericValue(row[field])
+                                                                    : (row[field] ?? "")
                                                             }
                                                             onChange={(e) =>
                                                                 handleInputChange(
