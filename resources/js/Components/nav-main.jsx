@@ -86,7 +86,24 @@ export function NavMain({ items = [] }) {
                                 <SidebarMenuSub className="mt-1 space-y-1">
                                     {item.items.map((subItem) => {
                                         const SubIcon = subItem.icon;
-                                        const isActive = currentUrl === subItem.url;
+                                        
+                                        // Extract route pattern from title (e.g., "Situation Overview" -> "situation-reports")
+                                        let routePattern = null;
+                                        if (subItem.title === "Situation Overview") routePattern = "situation-reports";
+                                        else if (subItem.title === "Pre-Emptive Reports") routePattern = "preemptive-reports";
+                                        else if (subItem.title === "Declaration USC") routePattern = "declaration-usc";
+                                        else if (subItem.title === "Deployment of Response Assets") routePattern = "pre-positioning";
+                                        else if (subItem.title === "Incidents Monitored") routePattern = "incident-monitored";
+                                        else if (subItem.title === "Response Operations") routePattern = "response-operations";
+                                        else if (subItem.title === "Assistance Extended") routePattern = "assistance";
+                                        else if (subItem.title === "Dashboard") routePattern = "admin.dashboard";
+                                        
+                                        // Check if current route matches the pattern
+                                        const isActive = routePattern 
+                                            ? route().current(routePattern + '.*') || route().current(routePattern)
+                                            : currentUrl === subItem.url || 
+                                              currentUrl.startsWith(subItem.url + '/') ||
+                                              (subItem.url && currentUrl.startsWith(subItem.url.split('?')[0]));
 
                                         // ================================================================
                                         // == START: Logic to conditionally open links in a new tab      ==
