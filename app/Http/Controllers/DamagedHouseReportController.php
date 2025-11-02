@@ -12,10 +12,11 @@ class DamagedHouseReportController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $damagedHouses = DamagedHouseReport::latest()->get();
+        $damagedHouses = DamagedHouseReport::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'damagedHouses' => $damagedHouses,

@@ -11,10 +11,11 @@ class ResponseOperationController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $operations = ResponseOperation::latest()->get();
+        $operations = ResponseOperation::latest()->limit(200)->get();
 
         return inertia('ResponseOperations/Index', [
             'operations' => $operations,

@@ -4,7 +4,7 @@ import Pagination from "@/Components/ui/Pagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePage, Head } from "@inertiajs/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";

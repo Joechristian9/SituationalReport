@@ -11,10 +11,11 @@ class InjuredController extends Controller
 {
     /**
      * Display a listing of the injured records.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $injuredList = Injured::latest()->get();
+        $injuredList = Injured::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'injuredList' => $injuredList,

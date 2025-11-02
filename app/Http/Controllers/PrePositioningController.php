@@ -11,10 +11,11 @@ class PrePositioningController extends Controller
 {
     /**
      * Show list of Pre-Positionings
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $prePositionings = PrePositioning::latest()->get();
+        $prePositionings = PrePositioning::latest()->limit(200)->get();
 
         return Inertia::render('DeploymentOfResponse/Index', [
             'pre_positionings' => $prePositionings,

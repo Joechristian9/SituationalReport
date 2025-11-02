@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Head, usePage } from "@inertiajs/react"; // ✅ include usePage
 import {
     SidebarProvider,
@@ -9,9 +9,17 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
-import AssistanceExtended from "./AssistanceExtended";
-import AssistanceProvidedLgu from "./AssistanceProvidedLgu";
+// Lazy load form components for better performance
+const AssistanceExtended = lazy(() => import("./AssistanceExtended"));
+const AssistanceProvidedLgu = lazy(() => import("./AssistanceProvidedLgu"));
+
+const FormLoader = () => (
+    <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+);
 
 export default function AssistanceIndex() {
     const [activeTab, setActiveTab] = useState("extended");
@@ -86,11 +94,15 @@ export default function AssistanceIndex() {
                             </TabsList>
 
                             <TabsContent value="extended">
-                                <AssistanceExtended />
+                                <Suspense fallback={<FormLoader />}>
+                                    <AssistanceExtended />
+                                </Suspense>
                             </TabsContent>
 
                             <TabsContent value="lgu">
-                                <AssistanceProvidedLgu />
+                                <Suspense fallback={<FormLoader />}>
+                                    <AssistanceProvidedLgu />
+                                </Suspense>
                             </TabsContent>
                         </Tabs>
                     </div>

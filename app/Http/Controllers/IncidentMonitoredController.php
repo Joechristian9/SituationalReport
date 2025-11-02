@@ -11,17 +11,19 @@ class IncidentMonitoredController extends Controller
 {
     /**
      * Show list of monitored incidents
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $incidents = IncidentMonitored::latest()->get();
-        $casualties = \App\Models\Casualty::latest()->get();
-        $injured = \App\Models\Injured::latest()->get();
-        $missing = \App\Models\Missing::latest()->get();
-        $affectedTourists = \App\Models\AffectedTourist::latest()->get();
-        $damagedHouses = \App\Models\DamagedHouseReport::latest()->get();
-        $suspensionOfClasses = \App\Models\SuspensionOfClass::latest()->get();
-        $suspensionOfWork = \App\Models\SuspensionOfWork::latest()->get();
+        // Limit to last 200 records for performance
+        $incidents = IncidentMonitored::latest()->limit(200)->get();
+        $casualties = \App\Models\Casualty::latest()->limit(200)->get();
+        $injured = \App\Models\Injured::latest()->limit(200)->get();
+        $missing = \App\Models\Missing::latest()->limit(200)->get();
+        $affectedTourists = \App\Models\AffectedTourist::latest()->limit(200)->get();
+        $damagedHouses = \App\Models\DamagedHouseReport::latest()->limit(200)->get();
+        $suspensionOfClasses = \App\Models\SuspensionOfClass::latest()->limit(200)->get();
+        $suspensionOfWork = \App\Models\SuspensionOfWork::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'incidents' => $incidents,

@@ -12,10 +12,11 @@ class PreEmptiveReportController extends Controller
 {
     /**
      * Show list of Pre-Emptive Reports
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $reports = PreEmptiveReport::latest()->get();
+        $reports = PreEmptiveReport::latest()->limit(200)->get();
 
         return Inertia::render('PreEmptiveReports/Index', [
             'initialReports' => $reports,

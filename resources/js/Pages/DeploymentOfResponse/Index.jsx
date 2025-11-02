@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -9,9 +9,16 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { Loader2 } from "lucide-react";
 
-// ✅ Import PrePositioning Form
-import PrePositioningForm from "@/Components/DeploymentOfResponseAssets/PrePositioningForm";
+// Lazy load form for better performance
+const PrePositioningForm = lazy(() => import("@/Components/DeploymentOfResponseAssets/PrePositioningForm"));
+
+const FormLoader = () => (
+    <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+);
 
 export default function Index() {
     const { flash, pre_positionings } = usePage().props;
@@ -88,11 +95,13 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    <PrePositioningForm
-                        data={data}
-                        setData={setData}
-                        errors={errors}
-                    />
+                    <Suspense fallback={<FormLoader />}>
+                        <PrePositioningForm
+                            data={data}
+                            setData={setData}
+                            errors={errors}
+                        />
+                    </Suspense>
                 </main>
             </SidebarInset>
         </SidebarProvider>

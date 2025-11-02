@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -26,21 +26,29 @@ import {
 } from "lucide-react";
 import { LiaHouseDamageSolid } from "react-icons/lia";
 
-import IncidentMonitoredForm from "@/Components/Effects/IncidentMonitoredForm";
-import CasualtyForm from "@/Components/Effects/CasualtyForm";
-import InjuredForm from "@/Components/Effects/InjuredForm";
-import MissingForm from "@/Components/Effects/MissingForm";
-import AffectedTouristsForm from "@/Components/Effects/AffectedTouristsForm";
-import DamagedHousesForm from "@/Components/Effects/DamagedHousesForm";
-import SuspensionOfClassesForm from "@/Components/Effects/SuspensionOfClassesForm";
-import SuspensionOfWorkForm from "@/Components/Effects/SuspensionOfWorkForm";
-
 import {
     Tabs as UITabs,
     TabsList,
     TabsTrigger,
     TabsContent,
 } from "@/components/ui/tabs";
+
+// Lazy load heavy form components to improve performance
+const IncidentMonitoredForm = lazy(() => import("@/Components/Effects/IncidentMonitoredForm"));
+const CasualtyForm = lazy(() => import("@/Components/Effects/CasualtyForm"));
+const InjuredForm = lazy(() => import("@/Components/Effects/InjuredForm"));
+const MissingForm = lazy(() => import("@/Components/Effects/MissingForm"));
+const AffectedTouristsForm = lazy(() => import("@/Components/Effects/AffectedTouristsForm"));
+const DamagedHousesForm = lazy(() => import("@/Components/Effects/DamagedHousesForm"));
+const SuspensionOfClassesForm = lazy(() => import("@/Components/Effects/SuspensionOfClassesForm"));
+const SuspensionOfWorkForm = lazy(() => import("@/Components/Effects/SuspensionOfWorkForm"));
+
+// Loading fallback
+const FormLoader = () => (
+    <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+);
 
 export default function Index() {
     const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses, suspensionOfClasses, suspensionOfWork } = usePage().props;
@@ -459,11 +467,13 @@ export default function Index() {
                                             exit={{ opacity: 0, x: -50 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <IncidentMonitoredForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
+                                            <Suspense fallback={<FormLoader />}>
+                                                <IncidentMonitoredForm
+                                                    data={data}
+                                                    setData={setData}
+                                                    errors={errors}
+                                                />
+                                            </Suspense>
                                         </motion.div>
                                     )}
 
@@ -498,25 +508,31 @@ export default function Index() {
                                                     </TabsTrigger>
                                                 </TabsList>
                                                 <TabsContent value="dead">
-                                                    <CasualtyForm
-                                                        data={data}
-                                                        setData={setData}
-                                                        errors={errors}
-                                                    />
+                                                    <Suspense fallback={<FormLoader />}>
+                                                        <CasualtyForm
+                                                            data={data}
+                                                            setData={setData}
+                                                            errors={errors}
+                                                        />
+                                                    </Suspense>
                                                 </TabsContent>
                                                 <TabsContent value="injured">
-                                                    <InjuredForm
-                                                        data={data}
-                                                        setData={setData}
-                                                        errors={errors}
-                                                    />
+                                                    <Suspense fallback={<FormLoader />}>
+                                                        <InjuredForm
+                                                            data={data}
+                                                            setData={setData}
+                                                            errors={errors}
+                                                        />
+                                                    </Suspense>
                                                 </TabsContent>
                                                 <TabsContent value="missing">
-                                                    <MissingForm
-                                                        data={data}
-                                                        setData={setData}
-                                                        errors={errors}
-                                                    />
+                                                    <Suspense fallback={<FormLoader />}>
+                                                        <MissingForm
+                                                            data={data}
+                                                            setData={setData}
+                                                            errors={errors}
+                                                        />
+                                                    </Suspense>
                                                 </TabsContent>
                                             </UITabs>
                                         </motion.div>
@@ -530,11 +546,13 @@ export default function Index() {
                                             exit={{ opacity: 0, x: -50 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <AffectedTouristsForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
+                                            <Suspense fallback={<FormLoader />}>
+                                                <AffectedTouristsForm
+                                                    data={data}
+                                                    setData={setData}
+                                                    errors={errors}
+                                                />
+                                            </Suspense>
                                         </motion.div>
                                     )}
 
@@ -546,11 +564,13 @@ export default function Index() {
                                             exit={{ opacity: 0, x: -50 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <DamagedHousesForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                            />
+                                            <Suspense fallback={<FormLoader />}>
+                                                <DamagedHousesForm
+                                                    data={data}
+                                                    setData={setData}
+                                                    errors={errors}
+                                                />
+                                            </Suspense>
                                         </motion.div>
                                     )}
 
@@ -590,18 +610,22 @@ export default function Index() {
                                                     </TabsTrigger>
                                                 </TabsList>
                                                 <TabsContent value="classes">
-                                                    <SuspensionOfClassesForm
-                                                        data={data}
-                                                        setData={setData}
-                                                        errors={errors}
-                                                    />
+                                                    <Suspense fallback={<FormLoader />}>
+                                                        <SuspensionOfClassesForm
+                                                            data={data}
+                                                            setData={setData}
+                                                            errors={errors}
+                                                        />
+                                                    </Suspense>
                                                 </TabsContent>
                                                 <TabsContent value="work">
-                                                    <SuspensionOfWorkForm
-                                                        data={data}
-                                                        setData={setData}
-                                                        errors={errors}
-                                                    />
+                                                    <Suspense fallback={<FormLoader />}>
+                                                        <SuspensionOfWorkForm
+                                                            data={data}
+                                                            setData={setData}
+                                                            errors={errors}
+                                                        />
+                                                    </Suspense>
                                                 </TabsContent>
                                             </UITabs>
                                         </motion.div>

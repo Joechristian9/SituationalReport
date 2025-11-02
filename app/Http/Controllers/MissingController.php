@@ -11,10 +11,11 @@ class MissingController extends Controller
 {
     /**
      * Display a listing of the missing person records.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $missingList = Missing::latest()->get();
+        $missingList = Missing::latest()->limit(200)->get();
 
         // Assuming a dedicated view for missing persons, or part of a larger report
         return Inertia::render('IncidentMonitored/Index', [

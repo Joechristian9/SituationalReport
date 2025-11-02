@@ -11,10 +11,11 @@ class CasualtyController extends Controller
 {
     /**
      * Show list of casualties
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $casualties = Casualty::latest()->get();
+        $casualties = Casualty::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'casualties' => $casualties,

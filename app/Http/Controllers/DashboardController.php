@@ -14,25 +14,31 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Optimize: Only load recent records for performance
         return Inertia::render('Admin/Dashboard', [
-            'weatherReports' => WeatherReport::select(
-                'municipality',
-                'wind',
-                'precipitation',
-                'updated_at'
-            )->get(),
-            'waterLevels' => WaterLevel::select(
-                'gauging_station',
-                'current_level',
-                'alarm_level',
-                'critical_level',
-                'updated_at'
-            )->get(),
-            'preEmptiveReports' => PreEmptiveReport::all(),
-            'casualties' => Casualty::all(),
-            'injured' => Injured::all(),
-            'missing' => Missing::all(),
-            'waterlevel' => WaterLevel::all(),
+            'weatherReports' => WeatherReport::latest('updated_at')
+                ->limit(100)
+                ->get(),
+            
+            'waterLevels' => WaterLevel::latest('updated_at')
+                ->limit(50)
+                ->get(),
+            
+            'preEmptiveReports' => PreEmptiveReport::latest('updated_at')
+                ->limit(100)
+                ->get(),
+            
+            'casualties' => Casualty::latest('updated_at')
+                ->limit(200)
+                ->get(),
+                
+            'injured' => Injured::latest('updated_at')
+                ->limit(200)
+                ->get(),
+                
+            'missing' => Missing::latest('updated_at')
+                ->limit(200)
+                ->get(),
         ]);
     }
 }

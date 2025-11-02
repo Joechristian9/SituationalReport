@@ -13,10 +13,11 @@ class AffectedTouristController extends Controller
 {
     /**
      * Display a listing of the affected tourist records.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $touristsList = AffectedTourist::latest()->get();
+        $touristsList = AffectedTourist::latest()->limit(200)->get();
 
         // Assuming a dedicated view or part of a larger report
         return Inertia::render('IncidentMonitored/Index', [

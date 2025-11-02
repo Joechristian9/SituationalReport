@@ -1,6 +1,6 @@
 // resources/js/Pages/SituationReports/Index.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -26,16 +26,23 @@ import {
     Route,
     Landmark,
     HelpCircle,
+    Loader2,
 } from "lucide-react";
 
-// Import all your form components
-import WeatherForm from "@/Components/SituationOverview/WeatherForm";
-import WaterLevelForm from "@/Components/SituationOverview/WaterLevelForm";
-import ElectricityForm from "@/Components/SituationOverview/ElectricityForm";
-import WaterForm from "@/Components/SituationOverview/WaterForm";
-import CommunicationForm from "@/Components/SituationOverview/CommunicationForm";
-import RoadForm from "@/Components/SituationOverview/RoadForm";
-import BridgeForm from "@/Components/SituationOverview/BridgeForm";
+// Lazy load form components for better performance
+const WeatherForm = lazy(() => import("@/Components/SituationOverview/WeatherForm"));
+const WaterLevelForm = lazy(() => import("@/Components/SituationOverview/WaterLevelForm"));
+const ElectricityForm = lazy(() => import("@/Components/SituationOverview/ElectricityForm"));
+const WaterForm = lazy(() => import("@/Components/SituationOverview/WaterForm"));
+const CommunicationForm = lazy(() => import("@/Components/SituationOverview/CommunicationForm"));
+const RoadForm = lazy(() => import("@/Components/SituationOverview/RoadForm"));
+const BridgeForm = lazy(() => import("@/Components/SituationOverview/BridgeForm"));
+
+const FormLoader = () => (
+    <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+);
 
 export default function Index() {
     const {
@@ -372,73 +379,87 @@ export default function Index() {
                                 {step === 1 && (
                                     // CORRECTED: 'key' prop is now passed directly
                                     <motion.div key={step} {...motionProps}>
-                                        <WeatherForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <WeatherForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 2 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <WaterLevelForm
-                                            data={{ reports: data.waterLevels }}
-                                            setData={(updater) => {
-                                                const newReports = updater({
-                                                    reports: data.waterLevels,
-                                                }).reports;
-                                                setData(
-                                                    "waterLevels",
-                                                    newReports
-                                                );
-                                            }}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <WaterLevelForm
+                                                data={{ reports: data.waterLevels }}
+                                                setData={(updater) => {
+                                                    const newReports = updater({
+                                                        reports: data.waterLevels,
+                                                    }).reports;
+                                                    setData(
+                                                        "waterLevels",
+                                                        newReports
+                                                    );
+                                                }}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 3 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <ElectricityForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <ElectricityForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 4 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <WaterForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <WaterForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 5 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <CommunicationForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <CommunicationForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 6 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <RoadForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <RoadForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                                 {step === 7 && (
                                     <motion.div key={step} {...motionProps}>
-                                        <BridgeForm
-                                            data={data}
-                                            setData={setData}
-                                            errors={errors}
-                                        />
+                                        <Suspense fallback={<FormLoader />}>
+                                            <BridgeForm
+                                                data={data}
+                                                setData={setData}
+                                                errors={errors}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 )}
                             </AnimatePresence>

@@ -11,10 +11,11 @@ class UscDeclarationController extends Controller
 {
     /**
      * Show list of USC Declarations
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $declarations = UscDeclaration::latest()->get();
+        $declarations = UscDeclaration::latest()->limit(100)->get();
 
         return Inertia::render('Declaration/Index', [
             'declarations' => $declarations,

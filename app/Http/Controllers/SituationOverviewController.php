@@ -21,14 +21,15 @@ class SituationOverviewController extends Controller
     /* ------------------- INDEX ------------------- */
     public function index()
     {
+        // Optimized: Limit to last 100 records for performance
         return Inertia::render('SituationReports/Index', [
-            'weatherReports' => WeatherReport::orderBy('updated_at', 'asc')->get(),
-            'waterLevels'    => WaterLevel::orderBy('updated_at', 'asc')->get(),
-            'electricity'    => ElectricityService::orderBy('updated_at', 'asc')->get(),
-            'waterServices'  => WaterService::orderBy('updated_at', 'asc')->get(),
-            'communications' => Communication::orderBy('updated_at', 'asc')->get(),
-            'roads'          => Road::orderBy('updated_at', 'asc')->get(),
-            'bridges'        => Bridge::orderBy('updated_at', 'asc')->get(),
+            'weatherReports' => WeatherReport::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'waterLevels'    => WaterLevel::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'electricity'    => ElectricityService::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'waterServices'  => WaterService::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'communications' => Communication::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'roads'          => Road::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'bridges'        => Bridge::orderBy('updated_at', 'desc')->limit(100)->get(),
         ]);
     }
 
