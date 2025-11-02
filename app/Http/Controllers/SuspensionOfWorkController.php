@@ -88,15 +88,8 @@ class SuspensionOfWorkController extends Controller
             }
         }
 
-        // Return the fresh data after save
-        $updatedSuspensions = SuspensionOfWork::with('user:id,name')
-            ->orderBy('updated_at', 'desc')
-            ->get();
-        
-        return response()->json([
-            'message' => 'Suspension of work saved successfully!',
-            'suspension_of_work' => $updatedSuspensions
-        ]);
+        // Return back with success message
+        return back()->with('success', 'Suspension of work saved successfully!');
     }
 
     /**

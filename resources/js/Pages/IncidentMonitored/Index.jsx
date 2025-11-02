@@ -228,8 +228,8 @@ export default function Index() {
         post(route("missing.store"), { preserveScroll: true });
         post(route("affected-tourists.store"), { preserveScroll: true });
         post(route("damaged-houses.store"), { preserveScroll: true });
-        post(route("suspension-of-classes.store"), { preserveScroll: true });
-        post(route("suspension-of-works.store"), { preserveScroll: true });
+        post(route("suspension-classes-reports.store"), { preserveScroll: true });
+        post(route("suspension-work-reports.store"), { preserveScroll: true });
     };
 
     const isStepEmpty = (stepNumber) => {

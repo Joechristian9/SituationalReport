@@ -13,6 +13,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
 
             <div className="flex items-center gap-2">
                 <button
+                    type="button"
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="px-3 py-1 border border-slate-300 rounded-full disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:border-blue-400 transition"
@@ -23,6 +24,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
                 {Array.from({ length: totalPages }, (_, i) => (
                     <button
                         key={i}
+                        type="button"
                         onClick={() => onPageChange(i + 1)}
                         className={`w-8 h-8 rounded-full border transition ${
                             currentPage === i + 1
@@ -35,6 +37,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
                 ))}
 
                 <button
+                    type="button"
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="px-3 py-1 border border-slate-300 rounded-full disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:border-blue-400 transition"

@@ -92,15 +92,8 @@ class SuspensionOfClassController extends Controller
             }
         }
 
-        // Return the fresh data after save
-        $updatedSuspensions = SuspensionOfClass::with('user:id,name')
-            ->orderBy('updated_at', 'desc')
-            ->get();
-        
-        return response()->json([
-            'message' => 'Suspension of classes saved successfully!',
-            'suspension_of_classes' => $updatedSuspensions
-        ]);
+        // Return back with success message
+        return back()->with('success', 'Suspension of classes saved successfully!');
     }
 
     /**
