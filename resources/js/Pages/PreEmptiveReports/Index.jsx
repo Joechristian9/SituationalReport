@@ -50,6 +50,13 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
+    // ✅ Handle form submission
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route('pre-emptive-reports.store'), {
+            preserveScroll: true,
+        });
+    };
 
     return (
         <SidebarProvider>
