@@ -29,38 +29,41 @@ class ReportController extends Controller
 {
     /**
      * Fetch all necessary report data from the database based on a given year.
-     * Optimized: Uses eager loading and selective columns where possible
+     * Optimized: Different limits for web view vs PDF, selective columns
      */
-    private function getReportData(int $year)
+    private function getReportData(int $year, bool $forPdf = false)
     {
-        // Optimize with select and limit if needed for performance
+        // Use smaller limits for PDF generation (faster)
+        $limit = $forPdf ? 100 : 500;
+        
+        // Optimize with select and limit for performance
         $preEmptiveReports = PreEmptiveReport::whereYear('created_at', $year)
             ->latest()
-            ->limit(1000)
+            ->limit($limit)
             ->get();
         $damagedHouses = DamagedHouseReport::whereYear('created_at', $year)
             ->latest()
-            ->limit(1000)
+            ->limit($limit)
             ->get();
 
         return [
-            'weatherReports'      => WeatherReport::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'electricityReports'  => ElectricityService::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'waterServiceReports' => WaterService::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'roadReports'         => Road::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'bridgeReports'       => Bridge::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'weatherReports'      => WeatherReport::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'electricityReports'  => ElectricityService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'waterServiceReports' => WaterService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'roadReports'         => Road::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'bridgeReports'       => Bridge::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'preEmptiveReports'   => $preEmptiveReports,
-            'uscDeclarations'     => UscDeclaration::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'incidentReports'     => IncidentMonitored::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'prePositioningReports' => PrePositioning::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'deadCasualties'      => Casualty::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'injuredCasualties'   => Injured::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'missingCasualties'   => Missing::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'affectedTourists'    => AffectedTourist::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'uscDeclarations'     => UscDeclaration::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'incidentReports'     => IncidentMonitored::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'prePositioningReports' => PrePositioning::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'deadCasualties'      => Casualty::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'injuredCasualties'   => Injured::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'missingCasualties'   => Missing::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'affectedTourists'    => AffectedTourist::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'damagedHouses'       => $damagedHouses,
-            'suspensionOfClasses' => SuspensionOfClass::whereYear('created_at', $year)->latest()->limit(1000)->get(),
-            'suspensionOfWork'    => SuspensionOfWork::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'suspensionOfClasses' => SuspensionOfClass::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'suspensionOfWork'    => SuspensionOfWork::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'preEmptiveTotals'    => [
                 'families'         => $preEmptiveReports->sum('families'),
                 'persons'          => $preEmptiveReports->sum('persons'),
@@ -94,14 +97,19 @@ class ReportController extends Controller
 
     /**
      * Generate and download the consolidated report as a PDF for a specific year.
+     * Optimized: Reduced data limits, improved DomPDF settings, disabled remote fonts
      */
     public function download(Request $request)
     {
+        // Increase execution time and memory for PDF generation
+        set_time_limit(120); // 2 minutes max
+        ini_set('memory_limit', '256M');
+        
         // Get the year from the request, or default to the current year.
         $selectedYear = $request->input('year', Carbon::now()->year);
 
-        // Fetch the data for that year.
-        $data = $this->getReportData($selectedYear);
+        // Fetch the data for that year (with reduced limits for PDF)
+        $data = $this->getReportData($selectedYear, true);
 
         // Load the same Blade view, but pass an 'isDownloading' flag.
         $pdf = Pdf::loadView('reports.situational_report', array_merge($data, [
@@ -109,7 +117,14 @@ class ReportController extends Controller
             'isDownloading' => true, // This flag hides the download button in the PDF
         ]));
 
-        $pdf->setPaper('a4', 'portrait');
+        // Optimize PDF settings for faster generation
+        $pdf->setPaper('a4', 'portrait')
+            ->setOption('enable_remote', false) // Disable remote resources
+            ->setOption('enable_php', false)     // Disable PHP execution
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false)
+            ->setOption('chroot', public_path()) // Restrict file access
+            ->setOption('dpi', 96);              // Lower DPI for faster rendering
 
         return $pdf->download("situational-report-{$selectedYear}.pdf");
     }

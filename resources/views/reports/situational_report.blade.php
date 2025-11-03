@@ -79,8 +79,35 @@
 
         /* --- PDF & Print Specific Styles --- */
         @if(isset($isDownloading) && $isDownloading)
-            body { background-color: #fff; padding: 0; }
-            .report-container { box-shadow: none; border-radius: 0; padding: 10px; }
+            body { 
+                background-color: #fff; 
+                padding: 0;
+                font-family: 'DejaVu Sans', sans-serif; /* Faster PDF font */
+            }
+            .report-container { 
+                box-shadow: none; 
+                border-radius: 0; 
+                padding: 15px;
+                max-width: 100%;
+            }
+            /* Simplify header for PDF */
+            .report-header {
+                border-bottom: 2px solid #333;
+            }
+            .report-header img {
+                width: 40px;
+                height: 40px;
+            }
+            .report-header h1 {
+                font-size: 22px;
+            }
+            /* Optimize tables for PDF */
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 4px;
+            }
         @endif
         
         .no-print { display: block; }
