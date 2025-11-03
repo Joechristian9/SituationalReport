@@ -20,7 +20,9 @@ import {
     User,
     UserRound,
     CircleUserRound,
-    UserSearch, // Changed from UserPlus to a more fitting icon
+    UserSearch,
+    X,
+    TrendingUp,
 } from "lucide-react";
 import GraphCard from "../ui/GraphCard";
 
@@ -30,15 +32,29 @@ import GraphCard from "../ui/GraphCard";
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-        const value = payload[0].value;
-        const name = payload[0].name;
-        const color = payload[0].payload.fill || payload[0].fill;
+        const total = payload.reduce((sum, entry) => sum + (entry.value || 0), 0);
+        
         return (
             <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200">
-                <p className="font-bold text-gray-800">{label}</p>
-                <p style={{ color: color }}>
-                    {`${name}: ${value.toLocaleString()}`}
-                </p>
+                <p className="font-bold text-gray-800 mb-2">{label}</p>
+                {payload.map((entry, index) => (
+                    <div key={index} className="flex items-center justify-between gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: entry.fill || entry.color }}
+                            ></span>
+                            <span className="text-gray-700">{entry.name}:</span>
+                        </div>
+                        <span className="font-semibold" style={{ color: entry.fill || entry.color }}>
+                            {entry.value.toLocaleString()}
+                        </span>
+                    </div>
+                ))}
+                <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-sm font-bold">
+                    <span>Total:</span>
+                    <span className="text-gray-800">{total.toLocaleString()}</span>
+                </div>
             </div>
         );
     }
@@ -194,11 +210,39 @@ const AgeFilterDropdown = ({ options, selectedOption, onSelect }) => {
 // =================================================================================
 // Main Enhanced MissingGraph Component
 // =================================================================================
-const MissingGraph = ({ missingList = [] }) => {
+const MissingGraph = React.memo(({ missingList = [] }) => {
+    const [windowWidth, setWindowWidth] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
+    );
+    
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                setWindowWidth(window.innerWidth);
+            }, 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+    
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth >= 640 && windowWidth < 1024;
     const [selectedSex, setSelectedSex] = useState("All");
     const [selectedAgeGroup, setSelectedAgeGroup] = useState("All");
-    const [currentView, setCurrentView] = useState("bar");
+    const [currentView, setCurrentView] = useState("stacked");
     const ageBrackets = ["All", "0-17", "18-30", "31-50", "51-65", "66+"];
+    
+    const clearFilters = () => {
+        setSelectedSex("All");
+        setSelectedAgeGroup("All");
+    };
+    
+    const hasActiveFilters = selectedSex !== "All" || selectedAgeGroup !== "All";
 
     const filteredData = useMemo(() => {
         return missingList
@@ -217,15 +261,25 @@ const MissingGraph = ({ missingList = [] }) => {
             });
     }, [missingList, selectedSex, selectedAgeGroup]);
 
-    const causeData = useMemo(() => {
+    const stackedData = useMemo(() => {
         const aggregator = filteredData.reduce((acc, item) => {
             const cause = item.cause?.trim() || "Unknown";
-            acc[cause] = (acc[cause] || 0) + 1;
+            const sex = item.sex?.toLowerCase();
+            
+            if (!acc[cause]) {
+                acc[cause] = { cause, Male: 0, Female: 0, total: 0 };
+            }
+            
+            if (sex === "male") acc[cause].Male += 1;
+            else if (sex === "female") acc[cause].Female += 1;
+            acc[cause].total += 1;
+            
             return acc;
         }, {});
-        return Object.entries(aggregator)
-            .map(([cause, count]) => ({ cause, count }))
-            .sort((a, b) => a.count - b.count);
+        
+        return Object.values(aggregator)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 8);
     }, [filteredData]);
 
     const sexData = useMemo(() => {
@@ -245,23 +299,23 @@ const MissingGraph = ({ missingList = [] }) => {
     }, [filteredData]);
 
     const graphActions = (
-        <div className="flex items-center justify-start sm:justify-end gap-2 flex-wrap">
+        <div className="flex items-center justify-end gap-2">
             <button
                 onClick={() =>
-                    setCurrentView(currentView === "bar" ? "pie" : "bar")
+                    setCurrentView(currentView === "stacked" ? "pie" : "stacked")
                 }
                 className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors group relative"
             >
-                {currentView === "bar" ? (
+                {currentView === "stacked" ? (
                     <PieChartIcon size={20} />
                 ) : (
                     <BarChart2 size={20} />
                 )}
                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {currentView === "bar" ? "View by Sex" : "View by Cause"}
+                    {currentView === "stacked" ? "Distribution" : "Top Causes"}
                 </div>
             </button>
-            {currentView === "bar" && (
+            {currentView === "stacked" && (
                 <SexFilterPopover
                     selectedSex={selectedSex}
                     onSelect={setSelectedSex}
@@ -276,10 +330,36 @@ const MissingGraph = ({ missingList = [] }) => {
         </div>
     );
 
-    const subtitle =
-        currentView === "bar"
-            ? `By Cause | Sex: ${selectedSex} | Age: ${selectedAgeGroup}`
-            : `By Sex | Age: ${selectedAgeGroup}`;
+    const filterBadges = (
+        <div className="flex flex-wrap gap-2 mb-3">
+            {hasActiveFilters && (
+                <>
+                    {selectedSex !== "All" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                            Sex: {selectedSex}
+                            <button onClick={() => setSelectedSex("All")} className="hover:bg-blue-200 rounded-full p-0.5">
+                                <X size={12} />
+                            </button>
+                        </span>
+                    )}
+                    {selectedAgeGroup !== "All" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                            Age: {selectedAgeGroup}
+                            <button onClick={() => setSelectedAgeGroup("All")} className="hover:bg-purple-200 rounded-full p-0.5">
+                                <X size={12} />
+                            </button>
+                        </span>
+                    )}
+                    <button
+                        onClick={clearFilters}
+                        className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                        Clear all
+                    </button>
+                </>
+            )}
+        </div>
+    );
 
     return (
         <GraphCard
@@ -287,40 +367,48 @@ const MissingGraph = ({ missingList = [] }) => {
             icon={<UserSearch size={24} />}
             actions={graphActions}
         >
-            <p className="text-xs text-gray-500 -mt-3 mb-3">{subtitle}</p>
-            <ResponsiveContainer width="100%" height={300}>
-                {currentView === "bar" ? (
-                    causeData.length > 0 ? (
+            {filterBadges}
+            <div className="text-xs text-gray-600 mb-3 flex items-center gap-2">
+                <TrendingUp size={14} />
+                <span>Total: <strong className="text-orange-600">{filteredData.length}</strong> missing</span>
+            </div>
+            <ResponsiveContainer width="100%" height={isMobile ? 250 : isTablet ? 280 : 300}>
+                {currentView === "stacked" ? (
+                    stackedData.length > 0 ? (
                         <BarChart
-                            layout="vertical"
-                            data={causeData}
-                            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                            data={stackedData}
+                            margin={{ 
+                                top: 5, 
+                                right: isMobile ? 10 : 20, 
+                                left: isMobile ? -10 : 10, 
+                                bottom: isMobile ? 50 : 40 
+                            }}
                         >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                horizontal={false}
-                            />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis
-                                type="number"
-                                allowDecimals={false}
-                                tick={{ fontSize: 12 }}
+                                dataKey="cause"
+                                angle={isMobile ? -60 : -45}
+                                textAnchor="end"
+                                height={isMobile ? 90 : 80}
+                                tick={{ fontSize: isMobile ? 8 : 10 }}
                             />
                             <YAxis
-                                type="category"
-                                dataKey="cause"
-                                width={100}
-                                tick={{ fontSize: 11 }}
+                                allowDecimals={false}
+                                tick={{ fontSize: isMobile ? 10 : 11 }}
                             />
-                            <Tooltip
-                                content={<CustomTooltip />}
-                                cursor={{ fill: "rgba(249, 115, 22, 0.1)" }}
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{ fontSize: 12 }} />
+                            <Bar
+                                dataKey="Male"
+                                stackId="a"
+                                fill="#3B82F6"
+                                radius={[4, 4, 0, 0]}
                             />
                             <Bar
-                                dataKey="count"
-                                name="Missing"
-                                fill="#F97316"
-                                radius={[0, 4, 4, 0]}
-                                maxBarSize={30}
+                                dataKey="Female"
+                                stackId="a"
+                                fill="#EC4899"
+                                radius={[4, 4, 0, 0]}
                             />
                         </BarChart>
                     ) : (
@@ -337,29 +425,31 @@ const MissingGraph = ({ missingList = [] }) => {
                         </div>
                     )
                 ) : sexData.length > 0 ? (
-                    <PieChart>
-                        <Pie
-                            data={sexData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={100}
-                            paddingAngle={5}
-                            labelLine={false}
-                            label={renderCustomizedLabel}
-                        >
-                            {sexData.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={SEX_COLORS[index % SEX_COLORS.length]}
-                                />
-                            ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                    </PieChart>
+                    <div className="h-full flex items-center justify-center">
+                        <PieChart width={280} height={280}>
+                            <Pie
+                                data={sexData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={70}
+                                outerRadius={110}
+                                paddingAngle={5}
+                                labelLine={false}
+                                label={renderCustomizedLabel}
+                            >
+                                {sexData.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={SEX_COLORS[index % SEX_COLORS.length]}
+                                    />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend verticalAlign="bottom" height={36} />
+                        </PieChart>
+                    </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
                         <PieChartIcon
@@ -374,6 +464,8 @@ const MissingGraph = ({ missingList = [] }) => {
             </ResponsiveContainer>
         </GraphCard>
     );
-};
+});
+
+MissingGraph.displayName = 'MissingGraph';
 
 export default MissingGraph;

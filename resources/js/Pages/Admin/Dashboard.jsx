@@ -8,7 +8,7 @@ import {
 import { Head, usePage } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Sun, CloudSun, Loader2 } from "lucide-react";
+import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
 
 // Lazy load heavy components - only load when needed
 const WeatherDashboard = lazy(() => import("@/Components/Weather/WeatherDashboard"));
@@ -52,6 +52,21 @@ export default function Dashboard({
     const [activeTab, setActiveTab] = useState("environment");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Human Impact filters
+    const [impactTimeFilter, setImpactTimeFilter] = useState("all");
+    const [impactSexFilter, setImpactSexFilter] = useState("All");
+    const [impactAgeFilter, setImpactAgeFilter] = useState("All");
+    
+    // Calculate summary statistics
+    const impactStats = useMemo(() => {
+        return {
+            totalCasualties: casualties.length,
+            totalInjured: injured.length,
+            totalMissing: missing.length,
+            total: casualties.length + injured.length + missing.length,
+        };
+    }, [casualties, injured, missing]);
 
     const pageVariants = {
         initial: { opacity: 0, y: 20 },
@@ -141,10 +156,84 @@ export default function Dashboard({
                                 )}
 
                                 {activeTab === "impact" && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        <CasualtyGraph casualties={casualties} />
-                                        <InjuredGraph injuredList={injured} />
-                                        <MissingGraph missingList={missing} />
+                                    <div className="space-y-6">
+                                        {/* Summary Stats Cards */}
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.1 }}
+                                                className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-medium text-red-600 mb-1">Casualties</p>
+                                                        <p className="text-2xl font-bold text-red-700">{impactStats.totalCasualties}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
+                                                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                            
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.2 }}
+                                                className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 shadow-sm"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-medium text-amber-600 mb-1">Injured</p>
+                                                        <p className="text-2xl font-bold text-amber-700">{impactStats.totalInjured}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
+                                                        <Users className="w-6 h-6 text-amber-600" />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                            
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.3 }}
+                                                className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-medium text-orange-600 mb-1">Missing</p>
+                                                        <p className="text-2xl font-bold text-orange-700">{impactStats.totalMissing}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
+                                                        <Users className="w-6 h-6 text-orange-600" />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                            
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.4 }}
+                                                className="bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-medium text-slate-600 mb-1">Total Impact</p>
+                                                        <p className="text-2xl font-bold text-slate-700">{impactStats.total}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center">
+                                                        <TrendingUp className="w-6 h-6 text-slate-600" />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        </div>
+                                        
+                                        {/* Detailed Graphs */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <CasualtyGraph casualties={casualties} />
+                                            <InjuredGraph injuredList={injured} />
+                                            <MissingGraph missingList={missing} />
+                                        </div>
                                     </div>
                                 )}
                             </Suspense>
