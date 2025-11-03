@@ -91,26 +91,36 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
     const isMobile = windowWidth < 640;
     const isTablet = windowWidth >= 640 && windowWidth < 1024;
 
-    // Memoize municipalities list with proper deep comparison
+    // Memoize municipalities list with proper deep comparison (case-insensitive)
     const municipalities = useMemo(() => {
         if (!weatherReports || weatherReports.length === 0) return ["All"];
-        const uniqueMunicipalities = new Set(
-            weatherReports
-                .filter(r => r.municipality)
-                .map((r) => r.municipality)
-        );
-        return ["All", ...Array.from(uniqueMunicipalities).sort()];
+        
+        // Create a map to track unique municipalities (case-insensitive)
+        const municipalityMap = new Map();
+        weatherReports
+            .filter(r => r.municipality && r.municipality.trim())
+            .forEach(r => {
+                const lowerName = r.municipality.toLowerCase();
+                // Keep the first occurrence's capitalization
+                if (!municipalityMap.has(lowerName)) {
+                    municipalityMap.set(lowerName, r.municipality);
+                }
+            });
+        
+        return ["All", ...Array.from(municipalityMap.values()).sort()];
     }, [weatherReports.length, JSON.stringify(weatherReports.map(r => r.municipality))]);
 
     // Optimized data processing with proper memoization
     const data = useMemo(() => {
         if (!weatherReports || weatherReports.length === 0) return [];
 
+        // Use case-insensitive filtering to merge "baler", "Baler", "BALER", etc.
         const reports =
             selectedMunicipality === "All"
                 ? weatherReports
                 : weatherReports.filter(
-                      (r) => r.municipality === selectedMunicipality
+                      (r) => r.municipality && 
+                             r.municipality.toLowerCase() === selectedMunicipality.toLowerCase()
                   );
 
         if (reports.length === 0) return [];
@@ -162,10 +172,11 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
     const latest = useMemo(() => {
         if (!weatherReports || weatherReports.length === 0) return null;
         
-        // Filter by selected municipality if not "All"
+        // Filter by selected municipality if not "All" (case-insensitive)
         const filteredReports = selectedMunicipality === "All"
             ? weatherReports
-            : weatherReports.filter(r => r.municipality === selectedMunicipality);
+            : weatherReports.filter(r => r.municipality && 
+                r.municipality.toLowerCase() === selectedMunicipality.toLowerCase());
         
         if (filteredReports.length === 0) return null;
         
