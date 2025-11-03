@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     BarChart,
     Bar,
@@ -9,6 +9,7 @@ import {
     Legend,
     ResponsiveContainer,
     ReferenceLine,
+    Cell,
 } from "recharts";
 import { Filter, Droplet, TrendingUp, TrendingDown, Minus, AlertTriangle, Clock, ArrowUpDown } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
@@ -16,9 +17,10 @@ import ModernSelect from "@/Components/ui/ModernSelect";
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-        const currentLevel = payload.find(p => p.dataKey === 'current_level')?.value || 0;
-        const alarmLevel = payload.find(p => p.dataKey === 'alarm_level')?.value || 0;
-        const criticalLevel = payload.find(p => p.dataKey === 'critical_level')?.value || 0;
+        // Ensure numeric comparison by parsing values
+        const currentLevel = parseFloat(payload.find(p => p.dataKey === 'current_level')?.value) || 0;
+        const alarmLevel = parseFloat(payload.find(p => p.dataKey === 'alarm_level')?.value) || 0;
+        const criticalLevel = parseFloat(payload.find(p => p.dataKey === 'critical_level')?.value) || 0;
         
         // Determine status
         let status = '🟢 SAFE';
@@ -69,7 +71,28 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const WaterLevelGraph = ({ waterLevels = [] }) => {
+const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
+    const [windowWidth, setWindowWidth] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
+    );
+    
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                setWindowWidth(window.innerWidth);
+            }, 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+    
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth >= 640 && windowWidth < 1024;
     const [selectedStation, setSelectedStation] = useState("All");
     const [sortBy, setSortBy] = useState("highest"); // highest, lowest, alphabetical
     const [filterStatus, setFilterStatus] = useState("all"); // all, critical, warning, safe
@@ -129,9 +152,14 @@ const WaterLevelGraph = ({ waterLevels = [] }) => {
         // Filter by status
         if (filterStatus !== "all") {
             data = data.filter(item => {
-                if (filterStatus === "critical") return item.current_level >= item.critical_level;
-                if (filterStatus === "warning") return item.current_level >= item.alarm_level && item.current_level < item.critical_level;
-                if (filterStatus === "safe") return item.current_level < item.alarm_level;
+                // Ensure numeric comparison
+                const currentLevel = parseFloat(item.current_level) || 0;
+                const alarmLevel = parseFloat(item.alarm_level) || 0;
+                const criticalLevel = parseFloat(item.critical_level) || 0;
+                
+                if (filterStatus === "critical") return currentLevel >= criticalLevel;
+                if (filterStatus === "warning") return currentLevel >= alarmLevel && currentLevel < criticalLevel;
+                if (filterStatus === "safe") return currentLevel < alarmLevel;
                 return true;
             });
         }
@@ -145,7 +173,23 @@ const WaterLevelGraph = ({ waterLevels = [] }) => {
             data.sort((a, b) => a.gauging_station.localeCompare(b.gauging_station));
         }
         
-        return selectedStation === "All" ? data.slice(0, 10) : data;
+        // Add color based on status
+        const coloredData = data.map(item => {
+            // Ensure numeric comparison
+            const currentLevel = parseFloat(item.current_level) || 0;
+            const alarmLevel = parseFloat(item.alarm_level) || 0;
+            const criticalLevel = parseFloat(item.critical_level) || 0;
+            
+            let fillColor = '#3b82f6'; // Blue (safe)
+            if (currentLevel >= criticalLevel) {
+                fillColor = '#ef4444'; // Red (critical)
+            } else if (currentLevel >= alarmLevel) {
+                fillColor = '#f59e0b'; // Amber (warning)
+            }
+            return { ...item, fillColor };
+        });
+        
+        return selectedStation === "All" ? coloredData.slice(0, 10) : coloredData;
     }, [waterLevels, selectedStation, sortBy, filterStatus]);
 
     const stations = useMemo(() => stationOptions, [stationOptions]);
@@ -300,58 +344,89 @@ const WaterLevelGraph = ({ waterLevels = [] }) => {
                     <p className="font-semibold">No Water Level Data</p>
                 </div>
             ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 280 : isTablet ? 320 : 350}>
                     <BarChart
                         data={displayData}
-                        margin={{ top: 5, right: 10, left: -15, bottom: 50 }}
+                        margin={{ 
+                            top: 20, 
+                            right: isMobile ? 10 : 20, 
+                            left: isMobile ? -15 : -10, 
+                            bottom: isMobile ? 60 : 50 
+                        }}
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
                             dataKey="gauging_station"
-                            angle={-45}
+                            angle={isMobile ? -60 : -45}
                             textAnchor="end"
-                            height={70}
+                            height={isMobile ? 80 : 70}
                             interval={0}
-                            tick={{ fontSize: 11 }}
+                            tick={{ fontSize: isMobile ? 9 : 11 }}
                         />
                         <YAxis
                             label={{
                                 value: "Level (m)",
                                 angle: -90,
                                 position: "insideLeft",
+                                style: { fontSize: isMobile ? 11 : 12 }
                             }}
-                            tick={{ fontSize: 12 }}
+                            tick={{ fontSize: isMobile ? 10 : 12 }}
                         />
                         <Tooltip
                             content={<CustomTooltip />}
                             cursor={{ fill: "rgba(235, 248, 255, 0.5)" }}
                         />
-                        <Legend wrapperStyle={{ paddingTop: "40px" }} />
+                        
+                        {/* Reference lines for average alarm and critical levels */}
+                        {displayData.length > 0 && (
+                            <>
+                                <ReferenceLine 
+                                    y={displayData[0].alarm_level} 
+                                    stroke="#f59e0b" 
+                                    strokeDasharray="5 5" 
+                                    strokeWidth={2}
+                                    label={{ 
+                                        value: 'Alarm Level', 
+                                        position: 'insideTopRight',
+                                        fill: '#f59e0b',
+                                        fontSize: isMobile ? 10 : 11,
+                                        fontWeight: 600
+                                    }}
+                                />
+                                <ReferenceLine 
+                                    y={displayData[0].critical_level} 
+                                    stroke="#ef4444" 
+                                    strokeDasharray="5 5" 
+                                    strokeWidth={2}
+                                    label={{ 
+                                        value: 'Critical Level', 
+                                        position: 'insideTopRight',
+                                        fill: '#ef4444',
+                                        fontSize: isMobile ? 10 : 11,
+                                        fontWeight: 600
+                                    }}
+                                />
+                            </>
+                        )}
+                        
+                        {/* Single bar with dynamic color */}
                         <Bar
                             dataKey="current_level"
-                            name="Current"
-                            fill="#3b82f6"
+                            name="Current Level"
                             radius={[4, 4, 0, 0]}
-                            maxBarSize={30}
-                        />
-                        <Bar
-                            dataKey="alarm_level"
-                            name="Alarm"
-                            fill="#f59e0b"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={30}
-                        />
-                        <Bar
-                            dataKey="critical_level"
-                            name="Critical"
-                            fill="#ef4444"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={30}
-                        />
+                            maxBarSize={isMobile ? 25 : 35}
+                        >
+                            {displayData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fillColor} />
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ResponsiveContainer>
             )}
         </GraphCard>
     );
-};
+});
+
+WaterLevelGraph.displayName = 'WaterLevelGraph';
+
 export default WaterLevelGraph;

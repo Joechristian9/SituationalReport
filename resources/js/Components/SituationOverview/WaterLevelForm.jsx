@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { Download, Droplets, Loader2, PlusCircle, Save, History } from "lucide-react";
@@ -44,7 +44,6 @@ export default function WaterLevelForm({ data, setData }) {
         rowsPerPage,
         setRowsPerPage,
         totalPages,
-        startIndex,
     } = useTableFilter(data.reports, ['gauging_station'], 5);
 
     useEffect(() => {
@@ -78,34 +77,23 @@ export default function WaterLevelForm({ data, setData }) {
     });
 
 
-    // Handle input typing — use absolute index (index in the original data.reports)
-    const handleInputChange = (absoluteIndex, event) => {
+    // Handle input typing — find item by ID to handle filtered data correctly
+    const handleInputChange = (rowId, event) => {
         const { name, value } = event.target;
-
-        // Debug: show which absolute index is being edited
-        console.log(
-            "handleInputChange -> absoluteIndex:",
-            absoluteIndex,
-            "name:",
-            name,
-            "value:",
-            value
-        );
 
         setData((prev) => {
             const updatedReports = [...prev.reports];
-
-            // Safety: if absoluteIndex is out of bounds, bail out (prevents accidental insertion)
-            if (absoluteIndex < 0 || absoluteIndex >= updatedReports.length) {
-                console.warn(
-                    "handleInputChange: absoluteIndex out of range",
-                    absoluteIndex
-                );
+            
+            // Find the correct index in the original array by ID
+            const actualIndex = updatedReports.findIndex(r => r.id === rowId);
+            
+            if (actualIndex === -1) {
+                console.warn("handleInputChange: row not found", rowId);
                 return prev;
             }
 
-            updatedReports[absoluteIndex] = {
-                ...updatedReports[absoluteIndex],
+            updatedReports[actualIndex] = {
+                ...updatedReports[actualIndex],
                 [name]: value,
             };
             
@@ -138,7 +126,7 @@ export default function WaterLevelForm({ data, setData }) {
                 reports: [
                     ...reports,
                     {
-                        id: null,
+                        id: `temp-${Date.now()}`, // Temporary ID for new rows
                         gauging_station: "",
                         current_level: "",
                         alarm_level: "",
@@ -156,7 +144,7 @@ export default function WaterLevelForm({ data, setData }) {
         try {
             // IMPORTANT: send only expected fields if backend requires it
             const cleaned = data.reports.map((r) => ({
-                id: (typeof r.id === 'string' || !r.id) ? null : r.id,
+                id: (typeof r.id === 'string' && r.id.startsWith('temp-')) ? null : r.id,
                 gauging_station: r.gauging_station ?? "",
                 current_level:
                     r.current_level === "" ? null : parseFloat(r.current_level),
@@ -181,6 +169,9 @@ export default function WaterLevelForm({ data, setData }) {
             if (response.data && response.data.reports) {
                 setData(prev => ({ ...prev, reports: response.data.reports }));
             }
+            
+            // Force Inertia to reload page data (updates Dashboard graphs)
+            router.reload({ only: ['waterLevels'] });
             
             toast.success("Water level reports saved successfully!");
         } catch (err) {
@@ -297,9 +288,29 @@ export default function WaterLevelForm({ data, setData }) {
                         </thead>
 
                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedReports.map((row, pageIndex) => {
-                                // Convert pageIndex -> absolute index in original data.reports
-                                const absoluteIndex = startIndex + pageIndex;
+                            {paginatedReports.length === 0 && searchTerm ? (
+                                <tr>
+                                    <td colSpan="5" className="p-8 text-center">
+                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
+                                                <Droplets size={48} />
+                                            </div>
+                                            <p className="text-lg font-semibold text-slate-700">
+                                                No results found
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                No gauging station matches "<strong>{searchTerm}</strong>"
+                                            </p>
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
+                                                Clear search
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : paginatedReports.map((row, pageIndex) => {
                                 const fields = [
                                     "gauging_station",
                                     "current_level",
@@ -310,7 +321,7 @@ export default function WaterLevelForm({ data, setData }) {
 
                                 return (
                                     <tr
-                                        key={row.id ?? `new-${absoluteIndex}`} // stable key
+                                        key={row.id ?? `new-${pageIndex}`} // stable key
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
                                         {fields.map((field) => {
@@ -339,14 +350,10 @@ export default function WaterLevelForm({ data, setData }) {
                                                                     ? "number"
                                                                     : "text"
                                                             }
-                                                            value={
-                                                                data.reports[
-                                                                    absoluteIndex
-                                                                ]?.[field] ?? ""
-                                                            }
+                                                            value={row[field] ?? ""}
                                                             onChange={(e) =>
                                                                 handleInputChange(
-                                                                    absoluteIndex,
+                                                                    row.id,
                                                                     e
                                                                 )
                                                             }
