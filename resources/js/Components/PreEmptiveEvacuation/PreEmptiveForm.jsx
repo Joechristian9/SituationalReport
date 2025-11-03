@@ -7,7 +7,6 @@ import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { Users, History, Loader2, PlusCircle, Save } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import SearchBar from "../ui/SearchBar";
 import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
@@ -213,8 +212,29 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                         </tr>
                     </thead>
                     <tbody>
-                        <AnimatePresence>
-                            {paginatedReports.map((row, index) => {
+                            {paginatedReports.length === 0 && searchTerm ? (
+                                <tr>
+                                    <td colSpan="7" className="p-8 text-center">
+                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
+                                                <Users size={48} />
+                                            </div>
+                                            <p className="text-lg font-semibold text-slate-700">
+                                                No results found
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                No barangay or evacuation center matches "<strong>{searchTerm}</strong>"
+                                            </p>
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
+                                                Clear search
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : paginatedReports.map((row, index) => {
                                 const actualIndex = (currentPage - 1) * rowsPerPage + index;
                                 const fields = [
                                     "barangay",
@@ -227,12 +247,8 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                 ];
                                 
                                 return (
-                                <motion.tr
+                                <tr
                                     key={row.id}
-                                    initial={{ opacity: 0, y: -5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 5 }}
-                                    transition={{ duration: 0.2 }}
                                     className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/60 transition-colors"
                                 >
                                     {fields.map((field) => {
@@ -252,7 +268,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                                         value={row[field] ?? ""}
                                                         onChange={(e) => handleInputChange(actualIndex, e)}
                                                         placeholder={isNumberField ? "0" : `Enter ${formatFieldName(field)}`}
-                                                        className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} ${fieldHistory.length > 0 ? 'pr-10' : ''}`}
+                                                        className={`w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} ${fieldHistory.length > 0 ? 'pr-10' : ''}`}
                                                     />
                                                     {fieldHistory.length > 0 && (
                                                         <div className="absolute top-1/2 -translate-y-1/2 right-3">
@@ -332,11 +348,11 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                     <td className="p-2 text-right font-semibold text-blue-700">
                                         {row.total_persons}
                                     </td>
-                                </motion.tr>
+                                </tr>
                             );})}
-                        </AnimatePresence>
                     </tbody>
-                    {/* Table Footer */}
+                    {/* Table Footer - Only show when there are results */}
+                    {(paginatedReports.length > 0 || !searchTerm) && (
                     <tfoot className="bg-gray-100 font-bold text-gray-800">
                         <tr>
                             <td className="p-2 text-center" colSpan={2}>
@@ -389,6 +405,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                             </td>
                         </tr>
                     </tfoot>
+                    )}
                 </table>
                 {errors.reports && (
                     <div className="text-red-500 text-sm mt-2 px-3">

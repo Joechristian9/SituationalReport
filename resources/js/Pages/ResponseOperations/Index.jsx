@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Save, History } from "lucide-react";
+import { Loader2, PlusCircle, Save, History, ActivitySquare } from "lucide-react";
 import { motion } from "framer-motion";
 import {
     Tooltip,
@@ -273,7 +273,29 @@ export default function Index() {
                                             </tr>
                                         </thead>
                                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                                            {paginatedResponses.map((row, index) => {
+                                            {paginatedResponses.length === 0 && searchTerm ? (
+                                                <tr>
+                                                    <td colSpan="6" className="p-8 text-center">
+                                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
+                                                                <ActivitySquare size={48} />
+                                                            </div>
+                                                            <p className="text-lg font-semibold text-slate-700">
+                                                                No results found
+                                                            </p>
+                                                            <p className="text-sm text-slate-500">
+                                                                No response operation matches "<strong>{searchTerm}</strong>"
+                                                            </p>
+                                                            <button
+                                                                onClick={() => setSearchTerm('')}
+                                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            >
+                                                                Clear search
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : paginatedResponses.map((row, index) => {
                                                 const actualIndex = (currentPage - 1) * rowsPerPage + index;
                                                 const fields = [
                                                     "team_unit",

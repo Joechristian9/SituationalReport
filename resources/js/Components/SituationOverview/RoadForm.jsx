@@ -201,7 +201,29 @@ export default function RoadForm({ data, setData, errors }) {
                             </tr>
                         </thead>
                         <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedRoads.map((row, index) => {
+                            {paginatedRoads.length === 0 && searchTerm ? (
+                                <tr>
+                                    <td colSpan="6" className="p-8 text-center">
+                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
+                                                <Route size={48} />
+                                            </div>
+                                            <p className="text-lg font-semibold text-slate-700">
+                                                No results found
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                No road matches "<strong>{searchTerm}</strong>"
+                                            </p>
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
+                                                Clear search
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : paginatedRoads.map((row, index) => {
                                 const actualIndex =
                                     (currentPage - 1) * rowsPerPage + index;
                                 const fields = [
