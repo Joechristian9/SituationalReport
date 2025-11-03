@@ -26,11 +26,15 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
+     * Optimized: Eager load roles to prevent additional database queries
      */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-        $user = Auth::user();
+        
+        // Eager load roles to prevent N+1 query on isAdmin() check
+        $user = Auth::user()->load('roles:id,name');
+        
         $request->session()->regenerate();
 
         if ($user->isAdmin()) {

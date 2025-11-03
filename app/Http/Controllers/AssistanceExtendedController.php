@@ -10,10 +10,11 @@ class AssistanceExtendedController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Optimized: Uses pagination for efficient data loading
      */
     public function index()
     {
-        $assistances = AssistanceExtended::latest()->paginate(10);
+        $assistances = AssistanceExtended::latest()->paginate(20);
         return inertia('AssistanceExtended/AssistanceExtended', [
             'assistances' => $assistances,
         ]);
@@ -21,6 +22,7 @@ class AssistanceExtendedController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     * Optimized: Validates and saves only non-empty records
      */
     public function store(Request $request)
     {
@@ -50,6 +52,14 @@ class AssistanceExtendedController extends Controller
                 'beneficiaries'           => $assistance['beneficiaries'] ?? null,
                 'user_id'                 => Auth::id(),
                 'updated_by'              => Auth::id(),
+            ]);
+        }
+
+        // Return JSON response if expected, otherwise redirect
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Assistances saved successfully.',
             ]);
         }
 

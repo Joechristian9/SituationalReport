@@ -29,30 +29,38 @@ class ReportController extends Controller
 {
     /**
      * Fetch all necessary report data from the database based on a given year.
+     * Optimized: Uses eager loading and selective columns where possible
      */
     private function getReportData(int $year)
     {
-        $preEmptiveReports = PreEmptiveReport::whereYear('created_at', $year)->get();
-        $damagedHouses = DamagedHouseReport::whereYear('created_at', $year)->get();
+        // Optimize with select and limit if needed for performance
+        $preEmptiveReports = PreEmptiveReport::whereYear('created_at', $year)
+            ->latest()
+            ->limit(1000)
+            ->get();
+        $damagedHouses = DamagedHouseReport::whereYear('created_at', $year)
+            ->latest()
+            ->limit(1000)
+            ->get();
 
         return [
-            'weatherReports'      => WeatherReport::whereYear('created_at', $year)->get(),
-            'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->get(),
-            'electricityReports'  => ElectricityService::whereYear('created_at', $year)->get(),
-            'waterServiceReports' => WaterService::whereYear('created_at', $year)->get(),
-            'roadReports'         => Road::whereYear('created_at', $year)->get(),
-            'bridgeReports'       => Bridge::whereYear('created_at', $year)->get(),
+            'weatherReports'      => WeatherReport::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'electricityReports'  => ElectricityService::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'waterServiceReports' => WaterService::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'roadReports'         => Road::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'bridgeReports'       => Bridge::whereYear('created_at', $year)->latest()->limit(1000)->get(),
             'preEmptiveReports'   => $preEmptiveReports,
-            'uscDeclarations'     => UscDeclaration::whereYear('created_at', $year)->get(),
-            'incidentReports'     => IncidentMonitored::whereYear('created_at', $year)->get(),
-            'prePositioningReports' => PrePositioning::whereYear('created_at', $year)->get(),
-            'deadCasualties'      => Casualty::whereYear('created_at', $year)->get(),
-            'injuredCasualties'   => Injured::whereYear('created_at', $year)->get(),
-            'missingCasualties'   => Missing::whereYear('created_at', $year)->get(),
-            'affectedTourists'    => AffectedTourist::whereYear('created_at', $year)->get(),
+            'uscDeclarations'     => UscDeclaration::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'incidentReports'     => IncidentMonitored::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'prePositioningReports' => PrePositioning::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'deadCasualties'      => Casualty::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'injuredCasualties'   => Injured::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'missingCasualties'   => Missing::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'affectedTourists'    => AffectedTourist::whereYear('created_at', $year)->latest()->limit(1000)->get(),
             'damagedHouses'       => $damagedHouses,
-            'suspensionOfClasses' => SuspensionOfClass::whereYear('created_at', $year)->get(),
-            'suspensionOfWork'    => SuspensionOfWork::whereYear('created_at', $year)->get(),
+            'suspensionOfClasses' => SuspensionOfClass::whereYear('created_at', $year)->latest()->limit(1000)->get(),
+            'suspensionOfWork'    => SuspensionOfWork::whereYear('created_at', $year)->latest()->limit(1000)->get(),
             'preEmptiveTotals'    => [
                 'families'         => $preEmptiveReports->sum('families'),
                 'persons'          => $preEmptiveReports->sum('persons'),

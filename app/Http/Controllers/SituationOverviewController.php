@@ -96,9 +96,10 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return the fresh data after save
+        // Return the fresh data after save (limit to recent 100 records)
         $updatedReports = WeatherReport::with('user:id,name')
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -153,9 +154,10 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return the fresh data after save
+        // Return the fresh data after save (limit to recent 100 records)
         $updatedReports = WaterLevel::with('user:id,name')
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -204,10 +206,11 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return fresh data after save
+        // Return fresh data after save (limit to recent 100 records)
         $updatedServices = ElectricityService::with('user:id,name')
             ->where('user_id', Auth::id())
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -258,10 +261,11 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return fresh data after save
+        // Return fresh data after save (limit to recent 100 records)
         $updatedServices = WaterService::with('user:id,name')
             ->where('user_id', Auth::id())
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -351,10 +355,11 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return fresh data after save
+        // Return fresh data after save (limit to recent 100 records)
         $updatedRoads = Road::with('user:id,name')
             ->where('user_id', Auth::id())
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -411,10 +416,11 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Return fresh data after save
+        // Return fresh data after save (limit to recent 100 records)
         $updatedBridges = Bridge::with('user:id,name')
             ->where('user_id', Auth::id())
             ->orderBy('updated_at', 'desc')
+            ->limit(100)
             ->get();
         
         return response()->json([
@@ -499,8 +505,10 @@ class SituationOverviewController extends Controller
     /* ------------------- API: GET WEATHER REPORTS ------------------- */
     public function getReports()
     {
+        // Optimized: Limit to recent 200 records
         $weatherReports = WeatherReport::with('user:id,name')
             ->orderBy('updated_at', 'desc')
+            ->limit(200)
             ->get();
         
         return response()->json([

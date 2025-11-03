@@ -12,10 +12,11 @@ class SuspensionOfWorkController extends Controller
 {
     /**
      * Display a listing of the suspension of work records.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $suspensionList = SuspensionOfWork::latest()->get();
+        $suspensionList = SuspensionOfWork::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'suspensionList' => $suspensionList,

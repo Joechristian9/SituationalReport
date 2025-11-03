@@ -24,6 +24,7 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Define the props that are shared by default.
+     * Optimized: Eager load roles for better performance
      *
      * @return array<string, mixed>
      */
@@ -32,15 +33,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? $request->user()->load('roles:id,name') : null,
             ],
-        ];
-
-        return array_merge(parent::share($request), [
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
             ],
-        ]);
+        ];
     }
 }

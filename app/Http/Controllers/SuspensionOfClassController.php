@@ -12,10 +12,11 @@ class SuspensionOfClassController extends Controller
 {
     /**
      * Display a listing of the suspension of class records.
+     * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $suspensionList = SuspensionOfClass::latest()->get();
+        $suspensionList = SuspensionOfClass::latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'suspensionList' => $suspensionList,

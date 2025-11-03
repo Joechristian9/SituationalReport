@@ -14,30 +14,31 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Optimize: Only load recent records for performance
+        // Optimized: Reduced limits and lazy load for better initial page performance
+        // Data will be paginated or loaded on-demand in the frontend
         return Inertia::render('Admin/Dashboard', [
-            'weatherReports' => WeatherReport::latest('updated_at')
-                ->limit(100)
-                ->get(),
-            
-            'waterLevels' => WaterLevel::latest('updated_at')
+            'weatherReports' => fn() => WeatherReport::latest('updated_at')
                 ->limit(50)
                 ->get(),
             
-            'preEmptiveReports' => PreEmptiveReport::latest('updated_at')
-                ->limit(100)
+            'waterLevels' => fn() => WaterLevel::latest('updated_at')
+                ->limit(30)
                 ->get(),
             
-            'casualties' => Casualty::latest('updated_at')
-                ->limit(200)
+            'preEmptiveReports' => fn() => PreEmptiveReport::latest('updated_at')
+                ->limit(50)
+                ->get(),
+            
+            'casualties' => fn() => Casualty::latest('updated_at')
+                ->limit(50)
                 ->get(),
                 
-            'injured' => Injured::latest('updated_at')
-                ->limit(200)
+            'injured' => fn() => Injured::latest('updated_at')
+                ->limit(50)
                 ->get(),
                 
-            'missing' => Missing::latest('updated_at')
-                ->limit(200)
+            'missing' => fn() => Missing::latest('updated_at')
+                ->limit(50)
                 ->get(),
         ]);
     }
