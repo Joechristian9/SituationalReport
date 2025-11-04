@@ -545,6 +545,87 @@ class SituationOverviewController extends Controller
         ]);
     }
 
+    /* ------------------- API: GET WEATHER TIMELINE (Historical) ------------------- */
+    public function getWeatherTimeline()
+    {
+        // Get all modifications for WeatherReport ordered chronologically
+        $modifications = Modification::where('model_type', 'WeatherReport')
+            ->with('user:id,name')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Track state per model_id
+        $stateByModel = [];
+        $allStates = [];
+
+        // Reconstruct timeline from modifications
+        $index = 0;
+        foreach ($modifications as $mod) {
+            $modelId = $mod->model_id;
+            
+            // Initialize state for this model if not exists
+            if (!isset($stateByModel[$modelId])) {
+                $stateByModel[$modelId] = [
+                    'municipality' => null,
+                    'sky_condition' => null,
+                    'wind' => null,
+                    'precipitation' => null,
+                    'sea_condition' => null,
+                ];
+            }
+
+            // Apply changes from this modification to build current state
+            foreach ($mod->changed_fields as $field => $change) {
+                $stateByModel[$modelId][$field] = $change['new'] ?? null;
+            }
+
+            // Snapshot this state at this point in time
+            // Add microseconds to ensure unique timestamps for same-second modifications
+            $timestamp = $mod->created_at;
+            $carbonTime = \Carbon\Carbon::parse($timestamp);
+            $carbonTime->addMicroseconds($index * 1000); // Add milliseconds based on index
+            
+            $allStates[] = [
+                'municipality' => $stateByModel[$modelId]['municipality'],
+                'sky_condition' => $stateByModel[$modelId]['sky_condition'],
+                'wind' => $stateByModel[$modelId]['wind'],
+                'precipitation' => $stateByModel[$modelId]['precipitation'],
+                'sea_condition' => $stateByModel[$modelId]['sea_condition'],
+                'updated_at' => $carbonTime->toIso8601String(),
+                'user' => $mod->user,
+                'modification_id' => $mod->id, // Add unique identifier
+            ];
+            
+            $index++;
+        }
+
+        // Add current state from database for records without modifications
+        $currentReports = WeatherReport::with('user:id,name')->get();
+        foreach ($currentReports as $report) {
+            // Only add if this report hasn't been tracked in modifications
+            if (!isset($stateByModel[$report->id])) {
+                $allStates[] = [
+                    'municipality' => $report->municipality,
+                    'sky_condition' => $report->sky_condition,
+                    'wind' => $report->wind,
+                    'precipitation' => $report->precipitation,
+                    'sea_condition' => $report->sea_condition,
+                    'updated_at' => $report->updated_at,
+                    'user' => $report->user,
+                ];
+            }
+        }
+
+        // Sort by timestamp
+        usort($allStates, function($a, $b) {
+            return strtotime($a['updated_at']) - strtotime($b['updated_at']);
+        });
+
+        return response()->json([
+            'timeline' => $allStates
+        ]);
+    }
+
     /* ------------------- REAL-TIME TYPING BROADCAST ------------------- */
     public function broadcastTyping(Request $request)
     {

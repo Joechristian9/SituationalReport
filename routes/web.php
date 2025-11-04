@@ -68,6 +68,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('weather-reports.store');
     Route::get('/api/weather-reports', [SituationOverviewController::class, 'getReports'])
         ->name('api.weather-reports');
+    Route::get('/api/weather-timeline', [SituationOverviewController::class, 'getWeatherTimeline'])
+        ->name('api.weather-timeline');
     Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
         ->name('modifications.weather');
     

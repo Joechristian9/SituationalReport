@@ -208,8 +208,9 @@ export default function WeatherForm({ data, setData, errors }) {
                 setOriginalData(JSON.parse(JSON.stringify(response.data.reports)));
             }
             
-            // Invalidate modification history once
+            // Invalidate queries to refresh data
             queryClient.invalidateQueries(['weather-modifications']);
+            queryClient.invalidateQueries(['weather-timeline']);
             
             toast.success("Weather reports saved successfully!");
         } catch (err) {

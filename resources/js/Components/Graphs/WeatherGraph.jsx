@@ -47,23 +47,22 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
     );
     const [chartKey, setChartKey] = useState(0);
     
-    // Fetch weather reports with React Query - syncs with WeatherForm updates
+    // Fetch weather timeline with React Query - syncs with WeatherForm updates
     const {
         data: fetchedReports,
         isLoading,
     } = useQuery({
-        queryKey: ["weather-modifications"], // Same key as WeatherForm
+        queryKey: ["weather-timeline"], // Fetch historical timeline
         queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/api/weather-reports`);
-            return data.reports || [];
+            const { data } = await axios.get(`${APP_URL}/api/weather-timeline`);
+            return data.timeline || [];
         },
         staleTime: 1000 * 60 * 2, // 2 minutes
         refetchInterval: 1000 * 30, // Auto-refresh every 30 seconds
-        initialData: initialReports,
     });
     
-    // Use fetched reports if available, otherwise use initial reports
-    const weatherReports = fetchedReports || initialReports;
+    // Use fetched reports (timeline data)
+    const weatherReports = fetchedReports || [];
 
     // Handle window resize for responsive behavior (debounced)
     useEffect(() => {
@@ -101,16 +100,19 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
             .filter(r => r.municipality && r.municipality.trim())
             .forEach(r => {
                 const lowerName = r.municipality.toLowerCase();
-                // Keep the first occurrence's capitalization
+                // Capitalize first letter for display
                 if (!municipalityMap.has(lowerName)) {
-                    municipalityMap.set(lowerName, r.municipality);
+                    const capitalizedName = r.municipality.charAt(0).toUpperCase() + r.municipality.slice(1).toLowerCase();
+                    municipalityMap.set(lowerName, capitalizedName);
                 }
             });
         
-        return ["All", ...Array.from(municipalityMap.values()).sort()];
+        return ["All", ...Array.from(municipalityMap.values()).sort((a, b) => 
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        )];
     }, [weatherReports.length, JSON.stringify(weatherReports.map(r => r.municipality))]);
 
-    // Optimized data processing with proper memoization
+    // Optimized data processing - show each historical state as separate point
     const data = useMemo(() => {
         if (!weatherReports || weatherReports.length === 0) return [];
 
@@ -125,36 +127,15 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
 
         if (reports.length === 0) return [];
 
-        const aggregator = reports.reduce((acc, report) => {
-            if (!report.updated_at) return acc;
-
-            const timestamp = report.updated_at;
-            if (!acc[timestamp]) {
-                acc[timestamp] = {
-                    windSum: 0,
-                    precipSum: 0,
-                    count: 0,
-                    date: timestamp,
-                    municipalities: new Set(),
-                };
-            }
-            acc[timestamp].windSum += parseFloat(report.wind) || 0;
-            acc[timestamp].precipSum += parseFloat(report.precipitation) || 0;
-            acc[timestamp].count += 1;
-            if (report.municipality) {
-                acc[timestamp].municipalities.add(report.municipality);
-            }
-            return acc;
-        }, {});
-
-        return Object.values(aggregator)
-            .map((d) => ({
-                name: dayjs(d.date).format("MMM D, HH:mm"),
-                wind: parseFloat((d.windSum / d.count).toFixed(2)),
-                precipitation: parseFloat((d.precipSum / d.count).toFixed(2)),
-                updated_at: d.date,
-                municipality:
-                    Array.from(d.municipalities).join(", ") || "Average",
+        // Map each state to a data point (no aggregation - show full history)
+        return reports
+            .filter(report => report.updated_at && (report.wind || report.precipitation))
+            .map((report) => ({
+                name: dayjs(report.updated_at).format("MMM D, HH:mm:ss"),
+                wind: parseFloat(report.wind) || 0,
+                precipitation: parseFloat(report.precipitation) || 0,
+                updated_at: report.updated_at,
+                municipality: report.municipality || "Unknown",
             }))
             .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
     }, [
@@ -306,7 +287,7 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
                                 name="Wind (km/h)"
                                 stroke="#3B82F6"
                                 strokeWidth={2}
-                                dot={false}
+                                dot={{ r: 4, fill: "#3B82F6" }}
                                 activeDot={{ r: 6 }}
                             />
                             <Line
@@ -315,7 +296,7 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
                                 name="Precipitation (mm)"
                                 stroke="#22C55E"
                                 strokeWidth={2}
-                                dot={false}
+                                dot={{ r: 4, fill: "#22C55E" }}
                                 activeDot={{ r: 6 }}
                             />
                         </LineChart>
