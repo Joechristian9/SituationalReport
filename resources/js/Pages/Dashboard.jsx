@@ -13,9 +13,9 @@ export default function Dashboard() {
             <AppSidebar />
             <Head title="Dashboard"></Head>
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="h-6" />
+                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+                    <SidebarTrigger className="-ml-2" />
+                    <Separator orientation="vertical" className="h-6 mx-2" />
                     <h1 className="text-xl font-semibold">Dashboard</h1>
                 </header>
                 <main className="w-full p-6">

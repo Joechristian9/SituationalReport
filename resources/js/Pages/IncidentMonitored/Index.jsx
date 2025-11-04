@@ -351,10 +351,10 @@ export default function Index() {
             </Head>
 
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
+                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <div className="flex items-center gap-2">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="h-6" />
+                        <SidebarTrigger className="-ml-2" />
+                        <Separator orientation="vertical" className="h-6 mx-2" />
                         <Breadcrumbs crumbs={crumbs} />
                     </div>
                 </header>

@@ -221,7 +221,7 @@ const WeatherGraph = ({ weatherReports: initialReports = [] }) => {
             ) : (
                 <>
                     {latest && (
-                        <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-200 text-sm">
+                        <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
                             <h4 className="font-bold text-gray-800">
                                 Latest ({latest.municipality})
                             </h4>
