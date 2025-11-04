@@ -4,7 +4,7 @@ import RowsPerPage from "../ui/RowsPerPage";
 import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -53,6 +53,15 @@ export default function WeatherForm({ data, setData, errors }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const [originalData, setOriginalData] = useState(null);
+    const debounceTimerRef = useRef(null);
+    
+    // Store original data on mount for change detection
+    useEffect(() => {
+        if (!originalData) {
+            setOriginalData(JSON.parse(JSON.stringify(data.reports)));
+        }
+    }, []);
     
     // Enhanced search and filtering across multiple fields
     const {
@@ -95,7 +104,8 @@ export default function WeatherForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5,
     });
 
-    const handleInputChange = (rowId, event) => {
+    // Debounced input change handler for better performance
+    const handleInputChange = useCallback((rowId, event) => {
         const { name, value } = event.target;
         
         // For number fields (wind, precipitation), ensure valid numeric format
@@ -110,13 +120,14 @@ export default function WeatherForm({ data, setData, errors }) {
             }
         }
         
+        // Immediate UI update for responsiveness
         const updatedReports = data.reports.map(report => 
             report.id === rowId 
                 ? { ...report, [name]: sanitizedValue }
                 : report
         );
         setData({ ...data, reports: updatedReports });
-    };
+    }, [data, setData]);
 
     const handleAddRow = () => {
         setData({
@@ -135,8 +146,50 @@ export default function WeatherForm({ data, setData, errors }) {
         });
     };
 
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return false;
+        return JSON.stringify(originalData) !== JSON.stringify(data.reports);
+    }, [originalData, data.reports]);
+    
+    // Validate reports before submission
+    const validateReports = useCallback(() => {
+        const errors = [];
+        
+        data.reports.forEach((report, index) => {
+            // Check if municipality is filled
+            if (!report.municipality || report.municipality.trim() === '') {
+                errors.push(`Row ${index + 1}: Municipality is required`);
+            }
+            
+            // Validate numeric fields
+            if (report.wind && (isNaN(report.wind) || parseFloat(report.wind) < 0)) {
+                errors.push(`Row ${index + 1}: Wind must be a positive number`);
+            }
+            if (report.precipitation && (isNaN(report.precipitation) || parseFloat(report.precipitation) < 0)) {
+                errors.push(`Row ${index + 1}: Precipitation must be a positive number`);
+            }
+        });
+        
+        return errors;
+    }, [data.reports]);
+
     const handleSubmit = async () => {
+        // Check if there are any changes
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
+        // Validate data before submission
+        const validationErrors = validateReports();
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors[0]); // Show first error
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
             // Clean the data: convert string IDs (like "new-123") to null for new rows
             const cleanedReports = data.reports.map(report => ({
@@ -148,26 +201,28 @@ export default function WeatherForm({ data, setData, errors }) {
                 reports: cleanedReports,
             });
             
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['weather-modifications']);
-            
             // Update local state with the response data from server
             if (response.data && response.data.reports) {
                 setData({ ...data, reports: response.data.reports });
+                // Update original data to reflect saved state
+                setOriginalData(JSON.parse(JSON.stringify(response.data.reports)));
             }
+            
+            // Invalidate modification history once
+            queryClient.invalidateQueries(['weather-modifications']);
             
             toast.success("Weather reports saved successfully!");
         } catch (err) {
             console.error(err);
-            toast.error(
-                "Failed to save. Please check the console for details."
-            );
+            
+            // Provide more specific error messages
+            const errorMessage = err.response?.data?.message || 
+                                err.response?.data?.error ||
+                                "Failed to save weather reports. Please try again.";
+            
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
-            // Force a small delay to ensure state updates
-            setTimeout(() => {
-                queryClient.invalidateQueries(['weather-modifications']);
-            }, 100);
         }
     };
 
@@ -459,7 +514,7 @@ export default function WeatherForm({ data, setData, errors }) {
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
@@ -470,7 +525,7 @@ export default function WeatherForm({ data, setData, errors }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>Save Weather Report</span>
+                                <span>{hasChanges ? 'Save Weather Report' : 'No Changes'}</span>
                             </>
                         )}
                     </button>

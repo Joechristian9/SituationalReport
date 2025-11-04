@@ -279,6 +279,7 @@ class SituationOverviewController extends Controller
     {
         $validated = $request->validate([
             'communications' => 'required|array',
+            'communications.*.id' => ['nullable', 'integer'],
             'communications.*.globe' => 'nullable|string|max:255',
             'communications.*.smart' => 'nullable|string|max:255',
             'communications.*.pldt_landline' => 'nullable|string|max:255',
@@ -287,24 +288,52 @@ class SituationOverviewController extends Controller
             'communications.*.remarks' => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['communications'] as $comm) {
-            if (!empty(array_filter($comm))) {
-                Communication::updateOrCreate(
-                    ['user_id' => Auth::id()],
-                    [
-                        'globe' => $comm['globe'] ?? null,
-                        'smart' => $comm['smart'] ?? null,
-                        'pldt_landline' => $comm['pldt_landline'] ?? null,
-                        'pldt_internet' => $comm['pldt_internet'] ?? null,
-                        'vhf' => $comm['vhf'] ?? null,
-                        'remarks' => $comm['remarks'] ?? null,
+        foreach ($validated['communications'] as $commData) {
+            // Skip empty rows
+            if (empty(array_filter($commData))) {
+                continue;
+            }
+
+            // If ID exists and is numeric, update existing record
+            if (!empty($commData['id']) && is_numeric($commData['id'])) {
+                $communication = Communication::find($commData['id']);
+                if ($communication) {
+                    $communication->update([
+                        'globe' => $commData['globe'] ?? null,
+                        'smart' => $commData['smart'] ?? null,
+                        'pldt_landline' => $commData['pldt_landline'] ?? null,
+                        'pldt_internet' => $commData['pldt_internet'] ?? null,
+                        'vhf' => $commData['vhf'] ?? null,
+                        'remarks' => $commData['remarks'] ?? null,
                         'updated_by' => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
+            } else {
+                // Create new record
+                Communication::create([
+                    'globe' => $commData['globe'] ?? null,
+                    'smart' => $commData['smart'] ?? null,
+                    'pldt_landline' => $commData['pldt_landline'] ?? null,
+                    'pldt_internet' => $commData['pldt_internet'] ?? null,
+                    'vhf' => $commData['vhf'] ?? null,
+                    'remarks' => $commData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
             }
         }
 
-        return response()->json(['message' => 'Communication reports saved successfully']);
+        // Return fresh data after save (limit to recent 100 records)
+        $updatedCommunications = Communication::with('user:id,name')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->limit(100)
+            ->get();
+        
+        return response()->json([
+            'message' => 'Communication reports saved successfully',
+            'communications' => $updatedCommunications
+        ]);
     }
 
     public function storeRoad(Request $request)

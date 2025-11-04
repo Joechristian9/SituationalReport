@@ -7,7 +7,7 @@ import DownloadExcelButton from "../ui/DownloadExcelButton";
 /* import DownloadPDFButton from "../ui/DownloadPDFButton"; */
 import AddRowButton from "../ui/AddRowButton";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -36,9 +36,17 @@ export default function ElectricityForm({ data, setData, errors }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const [originalData, setOriginalData] = useState(null);
     
     // Using a safe default for data.electricityServices
     const services = data.electricityServices ?? [];
+    
+    // Store original data on mount for change detection
+    useEffect(() => {
+        if (!originalData) {
+            setOriginalData(JSON.parse(JSON.stringify(services)));
+        }
+    }, []);
     
     // Enhanced search and filtering across multiple fields
     const {
@@ -81,12 +89,12 @@ export default function ElectricityForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    const handleInputChange = (index, event) => {
+    const handleInputChange = useCallback((index, event) => {
         const { name, value } = event.target;
         const newServices = [...services];
         newServices[index][name] = value;
         setData("electricityServices", newServices);
-    };
+    }, [services, setData]);
 
     const handleAddRow = () => {
         setData("electricityServices", [
@@ -100,8 +108,41 @@ export default function ElectricityForm({ data, setData, errors }) {
         ]);
     };
 
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return false;
+        return JSON.stringify(originalData) !== JSON.stringify(services);
+    }, [originalData, services]);
+    
+    // Validate services before submission
+    const validateServices = useCallback(() => {
+        const errors = [];
+        
+        services.forEach((service, index) => {
+            if (!service.status || service.status.trim() === '') {
+                errors.push(`Row ${index + 1}: Status is required`);
+            }
+        });
+        
+        return errors;
+    }, [services]);
+
     const handleSubmit = async () => {
+        // Check if there are any changes
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
+        // Validate data before submission
+        const validationErrors = validateServices();
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors[0]);
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
             // Clean string IDs for new rows
             const cleanedServices = services.map(service => ({
@@ -113,33 +154,28 @@ export default function ElectricityForm({ data, setData, errors }) {
                 electricityServices: cleanedServices,
             });
             
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['electricity-modifications']);
-            
             // Update local state with server response if available
             if (response.data && response.data.electricityServices) {
                 setData("electricityServices", response.data.electricityServices);
+                // Update original data to reflect saved state
+                setOriginalData(JSON.parse(JSON.stringify(response.data.electricityServices)));
             }
+            
+            // Invalidate modification history once
+            queryClient.invalidateQueries(['electricity-modifications']);
             
             toast.success("Electricity services saved successfully!");
         } catch (err) {
             console.error(err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
+            
+            // Provide more specific error messages
+            const errorMessage = err.response?.data?.message || 
+                                err.response?.data?.error ||
+                                "Failed to save electricity services. Please try again.";
+            
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
-            // Force refetch after small delay
-            setTimeout(() => {
-                queryClient.invalidateQueries(['electricity-modifications']);
-            }, 100);
         }
     };
 
@@ -411,7 +447,7 @@ export default function ElectricityForm({ data, setData, errors }) {
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
@@ -422,7 +458,7 @@ export default function ElectricityForm({ data, setData, errors }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>Save Report</span>
+                                <span>{hasChanges ? 'Save Report' : 'No Changes'}</span>
                             </>
                         )}
                     </button>

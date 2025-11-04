@@ -1,5 +1,5 @@
 // resources/js/Components/SituationOverview/WaterLevelForm.jsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -33,6 +33,14 @@ export default function WaterLevelForm({ data, setData }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const [originalData, setOriginalData] = useState(null);
+    
+    // Store original data on mount for change detection
+    useEffect(() => {
+        if (!originalData) {
+            setOriginalData(JSON.parse(JSON.stringify(data.reports)));
+        }
+    }, []);
     
     // Enhanced search and filtering across multiple fields
     const {
@@ -78,7 +86,7 @@ export default function WaterLevelForm({ data, setData }) {
 
 
     // Handle input typing — find item by ID to handle filtered data correctly
-    const handleInputChange = (rowId, event) => {
+    const handleInputChange = useCallback((rowId, event) => {
         const { name, value } = event.target;
 
         setData((prev) => {
@@ -99,7 +107,7 @@ export default function WaterLevelForm({ data, setData }) {
             
             return { ...prev, reports: updatedReports };
         });
-    };
+    }, [setData]);
 
     // Add row — only on explicit click
     const handleAddRow = () => {
@@ -138,9 +146,50 @@ export default function WaterLevelForm({ data, setData }) {
         });
     };
 
-    // Submit (unchanged except debug)
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return false;
+        return JSON.stringify(originalData) !== JSON.stringify(data.reports);
+    }, [originalData, data.reports]);
+    
+    // Validate water level reports before submission
+    const validateReports = useCallback(() => {
+        const errors = [];
+        
+        data.reports.forEach((report, index) => {
+            if (!report.gauging_station || report.gauging_station.trim() === '') {
+                errors.push(`Row ${index + 1}: Gauging station is required`);
+            }
+            if (report.current_level && isNaN(parseFloat(report.current_level))) {
+                errors.push(`Row ${index + 1}: Current level must be a valid number`);
+            }
+            if (report.alarm_level && isNaN(parseFloat(report.alarm_level))) {
+                errors.push(`Row ${index + 1}: Alarm level must be a valid number`);
+            }
+            if (report.critical_level && isNaN(parseFloat(report.critical_level))) {
+                errors.push(`Row ${index + 1}: Critical level must be a valid number`);
+            }
+        });
+        
+        return errors;
+    }, [data.reports]);
+
     const handleSubmit = async () => {
+        // Check if there are any changes
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
+        // Validate data before submission
+        const validationErrors = validateReports();
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors[0]);
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
             // IMPORTANT: send only expected fields if backend requires it
             const cleaned = data.reports.map((r) => ({
@@ -157,18 +206,19 @@ export default function WaterLevelForm({ data, setData }) {
                 affected_areas: r.affected_areas ?? "",
             }));
 
-            console.log("Submitting cleaned payload:", cleaned);
             const response = await axios.post(`${APP_URL}/water-level-reports`, {
                 reports: cleaned,
             });
             
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['water-level-modifications']);
-            
             // Update local state with the response data from server
             if (response.data && response.data.reports) {
                 setData(prev => ({ ...prev, reports: response.data.reports }));
+                // Update original data to reflect saved state
+                setOriginalData(JSON.parse(JSON.stringify(response.data.reports)));
             }
+            
+            // Invalidate modification history once
+            queryClient.invalidateQueries(['water-level-modifications']);
             
             // Force Inertia to reload page data (updates Dashboard graphs)
             router.reload({ only: ['waterLevels'] });
@@ -176,20 +226,15 @@ export default function WaterLevelForm({ data, setData }) {
             toast.success("Water level reports saved successfully!");
         } catch (err) {
             console.error("Save error:", err.response?.data || err);
-            if (err.response?.status === 422) {
-                toast.error("Validation failed — check required fields.");
-                console.table(err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save water levels. Check console for details."
-                );
-            }
+            
+            // Provide more specific error messages
+            const errorMessage = err.response?.data?.message || 
+                                err.response?.data?.error ||
+                                "Failed to save water level reports. Please try again.";
+            
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
-            // Force a small delay to ensure state updates
-            setTimeout(() => {
-                queryClient.invalidateQueries(['water-level-modifications']);
-            }, 100);
         }
     };
 
@@ -462,7 +507,7 @@ export default function WaterLevelForm({ data, setData }) {
                     </AddRowButton>
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
@@ -473,7 +518,7 @@ export default function WaterLevelForm({ data, setData }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>Save Water Level</span>
+                                <span>{hasChanges ? 'Save Water Level' : 'No Changes'}</span>
                             </>
                         )}
                     </button>

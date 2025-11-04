@@ -6,7 +6,7 @@ import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -33,8 +33,16 @@ export default function WaterForm({ data, setData, errors }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const [originalData, setOriginalData] = useState(null);
     
     const waterServices = data?.waterServices ?? [];
+    
+    // Store original data on mount for change detection
+    useEffect(() => {
+        if (!originalData) {
+            setOriginalData(JSON.parse(JSON.stringify(waterServices)));
+        }
+    }, []);
     
     // Enhanced search and filtering across multiple fields
     const {
@@ -77,12 +85,12 @@ export default function WaterForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    const handleInputChange = (index, event) => {
+    const handleInputChange = useCallback((index, event) => {
         const { name, value } = event.target;
         const newRows = [...waterServices];
         newRows[index][name] = value;
         setData("waterServices", newRows);
-    };
+    }, [waterServices, setData]);
 
     const handleAddRow = () => {
         setData("waterServices", [
@@ -97,8 +105,41 @@ export default function WaterForm({ data, setData, errors }) {
         ]);
     };
 
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return false;
+        return JSON.stringify(originalData) !== JSON.stringify(waterServices);
+    }, [originalData, waterServices]);
+    
+    // Validate water services before submission
+    const validateWaterServices = useCallback(() => {
+        const errors = [];
+        
+        waterServices.forEach((service, index) => {
+            if (!service.source_of_water || service.source_of_water.trim() === '') {
+                errors.push(`Row ${index + 1}: Source of water is required`);
+            }
+        });
+        
+        return errors;
+    }, [waterServices]);
+
     const handleSubmit = async () => {
+        // Check if there are any changes
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
+        // Validate data before submission
+        const validationErrors = validateWaterServices();
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors[0]);
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
             // Clean string IDs for new rows
             const cleanedServices = waterServices.map(service => ({
@@ -110,33 +151,28 @@ export default function WaterForm({ data, setData, errors }) {
                 waterServices: cleanedServices,
             });
             
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['water-service-modifications']);
-            
             // Update local state with server response if available
             if (response.data && response.data.waterServices) {
                 setData("waterServices", response.data.waterServices);
+                // Update original data to reflect saved state
+                setOriginalData(JSON.parse(JSON.stringify(response.data.waterServices)));
             }
+            
+            // Invalidate modification history once
+            queryClient.invalidateQueries(['water-service-modifications']);
             
             toast.success("Water service reports saved successfully!");
         } catch (err) {
             console.error(err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
+            
+            // Provide more specific error messages
+            const errorMessage = err.response?.data?.message || 
+                                err.response?.data?.error ||
+                                "Failed to save water service reports. Please try again.";
+            
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
-            // Force refetch after small delay
-            setTimeout(() => {
-                queryClient.invalidateQueries(['water-service-modifications']);
-            }, 100);
         }
     };
 
@@ -433,7 +469,7 @@ export default function WaterForm({ data, setData, errors }) {
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
@@ -444,7 +480,7 @@ export default function WaterForm({ data, setData, errors }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>Save Water Report</span>
+                                <span>{hasChanges ? 'Save Water Report' : 'No Changes'}</span>
                             </>
                         )}
                     </button>

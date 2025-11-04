@@ -6,7 +6,7 @@ import Pagination from "../ui/Pagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -33,8 +33,16 @@ export default function RoadForm({ data, setData, errors }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const [originalData, setOriginalData] = useState(null);
     
     const roads = data?.roads ?? [];
+    
+    // Store original data on mount for change detection
+    useEffect(() => {
+        if (!originalData) {
+            setOriginalData(JSON.parse(JSON.stringify(roads)));
+        }
+    }, []);
     
     // Enhanced search and filtering across multiple fields
     const {
@@ -75,12 +83,12 @@ export default function RoadForm({ data, setData, errors }) {
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    const handleInputChange = (index, event) => {
+    const handleInputChange = useCallback((index, event) => {
         const { name, value } = event.target;
         const newRows = [...roads];
         newRows[index][name] = value;
         setData("roads", newRows);
-    };
+    }, [roads, setData]);
 
     const handleAddRow = () => {
         setData("roads", [
@@ -97,8 +105,41 @@ export default function RoadForm({ data, setData, errors }) {
         ]);
     };
 
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return false;
+        return JSON.stringify(originalData) !== JSON.stringify(roads);
+    }, [originalData, roads]);
+    
+    // Validate roads before submission
+    const validateRoads = useCallback(() => {
+        const errors = [];
+        
+        roads.forEach((road, index) => {
+            if (!road.name_of_road || road.name_of_road.trim() === '') {
+                errors.push(`Row ${index + 1}: Road name is required`);
+            }
+        });
+        
+        return errors;
+    }, [roads]);
+
     const handleSubmit = async () => {
+        // Check if there are any changes
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
+        // Validate data before submission
+        const validationErrors = validateRoads();
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors[0]);
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
             // Clean string IDs for new rows
             const cleanedRoads = roads.map(road => ({
@@ -110,33 +151,28 @@ export default function RoadForm({ data, setData, errors }) {
                 roads: cleanedRoads,
             });
             
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['road-modifications']);
-            
             // Update local state with server response if available
             if (response.data && response.data.roads) {
                 setData("roads", response.data.roads);
+                // Update original data to reflect saved state
+                setOriginalData(JSON.parse(JSON.stringify(response.data.roads)));
             }
+            
+            // Invalidate modification history once
+            queryClient.invalidateQueries(['road-modifications']);
             
             toast.success("Road reports saved successfully!");
         } catch (err) {
             console.error(err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
+            
+            // Provide more specific error messages
+            const errorMessage = err.response?.data?.message || 
+                                err.response?.data?.error ||
+                                "Failed to save road reports. Please try again.";
+            
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
-            // Force refetch after small delay
-            setTimeout(() => {
-                queryClient.invalidateQueries(['road-modifications']);
-            }, 100);
         }
     };
 
@@ -407,7 +443,7 @@ export default function RoadForm({ data, setData, errors }) {
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
@@ -418,7 +454,7 @@ export default function RoadForm({ data, setData, errors }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>Save Roads Report</span>
+                                <span>{hasChanges ? 'Save Road Report' : 'No Changes'}</span>
                             </>
                         )}
                     </button>
