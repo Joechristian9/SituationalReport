@@ -24,6 +24,7 @@ use App\Models\WeatherReport;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\SuspensionOfWork;
+use App\Models\Communication;
 
 class ReportController extends Controller
 {
@@ -51,6 +52,7 @@ class ReportController extends Controller
             'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'electricityReports'  => ElectricityService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'waterServiceReports' => WaterService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'communicationReports' => Communication::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'roadReports'         => Road::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'bridgeReports'       => Bridge::whereYear('created_at', $year)->latest()->limit($limit)->get(),
             'preEmptiveReports'   => $preEmptiveReports,

@@ -148,6 +148,7 @@
     @include('reports.partials.water_level')
     @include('reports.partials.electricity')
     @include('reports.partials.water_services')
+    @include('reports.partials.communication')
     @include('reports.partials.roads_and_bridges')
     @include('reports.partials.pre_emptive_evacuation')
     @include('reports.partials.declaration_state_of_calamity')
