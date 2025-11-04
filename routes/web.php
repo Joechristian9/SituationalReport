@@ -241,6 +241,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('assistance-extendeds.store');
     Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
         ->name('assistance-extendeds.index');
+    Route::get('/modifications/assistance-extended', [AssistanceExtendedController::class, 'getModifications'])
+        ->name('modifications.assistance-extended');
 
     /* ---------------- Suspension of Classes (API routes) ---------------- */
     Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
