@@ -17,6 +17,7 @@ class UscDeclaration extends Model
         'date_approved',
         'user_id',
         'updated_by',
+        'typhoon_id',
     ];
 
     public function user()

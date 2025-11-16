@@ -20,6 +20,7 @@ class Communication extends Model
         'remarks',
         'updated_by',
         'user_id',
+        'typhoon_id',
     ];
 
     /**

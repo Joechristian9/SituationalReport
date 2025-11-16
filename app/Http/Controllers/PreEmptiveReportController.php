@@ -3,20 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\PreEmptiveReport;
-use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PreEmptiveReportController extends Controller
 {
+    use ValidatesTyphoonStatus;
+
     /**
      * Show list of Pre-Emptive Reports
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $reports = PreEmptiveReport::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $reportsQuery = PreEmptiveReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $reportsQuery->where('user_id', $user->id);
+        }
+
+        $reports = $reportsQuery->latest()->limit(200)->get();
 
         return Inertia::render('PreEmptiveReports/Index', [
             'initialReports' => $reports,
@@ -28,6 +39,14 @@ class PreEmptiveReportController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'reports' => 'required|array',
 
@@ -64,6 +83,7 @@ class PreEmptiveReportController extends Controller
                 'total_persons'     => $report['total_persons'] ?? null,
                 'user_id'           => Auth::id(),
                 'updated_by'        => Auth::id(),
+                'typhoon_id'        => $activeTyphoon->id,
             ]);
         }
 
@@ -99,6 +119,14 @@ class PreEmptiveReportController extends Controller
      */
     public function saveReports(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'reports' => 'required|array',
             'reports.*.id' => 'nullable',
@@ -129,7 +157,15 @@ class PreEmptiveReportController extends Controller
             
             if ($reportId && is_numeric($reportId)) {
                 // Update existing report
-                $report = PreEmptiveReport::find($reportId);
+                $reportQuery = PreEmptiveReport::where('id', $reportId);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $reportQuery->where('user_id', $user->id);
+                }
+
+                $report = $reportQuery->first();
+
                 if ($report) {
                     $report->update([
                         'barangay' => $reportData['barangay'] ?? null,
@@ -141,6 +177,7 @@ class PreEmptiveReportController extends Controller
                         'outside_persons' => $reportData['outside_persons'] ?? null,
                         'total_families' => $reportData['total_families'] ?? null,
                         'total_persons' => $reportData['total_persons'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                     $savedReports[] = $report->fresh();
@@ -157,6 +194,7 @@ class PreEmptiveReportController extends Controller
                     'outside_persons' => $reportData['outside_persons'] ?? null,
                     'total_families' => $reportData['total_families'] ?? null,
                     'total_persons' => $reportData['total_persons'] ?? null,
+                    'typhoon_id' => $activeTyphoon->id,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
                 ]);
@@ -164,9 +202,19 @@ class PreEmptiveReportController extends Controller
             }
         }
 
+        // Return the fresh data (after save) so the frontend can reflect the changes
+        $reloadedQuery = PreEmptiveReport::where('typhoon_id', $activeTyphoon->id);
+
+        $user = Auth::user();
+        if ($user && !$user->isAdmin()) {
+            $reloadedQuery->where('user_id', $user->id);
+        }
+
+        $reloaded = $reloadedQuery->latest()->limit(200)->get();
+
         return response()->json([
             'message' => 'Pre-Emptive Reports saved successfully.',
-            'reports' => $savedReports,
+            'reports' => $reloaded,
         ]);
     }
 

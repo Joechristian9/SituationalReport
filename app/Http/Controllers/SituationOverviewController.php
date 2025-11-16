@@ -11,6 +11,7 @@ use App\Models\Road;
 use App\Models\Bridge;
 use App\Models\Modification;
 use App\Events\UserTyping;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -18,24 +19,61 @@ use Inertia\Inertia;
 
 class SituationOverviewController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /* ------------------- INDEX ------------------- */
     public function index()
     {
         // Optimized: Limit to last 100 records for performance
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $weatherQuery = WeatherReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $waterLevelQuery = WaterLevel::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $electricityQuery = ElectricityService::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $waterServiceQuery = WaterService::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $communicationQuery = Communication::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $roadQuery = Road::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $bridgeQuery = Bridge::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $weatherQuery->where('user_id', $user->id);
+            $waterLevelQuery->where('user_id', $user->id);
+            $electricityQuery->where('user_id', $user->id);
+            $waterServiceQuery->where('user_id', $user->id);
+            $communicationQuery->where('user_id', $user->id);
+            $roadQuery->where('user_id', $user->id);
+            $bridgeQuery->where('user_id', $user->id);
+        }
+
         return Inertia::render('SituationReports/Index', [
-            'weatherReports' => WeatherReport::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterLevels'    => WaterLevel::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'electricity'    => ElectricityService::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterServices'  => WaterService::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'communications' => Communication::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'roads'          => Road::orderBy('updated_at', 'desc')->limit(100)->get(),
-            'bridges'        => Bridge::orderBy('updated_at', 'desc')->limit(100)->get(),
+            'weatherReports' => $weatherQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'waterLevels'    => $waterLevelQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'electricity'    => $electricityQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'waterServices'  => $waterServiceQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'communications' => $communicationQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'roads'          => $roadQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'bridges'        => $bridgeQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
         ]);
     }
 
     /* ------------------- STORE METHODS ------------------- */
     public function storeWeather(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         // 1. Stricter Validation Rules
         $validated = $request->validate([
             'reports' => 'required|array',
@@ -68,6 +106,8 @@ class SituationOverviewController extends Controller
                         'wind'          => $reportData['wind'],
                         'precipitation' => $reportData['precipitation'],
                         'sea_condition' => $reportData['sea_condition'],
+                        'typhoon_id'    => $activeTyphoon->id,
+                        'updated_by'    => Auth::id(),
                     ]);
                     
                     // Only save if actual data fields changed (excluding updated_by and timestamps)
@@ -92,12 +132,22 @@ class SituationOverviewController extends Controller
                     'sea_condition' => $reportData['sea_condition'],
                     'user_id'       => Auth::id(),
                     'updated_by'    => Auth::id(),
+                    'typhoon_id'    => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return the fresh data after save (limit to recent 100 records)
-        $updatedReports = WeatherReport::with('user:id,name')
+        $user = Auth::user();
+
+        $updatedQuery = WeatherReport::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedReports = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -112,6 +162,14 @@ class SituationOverviewController extends Controller
 
     public function storeWaterLevel(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'reports' => ['required', 'array'],
             'reports.*.id' => ['nullable'],
@@ -133,6 +191,7 @@ class SituationOverviewController extends Controller
                         'alarm_level'     => $reportData['alarm_level'],
                         'critical_level'  => $reportData['critical_level'],
                         'affected_areas'  => $reportData['affected_areas'],
+                        'typhoon_id'      => $activeTyphoon->id,
                         'updated_by'      => Auth::id(),
                     ]);
                 }
@@ -150,12 +209,22 @@ class SituationOverviewController extends Controller
                     'affected_areas'  => $reportData['affected_areas'],
                     'user_id'         => Auth::id(),
                     'updated_by'      => Auth::id(),
+                    'typhoon_id'      => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return the fresh data after save (limit to recent 100 records)
-        $updatedReports = WaterLevel::with('user:id,name')
+        $user = Auth::user();
+
+        $updatedQuery = WaterLevel::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedReports = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -169,6 +238,14 @@ class SituationOverviewController extends Controller
 
     public function storeElectricity(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'electricityServices' => 'required|array',
             'electricityServices.*.id' => ['nullable', 'integer'],
@@ -191,6 +268,7 @@ class SituationOverviewController extends Controller
                         'status' => $serviceData['status'] ?? null,
                         'barangays_affected' => $serviceData['barangays_affected'] ?? null,
                         'remarks' => $serviceData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 }
@@ -202,13 +280,22 @@ class SituationOverviewController extends Controller
                     'remarks' => $serviceData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedServices = ElectricityService::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = ElectricityService::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedServices = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -221,6 +308,14 @@ class SituationOverviewController extends Controller
 
     public function storeWaterService(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'waterServices' => 'required|array',
             'waterServices.*.id' => ['nullable', 'integer'],
@@ -245,6 +340,7 @@ class SituationOverviewController extends Controller
                         'barangays_served' => $waterData['barangays_served'] ?? null,
                         'status'           => $waterData['status'] ?? null,
                         'remarks'          => $waterData['remarks'] ?? null,
+                        'typhoon_id'       => $activeTyphoon->id,
                         'updated_by'       => Auth::id(),
                     ]);
                 }
@@ -257,13 +353,22 @@ class SituationOverviewController extends Controller
                     'remarks'          => $waterData['remarks'] ?? null,
                     'user_id'          => Auth::id(),
                     'updated_by'       => Auth::id(),
+                    'typhoon_id'       => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedServices = WaterService::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = WaterService::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedServices = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -277,6 +382,14 @@ class SituationOverviewController extends Controller
 
     public function storeCommunication(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'communications' => 'required|array',
             'communications.*.id' => ['nullable', 'integer'],
@@ -305,6 +418,7 @@ class SituationOverviewController extends Controller
                         'pldt_internet' => $commData['pldt_internet'] ?? null,
                         'vhf' => $commData['vhf'] ?? null,
                         'remarks' => $commData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 }
@@ -319,13 +433,22 @@ class SituationOverviewController extends Controller
                     'remarks' => $commData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedCommunications = Communication::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = Communication::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedCommunications = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -338,6 +461,14 @@ class SituationOverviewController extends Controller
 
     public function storeRoad(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'roads' => 'required|array',
             'roads.*.id' => ['nullable', 'integer'],
@@ -366,6 +497,7 @@ class SituationOverviewController extends Controller
                         'areas_affected' => $roadData['areas_affected'] ?? null,
                         're_routing' => $roadData['re_routing'] ?? null,
                         'remarks' => $roadData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 }
@@ -380,13 +512,22 @@ class SituationOverviewController extends Controller
                     'remarks' => $roadData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedRoads = Road::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = Road::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedRoads = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
@@ -399,6 +540,14 @@ class SituationOverviewController extends Controller
 
     public function storeBridge(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'bridges' => 'required|array',
             'bridges.*.id' => ['nullable', 'integer'],
@@ -427,6 +576,7 @@ class SituationOverviewController extends Controller
                         'areas_affected' => $bridgeData['areas_affected'] ?? null,
                         're_routing' => $bridgeData['re_routing'] ?? null,
                         'remarks' => $bridgeData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 }
@@ -441,13 +591,22 @@ class SituationOverviewController extends Controller
                     'remarks' => $bridgeData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedBridges = Bridge::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = Bridge::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedBridges = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();

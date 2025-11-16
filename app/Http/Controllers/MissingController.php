@@ -3,19 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Missing; // 1. Use the Missing model
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class MissingController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the missing person records.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $missingList = Missing::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $missingQuery = Missing::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $missingQuery->where('user_id', $user->id);
+        }
+
+        $missingList = $missingQuery->latest()->limit(200)->get();
 
         // Assuming a dedicated view for missing persons, or part of a larger report
         return Inertia::render('IncidentMonitored/Index', [
@@ -29,6 +40,14 @@ class MissingController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'missing' => 'required|array',
             'missing.*.id'      => 'nullable',
@@ -73,8 +92,15 @@ class MissingController extends Controller
 
             // Check if this is an update or create
             if (!empty($missingData['id']) && is_numeric($missingData['id'])) {
-                // Update existing record
-                $missingRecord = Missing::find($missingData['id']);
+                // Update existing record (only own records for non-admin users)
+                $missingQuery = Missing::where('id', $missingData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $missingQuery->where('user_id', $user->id);
+                }
+
+                $missingRecord = $missingQuery->first();
                 if ($missingRecord) {
                     $missingRecord->update($data);
                     $savedMissing[] = $missingRecord->fresh();
@@ -82,6 +108,7 @@ class MissingController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedMissing[] = Missing::create($data);
             }
         }

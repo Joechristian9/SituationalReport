@@ -4,19 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\DamagedHouseReport;
 use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DamagedHouseReportController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $damagedHouses = DamagedHouseReport::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $damagedQuery = DamagedHouseReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $damagedQuery->where('user_id', $user->id);
+        }
+
+        $damagedHouses = $damagedQuery->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'damagedHouses' => $damagedHouses,
@@ -29,6 +40,14 @@ class DamagedHouseReportController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         // Stricter Validation Rules
         $validated = $request->validate([
             'damaged_houses' => 'required|array',
@@ -41,7 +60,15 @@ class DamagedHouseReportController extends Controller
         foreach ($validated['damaged_houses'] as $reportData) {
             // If an ID exists and is numeric, try to find and update that specific record
             if (!empty($reportData['id']) && is_numeric($reportData['id'])) {
-                $report = DamagedHouseReport::find($reportData['id']);
+                $reportQuery = DamagedHouseReport::where('id', $reportData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $reportQuery->where('user_id', $user->id);
+                }
+
+                $report = $reportQuery->first();
+
                 if ($report) {
                     // Update existing record
                     $report->update([
@@ -49,6 +76,7 @@ class DamagedHouseReportController extends Controller
                         'partially' => $reportData['partially'] ?? 0,
                         'totally' => $reportData['totally'] ?? 0,
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -65,6 +93,7 @@ class DamagedHouseReportController extends Controller
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
                         'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
+                        'typhoon_id' => $activeTyphoon->id,
                     ]);
                 }
             }
@@ -82,12 +111,22 @@ class DamagedHouseReportController extends Controller
                     'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return the fresh data after save
-        $updatedReports = DamagedHouseReport::with('user:id,name')
+        $user = Auth::user();
+
+        $updatedQuery = DamagedHouseReport::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedReports = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
         

@@ -20,6 +20,7 @@ class ResponseOperation extends Model
         'remarks',
         'user_id',
         'updated_by',
+        'typhoon_id',
     ];
 
     public function user()

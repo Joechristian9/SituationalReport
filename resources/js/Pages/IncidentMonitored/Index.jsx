@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
+import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import {
     SidebarProvider,
     SidebarInset,
@@ -51,7 +52,10 @@ const FormLoader = () => (
 );
 
 export default function Index() {
-    const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses, suspensionOfClasses, suspensionOfWork } = usePage().props;
+    const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses, suspensionOfClasses, suspensionOfWork, typhoon } = usePage().props;
+    
+    // Check if forms should be disabled
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
     const [step, setStep] = useState(1);
     const [activeCasualtyTab, setActiveCasualtyTab] = useState("dead");
     const [activeSuspensionTab, setActiveSuspensionTab] = useState("classes");
@@ -360,6 +364,13 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
+                    {/* Typhoon Status Alert */}
+                    <TyphoonStatusAlert 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                        formsDisabled={formsDisabled}
+                    />
+                    
                     <form onSubmit={handleSubmit}>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
@@ -472,6 +483,7 @@ export default function Index() {
                                                     data={data}
                                                     setData={setData}
                                                     errors={errors}
+                                                    disabled={formsDisabled}
                                                 />
                                             </Suspense>
                                         </motion.div>
@@ -513,6 +525,7 @@ export default function Index() {
                                                             data={data}
                                                             setData={setData}
                                                             errors={errors}
+                                                            disabled={formsDisabled}
                                                         />
                                                     </Suspense>
                                                 </TabsContent>
@@ -522,6 +535,7 @@ export default function Index() {
                                                             data={data}
                                                             setData={setData}
                                                             errors={errors}
+                                                            disabled={formsDisabled}
                                                         />
                                                     </Suspense>
                                                 </TabsContent>
@@ -531,6 +545,7 @@ export default function Index() {
                                                             data={data}
                                                             setData={setData}
                                                             errors={errors}
+                                                            disabled={formsDisabled}
                                                         />
                                                     </Suspense>
                                                 </TabsContent>
@@ -551,6 +566,7 @@ export default function Index() {
                                                     data={data}
                                                     setData={setData}
                                                     errors={errors}
+                                                    disabled={formsDisabled}
                                                 />
                                             </Suspense>
                                         </motion.div>
@@ -569,6 +585,7 @@ export default function Index() {
                                                     data={data}
                                                     setData={setData}
                                                     errors={errors}
+                                                    disabled={formsDisabled}
                                                 />
                                             </Suspense>
                                         </motion.div>
@@ -615,6 +632,7 @@ export default function Index() {
                                                             data={data}
                                                             setData={setData}
                                                             errors={errors}
+                                                            disabled={formsDisabled}
                                                         />
                                                     </Suspense>
                                                 </TabsContent>
@@ -624,6 +642,7 @@ export default function Index() {
                                                             data={data}
                                                             setData={setData}
                                                             errors={errors}
+                                                            disabled={formsDisabled}
                                                         />
                                                     </Suspense>
                                                 </TabsContent>

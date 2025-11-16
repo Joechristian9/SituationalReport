@@ -17,6 +17,7 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Http\Controllers\SuspensionOfWorkController;
+use App\Http\Controllers\TyphoonController;
 use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,7 @@ Route::middleware('auth')->group(function () {
 // Situation Reports
 Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
+    // Dashboard - accessible even without active typhoon
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
@@ -58,6 +60,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/reports/download', [ReportController::class, 'download'])
         ->name('reports.download')
         ->middleware(['auth']);
+
+    // ============= FORM ROUTES (Requires Active Typhoon) =============
+    Route::middleware(['typhoon.active'])->group(function () {
 
     // Situation Reports Index
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
@@ -269,6 +274,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('assistance-provided-lgus.store');
     Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
         ->name('assistance-provided-lgus.index');
+    
+    }); // End of typhoon.active middleware group
 });
 
 use App\Http\Controllers\DashboardController;
@@ -276,6 +283,22 @@ use App\Http\Controllers\DashboardController;
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
+    
+    // Typhoon Management (Admin only)
+    Route::prefix('typhoons')->group(function () {
+        Route::get('/', [TyphoonController::class, 'index'])->name('typhoons.index');
+        Route::post('/', [TyphoonController::class, 'store'])->name('typhoons.store');
+        Route::patch('/{typhoon}', [TyphoonController::class, 'update'])->name('typhoons.update');
+        Route::post('/{typhoon}/end', [TyphoonController::class, 'end'])->name('typhoons.end');
+        Route::post('/{typhoon}/regenerate-pdf', [TyphoonController::class, 'regeneratePdf'])->name('typhoons.regenerate-pdf');
+        Route::delete('/{typhoon}', [TyphoonController::class, 'destroy'])->name('typhoons.destroy');
+        Route::get('/{typhoon}/download', [TyphoonController::class, 'downloadPdf'])->name('typhoons.download');
+    });
+});
+
+// API route for checking active typhoon (accessible by all authenticated users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/api/typhoon/active', [TyphoonController::class, 'getActiveTyphoon'])->name('api.typhoon.active');
 });
 
 require __DIR__ . '/auth.php';

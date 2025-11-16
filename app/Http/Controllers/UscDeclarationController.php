@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\UscDeclaration;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class UscDeclarationController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Show list of USC Declarations
      * Optimized: Limit records for better performance
@@ -27,6 +29,14 @@ class UscDeclarationController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'usc_declarations' => 'required|array',
             'usc_declarations.*.id'                => 'nullable',
@@ -67,6 +77,7 @@ class UscDeclarationController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedDeclarations[] = UscDeclaration::create($data);
             }
         }

@@ -3,6 +3,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
+import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import {
     SidebarProvider,
     SidebarInset,
@@ -54,7 +55,11 @@ export default function Index() {
         communications,
         roads,
         bridges,
+        typhoon,
     } = usePage().props;
+
+    // Check if forms should be disabled
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
 
     const [step, setStep] = useState(1);
     const steps = [
@@ -284,6 +289,13 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
+                    {/* Typhoon Status Alert */}
+                    <TyphoonStatusAlert 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                        formsDisabled={formsDisabled}
+                    />
+
                     <Card className="shadow-lg rounded-2xl border">
                         <CardHeader>
                             <CardTitle className="flex justify-between items-center">
@@ -384,6 +396,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -403,6 +416,7 @@ export default function Index() {
                                                     );
                                                 }}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -414,6 +428,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -425,6 +440,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -436,6 +452,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -447,6 +464,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>
@@ -458,6 +476,7 @@ export default function Index() {
                                                 data={data}
                                                 setData={setData}
                                                 errors={errors}
+                                                disabled={formsDisabled}
                                             />
                                         </Suspense>
                                     </motion.div>

@@ -4,18 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\AssistanceExtended;
 use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class AssistanceExtendedController extends Controller
 {
+    use ValidatesTyphoonStatus;
+
     /**
      * Display a listing of the resource.
      * Optimized: Uses pagination for efficient data loading
      */
     public function index()
     {
-        $assistances = AssistanceExtended::latest()->limit(100)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $assistancesQuery = AssistanceExtended::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $assistancesQuery->where('user_id', $user->id);
+        }
+
+        $assistances = $assistancesQuery->latest()->limit(100)->get();
         return inertia('AssistanceExtended/AssistanceIndex', [
             'assistances' => $assistances,
         ]);
@@ -27,6 +40,14 @@ class AssistanceExtendedController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'assistances' => 'required|array',
             'assistances.*.id' => ['nullable', 'integer'],
@@ -44,13 +65,21 @@ class AssistanceExtendedController extends Controller
 
             // If ID exists and is numeric, update existing record
             if (!empty($assistanceData['id']) && is_numeric($assistanceData['id'])) {
-                $assistance = AssistanceExtended::find($assistanceData['id']);
+                $assistanceQuery = AssistanceExtended::where('id', $assistanceData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $assistanceQuery->where('user_id', $user->id);
+                }
+
+                $assistance = $assistanceQuery->first();
                 if ($assistance) {
                     $assistance->update([
                         'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
                         'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
                         'amount'                  => $assistanceData['amount'] ?? null,
                         'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
+                        'typhoon_id'              => $activeTyphoon->id,
                         'updated_by'              => Auth::id(),
                     ]);
                 }
@@ -63,13 +92,22 @@ class AssistanceExtendedController extends Controller
                     'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
                     'user_id'                 => Auth::id(),
                     'updated_by'              => Auth::id(),
+                    'typhoon_id'              => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
-        $updatedAssistances = AssistanceExtended::with('user:id,name')
-            ->where('user_id', Auth::id())
+        $user = Auth::user();
+
+        $updatedQuery = AssistanceExtended::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedAssistances = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();

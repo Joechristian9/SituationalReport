@@ -25,6 +25,7 @@ import {
     HeartHandshake,
     Download,
     Calendar, // Import a calendar or year icon
+    Cloud,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -113,6 +114,12 @@ export function AppSidebar({ ...props }) {
                     icon: TbLayoutDashboard,
                 },
                 {
+                    title: "Typhoon Management",
+                    url: route("typhoons.index"),
+                    roles: ["admin"],
+                    icon: Cloud,
+                },
+                {
                     title: "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user", "admin"],
@@ -156,15 +163,19 @@ export function AppSidebar({ ...props }) {
                 },
             ],
         },
-        {
-            title: "Annual Reports", // Changed title for clarity
-            url: "#",
-            icon: Download, // The main icon for the group
-            isActive: route().current("reports.*"),
-            roles: ["user", "admin"],
-            items: reportItems, // Assign the dynamically generated year links here
-            addYear: addYear, // Pass the addYear function
-        },
+        /*
+         * Annual Reports menu (temporarily disabled).
+         * Re-enable this block when annual reports are needed again.
+         {
+             title: "Annual Reports", // Changed title for clarity
+             url: "#",
+             icon: Download, // The main icon for the group
+             isActive: route().current("reports.*"),
+             roles: ["user", "admin"],
+             items: reportItems, // Assign the dynamically generated year links here
+             addYear: addYear, // Pass the addYear function
+         },
+         */
     ];
 
     // --- Filter menus & submenus based on roles ---

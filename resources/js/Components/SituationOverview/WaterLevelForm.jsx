@@ -26,7 +26,7 @@ import {
 const formatFieldName = (field) =>
     field.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 
-export default function WaterLevelForm({ data, setData }) {
+export default function WaterLevelForm({ data, setData, disabled = false }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
     const { auth } = usePage().props;
@@ -175,6 +175,11 @@ export default function WaterLevelForm({ data, setData }) {
     }, [data.reports]);
 
     const handleSubmit = async () => {
+        if (disabled) {
+            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            return;
+        }
+        
         // Check if there are any changes
         if (!hasChanges) {
             toast.info("No changes to save");
@@ -210,11 +215,15 @@ export default function WaterLevelForm({ data, setData }) {
                 reports: cleaned,
             });
             
-            // Update local state with the response data from server
-            if (response.data && response.data.reports) {
-                setData(prev => ({ ...prev, reports: response.data.reports }));
+            // Update local state with server response if available
+            // Only overwrite if the server actually returns at least one report
+            if (response.data && Array.isArray(response.data.reports) && response.data.reports.length > 0) {
+                setData({ ...data, reports: response.data.reports });
                 // Update original data to reflect saved state
                 setOriginalData(JSON.parse(JSON.stringify(response.data.reports)));
+            } else {
+                // No reports returned – keep current data as the saved state
+                setOriginalData(JSON.parse(JSON.stringify(data.reports)));
             }
             
             // Invalidate modification history once
@@ -403,7 +412,8 @@ export default function WaterLevelForm({ data, setData }) {
                                                                 )
                                                             }
                                                             placeholder="Enter value..."
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 focus:outline-none transition pr-10"
+                                                            disabled={disabled}
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 focus:outline-none transition pr-10 disabled:bg-slate-100 disabled:cursor-not-allowed"
                                                         />
                                                         {fieldHistory.length > 0 && (
                                                             <div className="absolute top-1/2 -translate-y-1/2 right-3">
@@ -501,14 +511,15 @@ export default function WaterLevelForm({ data, setData }) {
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
                     <AddRowButton
                         onClick={handleAddRow}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        disabled={disabled}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <PlusCircle size={16} /> Add Row
                     </AddRowButton>
                     <button
                         onClick={handleSubmit}
-                        disabled={isSaving || !hasChanges}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+                        disabled={isSaving || !hasChanges || disabled}
+                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                     >
                         {isSaving ? (
                             <>
@@ -518,7 +529,7 @@ export default function WaterLevelForm({ data, setData }) {
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>{hasChanges ? 'Save Water Level' : 'No Changes'}</span>
+                                <span>{disabled ? 'Forms Disabled' : (hasChanges ? 'Save Water Level' : 'No Changes')}</span>
                             </>
                         )}
                     </button>

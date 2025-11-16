@@ -25,7 +25,7 @@ const formatFieldName = (field) => {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export default function PreEmptiveForm({ data, setData, errors }) {
+export default function PreEmptiveForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
     const { auth } = usePage().props;
@@ -110,6 +110,10 @@ export default function PreEmptiveForm({ data, setData, errors }) {
     };
 
     const handleSubmit = async () => {
+        if (disabled) {
+            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            return;
+        }
         setIsSaving(true);
         try {
             const cleanedReports = data.reports.map(report => ({
@@ -123,7 +127,8 @@ export default function PreEmptiveForm({ data, setData, errors }) {
             
             await queryClient.invalidateQueries(['pre-emptive-modifications']);
             
-            if (response.data && response.data.reports) {
+            // Only overwrite if the server actually returns at least one report
+            if (response.data && Array.isArray(response.data.reports) && response.data.reports.length > 0) {
                 setData("reports", response.data.reports);
             }
             
@@ -268,7 +273,8 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                                                         value={row[field] ?? ""}
                                                         onChange={(e) => handleInputChange(actualIndex, e)}
                                                         placeholder={isNumberField ? "0" : `Enter ${formatFieldName(field)}`}
-                                                        className={`w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} ${fieldHistory.length > 0 ? 'pr-10' : ''}`}
+                                                        disabled={disabled}
+                                                        className={`w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} ${fieldHistory.length > 0 ? 'pr-10' : ''} disabled:bg-slate-100 disabled:cursor-not-allowed`}
                                                     />
                                                     {fieldHistory.length > 0 && (
                                                         <div className="absolute top-1/2 -translate-y-1/2 right-3">
@@ -426,7 +432,8 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <AddRowButton
                         onClick={handleAddRow}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        disabled={disabled}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <PlusCircle size={16} /> Add Row
                     </AddRowButton>
@@ -434,7 +441,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
 
                 <button
                     onClick={handleSubmit}
-                    disabled={isSaving}
+                    disabled={isSaving || disabled}
                     className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                 >
                     {isSaving ? (
@@ -445,7 +452,7 @@ export default function PreEmptiveForm({ data, setData, errors }) {
                     ) : (
                         <>
                             <Save className="w-5 h-5" />
-                            <span>Save Pre-Emptive Reports</span>
+                            <span>{disabled ? 'Forms Disabled' : 'Save Pre-Emptive Reports'}</span>
                         </>
                     )}
                 </button>

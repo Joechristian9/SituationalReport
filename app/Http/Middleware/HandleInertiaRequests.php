@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Typhoon;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,10 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
+            ],
+            'typhoon' => [
+                'active' => fn() => Typhoon::with('creator:id,name')->where('status', 'active')->latest()->first(),
+                'hasActive' => fn() => Typhoon::hasActiveTyphoon(),
             ],
         ];
     }

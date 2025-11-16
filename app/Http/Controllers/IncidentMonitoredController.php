@@ -3,27 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\IncidentMonitored;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class IncidentMonitoredController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Show list of monitored incidents
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        // Limit to last 200 records for performance
-        $incidents = IncidentMonitored::latest()->limit(200)->get();
-        $casualties = \App\Models\Casualty::latest()->limit(200)->get();
-        $injured = \App\Models\Injured::latest()->limit(200)->get();
-        $missing = \App\Models\Missing::latest()->limit(200)->get();
-        $affectedTourists = \App\Models\AffectedTourist::latest()->limit(200)->get();
-        $damagedHouses = \App\Models\DamagedHouseReport::latest()->limit(200)->get();
-        $suspensionOfClasses = \App\Models\SuspensionOfClass::latest()->limit(200)->get();
-        $suspensionOfWork = \App\Models\SuspensionOfWork::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $incidentsQuery = IncidentMonitored::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $incidentsQuery->where('user_id', $user->id);
+        }
+        $incidents = $incidentsQuery->latest()->limit(200)->get();
+
+        $casualtiesQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $casualtiesQuery->where('user_id', $user->id);
+        }
+        $casualties = $casualtiesQuery->latest()->limit(200)->get();
+
+        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $injuredQuery->where('user_id', $user->id);
+        }
+        $injured = $injuredQuery->latest()->limit(200)->get();
+
+        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $missingQuery->where('user_id', $user->id);
+        }
+        $missing = $missingQuery->latest()->limit(200)->get();
+
+        $affectedTouristsQuery = \App\Models\AffectedTourist::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $affectedTouristsQuery->where('user_id', $user->id);
+        }
+        $affectedTourists = $affectedTouristsQuery->latest()->limit(200)->get();
+
+        $damagedHousesQuery = \App\Models\DamagedHouseReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $damagedHousesQuery->where('user_id', $user->id);
+        }
+        $damagedHouses = $damagedHousesQuery->latest()->limit(200)->get();
+
+        $suspensionOfClassesQuery = \App\Models\SuspensionOfClass::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $suspensionOfClassesQuery->where('user_id', $user->id);
+        }
+        $suspensionOfClasses = $suspensionOfClassesQuery->latest()->limit(200)->get();
+
+        $suspensionOfWorkQuery = \App\Models\SuspensionOfWork::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        if ($user && !$user->isAdmin()) {
+            $suspensionOfWorkQuery->where('user_id', $user->id);
+        }
+        $suspensionOfWork = $suspensionOfWorkQuery->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'incidents' => $incidents,
@@ -42,6 +85,14 @@ class IncidentMonitoredController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'incidents' => 'required|array',
             'incidents.*.id'                => 'nullable',
@@ -79,8 +130,15 @@ class IncidentMonitoredController extends Controller
 
             // Check if this is an update or create
             if (!empty($incident['id']) && is_numeric($incident['id'])) {
-                // Update existing record
-                $incidentMonitored = IncidentMonitored::find($incident['id']);
+                // Update existing record (only own records for non-admin users)
+                $incidentQuery = IncidentMonitored::where('id', $incident['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $incidentQuery->where('user_id', $user->id);
+                }
+
+                $incidentMonitored = $incidentQuery->first();
                 if ($incidentMonitored) {
                     $incidentMonitored->update($data);
                     $savedIncidents[] = $incidentMonitored->fresh();
@@ -88,6 +146,7 @@ class IncidentMonitoredController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedIncidents[] = IncidentMonitored::create($data);
             }
         }

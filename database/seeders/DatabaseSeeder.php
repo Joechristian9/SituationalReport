@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $user->assignRole($role);
 
-        $user2 = User::factory()->create([
+        /* $user2 = User::factory()->create([
             'name' => 'Joe',
             'email' => 'joe@example.com',
             'password' => bcrypt('wardead123'),
@@ -38,20 +38,25 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('wardead123'),
         ]);
         $user3->assignRole($role);
-
-        $adminRole = Role::create(['name' => 'admin']);
-        $admin = User::factory()->create([
+ */
+        // CDRRMO as regular user
+        $cdrrmo = User::factory()->create([
             'name' => 'Cdrrmo',
             'email' => 'cdrrmo@example.com',
             'password' => bcrypt('wardead123'),
         ]);
+        $cdrrmo->assignRole($role);
+
+        // Create admin role and admin user
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('admin123'),
+        ]);
         $admin->assignRole($adminRole);
 
-        $this->call(WeatherReportSeeder::class);
-        $this->call(CasualtySeeder::class);
-        $this->call(PreEmptiveReportSeeder::class);
-        $this->call(InjuredSeeder::class);
-        $this->call(MissingSeeder::class);
-        $this->call(WaterLevelSeeder::class);
+        // Seed barangay accounts
+        $this->call(BarangaySeeder::class);
     }
 }

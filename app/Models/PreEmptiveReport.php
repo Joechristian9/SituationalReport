@@ -36,6 +36,7 @@ class PreEmptiveReport extends Model
         'total_persons',
         'user_id',
         'updated_by',
+        'typhoon_id',
     ];
 
     /**

@@ -4,19 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\SuspensionOfClass;
 use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SuspensionOfClassController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the suspension of class records.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $suspensionList = SuspensionOfClass::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $suspensionList = SuspensionOfClass::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId))
+            ->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'suspensionList' => $suspensionList,
@@ -29,6 +33,14 @@ class SuspensionOfClassController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         // Stricter Validation Rules
         $validated = $request->validate([
             'suspension_of_classes' => 'required|array',
@@ -67,6 +79,7 @@ class SuspensionOfClassController extends Controller
                             'remarks'                    => $suspensionData['remarks'] ?? null,
                             'user_id'                    => Auth::id(),
                             'updated_by'                 => Auth::id(),
+                            'typhoon_id'                 => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -89,6 +102,7 @@ class SuspensionOfClassController extends Controller
                     'remarks'                    => $suspensionData['remarks'] ?? null,
                     'user_id'                    => Auth::id(),
                     'updated_by'                 => Auth::id(),
+                    'typhoon_id'                 => $activeTyphoon->id,
                 ]);
             }
         }

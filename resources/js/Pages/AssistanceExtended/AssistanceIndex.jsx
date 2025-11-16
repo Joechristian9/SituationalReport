@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { Head, usePage } from "@inertiajs/react";
+import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import {
     SidebarProvider,
     SidebarInset,
@@ -31,7 +32,10 @@ export default function AssistanceIndex() {
     const [activeTab, setActiveTab] = useState("extended");
 
     // Get authenticated user and data
-    const { auth, assistances } = usePage().props;
+    const { auth, assistances, typhoon } = usePage().props;
+    
+    // Check if forms should be disabled
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
     const user = auth.user;
 
     // Determine if user is an admin (works with Spatie roles)
@@ -70,6 +74,13 @@ export default function AssistanceIndex() {
 
                 {/* Main Content */}
                 <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
+                    {/* Typhoon Status Alert */}
+                    <TyphoonStatusAlert 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                        formsDisabled={formsDisabled}
+                    />
+                    
                     <Card className="shadow-lg rounded-2xl border">
                         {/* Header */}
                         <CardContent className="p-4 sm:p-6">
@@ -111,13 +122,16 @@ export default function AssistanceIndex() {
 
                                 <TabsContent value="extended" className="mt-0">
                                     <Suspense fallback={<FormLoader />}>
-                                        <AssistanceExtended assistances={assistances} />
+                                        <AssistanceExtended 
+                                            assistances={assistances}
+                                            disabled={formsDisabled}
+                                        />
                                     </Suspense>
                                 </TabsContent>
 
                                 <TabsContent value="lgu" className="mt-0">
                                     <Suspense fallback={<FormLoader />}>
-                                        <AssistanceProvidedLgu />
+                                        <AssistanceProvidedLgu disabled={formsDisabled} />
                                     </Suspense>
                                 </TabsContent>
 

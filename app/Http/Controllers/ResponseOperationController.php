@@ -4,18 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Models\ResponseOperation;
 use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ResponseOperationController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $operations = ResponseOperation::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $operationsQuery = ResponseOperation::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $operationsQuery->where('user_id', $user->id);
+        }
+
+        $operations = $operationsQuery->latest()->limit(200)->get();
 
         return inertia('ResponseOperations/Index', [
             'operations' => $operations,
@@ -28,6 +39,14 @@ class ResponseOperationController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'responses' => 'required|array',
             'responses.*.id' => 'nullable|integer',
@@ -42,7 +61,14 @@ class ResponseOperationController extends Controller
         foreach ($validated['responses'] as $responseData) {
             // If an ID exists and is numeric, try to find and update that specific record
             if (!empty($responseData['id']) && is_numeric($responseData['id'])) {
-                $operation = ResponseOperation::find($responseData['id']);
+                $operationQuery = ResponseOperation::where('id', $responseData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $operationQuery->where('user_id', $user->id);
+                }
+
+                $operation = $operationQuery->first();
                 if ($operation) {
                     // Update existing record
                     $operation->update([
@@ -52,6 +78,7 @@ class ResponseOperationController extends Controller
                         'location'  => $responseData['location'] ?? null,
                         'actions'   => $responseData['actions'] ?? null,
                         'remarks'   => $responseData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -70,6 +97,7 @@ class ResponseOperationController extends Controller
                             'remarks'   => $responseData['remarks'] ?? null,
                             'user_id'   => Auth::id(),
                             'updated_by' => Auth::id(),
+                            'typhoon_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -94,12 +122,22 @@ class ResponseOperationController extends Controller
                     'remarks'   => $responseData['remarks'] ?? null,
                     'user_id'   => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return the fresh data after save
-        $updatedOperations = ResponseOperation::with('user:id,name')
+        $user = Auth::user();
+
+        $updatedQuery = ResponseOperation::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedOperations = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
         

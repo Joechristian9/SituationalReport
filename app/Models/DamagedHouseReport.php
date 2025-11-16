@@ -23,6 +23,7 @@ class DamagedHouseReport extends Model
         'total',
         'user_id',
         'updated_by',
+        'typhoon_id',
     ];
 
     /**

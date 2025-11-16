@@ -1,0 +1,33 @@
+Controllers Fixed with typhoon_id (16/21 COMPLETE):
+
+✅ COMPLETED (16):
+1. WeatherReport
+2. WaterLevel
+3. ElectricityService
+4. WaterService
+5. Communication
+6. Road
+7. Bridge
+8. Casualty
+9. Injured
+10. Missing
+11. IncidentMonitored
+12. AffectedTourist
+13. DamagedHouseReport
+14. SuspensionOfClass
+15. SuspensionOfWork
+16. PreEmptiveReport
+
+⏳ REMAINING (5):
+17. UscDeclarationController
+18. PrePositioningController
+19. ResponseOperationController
+20. AssistanceExtendedController
+21. AssistanceProvidedLguController
+
+All use same pattern:
+1. Add: use App\Traits\ValidatesTyphoonStatus;
+2. Add: use ValidatesTyphoonStatus;
+3. Add validation at start of store()
+4. Get active typhoon
+5. Add typhoon_id to create() statements

@@ -3,14 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssistanceProvidedLgu;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class AssistanceProvidedLguController extends Controller
 {
+    use ValidatesTyphoonStatus;
+
     public function index()
     {
-        $assistances = AssistanceProvidedLgu::latest()->paginate(10);
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $assistancesQuery = AssistanceProvidedLgu::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $assistancesQuery->where('user_id', $user->id);
+        }
+
+        $assistances = $assistancesQuery->latest()->paginate(10);
 
         return inertia('AssistanceProvidedLgu/Index', [
             'assistances' => $assistances,
@@ -19,6 +32,14 @@ class AssistanceProvidedLguController extends Controller
 
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'assistances' => 'required|array',
 
@@ -44,6 +65,7 @@ class AssistanceProvidedLguController extends Controller
                 ...$assistance,
                 'user_id'    => Auth::id(),
                 'updated_by' => Auth::id(),
+                'typhoon_id' => $activeTyphoon->id,
             ]);
         }
 

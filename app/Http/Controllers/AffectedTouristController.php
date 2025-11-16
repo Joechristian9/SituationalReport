@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AffectedTourist;
 use App\Models\Modification;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -11,13 +12,23 @@ use Inertia\Inertia;
 
 class AffectedTouristController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the affected tourist records.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $touristsList = AffectedTourist::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $touristsQuery = AffectedTourist::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $touristsQuery->where('user_id', $user->id);
+        }
+
+        $touristsList = $touristsQuery->latest()->limit(200)->get();
 
         // Assuming a dedicated view or part of a larger report
         return Inertia::render('IncidentMonitored/Index', [
@@ -31,6 +42,14 @@ class AffectedTouristController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         // Stricter Validation Rules
         $validated = $request->validate([
             'affected_tourists' => 'required|array',
@@ -45,7 +64,14 @@ class AffectedTouristController extends Controller
         foreach ($validated['affected_tourists'] as $touristData) {
             // If an ID exists and is numeric, try to find and update that specific record
             if (!empty($touristData['id']) && is_numeric($touristData['id'])) {
-                $tourist = AffectedTourist::find($touristData['id']);
+                $touristQuery = AffectedTourist::where('id', $touristData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $touristQuery->where('user_id', $user->id);
+                }
+
+                $tourist = $touristQuery->first();
                 if ($tourist) {
                     // Update existing record
                     $tourist->update([
@@ -54,6 +80,7 @@ class AffectedTouristController extends Controller
                         'local_tourists' => $touristData['local_tourists'] ?? null,
                         'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
                         'remarks' => $touristData['remarks'] ?? null,
+                        'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -72,6 +99,7 @@ class AffectedTouristController extends Controller
                             'remarks' => $touristData['remarks'] ?? null,
                             'user_id' => Auth::id(),
                             'updated_by' => Auth::id(),
+                            'typhoon_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -95,12 +123,22 @@ class AffectedTouristController extends Controller
                     'remarks' => $touristData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
+                    'typhoon_id' => $activeTyphoon->id,
                 ]);
             }
         }
 
         // Return the fresh data after save
-        $updatedTourists = AffectedTourist::with('user:id,name')
+        $user = Auth::user();
+
+        $updatedQuery = AffectedTourist::with('user:id,name')
+            ->where('typhoon_id', $activeTyphoon->id);
+
+        if ($user && !$user->isAdmin()) {
+            $updatedQuery->where('user_id', $user->id);
+        }
+
+        $updatedTourists = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
         

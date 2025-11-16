@@ -3,19 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Casualty;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class CasualtyController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Show list of casualties
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $casualties = Casualty::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $casualtiesQuery = Casualty::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $casualtiesQuery->where('user_id', $user->id);
+        }
+
+        $casualties = $casualtiesQuery->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'casualties' => $casualties,
@@ -27,6 +38,14 @@ class CasualtyController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'casualties' => 'required|array',
             'casualties.*.id' => 'nullable',
@@ -70,8 +89,15 @@ class CasualtyController extends Controller
 
             // Check if this is an update or create
             if (!empty($casualty['id']) && is_numeric($casualty['id'])) {
-                // Update existing record
-                $casualtyRecord = Casualty::find($casualty['id']);
+                // Update existing record (only own records for non-admin users)
+                $casualtyQuery = Casualty::where('id', $casualty['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $casualtyQuery->where('user_id', $user->id);
+                }
+
+                $casualtyRecord = $casualtyQuery->first();
                 if ($casualtyRecord) {
                     $casualtyRecord->update($data);
                     $savedCasualties[] = $casualtyRecord->fresh();
@@ -79,6 +105,7 @@ class CasualtyController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedCasualties[] = Casualty::create($data);
             }
         }

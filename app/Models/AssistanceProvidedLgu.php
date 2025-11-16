@@ -25,6 +25,7 @@ class AssistanceProvidedLgu extends Model
         'remarks',
         'user_id',
         'updated_by',
+        'typhoon_id',
     ];
 
     /**

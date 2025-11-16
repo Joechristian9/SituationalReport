@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { Loader2, PlusCircle, Building2 } from "lucide-react";
 import AddRowButton from "@/Components/ui/AddRowButton";
 
-export default function AssistanceProvidedLgu() {
+export default function AssistanceProvidedLgu({ disabled = false }) {
     const { flash } = usePage().props;
 
     // ✅ Form State
@@ -90,6 +90,10 @@ export default function AssistanceProvidedLgu() {
 
     // Submit handler
     const handleSubmit = () => {
+        if (disabled) {
+            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            return;
+        }
         post(route("assistance-provided-lgus.store"), { 
             preserveScroll: true,
             onSuccess: () => {
@@ -179,7 +183,8 @@ export default function AssistanceProvidedLgu() {
                                                 )
                                             }
                                             placeholder={`Enter ${field}`}
-                                            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                            disabled={disabled}
                                         />
                                     </td>
                                 ))}
@@ -199,7 +204,8 @@ export default function AssistanceProvidedLgu() {
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <AddRowButton
                         onClick={addRow}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        disabled={disabled}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <PlusCircle size={16} /> Add Row
                     </AddRowButton>
@@ -207,7 +213,7 @@ export default function AssistanceProvidedLgu() {
 
                 <button
                     onClick={handleSubmit}
-                    disabled={processing}
+                    disabled={processing || disabled}
                     className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                 >
                     {processing ? (
@@ -216,7 +222,7 @@ export default function AssistanceProvidedLgu() {
                             <span>Saving...</span>
                         </>
                     ) : (
-                        "Save Assistance"
+                        <span>{disabled ? 'Forms Disabled' : 'Save Assistance'}</span>
                     )}
                 </button>
             </div>

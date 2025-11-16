@@ -29,43 +29,54 @@ use App\Models\Communication;
 class ReportController extends Controller
 {
     /**
-     * Fetch all necessary report data from the database based on a given year.
+     * Fetch all necessary report data from the database based on a given year or typhoon_id.
      * Optimized: Different limits for web view vs PDF, selective columns
+     * @param int|null $year Filter by year
+     * @param bool $forPdf Use smaller limits for PDF generation
+     * @param int|null $typhoonId Filter by specific typhoon instead of year (currently disabled)
      */
-    private function getReportData(int $year, bool $forPdf = false)
+    public function getReportData(?int $year = null, bool $forPdf = false, ?int $typhoonId = null)
     {
         // Use smaller limits for PDF generation (faster)
         $limit = $forPdf ? 100 : 500;
         
+        // Build query condition based on year only (typhoon_id filtering disabled to show all data)
+        $queryCondition = function ($query) use ($year) {
+            if ($year) {
+                return $query->whereYear('created_at', $year);
+            }
+            return $query;
+        };
+        
         // Optimize with select and limit for performance
-        $preEmptiveReports = PreEmptiveReport::whereYear('created_at', $year)
+        $preEmptiveReports = $queryCondition(PreEmptiveReport::query())
             ->latest()
             ->limit($limit)
             ->get();
-        $damagedHouses = DamagedHouseReport::whereYear('created_at', $year)
+        $damagedHouses = $queryCondition(DamagedHouseReport::query())
             ->latest()
             ->limit($limit)
             ->get();
 
         return [
-            'weatherReports'      => WeatherReport::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'waterLevelReports'   => WaterLevel::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'electricityReports'  => ElectricityService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'waterServiceReports' => WaterService::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'communicationReports' => Communication::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'roadReports'         => Road::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'bridgeReports'       => Bridge::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'weatherReports'      => $queryCondition(WeatherReport::query())->latest()->limit($limit)->get(),
+            'waterLevelReports'   => $queryCondition(WaterLevel::query())->latest()->limit($limit)->get(),
+            'electricityReports'  => $queryCondition(ElectricityService::query())->latest()->limit($limit)->get(),
+            'waterServiceReports' => $queryCondition(WaterService::query())->latest()->limit($limit)->get(),
+            'communicationReports' => $queryCondition(Communication::query())->latest()->limit($limit)->get(),
+            'roadReports'         => $queryCondition(Road::query())->latest()->limit($limit)->get(),
+            'bridgeReports'       => $queryCondition(Bridge::query())->latest()->limit($limit)->get(),
             'preEmptiveReports'   => $preEmptiveReports,
-            'uscDeclarations'     => UscDeclaration::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'incidentReports'     => IncidentMonitored::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'prePositioningReports' => PrePositioning::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'deadCasualties'      => Casualty::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'injuredCasualties'   => Injured::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'missingCasualties'   => Missing::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'affectedTourists'    => AffectedTourist::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'uscDeclarations'     => $queryCondition(UscDeclaration::query())->latest()->limit($limit)->get(),
+            'incidentReports'     => $queryCondition(IncidentMonitored::query())->latest()->limit($limit)->get(),
+            'prePositioningReports' => $queryCondition(PrePositioning::query())->latest()->limit($limit)->get(),
+            'deadCasualties'      => $queryCondition(Casualty::query())->latest()->limit($limit)->get(),
+            'injuredCasualties'   => $queryCondition(Injured::query())->latest()->limit($limit)->get(),
+            'missingCasualties'   => $queryCondition(Missing::query())->latest()->limit($limit)->get(),
+            'affectedTourists'    => $queryCondition(AffectedTourist::query())->latest()->limit($limit)->get(),
             'damagedHouses'       => $damagedHouses,
-            'suspensionOfClasses' => SuspensionOfClass::whereYear('created_at', $year)->latest()->limit($limit)->get(),
-            'suspensionOfWork'    => SuspensionOfWork::whereYear('created_at', $year)->latest()->limit($limit)->get(),
+            'suspensionOfClasses' => $queryCondition(SuspensionOfClass::query())->latest()->limit($limit)->get(),
+            'suspensionOfWork'    => $queryCondition(SuspensionOfWork::query())->latest()->limit($limit)->get(),
             'preEmptiveTotals'    => [
                 'families'         => $preEmptiveReports->sum('families'),
                 'persons'          => $preEmptiveReports->sum('persons'),

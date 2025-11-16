@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
+import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import {
     SidebarProvider,
     SidebarInset,
@@ -21,7 +22,10 @@ const FormLoader = () => (
 );
 
 export default function Index() {
-    const { flash, initialReports } = usePage().props;
+    const { flash, initialReports, typhoon } = usePage().props;
+    
+    // Check if forms should be disabled
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
 
     // ✅ Form State - Load from database or use empty row
     const { data, setData, post, processing, errors } = useForm({
@@ -101,8 +105,16 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
+                    {/* Typhoon Status Alert */}
+                    <TyphoonStatusAlert 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                        formsDisabled={formsDisabled}
+                    />
+                    
                     <Suspense fallback={<FormLoader />}>
                         <PreEmptiveForm
+                            disabled={formsDisabled}
                             data={data}
                             setData={setData}
                             errors={errors}

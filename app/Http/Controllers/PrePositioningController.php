@@ -3,19 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\PrePositioning;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PrePositioningController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Show list of Pre-Positionings
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $prePositionings = PrePositioning::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $prePositioningsQuery = PrePositioning::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $prePositioningsQuery->where('user_id', $user->id);
+        }
+
+        $prePositionings = $prePositioningsQuery->latest()->limit(200)->get();
 
         return Inertia::render('DeploymentOfResponse/Index', [
             'pre_positionings' => $prePositionings,
@@ -27,6 +38,14 @@ class PrePositioningController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'pre_positionings' => 'required|array',
             'pre_positionings.*.id'                 => 'nullable',
@@ -67,8 +86,15 @@ class PrePositioningController extends Controller
 
             // Check if this is an update or create
             if (!empty($row['id']) && is_numeric($row['id'])) {
-                // Update existing record
-                $prePositioning = PrePositioning::find($row['id']);
+                // Update existing record (only own records for non-admin users)
+                $prePositioningQuery = PrePositioning::where('id', $row['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $prePositioningQuery->where('user_id', $user->id);
+                }
+
+                $prePositioning = $prePositioningQuery->first();
                 if ($prePositioning) {
                     $prePositioning->update($data);
                     $savedRecords[] = $prePositioning->fresh();
@@ -76,6 +102,7 @@ class PrePositioningController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedRecords[] = PrePositioning::create($data);
             }
         }

@@ -3,6 +3,7 @@ import RowsPerPage from "@/Components/ui/RowsPerPage";
 import Pagination from "@/Components/ui/Pagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
+import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 
 import { useState, useEffect, useMemo } from "react";
 import { usePage, Head } from "@inertiajs/react";
@@ -37,7 +38,10 @@ const formatFieldName = (field) => {
 };
 
 export default function Index() {
-    const { flash, operations } = usePage().props;
+    const { flash, operations, typhoon } = usePage().props;
+    
+    // Check if forms should be disabled
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
     const [isSaving, setIsSaving] = useState(false);
@@ -145,7 +149,8 @@ export default function Index() {
             await queryClient.invalidateQueries(['response-operations-modifications']);
             
             // Update local state with the response data from server
-            if (response.data && response.data.responses) {
+            // Only overwrite if the server actually returns at least one response
+            if (response.data && Array.isArray(response.data.responses) && response.data.responses.length > 0) {
                 setResponses(response.data.responses);
             }
             
@@ -222,6 +227,13 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
+                    {/* Typhoon Status Alert */}
+                    <TyphoonStatusAlert 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                        formsDisabled={formsDisabled}
+                    />
+                    
                     <TooltipProvider>
                         <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>

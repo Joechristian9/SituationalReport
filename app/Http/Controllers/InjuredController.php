@@ -3,19 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Injured;
+use App\Traits\ValidatesTyphoonStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class InjuredController extends Controller
 {
+    use ValidatesTyphoonStatus;
     /**
      * Display a listing of the injured records.
      * Optimized: Limit records for better performance
      */
     public function index()
     {
-        $injuredList = Injured::latest()->limit(200)->get();
+        $typhoonId = $this->getActiveTyphoonId();
+        $user = Auth::user();
+
+        $injuredQuery = Injured::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+
+        if ($user && !$user->isAdmin()) {
+            $injuredQuery->where('user_id', $user->id);
+        }
+
+        $injuredList = $injuredQuery->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
             'injuredList' => $injuredList,
@@ -28,6 +39,14 @@ class InjuredController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate typhoon status
+        if ($error = $this->validateActiveTyphoon()) {
+            return $error;
+        }
+
+        // Get active typhoon
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+
         $validated = $request->validate([
             'injured' => 'required|array',
             'injured.*.id'              => 'nullable',
@@ -76,8 +95,15 @@ class InjuredController extends Controller
 
             // Check if this is an update or create
             if (!empty($injuredData['id']) && is_numeric($injuredData['id'])) {
-                // Update existing record
-                $injuredRecord = Injured::find($injuredData['id']);
+                // Update existing record (only own records for non-admin users)
+                $injuredQuery = Injured::where('id', $injuredData['id']);
+
+                $user = Auth::user();
+                if ($user && !$user->isAdmin()) {
+                    $injuredQuery->where('user_id', $user->id);
+                }
+
+                $injuredRecord = $injuredQuery->first();
                 if ($injuredRecord) {
                     $injuredRecord->update($data);
                     $savedInjured[] = $injuredRecord->fresh();
@@ -85,6 +111,7 @@ class InjuredController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
+                $data['typhoon_id'] = $activeTyphoon->id;
                 $savedInjured[] = Injured::create($data);
             }
         }
