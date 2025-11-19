@@ -4,6 +4,7 @@ import Pagination from "@/Components/ui/Pagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
 import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
 
 import { useState, useEffect, useMemo } from "react";
 import { usePage, Head } from "@inertiajs/react";
@@ -224,15 +225,13 @@ export default function Index() {
                             );
                         })()}
                     </div>
+                    <ActiveTyphoonHeader 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Typhoon Status Alert */}
-                    <TyphoonStatusAlert 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                        formsDisabled={formsDisabled}
-                    />
                     
                     <TooltipProvider>
                         <Card className="shadow-lg rounded-2xl border">

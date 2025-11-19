@@ -4,6 +4,7 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
 import {
     SidebarProvider,
     SidebarInset,
@@ -286,15 +287,13 @@ export default function Index() {
                             return <Breadcrumbs crumbs={crumbs} />;
                         })()}
                     </div>
+                    <ActiveTyphoonHeader 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Typhoon Status Alert */}
-                    <TyphoonStatusAlert 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                        formsDisabled={formsDisabled}
-                    />
 
                     <Card className="shadow-lg rounded-2xl border">
                         <CardHeader>

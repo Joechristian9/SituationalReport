@@ -10,7 +10,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -19,6 +25,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function TyphoonManagement({ typhoons, activeTyphoon }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -60,17 +68,25 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         }
     };
 
-    const handleDeleteTyphoon = async (typhoon) => {
-        if (!confirm('Are you sure you want to delete this typhoon report? This action cannot be undone.')) {
-            return;
-        }
+    const openDeleteModal = (typhoon) => {
+        setSelectedTyphoon(typhoon);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteTyphoon = async () => {
+        if (!selectedTyphoon) return;
+        setIsSubmitting(true);
 
         try {
-            const response = await axios.delete(`/typhoons/${typhoon.id}`);
+            const response = await axios.delete(`/typhoons/${selectedTyphoon.id}`);
             toast.success(response.data.message);
             router.reload();
+            setIsDeleteModalOpen(false);
+            setSelectedTyphoon(null);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to delete typhoon report');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -148,7 +164,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                 </div>
                                                 <CardTitle className="text-blue-900">Active Typhoon Report</CardTitle>
                                             </div>
-                                            <Badge className="bg-blue-600 hover:bg-blue-700 animate-pulse">
+                                            <Badge className="bg-green-600 hover:bg-green-700 text-white animate-pulse">
                                                 <CheckCircle className="w-3 h-3 mr-1" />
                                                 Active
                                             </Badge>
@@ -210,37 +226,66 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                     View all typhoon reports and their status
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {typhoons.length === 0 ? (
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="text-center py-12"
+                            <CardContent className="p-0">
+                                {typhoons.length === 0 ? (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="text-center py-12"
+                                    >
+                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                                            <Cloud className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No Typhoon Reports Yet</h3>
+                                        <p className="text-sm text-slate-500 mb-4">Create your first typhoon report to get started with data collection</p>
+                                        <Button 
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            variant="outline"
+                                            className="flex items-center gap-2 mx-auto"
                                         >
-                                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-                                                <Cloud className="w-8 h-8 text-slate-400" />
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-slate-700 mb-2">No Typhoon Reports Yet</h3>
-                                            <p className="text-sm text-slate-500 mb-4">Create your first typhoon report to get started with data collection</p>
-                                            <Button 
-                                                onClick={() => setIsCreateModalOpen(true)}
-                                                variant="outline"
-                                                className="flex items-center gap-2 mx-auto"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                Create First Report
-                                            </Button>
-                                        </motion.div>
-                                    ) : (
-                                    typhoons.map((typhoon) => (
-                                        <Card key={typhoon.id} className={typhoon.status === 'active' ? 'border-blue-300' : ''}>
-                                            <CardContent className="pt-6">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <h3 className="text-lg font-semibold">{typhoon.name}</h3>
-                                                            <Badge variant={typhoon.status === 'active' ? 'default' : 'secondary'}>
+                                            <Plus className="w-4 h-4" />
+                                            Create First Report
+                                        </Button>
+                                    </motion.div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-slate-50 border-b border-slate-200">
+                                                <tr>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Typhoon Name</th>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Started</th>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Ended</th>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Created by</th>
+                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Ended by</th>
+                                                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200">
+                                                {typhoons.map((typhoon, index) => (
+                                                    <motion.tr
+                                                        key={typhoon.id}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.2, delay: index * 0.03 }}
+                                                        className={`hover:bg-slate-50 transition-colors ${
+                                                            typhoon.status === 'active' ? 'bg-blue-50/30' : ''
+                                                        }`}
+                                                    >
+                                                        <td className="px-4 py-3">
+                                                            <div className="font-semibold text-slate-900">{typhoon.name}</div>
+                                                            {typhoon.description && (
+                                                                <div className="text-xs text-slate-500 mt-1">{typhoon.description}</div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge 
+                                                                className={
+                                                                    typhoon.status === 'active' 
+                                                                        ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                                        : 'bg-slate-600 hover:bg-slate-700 text-white'
+                                                                }
+                                                            >
                                                                 {typhoon.status === 'active' ? (
                                                                     <span className="flex items-center gap-1">
                                                                         <CheckCircle className="w-3 h-3" />
@@ -250,52 +295,79 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                                     'Ended'
                                                                 )}
                                                             </Badge>
-                                                        </div>
-                                                        {typhoon.description && (
-                                                            <p className="text-sm text-gray-600 mb-2">{typhoon.description}</p>
-                                                        )}
-                                                        <div className="text-xs text-gray-500 space-y-1">
-                                                            <p>Started: {format(new Date(typhoon.started_at), 'PPP p')}</p>
-                                                            {typhoon.ended_at && (
-                                                                <p>Ended: {format(new Date(typhoon.ended_at), 'PPP p')}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                            {format(new Date(typhoon.started_at), 'MMM d, yyyy')}<br />
+                                                            <span className="text-xs text-slate-500">{format(new Date(typhoon.started_at), 'h:mm a')}</span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                            {typhoon.ended_at ? (
+                                                                <>
+                                                                    {format(new Date(typhoon.ended_at), 'MMM d, yyyy')}<br />
+                                                                    <span className="text-xs text-slate-500">{format(new Date(typhoon.ended_at), 'h:mm a')}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-slate-400">-</span>
                                                             )}
-                                                            <p>Created by: {typhoon.creator?.name}</p>
-                                                            {typhoon.ender && (
-                                                                <p>Ended by: {typhoon.ender?.name}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {typhoon.status === 'ended' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleDownloadPdf(typhoon)}
-                                                                className="flex items-center gap-1"
-                                                            >
-                                                                <Download className="w-3 h-3" />
-                                                                {typhoon.pdf_path ? 'Download PDF' : 'Generate & Download'}
-                                                            </Button>
-                                                        )}
-                                                        {typhoon.status === 'ended' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="destructive"
-                                                                onClick={() => handleDeleteTyphoon(typhoon)}
-                                                                className="flex items-center gap-1"
-                                                            >
-                                                                <Trash2 className="w-3 h-3" />
-                                                                Delete
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                            {typhoon.creator?.name || 'Unknown'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                            {typhoon.ender?.name || '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center justify-end">
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-8 w-8 p-0 hover:bg-slate-100"
+                                                                        >
+                                                                            <MoreVertical className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="w-48">
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => {
+                                                                                setSelectedTyphoon(typhoon);
+                                                                                setIsViewModalOpen(true);
+                                                                            }}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <Eye className="w-4 h-4 mr-2" />
+                                                                            View Details
+                                                                        </DropdownMenuItem>
+                                                                        {typhoon.status === 'ended' && (
+                                                                            <>
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => handleDownloadPdf(typhoon)}
+                                                                                    className="cursor-pointer"
+                                                                                >
+                                                                                    <Download className="w-4 h-4 mr-2" />
+                                                                                    Download PDF
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => openDeleteModal(typhoon)}
+                                                                                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                                                >
+                                                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                                                    Delete Report
+                                                                                </DropdownMenuItem>
+                                                                            </>
+                                                                        )}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+                                                        </td>
+                                                    </motion.tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 )}
-                            </div>
-                        </CardContent>
+                            </CardContent>
                     </Card>
                     </motion.div>
                     </div>
@@ -461,6 +533,199 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 </>
                             )}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Typhoon Modal */}
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-red-100 rounded-full">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-xl">Delete Typhoon Report</DialogTitle>
+                                <DialogDescription className="mt-1">
+                                    This action cannot be undone
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    
+                    <div className="py-4">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-sm text-red-900 font-medium mb-2">
+                                Are you sure you want to delete the typhoon report "{selectedTyphoon?.name}"?
+                            </p>
+                            <p className="text-sm text-red-700">
+                                All associated data including weather reports, evacuation records, casualties, and other related information will be permanently removed.
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsDeleteModalOpen(false);
+                                setSelectedTyphoon(null);
+                            }}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteTyphoon}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Permanently
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View Typhoon Details Modal */}
+            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-blue-100 rounded-full">
+                                <Cloud className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-xl">Typhoon Report Details</DialogTitle>
+                                <DialogDescription className="mt-1">
+                                    Complete information about this typhoon report
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    
+                    {selectedTyphoon && (
+                        <div className="py-4 space-y-4">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-900">{selectedTyphoon.name}</h3>
+                                    <Badge 
+                                        className={
+                                            selectedTyphoon.status === 'active' 
+                                                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                : 'bg-slate-600 hover:bg-slate-700 text-white'
+                                        }
+                                    >
+                                        {selectedTyphoon.status === 'active' ? (
+                                            <span className="flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" />
+                                                Active
+                                            </span>
+                                        ) : (
+                                            'Ended'
+                                        )}
+                                    </Badge>
+                                </div>
+                                
+                                {selectedTyphoon.description && (
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-600 mb-1">Description:</p>
+                                        <p className="text-sm text-slate-700 bg-white p-2 rounded border border-slate-200">
+                                            {selectedTyphoon.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Calendar className="w-4 h-4 text-slate-500" />
+                                        <p className="text-xs font-semibold text-slate-600">Started</p>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-900">
+                                        {format(new Date(selectedTyphoon.started_at), 'PPP')}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        {format(new Date(selectedTyphoon.started_at), 'p')}
+                                    </p>
+                                </div>
+
+                                {selectedTyphoon.ended_at && (
+                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Calendar className="w-4 h-4 text-slate-500" />
+                                            <p className="text-xs font-semibold text-slate-600">Ended</p>
+                                        </div>
+                                        <p className="text-sm font-medium text-slate-900">
+                                            {format(new Date(selectedTyphoon.ended_at), 'PPP')}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            {format(new Date(selectedTyphoon.ended_at), 'p')}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <User className="w-4 h-4 text-slate-500" />
+                                        <p className="text-xs font-semibold text-slate-600">Created By</p>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-900">
+                                        {selectedTyphoon.creator?.name || 'Unknown'}
+                                    </p>
+                                </div>
+
+                                {selectedTyphoon.ender && (
+                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <User className="w-4 h-4 text-slate-500" />
+                                            <p className="text-xs font-semibold text-slate-600">Ended By</p>
+                                        </div>
+                                        <p className="text-sm font-medium text-slate-900">
+                                            {selectedTyphoon.ender.name}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsViewModalOpen(false);
+                                setSelectedTyphoon(null);
+                            }}
+                            className="w-full sm:w-auto"
+                        >
+                            Close
+                        </Button>
+                        {selectedTyphoon?.status === 'ended' && (
+                            <Button
+                                onClick={() => {
+                                    handleDownloadPdf(selectedTyphoon);
+                                    setIsViewModalOpen(false);
+                                }}
+                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download PDF
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

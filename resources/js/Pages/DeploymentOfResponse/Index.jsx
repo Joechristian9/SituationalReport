@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
 import {
     SidebarProvider,
     SidebarInset,
@@ -96,15 +97,13 @@ export default function Index() {
                             );
                         })()}
                     </div>
+                    <ActiveTyphoonHeader 
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Typhoon Status Alert */}
-                    <TyphoonStatusAlert 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                        formsDisabled={formsDisabled}
-                    />
                     
                     <Suspense fallback={<FormLoader />}>
                         <PrePositioningForm

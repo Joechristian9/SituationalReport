@@ -9,6 +9,8 @@ import { Head, usePage } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
+import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
+import NoActiveTyphoonBadge from "@/Components/NoActiveTyphoonBadge";
 
 // Lazy load heavy components - only load when needed
 const WeatherDashboard = lazy(() => import("@/Components/Weather/WeatherDashboard"));
@@ -48,7 +50,7 @@ export default function Dashboard({
     injured = [],
     missing = [],
 }) {
-    const { auth } = usePage().props;
+    const { auth, typhoon } = usePage().props;
     const [activeTab, setActiveTab] = useState("environment");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
@@ -96,6 +98,14 @@ export default function Dashboard({
                             </p>
                         </div>
                     </div>
+                    <ActiveTyphoonHeader
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
+                    <NoActiveTyphoonBadge
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
                 </header>
 
                 <main className="w-full p-4 sm:p-6 lg:p-8 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
