@@ -44,11 +44,11 @@ export default function RowsPerPage({
 
     return (
         <div className="flex items-center gap-2 text-sm" ref={dropdownRef}>
-            <label className="text-slate-600 font-medium">Rows per page:</label>
+            <label className="text-slate-600 font-medium whitespace-nowrap">Rows per page:</label>
             <div className="relative">
                 <button
                     onClick={() => setShowDropdown((s) => !s)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-300 bg-white rounded-lg shadow-sm hover:bg-slate-50 focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium border border-blue-200 bg-white rounded-md hover:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                 >
                     <span className="text-slate-700">{rowsPerPage}</span>
                     <svg
@@ -70,7 +70,7 @@ export default function RowsPerPage({
                 </button>
 
                 {showDropdown && (
-                    <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                    <div className="absolute right-0 mt-2 w-32 bg-white border border-blue-200 rounded-lg shadow-lg z-20 overflow-hidden">
                         {rowsPerPageOptions.map((num) => (
                             <button
                                 key={num}
@@ -78,9 +78,9 @@ export default function RowsPerPage({
                                     setRowsPerPage(num);
                                     setShowDropdown(false);
                                 }}
-                                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-blue-50 ${
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-blue-50 transition-colors ${
                                     rowsPerPage === num
-                                        ? "text-blue-600 font-medium"
+                                        ? "text-blue-600 font-semibold bg-blue-50"
                                         : "text-slate-700"
                                 }`}
                             >
@@ -88,7 +88,7 @@ export default function RowsPerPage({
                                 {rowsPerPage === num && (
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4 text-blue-500"
+                                        className="h-4 w-4 text-blue-600"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"

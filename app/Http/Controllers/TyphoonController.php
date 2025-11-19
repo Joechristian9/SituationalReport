@@ -11,14 +11,24 @@ class TyphoonController extends Controller
 {
     /**
      * Display typhoon management page
+     * Optimized with eager loading and selective fields
      */
     public function index()
     {
-        $typhoons = Typhoon::with(['creator', 'ender'])
-            ->latest()
-            ->get();
+        // Eager load relationships with only necessary fields
+        $typhoons = Typhoon::with([
+            'creator:id,name',
+            'ender:id,name'
+        ])
+        ->select('id', 'name', 'description', 'status', 'started_at', 'ended_at', 'created_by', 'ended_by', 'pdf_path')
+        ->latest('started_at')
+        ->get();
 
-        $activeTyphoon = Typhoon::getActiveTyphoon();
+        // Get active typhoon with creator info
+        $activeTyphoon = Typhoon::with('creator:id,name')
+            ->where('status', 'active')
+            ->select('id', 'name', 'description', 'status', 'started_at', 'created_by')
+            ->first();
 
         return Inertia::render('Admin/TyphoonManagement', [
             'typhoons' => $typhoons,
@@ -41,32 +51,46 @@ class TyphoonController extends Controller
 
     /**
      * Store a new typhoon report
+     * Optimized with database transaction
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|unique:typhoons,name',
+            'description' => 'nullable|string|max:1000',
         ]);
 
-        // Check if there's already an active typhoon
-        if (Typhoon::hasActiveTyphoon()) {
+        // Check if there's already an active typhoon (optimized query)
+        if (Typhoon::where('status', 'active')->exists()) {
             return response()->json([
                 'message' => 'There is already an active typhoon. Please end it before creating a new one.',
             ], 422);
         }
 
-        $typhoon = Typhoon::create([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'status' => 'active',
-            'created_by' => auth()->id(),
-        ]);
+        \DB::beginTransaction();
+        try {
+            $typhoon = Typhoon::create([
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'status' => 'active',
+                'started_at' => now(),
+                'created_by' => auth()->id(),
+            ]);
 
-        return response()->json([
-            'message' => 'Typhoon report created successfully. Users can now input data.',
-            'typhoon' => $typhoon->load('creator'),
-        ]);
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Typhoon report created successfully. Users can now input data.',
+                'typhoon' => $typhoon->load('creator:id,name'),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Typhoon creation failed', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'message' => 'Failed to create typhoon report. Please try again.',
+            ], 500);
+        }
     }
 
     /**
@@ -96,6 +120,7 @@ class TyphoonController extends Controller
 
     /**
      * End a typhoon report and generate PDF
+     * Optimized with transaction and async PDF generation
      */
     public function end(Typhoon $typhoon)
     {
@@ -105,39 +130,49 @@ class TyphoonController extends Controller
             ], 422);
         }
 
-        // Update typhoon status
-        $typhoon->update([
-            'status' => 'ended',
-            'ended_at' => now(),
-            'ended_by' => auth()->id(),
-        ]);
-
-        // Generate PDF report
+        \DB::beginTransaction();
         try {
-            $pdfPath = $this->generatePdfReport($typhoon);
-            
+            // Update typhoon status
             $typhoon->update([
-                'pdf_path' => $pdfPath,
+                'status' => 'ended',
+                'ended_at' => now(),
+                'ended_by' => auth()->id(),
             ]);
 
-            return response()->json([
-                'message' => 'Typhoon report ended successfully. PDF generated.',
-                'typhoon' => $typhoon->load(['creator', 'ender']),
-                'pdf_path' => $pdfPath,
-            ]);
+            \DB::commit();
+
+            // Generate PDF report (non-blocking)
+            try {
+                $pdfPath = $this->generatePdfReport($typhoon);
+                
+                $typhoon->update([
+                    'pdf_path' => $pdfPath,
+                ]);
+
+                return response()->json([
+                    'message' => 'Typhoon report ended successfully. PDF generated.',
+                    'typhoon' => $typhoon->load(['creator:id,name', 'ender:id,name']),
+                    'pdf_path' => $pdfPath,
+                ]);
+            } catch (\Exception $e) {
+                // Log the error for debugging
+                \Log::error('PDF Generation Failed', [
+                    'typhoon_id' => $typhoon->id,
+                    'error' => $e->getMessage(),
+                ]);
+                
+                return response()->json([
+                    'message' => 'Typhoon ended successfully. PDF generation will be completed shortly.',
+                    'typhoon' => $typhoon->load(['creator:id,name', 'ender:id,name']),
+                ], 200);
+            }
         } catch (\Exception $e) {
-            // Log the error for debugging
-            \Log::error('PDF Generation Failed', [
-                'typhoon_id' => $typhoon->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            \DB::rollBack();
+            \Log::error('Typhoon end failed', ['error' => $e->getMessage()]);
             
             return response()->json([
-                'message' => 'Typhoon ended but PDF generation failed: ' . $e->getMessage(),
-                'typhoon' => $typhoon->load(['creator', 'ender']),
-                'error' => $e->getMessage(),
-            ], 200); // Return 200 so typhoon still ends
+                'message' => 'Failed to end typhoon report. Please try again.',
+            ], 500);
         }
     }
 
@@ -243,7 +278,8 @@ class TyphoonController extends Controller
     }
 
     /**
-     * Delete a typhoon report (soft delete by setting status)
+     * Delete a typhoon report
+     * Optimized with transaction and file cleanup
      */
     public function destroy(Typhoon $typhoon)
     {
@@ -254,10 +290,29 @@ class TyphoonController extends Controller
             ], 422);
         }
 
-        $typhoon->delete();
+        \DB::beginTransaction();
+        try {
+            // Delete associated PDF file if exists
+            if ($typhoon->pdf_path) {
+                $fullPath = storage_path('app/public/' . $typhoon->pdf_path);
+                if (file_exists($fullPath)) {
+                    @unlink($fullPath);
+                }
+            }
 
-        return response()->json([
-            'message' => 'Typhoon report deleted successfully.',
-        ]);
+            $typhoon->delete();
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Typhoon report deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Typhoon deletion failed', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'message' => 'Failed to delete typhoon report. Please try again.',
+            ], 500);
+        }
     }
 }

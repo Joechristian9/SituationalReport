@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { AppSidebar } from '@/Components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/Components/ui/sidebar';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye } from 'lucide-react';
+import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import RowsPerPage from '@/Components/ui/RowsPerPage';
 
 export default function TyphoonManagement({ typhoons, activeTyphoon }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,66 +30,176 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedYear, setSelectedYear] = useState('all');
+    const [showYearDropdown, setShowYearDropdown] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
     });
 
-    const handleCreateTyphoon = async (e) => {
+    // Get unique years from typhoons
+    const availableYears = useMemo(() => {
+        const years = new Set();
+        typhoons.forEach(typhoon => {
+            const year = new Date(typhoon.started_at).getFullYear();
+            years.add(year);
+        });
+        return Array.from(years).sort((a, b) => b - a); // Sort descending
+    }, [typhoons]);
+
+    // Memoized search suggestions for performance
+    const suggestions = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        
+        const query = searchQuery.toLowerCase();
+        const suggestionSet = new Set();
+        
+        typhoons.forEach(typhoon => {
+            if (typhoon.name.toLowerCase().includes(query)) {
+                suggestionSet.add(typhoon.name);
+            }
+            if (typhoon.creator?.name.toLowerCase().includes(query)) {
+                suggestionSet.add(typhoon.creator.name);
+            }
+            if (typhoon.ender?.name?.toLowerCase().includes(query)) {
+                suggestionSet.add(typhoon.ender.name);
+            }
+        });
+        
+        return Array.from(suggestionSet).slice(0, 5);
+    }, [searchQuery, typhoons]);
+
+    // Memoized filtered typhoons
+    const filteredTyphoons = useMemo(() => {
+        let filtered = typhoons;
+
+        // Filter by year
+        if (selectedYear !== 'all') {
+            filtered = filtered.filter(typhoon => {
+                const year = new Date(typhoon.started_at).getFullYear();
+                return year === parseInt(selectedYear);
+            });
+        }
+
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(typhoon => 
+                typhoon.name.toLowerCase().includes(query) ||
+                typhoon.description?.toLowerCase().includes(query) ||
+                typhoon.creator?.name.toLowerCase().includes(query) ||
+                typhoon.ender?.name?.toLowerCase().includes(query) ||
+                typhoon.status.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }, [searchQuery, selectedYear, typhoons]);
+
+    // Memoized pagination calculations
+    const paginationData = useMemo(() => {
+        const totalPages = Math.ceil(filteredTyphoons.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedTyphoons = filteredTyphoons.slice(startIndex, endIndex);
+        
+        return { totalPages, startIndex, endIndex, paginatedTyphoons };
+    }, [filteredTyphoons, currentPage, itemsPerPage]);
+
+    // Reset to page 1 when search, year filter, or items per page changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedYear, itemsPerPage]);
+
+    // Keyboard shortcuts for better UX
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            // Ctrl/Cmd + K to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input[type="text"][placeholder*="Search"]')?.focus();
+            }
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                if (showSuggestions) setShowSuggestions(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [showSuggestions]);
+
+    // Optimized handlers with useCallback
+    const handleCreateTyphoon = useCallback(async (e) => {
         e.preventDefault();
+        
+        if (!formData.name.trim()) {
+            toast.error('Typhoon name is required');
+            return;
+        }
+        
         setIsSubmitting(true);
+        const loadingToast = toast.loading('Creating typhoon report...');
 
         try {
             const response = await axios.post('/typhoons', formData);
-            toast.success(response.data.message);
-            router.reload();
+            toast.success(response.data.message, { id: loadingToast });
             setIsCreateModalOpen(false);
             setFormData({ name: '', description: '' });
+            router.reload({ only: ['typhoons', 'activeTyphoon'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create typhoon report');
+            toast.error(error.response?.data?.message || 'Failed to create typhoon report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [formData]);
 
-    const handleEndTyphoon = async () => {
+    const handleEndTyphoon = useCallback(async () => {
         if (!selectedTyphoon) return;
+        
         setIsSubmitting(true);
+        const loadingToast = toast.loading('Ending typhoon report and generating PDF...');
 
         try {
             const response = await axios.post(`/typhoons/${selectedTyphoon.id}/end`);
-            toast.success(response.data.message);
-            router.reload();
+            toast.success(response.data.message, { id: loadingToast });
             setIsEndModalOpen(false);
             setSelectedTyphoon(null);
+            router.reload({ only: ['typhoons', 'activeTyphoon'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to end typhoon report');
+            toast.error(error.response?.data?.message || 'Failed to end typhoon report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [selectedTyphoon]);
 
-    const openDeleteModal = (typhoon) => {
+    const openDeleteModal = useCallback((typhoon) => {
         setSelectedTyphoon(typhoon);
         setIsDeleteModalOpen(true);
-    };
+    }, []);
 
-    const handleDeleteTyphoon = async () => {
+    const handleDeleteTyphoon = useCallback(async () => {
         if (!selectedTyphoon) return;
+        
         setIsSubmitting(true);
+        const loadingToast = toast.loading('Deleting typhoon report...');
 
         try {
             const response = await axios.delete(`/typhoons/${selectedTyphoon.id}`);
-            toast.success(response.data.message);
-            router.reload();
+            toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
+            router.reload({ only: ['typhoons'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete typhoon report');
+            toast.error(error.response?.data?.message || 'Failed to delete typhoon report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [selectedTyphoon]);
 
     const handleDownloadPdf = async (typhoon) => {
         // If PDF doesn't exist, generate it first
@@ -216,15 +327,170 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.1 }}
                     >
-                        <Card className="border-slate-200">
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-slate-600" />
-                                    <CardTitle>Typhoon Reports History</CardTitle>
+                        <Card className="border-0 shadow-none">
+                            <CardHeader className="px-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-5 h-5 text-blue-600" />
+                                            <CardTitle className="text-blue-700">Typhoon Reports History</CardTitle>
+                                        </div>
+                                        <CardDescription className="mt-1">
+                                            View all typhoon reports and their status
+                                        </CardDescription>
+                                    </div>
+                                    {typhoons.length > 0 && (
+                                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                            {/* Year Filter */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setShowYearDropdown(!showYearDropdown)}
+                                                    onBlur={() => setTimeout(() => setShowYearDropdown(false), 200)}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-blue-200 bg-white rounded-md hover:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors min-w-[140px]"
+                                                >
+                                                    <Calendar className="w-4 h-4 text-blue-600" />
+                                                    <span className="text-slate-700 flex-1 text-left">
+                                                        {selectedYear === 'all' ? 'All Years' : selectedYear}
+                                                    </span>
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className={`h-4 w-4 text-slate-500 transition-transform ${
+                                                            showYearDropdown ? 'rotate-180' : ''
+                                                        }`}
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M19 9l-7 7-7-7"
+                                                        />
+                                                    </svg>
+                                                </button>
+
+                                                {showYearDropdown && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="absolute left-0 mt-2 w-48 bg-white border border-blue-200 rounded-lg shadow-lg z-50 overflow-hidden"
+                                                    >
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedYear('all');
+                                                                setShowYearDropdown(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-blue-50 transition-colors ${
+                                                                selectedYear === 'all'
+                                                                    ? 'text-blue-600 font-semibold bg-blue-50'
+                                                                    : 'text-slate-700'
+                                                            }`}
+                                                        >
+                                                            <span>All Years</span>
+                                                            {selectedYear === 'all' && (
+                                                                <svg
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    className="h-4 w-4 text-blue-600"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                    stroke="currentColor"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        strokeWidth={2}
+                                                                        d="M5 13l4 4L19 7"
+                                                                    />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                        {availableYears.map(year => {
+                                                            const count = typhoons.filter(t => new Date(t.started_at).getFullYear() === year).length;
+                                                            return (
+                                                                <button
+                                                                    key={year}
+                                                                    onClick={() => {
+                                                                        setSelectedYear(year.toString());
+                                                                        setShowYearDropdown(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-blue-50 transition-colors ${
+                                                                        selectedYear === year.toString()
+                                                                            ? 'text-blue-600 font-semibold bg-blue-50'
+                                                                            : 'text-slate-700'
+                                                                    }`}
+                                                                >
+                                                                    <span>{year}</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs text-slate-500">({count})</span>
+                                                                        {selectedYear === year.toString() && (
+                                                                            <svg
+                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                className="h-4 w-4 text-blue-600"
+                                                                                fill="none"
+                                                                                viewBox="0 0 24 24"
+                                                                                stroke="currentColor"
+                                                                            >
+                                                                                <path
+                                                                                    strokeLinecap="round"
+                                                                                    strokeLinejoin="round"
+                                                                                    strokeWidth={2}
+                                                                                    d="M5 13l4 4L19 7"
+                                                                                />
+                                                                            </svg>
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </motion.div>
+                                                )}
+                                            </div>
+
+                                            {/* Search Box */}
+                                            <div className="relative w-full sm:w-64">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                                                <Input
+                                                    type="text"
+                                                    placeholder="Search typhoons..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => {
+                                                        setSearchQuery(e.target.value);
+                                                        setShowSuggestions(true);
+                                                    }}
+                                                    onFocus={() => setShowSuggestions(true)}
+                                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                                    className="pl-10 pr-4 py-2 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                                                />
+                                            
+                                            {/* Suggestions Dropdown */}
+                                            {showSuggestions && suggestions.length > 0 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                                                >
+                                                    {suggestions.map((suggestion, index) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => {
+                                                                setSearchQuery(suggestion);
+                                                                setShowSuggestions(false);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <Search className="w-3 h-3 text-slate-400" />
+                                                                <span>{suggestion}</span>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <CardDescription>
-                                    View all typhoon reports and their status
-                                </CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {typhoons.length === 0 ? (
@@ -248,37 +514,47 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                         </Button>
                                     </motion.div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-slate-50 border-b border-slate-200">
-                                                <tr>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Typhoon Name</th>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Started</th>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Ended</th>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Created by</th>
-                                                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Ended by</th>
-                                                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                                    <div className="overflow-x-auto border border-blue-200 rounded-lg shadow-sm">
+                                        <table className="w-full border-collapse">
+                                            <thead className="bg-gradient-to-r from-blue-600 to-blue-700 border-b-2 border-blue-700">
+                                                <tr className="divide-x divide-blue-500">
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide">Name</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Status</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden sm:table-cell">Started</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden md:table-cell">Ended</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden lg:table-cell">Created by</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden xl:table-cell">Ended by</th>
+                                                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-200">
-                                                {typhoons.map((typhoon, index) => (
+                                            <tbody className="divide-y divide-blue-100 bg-white">
+                                                {filteredTyphoons.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <Search className="w-8 h-8 text-slate-400" />
+                                                                <p>No typhoons found matching "{searchQuery}"</p>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    paginationData.paginatedTyphoons.map((typhoon, index) => (
                                                     <motion.tr
                                                         key={typhoon.id}
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ duration: 0.2, delay: index * 0.03 }}
-                                                        className={`hover:bg-slate-50 transition-colors ${
-                                                            typhoon.status === 'active' ? 'bg-blue-50/30' : ''
+                                                        className={`hover:bg-blue-50 transition-colors divide-x divide-blue-100 ${
+                                                            typhoon.status === 'active' ? 'bg-blue-50/50' : ''
                                                         }`}
                                                     >
                                                         <td className="px-4 py-3">
                                                             <div className="font-semibold text-slate-900">{typhoon.name}</div>
                                                             {typhoon.description && (
-                                                                <div className="text-xs text-slate-500 mt-1">{typhoon.description}</div>
+                                                                <div className="text-xs text-slate-500 mt-1 line-clamp-1">{typhoon.description}</div>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-4 py-3 whitespace-nowrap">
                                                             <Badge 
                                                                 className={
                                                                     typhoon.status === 'active' 
@@ -296,24 +572,24 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                                 )}
                                                             </Badge>
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-slate-600">
-                                                            {format(new Date(typhoon.started_at), 'MMM d, yyyy')}<br />
-                                                            <span className="text-xs text-slate-500">{format(new Date(typhoon.started_at), 'h:mm a')}</span>
+                                                        <td className="px-4 py-3 text-sm text-slate-600 hidden sm:table-cell whitespace-nowrap">
+                                                            <div>{format(new Date(typhoon.started_at), 'MMM d, yyyy')}</div>
+                                                            <div className="text-xs text-slate-500">{format(new Date(typhoon.started_at), 'h:mm a')}</div>
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                        <td className="px-4 py-3 text-sm text-slate-600 hidden md:table-cell whitespace-nowrap">
                                                             {typhoon.ended_at ? (
                                                                 <>
-                                                                    {format(new Date(typhoon.ended_at), 'MMM d, yyyy')}<br />
-                                                                    <span className="text-xs text-slate-500">{format(new Date(typhoon.ended_at), 'h:mm a')}</span>
+                                                                    <div>{format(new Date(typhoon.ended_at), 'MMM d, yyyy')}</div>
+                                                                    <div className="text-xs text-slate-500">{format(new Date(typhoon.ended_at), 'h:mm a')}</div>
                                                                 </>
                                                             ) : (
                                                                 <span className="text-slate-400">-</span>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                        <td className="px-4 py-3 text-sm text-slate-600 hidden lg:table-cell">
                                                             {typhoon.creator?.name || 'Unknown'}
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-slate-600">
+                                                        <td className="px-4 py-3 text-sm text-slate-600 hidden xl:table-cell">
                                                             {typhoon.ender?.name || '-'}
                                                         </td>
                                                         <td className="px-4 py-3">
@@ -362,9 +638,82 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                             </div>
                                                         </td>
                                                     </motion.tr>
-                                                ))}
+                                                ))
+                                                )}
                                             </tbody>
                                         </table>
+                                    </div>
+                                )}
+
+                                {/* Pagination */}
+                                {filteredTyphoons.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-2">
+                                        <div className="text-sm text-slate-600">
+                                            Showing {paginationData.startIndex + 1} to {Math.min(paginationData.endIndex, filteredTyphoons.length)} of {filteredTyphoons.length} results
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <RowsPerPage
+                                                rowsPerPage={itemsPerPage}
+                                                setRowsPerPage={(value) => {
+                                                    setItemsPerPage(value);
+                                                    setCurrentPage(1);
+                                                }}
+                                                totalRows={filteredTyphoons.length}
+                                            />
+
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={currentPage === 1}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4" />
+                                                </Button>
+                                                
+                                                <div className="flex items-center gap-1">
+                                                    {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
+                                                        .filter(page => {
+                                                            // Show first page, last page, current page, and pages around current
+                                                            return page === 1 || 
+                                                                   page === paginationData.totalPages || 
+                                                                   Math.abs(page - currentPage) <= 1;
+                                                        })
+                                                        .map((page, index, array) => (
+                                                            <React.Fragment key={page}>
+                                                                {index > 0 && array[index - 1] !== page - 1 && (
+                                                                    <span className="px-2 text-slate-400">...</span>
+                                                                )}
+                                                                <Button
+                                                                    variant={currentPage === page ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => setCurrentPage(page)}
+                                                                    className={`h-8 w-8 p-0 ${
+                                                                        currentPage === page 
+                                                                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                                                            : ''
+                                                                    }`}
+                                                                >
+                                                                    {page}
+                                                                </Button>
+                                                            </React.Fragment>
+                                                        ))
+                                                    }
+                                                </div>
+
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.min(paginationData.totalPages, prev + 1))}
+                                                    disabled={currentPage === paginationData.totalPages}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </CardContent>
