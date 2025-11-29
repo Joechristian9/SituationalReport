@@ -15,14 +15,20 @@ class Typhoon extends Model
         'status',
         'started_at',
         'ended_at',
+        'paused_at',
+        'resumed_at',
         'pdf_path',
         'created_by',
         'ended_by',
+        'paused_by',
+        'resumed_by',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
+        'paused_at' => 'datetime',
+        'resumed_at' => 'datetime',
     ];
 
     /**
@@ -42,11 +48,51 @@ class Typhoon extends Model
     }
 
     /**
-     * Scope to get only active typhoons
+     * Get the user who paused this typhoon report
+     */
+    public function pauser()
+    {
+        return $this->belongsTo(User::class, 'paused_by');
+    }
+
+    /**
+     * Get the user who resumed this typhoon report
+     */
+    public function resumer()
+    {
+        return $this->belongsTo(User::class, 'resumed_by');
+    }
+
+    /**
+     * Scope to get only active typhoons (including paused)
      */
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->whereIn('status', ['active', 'paused']);
+    }
+
+    /**
+     * Scope to get paused typhoons
+     */
+    public function scopePaused($query)
+    {
+        return $query->where('status', 'paused');
+    }
+
+    /**
+     * Check if typhoon is paused
+     */
+    public function isPaused()
+    {
+        return $this->status === 'paused';
+    }
+
+    /**
+     * Check if typhoon is active (not paused, not ended)
+     */
+    public function isActive()
+    {
+        return $this->status === 'active';
     }
 
     /**
@@ -66,11 +112,11 @@ class Typhoon extends Model
     }
 
     /**
-     * Check if there's an active typhoon
+     * Check if there's an active typhoon (including paused)
      */
     public static function hasActiveTyphoon()
     {
-        return self::active()->exists();
+        return self::whereIn('status', ['active', 'paused'])->exists();
     }
 
     /**

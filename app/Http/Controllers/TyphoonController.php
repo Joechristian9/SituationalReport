@@ -24,10 +24,11 @@ class TyphoonController extends Controller
         ->latest('started_at')
         ->get();
 
-        // Get active typhoon with creator info
+        // Get active or paused typhoon with creator info
         $activeTyphoon = Typhoon::with('creator:id,name')
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'paused'])
             ->select('id', 'name', 'description', 'status', 'started_at', 'created_by')
+            ->latest('started_at')
             ->first();
 
         return Inertia::render('Admin/TyphoonManagement', [
@@ -42,10 +43,16 @@ class TyphoonController extends Controller
     public function getActiveTyphoon()
     {
         $activeTyphoon = Typhoon::getActiveTyphoon();
+        $pausedTyphoon = Typhoon::paused()->latest()->first();
+        
+        // If there's a paused typhoon but no active one, return the paused one
+        $currentTyphoon = $activeTyphoon ?? $pausedTyphoon;
         
         return response()->json([
             'activeTyphoon' => $activeTyphoon,
+            'currentTyphoon' => $currentTyphoon,
             'hasActiveTyphoon' => Typhoon::hasActiveTyphoon(),
+            'isPaused' => $currentTyphoon && $currentTyphoon->status === 'paused',
         ]);
     }
 
@@ -116,6 +123,113 @@ class TyphoonController extends Controller
             'message' => 'Typhoon report updated successfully.',
             'typhoon' => $typhoon->load('creator'),
         ]);
+    }
+
+    /**
+     * Pause a typhoon report temporarily
+     */
+    public function pause(Typhoon $typhoon)
+    {
+        if ($typhoon->status === 'ended') {
+            return response()->json([
+                'message' => 'Cannot pause an ended typhoon report.',
+            ], 422);
+        }
+
+        if ($typhoon->status === 'paused') {
+            return response()->json([
+                'message' => 'This typhoon report is already paused.',
+            ], 422);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $typhoon->update([
+                'status' => 'paused',
+                'paused_at' => now(),
+                'paused_by' => auth()->id(),
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Typhoon report paused successfully. Forms are now disabled.',
+                'typhoon' => $typhoon->load(['creator:id,name', 'pauser:id,name']),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Typhoon pause failed', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'message' => 'Failed to pause typhoon report. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Resume a paused typhoon report
+     */
+    public function resume(Typhoon $typhoon)
+    {
+        if ($typhoon->status !== 'paused') {
+            return response()->json([
+                'message' => 'Can only resume a paused typhoon report.',
+            ], 422);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $typhoon->update([
+                'status' => 'active',
+                'resumed_at' => now(),
+                'resumed_by' => auth()->id(),
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Typhoon report resumed successfully. Forms are now enabled.',
+                'typhoon' => $typhoon->load(['creator:id,name', 'resumer:id,name']),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Typhoon resume failed', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'message' => 'Failed to resume typhoon report. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Download current data snapshot for paused typhoon
+     */
+    public function downloadSnapshot(Typhoon $typhoon)
+    {
+        try {
+            // Generate PDF for current state
+            $pdfPath = $this->generatePdfReport($typhoon);
+            
+            $fullPath = storage_path('app/public/' . $pdfPath);
+            
+            if (!file_exists($fullPath)) {
+                return response()->json([
+                    'message' => 'PDF file not found.',
+                ], 404);
+            }
+
+            // Download and then delete the temporary file
+            return response()->download($fullPath)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            \Log::error('Snapshot download failed', [
+                'typhoon_id' => $typhoon->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to generate snapshot: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

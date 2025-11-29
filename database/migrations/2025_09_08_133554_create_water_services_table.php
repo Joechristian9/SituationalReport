@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->string('source_of_water')->nullable();
             $table->text('barangays_served')->nullable();
-            $table->enum('status', ['functional', 'available', 'not_available'])->nullable();
+            $table->text('status')->nullable();
             $table->text('remarks')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');

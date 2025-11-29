@@ -1,10 +1,11 @@
 // resources/js/Pages/SituationReports/Index.jsx
 
-import { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
+import NoActiveTyphoonNotification from "@/Components/NoActiveTyphoonNotification";
 import {
     SidebarProvider,
     SidebarInset,
@@ -57,21 +58,133 @@ export default function Index() {
         roads,
         bridges,
         typhoon,
+        auth,
     } = usePage().props;
 
-    // Check if forms should be disabled
-    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
+    // Check if forms should be disabled (no active typhoon, ended, or paused)
+    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended' || typhoon?.active?.status === 'paused';
+
+    // Poll for typhoon status changes - using localStorage to prevent spam
+    useEffect(() => {
+        // Get the last known state from localStorage
+        const getLastKnownState = () => {
+            try {
+                const stored = localStorage.getItem('lastTyphoonState');
+                return stored ? JSON.parse(stored) : null;
+            } catch {
+                return null;
+            }
+        };
+
+        // Save current state to localStorage
+        const saveCurrentState = () => {
+            const currentState = {
+                status: typhoon?.active?.status,
+                hasActive: typhoon?.hasActive,
+                typhoonId: typhoon?.active?.id,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('lastTyphoonState', JSON.stringify(currentState));
+        };
+
+        const checkTyphoonStatus = async () => {
+            try {
+                const response = await fetch('/api/typhoon/active', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const lastKnown = getLastKnownState();
+                
+                // If no last known state, save current and return
+                if (!lastKnown) {
+                    saveCurrentState();
+                    return;
+                }
+                
+                const newStatus = data.currentTyphoon?.status;
+                const newHasActive = data.hasActiveTyphoon;
+                const newTyphoonId = data.currentTyphoon?.id;
+                
+                // Check if anything actually changed
+                const statusChanged = lastKnown.status !== newStatus;
+                const hasActiveChanged = lastKnown.hasActive !== newHasActive;
+                const typhoonIdChanged = lastKnown.typhoonId !== newTyphoonId;
+                
+                // Only reload if there's a real change
+                if (statusChanged || hasActiveChanged || typhoonIdChanged) {
+                    // Save the new state BEFORE reloading
+                    localStorage.setItem('lastTyphoonState', JSON.stringify({
+                        status: newStatus,
+                        hasActive: newHasActive,
+                        typhoonId: newTyphoonId,
+                        timestamp: Date.now()
+                    }));
+                    
+                    // Reload the page
+                    router.reload({ 
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            if (newStatus === 'paused' && lastKnown.status === 'active') {
+                                toast.error('Typhoon report has been paused. Forms are now disabled.');
+                            } else if (newStatus === 'active' && lastKnown.status === 'paused') {
+                                toast.success('Typhoon report has been resumed. Forms are now enabled.');
+                            } else if (!newHasActive && lastKnown.hasActive) {
+                                toast.error('Typhoon report has been ended. Forms are now disabled.');
+                            } else if (newHasActive && !lastKnown.hasActive) {
+                                toast.success('New typhoon report created!');
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                // Silently fail
+            }
+        };
+
+        // Save initial state
+        saveCurrentState();
+
+        // Wait 3 seconds before starting polling to ensure page is fully loaded
+        const startDelay = setTimeout(() => {
+            // Check every 5 seconds
+            const interval = setInterval(checkTyphoonStatus, 5000);
+            
+            return () => clearInterval(interval);
+        }, 3000);
+
+        return () => clearTimeout(startDelay);
+    }, []); // Empty deps - only run once
+
+    // Get user permissions
+    const userPermissions = auth?.user?.permissions?.map(p => p.name) || [];
+    const isAdmin = auth?.user?.roles?.some(r => r.name === 'admin');
+
+    // Helper function to check if user has permission
+    const hasPermission = (permission) => {
+        return isAdmin || userPermissions.includes(permission);
+    };
+
+    // Define all possible steps with their permissions
+    const allSteps = [
+        { label: "Weather", icon: <Cloud size={18} />, permission: "access-weather-form" },
+        { label: "Water Level", icon: <Waves size={18} />, permission: "access-water-level-form" },
+        { label: "Electricity", icon: <Zap size={18} />, permission: "access-electricity-form" },
+        { label: "Water Services", icon: <Droplet size={18} />, permission: "access-water-service-form" },
+        { label: "Communications", icon: <Phone size={18} />, permission: "access-communication-form" },
+        { label: "Roads", icon: <Route size={18} />, permission: "access-road-form" },
+        { label: "Bridges", icon: <Landmark size={18} />, permission: "access-bridge-form" },
+    ];
+
+    // Filter steps based on user permissions
+    const steps = allSteps.filter(step => hasPermission(step.permission));
 
     const [step, setStep] = useState(1);
-    const steps = [
-        { label: "Weather", icon: <Cloud size={18} /> },
-        { label: "Water Level", icon: <Waves size={18} /> },
-        { label: "Electricity", icon: <Zap size={18} /> },
-        { label: "Water Services", icon: <Droplet size={18} /> },
-        { label: "Communications", icon: <Phone size={18} /> },
-        { label: "Roads", icon: <Route size={18} /> },
-        { label: "Bridges", icon: <Landmark size={18} /> },
-    ];
 
     const { data, setData, errors } = useForm({
         reports:
@@ -287,35 +400,93 @@ export default function Index() {
                             return <Breadcrumbs crumbs={crumbs} />;
                         })()}
                     </div>
-                    <ActiveTyphoonHeader 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
+                    <div className="flex items-center gap-3">
+                        <NoActiveTyphoonNotification 
+                            typhoon={typhoon?.active}
+                            hasActive={typhoon?.hasActive}
+                        />
+                        {typhoon?.hasActive && typhoon?.active?.status === 'active' && (
+                            <ActiveTyphoonHeader 
+                                typhoon={typhoon?.active}
+                                hasActive={typhoon?.hasActive}
+                            />
+                        )}
+                    </div>
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
+                    {/* Welcome message for users with limited access */}
+                    {!isAdmin && steps.length === 1 && (
+                        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    {steps[0].icon && (
+                                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                                            {React.cloneElement(steps[0].icon, { size: 24 })}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                        Welcome, {auth.user.name}!
+                                    </h3>
+                                    <p className="text-gray-600 mb-3">
+                                        You have access to the <span className="font-semibold text-blue-600">{steps[0].label}</span> form. 
+                                        Use this form to submit and manage your reports during active typhoon events.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <CheckCircle2 size={16} className="text-green-500" />
+                                        <span>Your submissions will be included in the consolidated situational report</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Info message for users with multiple but limited access */}
+                    {!isAdmin && steps.length > 1 && steps.length < 7 && (
+                        <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                    <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white">
+                                        <CheckCircle2 size={20} />
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-base font-semibold text-gray-900 mb-1">
+                                        Your Assigned Forms
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        You have access to {steps.length} form{steps.length > 1 ? 's' : ''}: {steps.map(s => s.label).join(', ')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <Card className="shadow-lg rounded-2xl border">
-                        <CardHeader>
-                            <CardTitle className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-500">
-                                    Report {step} of {steps.length}
-                                </span>
-                            </CardTitle>
-                            <div className="relative w-full mt-8">
-                                <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
-                                    <div
-                                        className="h-0.5 bg-blue-600 transition-all duration-500"
-                                        style={{
-                                            width: `${
-                                                ((step - 1) /
-                                                    (steps.length - 1)) *
-                                                100
-                                            }%`,
-                                        }}
-                                    ></div>
-                                </div>
-                                <div className="relative flex justify-between z-10">
+                        {steps.length > 1 && (
+                            <CardHeader>
+                                <CardTitle className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-gray-500">
+                                        Report {step} of {steps.length}
+                                    </span>
+                                </CardTitle>
+                            
+                                <div className="relative w-full mt-8">
+                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
+                                        <div
+                                            className="h-0.5 bg-blue-600 transition-all duration-500"
+                                            style={{
+                                                width: `${
+                                                    ((step - 1) /
+                                                        (steps.length - 1)) *
+                                                    100
+                                                }%`,
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <div className="relative flex justify-between z-10">
                                     {steps.map((item, index) => {
                                         const stepNumber = index + 1;
                                         const isActive = step === stepNumber;
@@ -383,12 +554,12 @@ export default function Index() {
                                     })}
                                 </div>
                             </div>
-                        </CardHeader>
+                            </CardHeader>
+                        )}
 
                         <CardContent className="space-y-8 min-h-[300px]">
                             <AnimatePresence mode="wait">
-                                {step === 1 && (
-                                    // CORRECTED: 'key' prop is now passed directly
+                                {steps[step - 1]?.label === "Weather" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <WeatherForm
@@ -400,7 +571,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 2 && (
+                                {steps[step - 1]?.label === "Water Level" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <WaterLevelForm
@@ -420,7 +591,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 3 && (
+                                {steps[step - 1]?.label === "Electricity" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <ElectricityForm
@@ -432,7 +603,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 4 && (
+                                {steps[step - 1]?.label === "Water Services" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <WaterForm
@@ -444,7 +615,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 5 && (
+                                {steps[step - 1]?.label === "Communications" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <CommunicationForm
@@ -456,7 +627,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 6 && (
+                                {steps[step - 1]?.label === "Roads" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <RoadForm
@@ -468,7 +639,7 @@ export default function Index() {
                                         </Suspense>
                                     </motion.div>
                                 )}
-                                {step === 7 && (
+                                {steps[step - 1]?.label === "Bridges" && (
                                     <motion.div key={step} {...motionProps}>
                                         <Suspense fallback={<FormLoader />}>
                                             <BridgeForm
@@ -483,29 +654,31 @@ export default function Index() {
                             </AnimatePresence>
                         </CardContent>
 
-                        <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={step === 1}
-                                onClick={() => setStep(step - 1)}
-                                className="flex items-center gap-2"
-                            >
-                                <ChevronLeft size={16} />
-                                Back
-                            </Button>
-
-                            {step < steps.length && (
+                        {steps.length > 1 && (
+                            <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
                                 <Button
                                     type="button"
-                                    onClick={() => setStep(step + 1)}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                                    variant="outline"
+                                    disabled={step === 1}
+                                    onClick={() => setStep(step - 1)}
+                                    className="flex items-center gap-2"
                                 >
-                                    Next
-                                    <ChevronRight size={16} />
+                                    <ChevronLeft size={16} />
+                                    Back
                                 </Button>
-                            )}
-                        </div>
+
+                                {step < steps.length && (
+                                    <Button
+                                        type="button"
+                                        onClick={() => setStep(step + 1)}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        Next
+                                        <ChevronRight size={16} />
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </Card>
                 </main>
             </SidebarInset>

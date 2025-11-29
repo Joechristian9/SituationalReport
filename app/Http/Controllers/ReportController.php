@@ -33,50 +33,58 @@ class ReportController extends Controller
      * Optimized: Different limits for web view vs PDF, selective columns
      * @param int|null $year Filter by year
      * @param bool $forPdf Use smaller limits for PDF generation
-     * @param int|null $typhoonId Filter by specific typhoon instead of year (currently disabled)
+     * @param int|null $typhoonId Filter by specific typhoon instead of year
      */
     public function getReportData(?int $year = null, bool $forPdf = false, ?int $typhoonId = null)
     {
-        // Use smaller limits for PDF generation (faster)
+        // When generating PDF for a specific typhoon, include ALL history (no limit)
+        // Otherwise use limits for performance
+        $useLimit = !$typhoonId;
         $limit = $forPdf ? 100 : 500;
         
-        // Build query condition based on year only (typhoon_id filtering disabled to show all data)
-        $queryCondition = function ($query) use ($year) {
-            if ($year) {
+        // Build query condition - prioritize typhoon_id over year
+        $queryCondition = function ($query) use ($year, $typhoonId) {
+            if ($typhoonId) {
+                // Filter by specific typhoon - includes ALL reports for this typhoon (history)
+                return $query->where('typhoon_id', $typhoonId);
+            } elseif ($year) {
                 return $query->whereYear('created_at', $year);
             }
             return $query;
         };
         
+        // Helper to apply limit conditionally
+        $applyLimit = function ($query) use ($useLimit, $limit) {
+            return $useLimit ? $query->limit($limit) : $query;
+        };
+        
         // Optimize with select and limit for performance
-        $preEmptiveReports = $queryCondition(PreEmptiveReport::query())
-            ->latest()
-            ->limit($limit)
+        $preEmptiveReports = $applyLimit($queryCondition(PreEmptiveReport::query())
+            ->latest())
             ->get();
-        $damagedHouses = $queryCondition(DamagedHouseReport::query())
-            ->latest()
-            ->limit($limit)
+        $damagedHouses = $applyLimit($queryCondition(DamagedHouseReport::query())
+            ->latest())
             ->get();
 
         return [
-            'weatherReports'      => $queryCondition(WeatherReport::query())->latest()->limit($limit)->get(),
-            'waterLevelReports'   => $queryCondition(WaterLevel::query())->latest()->limit($limit)->get(),
-            'electricityReports'  => $queryCondition(ElectricityService::query())->latest()->limit($limit)->get(),
-            'waterServiceReports' => $queryCondition(WaterService::query())->latest()->limit($limit)->get(),
-            'communicationReports' => $queryCondition(Communication::query())->latest()->limit($limit)->get(),
-            'roadReports'         => $queryCondition(Road::query())->latest()->limit($limit)->get(),
-            'bridgeReports'       => $queryCondition(Bridge::query())->latest()->limit($limit)->get(),
+            'weatherReports'      => $applyLimit($queryCondition(WeatherReport::query())->latest())->get(),
+            'waterLevelReports'   => $applyLimit($queryCondition(WaterLevel::query())->latest())->get(),
+            'electricityReports'  => $applyLimit($queryCondition(ElectricityService::query())->latest())->get(),
+            'waterServiceReports' => $applyLimit($queryCondition(WaterService::query())->latest())->get(),
+            'communicationReports' => $applyLimit($queryCondition(Communication::query())->latest())->get(),
+            'roadReports'         => $applyLimit($queryCondition(Road::query())->latest())->get(),
+            'bridgeReports'       => $applyLimit($queryCondition(Bridge::query())->latest())->get(),
             'preEmptiveReports'   => $preEmptiveReports,
-            'uscDeclarations'     => $queryCondition(UscDeclaration::query())->latest()->limit($limit)->get(),
-            'incidentReports'     => $queryCondition(IncidentMonitored::query())->latest()->limit($limit)->get(),
-            'prePositioningReports' => $queryCondition(PrePositioning::query())->latest()->limit($limit)->get(),
-            'deadCasualties'      => $queryCondition(Casualty::query())->latest()->limit($limit)->get(),
-            'injuredCasualties'   => $queryCondition(Injured::query())->latest()->limit($limit)->get(),
-            'missingCasualties'   => $queryCondition(Missing::query())->latest()->limit($limit)->get(),
-            'affectedTourists'    => $queryCondition(AffectedTourist::query())->latest()->limit($limit)->get(),
+            'uscDeclarations'     => $applyLimit($queryCondition(UscDeclaration::query())->latest())->get(),
+            'incidentReports'     => $applyLimit($queryCondition(IncidentMonitored::query())->latest())->get(),
+            'prePositioningReports' => $applyLimit($queryCondition(PrePositioning::query())->latest())->get(),
+            'deadCasualties'      => $applyLimit($queryCondition(Casualty::query())->latest())->get(),
+            'injuredCasualties'   => $applyLimit($queryCondition(Injured::query())->latest())->get(),
+            'missingCasualties'   => $applyLimit($queryCondition(Missing::query())->latest())->get(),
+            'affectedTourists'    => $applyLimit($queryCondition(AffectedTourist::query())->latest())->get(),
             'damagedHouses'       => $damagedHouses,
-            'suspensionOfClasses' => $queryCondition(SuspensionOfClass::query())->latest()->limit($limit)->get(),
-            'suspensionOfWork'    => $queryCondition(SuspensionOfWork::query())->latest()->limit($limit)->get(),
+            'suspensionOfClasses' => $applyLimit($queryCondition(SuspensionOfClass::query())->latest())->get(),
+            'suspensionOfWork'    => $applyLimit($queryCondition(SuspensionOfWork::query())->latest())->get(),
             'preEmptiveTotals'    => [
                 'families'         => $preEmptiveReports->sum('families'),
                 'persons'          => $preEmptiveReports->sum('persons'),

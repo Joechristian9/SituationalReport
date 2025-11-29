@@ -5,6 +5,7 @@ use App\Http\Controllers\AssistanceExtendedController;
 use App\Http\Controllers\AssistanceProvidedLguController;
 use App\Http\Controllers\CasualtyController;
 use App\Http\Controllers\DamagedHouseReportController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\MissingController;
 use App\Http\Controllers\ProfileController;
@@ -46,9 +47,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
     // Dashboard - accessible even without active typhoon
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
     // Route to display the HTML overview of the report for a specific year
@@ -61,12 +60,22 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('reports.download')
         ->middleware(['auth']);
 
-    // ============= FORM ROUTES (Requires Active Typhoon) =============
-    Route::middleware(['typhoon.active'])->group(function () {
-
-    // Situation Reports Index
+    // Situation Reports Index - accessible even without active typhoon
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
         ->name('situation-reports.index');
+
+    // Electricity History Page - accessible even without active typhoon
+    Route::get('/electricity/history', function () {
+        return inertia('ElectricityHistory/Index');
+    })->name('electricity.history');
+
+    // Water Service History Page - accessible even without active typhoon
+    Route::get('/water-service/history', function () {
+        return inertia('WaterServiceHistory/Index');
+    })->name('water-service.history');
+
+    // ============= FORM ROUTES (Requires Active Typhoon) =============
+    Route::middleware(['typhoon.active'])->group(function () {
 
     /* ---------------- Weather Reports (new API routes) ---------------- */
     Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
@@ -278,17 +287,19 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     }); // End of typhoon.active middleware group
 });
 
-use App\Http\Controllers\DashboardController;
-
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('admin/dashboard', [DashboardController::class, 'index'])
-        ->name('admin.dashboard');
+    Route::get('admin/dashboard', function () {
+        return Inertia::render('Admin/Dashboard');
+    })->name('admin.dashboard');
     
     // Typhoon Management (Admin only)
     Route::prefix('typhoons')->group(function () {
         Route::get('/', [TyphoonController::class, 'index'])->name('typhoons.index');
         Route::post('/', [TyphoonController::class, 'store'])->name('typhoons.store');
         Route::patch('/{typhoon}', [TyphoonController::class, 'update'])->name('typhoons.update');
+        Route::post('/{typhoon}/pause', [TyphoonController::class, 'pause'])->name('typhoons.pause');
+        Route::post('/{typhoon}/resume', [TyphoonController::class, 'resume'])->name('typhoons.resume');
+        Route::get('/{typhoon}/snapshot', [TyphoonController::class, 'downloadSnapshot'])->name('typhoons.snapshot');
         Route::post('/{typhoon}/end', [TyphoonController::class, 'end'])->name('typhoons.end');
         Route::post('/{typhoon}/regenerate-pdf', [TyphoonController::class, 'regeneratePdf'])->name('typhoons.regenerate-pdf');
         Route::delete('/{typhoon}', [TyphoonController::class, 'destroy'])->name('typhoons.destroy');
@@ -299,6 +310,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 // API route for checking active typhoon (accessible by all authenticated users)
 Route::middleware(['auth'])->group(function () {
     Route::get('/api/typhoon/active', [TyphoonController::class, 'getActiveTyphoon'])->name('api.typhoon.active');
+    Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
+    Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
 });
 
 require __DIR__ . '/auth.php';

@@ -26,6 +26,7 @@ import {
     Download,
     Calendar, // Import a calendar or year icon
     Cloud,
+    History,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -36,6 +37,8 @@ const staticProjects = [];
 export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
     const userRoles = auth.user.roles.map((r) => r.name);
+    const userPermissions = auth.user.permissions?.map((p) => p.name) || [];
+    const isAdmin = userRoles.includes('admin');
 
     // --- State for custom years ---
     const [customYears, setCustomYears] = useState([]);
@@ -99,6 +102,38 @@ export function AppSidebar({ ...props }) {
         onRemove: () => removeYear(year),
     }));
 
+    // Helper function to check if user has permission
+    const hasPermission = (permission) => {
+        return isAdmin || userPermissions.includes(permission);
+    };
+
+    // Check if user has access to Situation Overview (any of the 7 forms)
+    const hasSituationOverviewAccess = hasPermission('access-weather-form') ||
+        hasPermission('access-water-level-form') ||
+        hasPermission('access-electricity-form') ||
+        hasPermission('access-water-service-form') ||
+        hasPermission('access-communication-form') ||
+        hasPermission('access-road-form') ||
+        hasPermission('access-bridge-form');
+    
+    // Check if user only has electricity access (Iselco II)
+    const isElectricityOnly = hasPermission('access-electricity-form') && 
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-communication-form') &&
+        !hasPermission('access-road-form') &&
+        !hasPermission('access-bridge-form');
+    
+    // Check if user only has water service access (IWD)
+    const isWaterServiceOnly = hasPermission('access-water-service-form') && 
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-communication-form') &&
+        !hasPermission('access-road-form') &&
+        !hasPermission('access-bridge-form');
+
     const navMain = [
         {
             title: "Main Menu",
@@ -112,54 +147,78 @@ export function AppSidebar({ ...props }) {
                     url: route("admin.dashboard"),
                     roles: ["admin"],
                     icon: TbLayoutDashboard,
+                    permission: null,
                 },
                 {
                     title: "Typhoon Management",
                     url: route("typhoons.index"),
                     roles: ["admin"],
                     icon: Cloud,
+                    permission: null,
                 },
                 {
-                    title: "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user", "admin"],
                     icon: BarChart3,
+                    permission: null, // Will be checked separately
+                    requiresAnyPermission: true,
                 },
+                ...(isElectricityOnly ? [{
+                    title: "Report History",
+                    url: route("electricity.history"),
+                    roles: ["user", "admin"],
+                    icon: History,
+                    permission: "access-electricity-form",
+                }] : []),
+                ...(isWaterServiceOnly ? [{
+                    title: "Report History",
+                    url: route("water-service.history"),
+                    roles: ["user", "admin"],
+                    icon: History,
+                    permission: "access-water-service-form",
+                }] : []),
                 {
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                     roles: ["user", "admin"],
-                    icon: ClipboardList, // 🗒️ Report icon
+                    icon: ClipboardList,
+                    permission: "access-pre-emptive-form",
                 },
                 {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                     roles: ["user", "admin"],
-                    icon: FileWarning, // ⚠️ Declaration/alert
+                    icon: FileWarning,
+                    permission: "access-declaration-form",
                 },
                 {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user", "admin"],
-                    icon: MapPin, // 📍 Deployment/location
+                    icon: MapPin,
+                    permission: "access-pre-positioning-form",
                 },
                 {
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
                     roles: ["user", "admin"],
-                    icon: Flame, // 🔥 Incident/fire
+                    icon: Flame,
+                    permission: "access-incident-form",
                 },
                 {
                     title: "Response Operations",
                     url: route("response-operations.index"),
                     roles: ["user", "admin"],
-                    icon: Users, // 👥 Operations/team
+                    icon: Users,
+                    permission: "access-response-operations",
                 },
                 {
                     title: "Assistance Extended",
                     url: route("assistance.index"),
                     roles: ["user", "admin"],
-                    icon: HeartHandshake, // ❤️‍🤝 Assistance/help
+                    icon: HeartHandshake,
+                    permission: "access-assistance-extended",
                 },
             ],
         },
@@ -178,15 +237,37 @@ export function AppSidebar({ ...props }) {
          */
     ];
 
-    // --- Filter menus & submenus based on roles ---
+    // --- Filter menus & submenus based on roles AND permissions ---
     const filteredNavMain = navMain
         .filter((item) => item.roles?.some((r) => userRoles.includes(r)))
         .map((item) => ({
             ...item,
-            items: item.items?.filter((sub) =>
-                sub.roles?.some((r) => userRoles.includes(r))
-            ),
-        }));
+            items: item.items?.filter((sub) => {
+                // Check role first
+                if (!sub.roles?.some((r) => userRoles.includes(r))) {
+                    return false;
+                }
+                
+                // If admin, show everything
+                if (isAdmin) {
+                    return true;
+                }
+                
+                // Special case for Situation Overview - show if user has ANY form permission
+                if (sub.requiresAnyPermission) {
+                    return hasSituationOverviewAccess;
+                }
+                
+                // If no permission specified, show it (for items that don't need permission check)
+                if (!sub.permission) {
+                    return true;
+                }
+                
+                // Check if user has the required permission
+                return hasPermission(sub.permission);
+            }),
+        }))
+        .filter((item) => item.items && item.items.length > 0); // Remove empty groups
 
     const data = {
         teams: staticTeams,

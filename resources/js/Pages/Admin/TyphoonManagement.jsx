@@ -10,14 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,8 @@ import RowsPerPage from '@/Components/ui/RowsPerPage';
 export default function TyphoonManagement({ typhoons, activeTyphoon }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+    const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
@@ -177,6 +179,56 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         }
     }, [selectedTyphoon]);
 
+    const handlePauseTyphoon = useCallback(async () => {
+        if (!selectedTyphoon) return;
+        
+        setIsSubmitting(true);
+        const loadingToast = toast.loading('Pausing typhoon report...');
+
+        try {
+            const response = await axios.post(`/typhoons/${selectedTyphoon.id}/pause`);
+            setIsPauseModalOpen(false);
+            setSelectedTyphoon(null);
+            router.reload({ 
+                only: ['typhoons', 'activeTyphoon'],
+                onSuccess: () => {
+                    toast.success(response.data.message, { id: loadingToast });
+                }
+            });
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to pause typhoon report', { id: loadingToast });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [selectedTyphoon]);
+
+    const handleResumeTyphoon = useCallback(async () => {
+        if (!selectedTyphoon) return;
+        
+        setIsSubmitting(true);
+        const loadingToast = toast.loading('Resuming typhoon report...');
+
+        try {
+            const response = await axios.post(`/typhoons/${selectedTyphoon.id}/resume`);
+            setIsResumeModalOpen(false);
+            setSelectedTyphoon(null);
+            router.reload({ 
+                only: ['typhoons', 'activeTyphoon'],
+                onSuccess: () => {
+                    toast.success(response.data.message, { id: loadingToast });
+                }
+            });
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to resume typhoon report', { id: loadingToast });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [selectedTyphoon]);
+
+    const handleDownloadSnapshot = async (typhoon) => {
+        window.open(`/typhoons/${typhoon.id}/snapshot`, '_blank');
+    };
+
     const openDeleteModal = useCallback((typhoon) => {
         setSelectedTyphoon(typhoon);
         setIsDeleteModalOpen(true);
@@ -231,6 +283,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
 
     return (
         <SidebarProvider>
+            <Toaster position="top-right" richColors />
             <AppSidebar />
             <Head title="Typhoon Management" />
             <SidebarInset>
@@ -275,10 +328,17 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                 </div>
                                                 <CardTitle className="text-blue-900">Active Typhoon Report</CardTitle>
                                             </div>
-                                            <Badge className="bg-green-600 hover:bg-green-700 text-white animate-pulse">
-                                                <CheckCircle className="w-3 h-3 mr-1" />
-                                                Active
-                                            </Badge>
+                                            {activeTyphoon.status === 'paused' ? (
+                                                <Badge className="bg-amber-600 hover:bg-amber-700 text-white">
+                                                    <Pause className="w-3 h-3 mr-1" />
+                                                    Paused
+                                                </Badge>
+                                            ) : (
+                                                <Badge className="bg-green-600 hover:bg-green-700 text-white animate-pulse">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    Active
+                                                </Badge>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent>
@@ -303,17 +363,55 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <Button
-                                                onClick={() => {
-                                                    setSelectedTyphoon(activeTyphoon);
-                                                    setIsEndModalOpen(true);
-                                                }}
-                                                variant="destructive"
-                                                className="w-full sm:w-auto mt-2 flex items-center justify-center gap-2 hover:shadow-lg transition-all"
-                                            >
-                                                <StopCircle className="w-4 h-4" />
-                                                End This Typhoon Report
-                                            </Button>
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                {activeTyphoon.status === 'active' && (
+                                                    <Button
+                                                        onClick={() => {
+                                                            setSelectedTyphoon(activeTyphoon);
+                                                            setIsPauseModalOpen(true);
+                                                        }}
+                                                        variant="outline"
+                                                        className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                                    >
+                                                        <Pause className="w-4 h-4" />
+                                                        Pause Report
+                                                    </Button>
+                                                )}
+                                                {activeTyphoon.status === 'paused' && (
+                                                    <>
+                                                        <Button
+                                                            onClick={() => {
+                                                                setSelectedTyphoon(activeTyphoon);
+                                                                setIsResumeModalOpen(true);
+                                                            }}
+                                                            variant="outline"
+                                                            className="flex items-center gap-2 border-green-300 text-green-700 hover:bg-green-50"
+                                                        >
+                                                            <Play className="w-4 h-4" />
+                                                            Resume Report
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => handleDownloadSnapshot(activeTyphoon)}
+                                                            variant="outline"
+                                                            className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                                        >
+                                                            <FileDown className="w-4 h-4" />
+                                                            Download Snapshot
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedTyphoon(activeTyphoon);
+                                                        setIsEndModalOpen(true);
+                                                    }}
+                                                    variant="destructive"
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <StopCircle className="w-4 h-4" />
+                                                    End Report
+                                                </Button>
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -559,6 +657,8 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                                 className={
                                                                     typhoon.status === 'active' 
                                                                         ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                                        : typhoon.status === 'paused'
+                                                                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
                                                                         : 'bg-slate-600 hover:bg-slate-700 text-white'
                                                                 }
                                                             >
@@ -566,6 +666,11 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                                     <span className="flex items-center gap-1">
                                                                         <CheckCircle className="w-3 h-3" />
                                                                         Active
+                                                                    </span>
+                                                                ) : typhoon.status === 'paused' ? (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Pause className="w-3 h-3" />
+                                                                        Paused
                                                                     </span>
                                                                 ) : (
                                                                     'Ended'
@@ -886,6 +991,145 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                 </DialogContent>
             </Dialog>
 
+            {/* Pause Typhoon Modal */}
+            <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
+                <DialogContent className="sm:max-w-[550px]">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-amber-100 rounded-full">
+                                <Pause className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <DialogTitle className="text-xl text-amber-900">Pause Typhoon Report</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-base">
+                            Temporarily pause <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-3 py-2">
+                        <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                            <StopCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-amber-900">Temporarily disable forms</p>
+                                <p className="text-xs text-amber-700">Users cannot input data while paused</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <FileDown className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-blue-900">Download current snapshot</p>
+                                <p className="text-xs text-blue-700">You can download a PDF of current data</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <Play className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-green-900">Can be resumed later</p>
+                                <p className="text-xs text-green-700">Resume anytime to continue data collection</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setIsPauseModalOpen(false);
+                                setSelectedTyphoon(null);
+                            }}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handlePauseTyphoon}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Pausing...
+                                </>
+                            ) : (
+                                <>
+                                    <Pause className="w-4 h-4 mr-2" />
+                                    Pause Report
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Resume Typhoon Modal */}
+            <Dialog open={isResumeModalOpen} onOpenChange={setIsResumeModalOpen}>
+                <DialogContent className="sm:max-w-[550px]">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-green-100 rounded-full">
+                                <Play className="w-5 h-5 text-green-600" />
+                            </div>
+                            <DialogTitle className="text-xl text-green-900">Resume Typhoon Report</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-base">
+                            Resume <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-3 py-2">
+                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-green-900">Re-enable all forms</p>
+                                <p className="text-xs text-green-700">Users can continue inputting data</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-blue-900">Continue same report</p>
+                                <p className="text-xs text-blue-700">All existing data will be preserved</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setIsResumeModalOpen(false);
+                                setSelectedTyphoon(null);
+                            }}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleResumeTyphoon}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Resuming...
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Resume Report
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Delete Typhoon Modal */}
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
@@ -974,6 +1218,8 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                         className={
                                             selectedTyphoon.status === 'active' 
                                                 ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                : selectedTyphoon.status === 'paused'
+                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
                                                 : 'bg-slate-600 hover:bg-slate-700 text-white'
                                         }
                                     >
@@ -981,6 +1227,11 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                             <span className="flex items-center gap-1">
                                                 <CheckCircle className="w-3 h-3" />
                                                 Active
+                                            </span>
+                                        ) : selectedTyphoon.status === 'paused' ? (
+                                            <span className="flex items-center gap-1">
+                                                <Pause className="w-3 h-3" />
+                                                Paused
                                             </span>
                                         ) : (
                                             'Ended'

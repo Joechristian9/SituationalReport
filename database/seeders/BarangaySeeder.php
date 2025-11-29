@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class BarangaySeeder extends Seeder
 {
@@ -112,6 +113,28 @@ class BarangaySeeder extends Seeder
             'Annafunan East'
         ];
 
+        // Barangay-specific permissions (excluding electricity and water service)
+        $barangayPermissions = [
+            'access-weather-form',
+            'access-water-level-form',
+            // 'access-electricity-form', // EXCLUDED for barangays
+            // 'access-water-service-form', // EXCLUDED for barangays
+            'access-communication-form',
+            'access-road-form',
+            'access-bridge-form',
+            'access-pre-emptive-form',
+            'access-declaration-form',
+            'access-pre-positioning-form',
+            'access-incident-form',
+            'access-casualty-form',
+            'access-injured-form',
+            'access-missing-form',
+            'access-tourist-form',
+            'access-damaged-houses-form',
+            'access-response-operations',
+            'access-assistance-extended',
+        ];
+
         // Create user for each barangay
         foreach ($barangays as $barangay) {
             // Generate email from barangay name
@@ -124,6 +147,8 @@ class BarangaySeeder extends Seeder
             ]);
             
             $user->assignRole($userRole);
+            // Give barangay users specific permissions (excluding electricity and water service)
+            $user->givePermissionTo($barangayPermissions);
         }
     }
 

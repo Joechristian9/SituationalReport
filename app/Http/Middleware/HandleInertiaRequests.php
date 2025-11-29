@@ -34,14 +34,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? $request->user()->load('roles:id,name') : null,
+                'user' => $request->user() ? $request->user()->load('roles:id,name', 'permissions:id,name') : null,
             ],
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
             ],
             'typhoon' => [
-                'active' => fn() => Typhoon::with('creator:id,name')->where('status', 'active')->latest()->first(),
+                'active' => fn() => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
                 'hasActive' => fn() => Typhoon::hasActiveTyphoon(),
             ],
         ];

@@ -42,4 +42,12 @@ class Modification extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the modified model (polymorphic relationship).
+     */
+    public function model()
+    {
+        return $this->morphTo('model', 'model_type', 'model_id');
+    }
 }

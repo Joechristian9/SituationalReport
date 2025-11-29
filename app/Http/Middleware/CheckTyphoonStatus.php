@@ -21,8 +21,11 @@ class CheckTyphoonStatus
             return $next($request);
         }
 
-        // Check if there's an active typhoon
-        if (!Typhoon::hasActiveTyphoon()) {
+        // Get the active or paused typhoon
+        $typhoon = Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
+
+        // Check if there's no typhoon at all
+        if (!$typhoon) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'No active typhoon report. Forms are currently disabled.',
@@ -32,6 +35,17 @@ class CheckTyphoonStatus
 
             // For Inertia requests, redirect to dashboard with message
             return redirect()->route('dashboard')->with('error', 'No active typhoon report. Forms are currently disabled.');
+        }
+
+        // If typhoon is paused, allow page to load but forms will be disabled
+        // The frontend will handle showing disabled state based on typhoon status
+        // Only block API requests (form submissions)
+        if ($typhoon->status === 'paused' && $request->expectsJson()) {
+            return response()->json([
+                'message' => 'Typhoon report is currently paused. Forms are temporarily disabled.',
+                'hasActiveTyphoon' => false,
+                'isPaused' => true,
+            ], 403);
         }
 
         return $next($request);

@@ -37,6 +37,14 @@ class ElectricityService extends Model
     }
 
     /**
+     * The typhoon this electricity service report belongs to.
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'typhoon_id');
+    }
+
+    /**
      * Boot method to automatically handle user_id and updated_by.
      */
     protected static function boot()
