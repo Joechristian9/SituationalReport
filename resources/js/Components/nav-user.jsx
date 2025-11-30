@@ -93,7 +93,14 @@ export function NavUser({ user }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuSeparator />
-                        <Link method="post" href={route("logout")}>
+                        <Link 
+                            method="post" 
+                            href={route("logout")}
+                            onSuccess={() => {
+                                // Force full page reload to clear CSRF token
+                                window.location.href = '/';
+                            }}
+                        >
                             <DropdownMenuItem>
                                 <LogOut className="mr-2 h-4 w-4" />{" "}
                                 {/* Added margin for icon spacing */}

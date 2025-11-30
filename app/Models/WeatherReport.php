@@ -39,6 +39,14 @@ class WeatherReport extends Model
     }
 
     /**
+     * The typhoon this weather report belongs to.
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class);
+    }
+
+    /**
      * Boot method to automatically handle updated_by.
      */
     protected static function boot()

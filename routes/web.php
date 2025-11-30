@@ -74,6 +74,27 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         return inertia('WaterServiceHistory/Index');
     })->name('water-service.history');
 
+    // Weather History Page - accessible even without active typhoon
+    Route::get('/weather/history', function () {
+        return inertia('WeatherHistory/Index');
+    })->name('weather.history');
+
+    // Communication History Page - accessible even without active typhoon
+    Route::get('/communication/history', function () {
+        return inertia('CommunicationHistory/Index');
+    })->name('communication.history');
+
+    // ============= MODIFICATIONS (Accessible without active typhoon) =============
+    Route::prefix('modifications')->group(function () {
+        Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
+        Route::get('/water-level', [SituationOverviewController::class, 'waterLevelModification'])->name('modifications.water-level');
+        Route::get('/electricity', [SituationOverviewController::class, 'electricityModification'])->name('modifications.electricity');
+        Route::get('/water-service', [SituationOverviewController::class, 'waterServiceModification'])->name('modifications.water-service');
+        Route::get('/communication', [SituationOverviewController::class, 'communicationModification'])->name('modifications.communication');
+        Route::get('/road', [SituationOverviewController::class, 'roadModification'])->name('modifications.road');
+        Route::get('/bridge', [SituationOverviewController::class, 'bridgeModification'])->name('modifications.bridge');
+    });
+
     // ============= FORM ROUTES (Requires Active Typhoon) =============
     Route::middleware(['typhoon.active'])->group(function () {
 
@@ -84,8 +105,6 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('api.weather-reports');
     Route::get('/api/weather-timeline', [SituationOverviewController::class, 'getWeatherTimeline'])
         ->name('api.weather-timeline');
-    Route::get('/modifications/weather', [SituationOverviewController::class, 'weatherModification'])
-        ->name('modifications.weather');
     
     /* ---------------- Real-time Typing Indicator ---------------- */
     Route::post('/broadcast-typing', [SituationOverviewController::class, 'broadcastTyping'])
@@ -95,50 +114,35 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     /* ---------------- Water Level Reports ---------------- */
     Route::post('/water-level-reports', [SituationOverviewController::class, 'storeWaterLevel'])
         ->name('water-level-reports.store');
-    Route::get('/modifications/water-level', [SituationOverviewController::class, 'waterLevelModification'])
-        ->name('modifications.water-level');
 
 
     /* ---------------- Electricity Reports ---------------- */
     Route::post('/electricity-reports', [SituationOverviewController::class, 'storeElectricity'])
         ->name('electricity-reports.store');
-    Route::get('/modifications/electricity', [SituationOverviewController::class, 'electricityModification'])
-        ->name('modifications.electricity');
 
     /* ---------------- Water Service Reports ---------------- */
     Route::post('/water-service-reports', [SituationOverviewController::class, 'storeWaterService'])
         ->name('water-service-reports.store');
-    Route::get('/modifications/water-service', [SituationOverviewController::class, 'waterServiceModification'])
-        ->name('modifications.water-service');
 
     /* ---------------- Communication Reports ---------------- */
     Route::post('/communication-reports', [SituationOverviewController::class, 'storeCommunication'])
         ->name('communication-reports.store');
-    Route::get('/modifications/communication', [SituationOverviewController::class, 'communicationModification'])
-        ->name('modifications.communication');
+    
+    /* ---------------- Communication Services Management ---------------- */
+    Route::get('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'index'])
+        ->name('communication-services.index');
+    Route::post('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'store'])
+        ->name('communication-services.store');
+    Route::delete('/communication-services/{id}', [\App\Http\Controllers\CommunicationServiceController::class, 'destroy'])
+        ->name('communication-services.destroy');
 
     /* ---------------- Road Reports ---------------- */
     Route::post('/road-reports', [SituationOverviewController::class, 'storeRoad'])
         ->name('road-reports.store');
-    Route::get('/modifications/road', [SituationOverviewController::class, 'roadModification'])
-        ->name('modifications.road');
 
     /* ---------------- Bridge Reports ---------------- */
     Route::post('/bridge-reports', [SituationOverviewController::class, 'storeBridge'])
         ->name('bridge-reports.store');
-    Route::get('/modifications/bridge', [SituationOverviewController::class, 'bridgeModification'])
-        ->name('modifications.bridge');
-
-    // Modifications
-    Route::prefix('modifications')->group(function () {
-        Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
-        Route::get('/water-level', [SituationOverviewController::class, 'waterLevelModification'])->name('modifications.water-level');
-        Route::get('/electricity', [SituationOverviewController::class, 'electricityModification'])->name('modifications.electricity');
-        Route::get('/water-service', [SituationOverviewController::class, 'waterServiceModification'])->name('modifications.water-service');
-        Route::get('/communication', [SituationOverviewController::class, 'communicationModification'])->name('modifications.communication');
-        Route::get('/road', [SituationOverviewController::class, 'roadModification'])->name('modifications.road');
-        Route::get('/bridge', [SituationOverviewController::class, 'bridgeModification'])->name('modifications.bridge');
-    });
 
 
     // Pre-Emptive Reports
@@ -312,6 +316,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/typhoon/active', [TyphoonController::class, 'getActiveTyphoon'])->name('api.typhoon.active');
     Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
     Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
+    Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
+    Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
 });
 
 require __DIR__ . '/auth.php';

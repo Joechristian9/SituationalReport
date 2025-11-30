@@ -32,7 +32,8 @@ export default function ServiceHistoryPage({
     breadcrumbLabel,
     columns, // Array of column definitions
     renderCellContent, // Function to render cell content
-    gradientColors // { from, via, to, iconFrom, iconTo }
+    gradientColors, // { from, via, to, iconFrom, iconTo }
+    hideLayout = false // If true, don't render sidebar/header (for use in tabs)
 }) {
     const APP_URL = useAppUrl();
     const [selectedReport, setSelectedReport] = useState(null);
@@ -83,28 +84,10 @@ export default function ServiceHistoryPage({
         }
     };
 
-    return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head>
-                <title>{title}</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-                        <Breadcrumbs
-                            crumbs={[
-                                { label: breadcrumbLabel },
-                                { label: "History" },
-                            ]}
-                        />
-                    </div>
-                </header>
-
-                <main className="w-full p-6 h-full bg-gray-50">
+    const content = (
+        <div className="w-full h-full bg-gray-50">
+            <div className={hideLayout ? "" : "p-6"}>
+                <main className={hideLayout ? "w-full" : "w-full"}>
                     <div className="max-w-6xl mx-auto space-y-6">
                         {/* Header */}
                         <div className={`bg-gradient-to-r ${gradientColors.from} ${gradientColors.via} ${gradientColors.to} border ${gradientColors.border} rounded-2xl p-6 shadow-sm`}>
@@ -236,6 +219,90 @@ export default function ServiceHistoryPage({
                         )}
                     </div>
                 </main>
+            </div>
+        </div>
+    );
+
+    if (hideLayout) {
+        return (
+            <>
+                {content}
+                {/* View Report Modal */}
+            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Icon className="w-5 h-5 text-blue-600" />
+                            {title.replace('History', 'Details')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            View complete report information
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedReport && (
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 mb-2">Status</p>
+                                <Badge className={getStatusColor(selectedReport.status)}>
+                                    {selectedReport.status || 'N/A'}
+                                </Badge>
+                            </div>
+
+                            {Object.entries(selectedReport).map(([key, value]) => {
+                                if (['id', 'status', 'created_at', 'updated_at', 'user'].includes(key) || !value) return null;
+                                
+                                return (
+                                    <div key={key}>
+                                        <p className="text-sm font-medium text-gray-600 mb-2 capitalize">
+                                            {key.replace(/_/g, ' ')}
+                                        </p>
+                                        <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                                            {value}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+
+                            <div className="pt-4 border-t">
+                                <p className="text-xs text-gray-500">
+                                    Last updated: {new Date(selectedReport.updated_at).toLocaleString()}
+                                </p>
+                                {selectedReport.user && (
+                                    <p className="text-xs text-gray-500">
+                                        Updated by: {selectedReport.user.name}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+            </>
+        );
+    }
+
+    return (
+        <SidebarProvider>
+            <AppSidebar />
+            <Head>
+                <title>{title}</title>
+                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
+            </Head>
+            <SidebarInset>
+                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+                    <div className="flex items-center gap-2">
+                        <SidebarTrigger className="-ml-2" />
+                        <Separator orientation="vertical" className="h-6 mx-2" />
+                        <Breadcrumbs
+                            crumbs={[
+                                { label: breadcrumbLabel },
+                                { label: "History" },
+                            ]}
+                        />
+                    </div>
+                </header>
+                {content}
             </SidebarInset>
 
             {/* View Report Modal */}

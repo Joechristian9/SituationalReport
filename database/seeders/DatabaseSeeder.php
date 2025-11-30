@@ -3,25 +3,16 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-        // namoka joe
-
-        // Create user role first
         $role = Role::create(['name' => 'user']);
 
-        // Create form-specific permissions
         $permissions = [
             'access-weather-form',
             'access-water-level-form',
@@ -47,29 +38,6 @@ class DatabaseSeeder extends Seeder
             Permission::create(['name' => $permission]);
         }
 
-        /* $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('wardead123'),
-        ]);
-        $user->assignRole($role); */
-
-        /* $user2 = User::factory()->create([
-            'name' => 'Joe',
-            'email' => 'joe@example.com',
-            'password' => bcrypt('wardead123'),
-        ]);
-        $user2->assignRole($role);
-
-        $user3 = User::factory()->create([
-            'name' => 'Kevin',
-            'email' => 'kev@example.com',
-            'password' => bcrypt('wardead123'),
-        ]);
-        $user3->assignRole($role);
- */ 
-
-        // IWD - Only Water Service form
         $iwd = User::factory()->create([
             'name' => 'Ilagan Water District',
             'email' => 'iwd@gmail.com',
@@ -78,7 +46,6 @@ class DatabaseSeeder extends Seeder
         $iwd->assignRole($role);
         $iwd->givePermissionTo('access-water-service-form');
 
-        // Iselco II - Only Electricity form
         $iselco2 = User::factory()->create([
             'name' => 'Iselco II',
             'email' => 'iselco2@gmail.com',
@@ -87,7 +54,6 @@ class DatabaseSeeder extends Seeder
         $iselco2->assignRole($role);
         $iselco2->givePermissionTo('access-electricity-form');
 
-        // BDRRMC - Access to specific forms
         $bdrrmc = User::factory()->create([
             'name' => 'Bdrrmc',
             'email' => 'bdrrmo@gmail.com',
@@ -104,7 +70,6 @@ class DatabaseSeeder extends Seeder
             'access-assistance-extended',
         ]);
 
-        // CEO - Access to communication and infrastructure
         $ceo = User::factory()->create([
             'name' => 'Ceo',
             'email' => 'ceo@gmail.com',
@@ -117,7 +82,6 @@ class DatabaseSeeder extends Seeder
             'access-bridge-form',
         ]);
 
-        // PNP - Access to incident and casualty forms
         $pnp = User::factory()->create([
             'name' => 'Philippine National Police',
             'email' => 'pnp@gmail.com',
@@ -132,7 +96,6 @@ class DatabaseSeeder extends Seeder
             'access-tourist-form',
         ]);
 
-        // CSWDO - Access to social welfare related forms
         $cswdo = User::factory()->create([
             'name' => 'Cswdo',
             'email' => 'cswdo@gmail.com',
@@ -146,16 +109,17 @@ class DatabaseSeeder extends Seeder
             'access-assistance-extended',
         ]);
 
-        // CDRRMO - Full access to all forms (coordinator role)
         $cdrrmo = User::factory()->create([
             'name' => 'Cdrrmo',
             'email' => 'cdrrmo@gmail.com',
             'password' => bcrypt('wardead123'),
         ]);
         $cdrrmo->assignRole($role);
-        $cdrrmo->givePermissionTo(Permission::all());
+        $cdrrmo->givePermissionTo([
+            'access-weather-form',
+            'access-communication-form',
+        ]);
 
-        // Create admin role and admin user with all permissions
         $adminRole = Role::create(['name' => 'admin']);
         $admin = User::factory()->create([
             'name' => 'Admin',
@@ -165,7 +129,6 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole($adminRole);
         $admin->givePermissionTo(Permission::all());
 
-        // Seed barangay accounts
         $this->call(BarangaySeeder::class);
     }
 }

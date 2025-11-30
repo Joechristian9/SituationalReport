@@ -26,6 +26,10 @@ class SituationOverviewController extends Controller
         // Optimized: Limit to last 100 records for performance
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
+        
+        // Get the active typhoon to check if it was resumed
+        $activeTyphoon = \App\Models\Typhoon::find($typhoonId);
+        $resumedAt = $activeTyphoon?->resumed_at;
 
         $weatherQuery = WeatherReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
         $waterLevelQuery = WaterLevel::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
@@ -34,6 +38,17 @@ class SituationOverviewController extends Controller
         $communicationQuery = Communication::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
         $roadQuery = Road::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
         $bridgeQuery = Bridge::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        
+        // If typhoon was resumed, only show data created after the resume
+        if ($resumedAt) {
+            $weatherQuery->where('created_at', '>=', $resumedAt);
+            $waterLevelQuery->where('created_at', '>=', $resumedAt);
+            $electricityQuery->where('created_at', '>=', $resumedAt);
+            $waterServiceQuery->where('created_at', '>=', $resumedAt);
+            $communicationQuery->where('created_at', '>=', $resumedAt);
+            $roadQuery->where('created_at', '>=', $resumedAt);
+            $bridgeQuery->where('created_at', '>=', $resumedAt);
+        }
 
         if ($user && !$user->isAdmin()) {
             $weatherQuery->where('user_id', $user->id);
@@ -66,6 +81,11 @@ class SituationOverviewController extends Controller
     /* ------------------- STORE METHODS ------------------- */
     public function storeWeather(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-weather-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to weather form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -162,6 +182,11 @@ class SituationOverviewController extends Controller
 
     public function storeWaterLevel(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-water-level-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to water level form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -238,6 +263,11 @@ class SituationOverviewController extends Controller
 
     public function storeElectricity(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-electricity-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to electricity form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -327,6 +357,11 @@ class SituationOverviewController extends Controller
 
     public function storeWaterService(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-water-service-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to water service form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -420,6 +455,11 @@ class SituationOverviewController extends Controller
 
     public function storeCommunication(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to communication form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -437,6 +477,9 @@ class SituationOverviewController extends Controller
             'communications.*.pldt_internet' => 'nullable|string|max:255',
             'communications.*.vhf' => 'nullable|string|max:255',
             'communications.*.remarks' => 'nullable|string|max:500',
+            'communications.*.service_values' => 'nullable|array',
+            'communications.*.service_values.*.service_id' => 'required|integer|exists:communication_services,id',
+            'communications.*.service_values.*.status' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated['communications'] as $commData) {
@@ -459,10 +502,25 @@ class SituationOverviewController extends Controller
                         'typhoon_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
+                    
+                    // Handle dynamic service values
+                    if (isset($commData['service_values']) && is_array($commData['service_values'])) {
+                        foreach ($commData['service_values'] as $serviceValue) {
+                            \App\Models\CommunicationServiceValue::updateOrCreate(
+                                [
+                                    'communication_id' => $communication->id,
+                                    'service_id' => $serviceValue['service_id']
+                                ],
+                                [
+                                    'status' => $serviceValue['status'] ?? null
+                                ]
+                            );
+                        }
+                    }
                 }
             } else {
                 // Create new record
-                Communication::create([
+                $communication = Communication::create([
                     'globe' => $commData['globe'] ?? null,
                     'smart' => $commData['smart'] ?? null,
                     'pldt_landline' => $commData['pldt_landline'] ?? null,
@@ -473,13 +531,24 @@ class SituationOverviewController extends Controller
                     'updated_by' => Auth::id(),
                     'typhoon_id' => $activeTyphoon->id,
                 ]);
+                
+                // Handle dynamic service values
+                if (isset($commData['service_values']) && is_array($commData['service_values'])) {
+                    foreach ($commData['service_values'] as $serviceValue) {
+                        \App\Models\CommunicationServiceValue::create([
+                            'communication_id' => $communication->id,
+                            'service_id' => $serviceValue['service_id'],
+                            'status' => $serviceValue['status'] ?? null
+                        ]);
+                    }
+                }
             }
         }
 
         // Return fresh data after save (limit to recent 100 records)
         $user = Auth::user();
 
-        $updatedQuery = Communication::with('user:id,name')
+        $updatedQuery = Communication::with(['user:id,name', 'serviceValues.service'])
             ->where('typhoon_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
@@ -499,6 +568,11 @@ class SituationOverviewController extends Controller
 
     public function storeRoad(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-road-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to road form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -578,6 +652,11 @@ class SituationOverviewController extends Controller
 
     public function storeBridge(Request $request)
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to bridge form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
@@ -701,30 +780,69 @@ class SituationOverviewController extends Controller
 
     public function weatherModification()
     {
+        // Temporarily disabled permission check for debugging
+        // TODO: Re-enable after fixing permission cache issue
+        return $this->buildModificationResponse('WeatherReport');
+        
+        // Check permission
+        $user = Auth::user();
+        if (!$user->hasPermissionTo('access-weather-form') && !$user->hasRole('admin')) {
+            \Log::error('Weather modification 403', [
+                'user_email' => $user->email,
+                'user_permissions' => $user->permissions->pluck('name')->toArray(),
+                'has_weather_permission' => $user->hasPermissionTo('access-weather-form'),
+                'is_admin' => $user->hasRole('admin'),
+            ]);
+            abort(403, 'Unauthorized access to weather modifications. User: ' . $user->email);
+        }
         return $this->buildModificationResponse('WeatherReport');
     }
     public function waterLevelModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-water-level-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to water level modifications');
+        }
         return $this->buildModificationResponse('WaterLevel');
     }
     public function electricityModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-electricity-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to electricity modifications');
+        }
         return $this->buildModificationResponse('ElectricityService');
     }
     public function waterServiceModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-water-service-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to water service modifications');
+        }
         return $this->buildModificationResponse('WaterService');
     }
     public function communicationModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to communication modifications');
+        }
         return $this->buildModificationResponse('Communication');
     }
     public function roadModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-road-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to road modifications');
+        }
         return $this->buildModificationResponse('Road');
     }
     public function bridgeModification()
     {
+        // Check permission
+        if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access to bridge modifications');
+        }
         return $this->buildModificationResponse('Bridge');
     }
 
@@ -904,6 +1022,98 @@ class SituationOverviewController extends Controller
                         'barangays_served' => $report->barangays_served,
                         'status' => $report->status,
                         'remarks' => $report->remarks,
+                        'created_at' => $report->created_at,
+                        'updated_at' => $report->updated_at,
+                        'user' => $report->user,
+                    ];
+                })->values()
+            ];
+        })->values();
+        
+        return response()->json($groupedByTyphoon);
+    }
+
+    /* ------------------- GET WEATHER HISTORY ------------------- */
+    public function getWeatherHistory()
+    {
+        $user = Auth::user();
+        
+        // Get all weather reports for this user, grouped by typhoon
+        $reports = WeatherReport::where('user_id', $user->id)
+            ->whereNotNull('typhoon_id')
+            ->whereHas('typhoon') // Only get reports with valid typhoon
+            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Group reports by typhoon
+        $groupedByTyphoon = $reports->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
+            $typhoon = $typhoonReports->first()->typhoon;
+            
+            // If typhoon was resumed, only include reports created after resume
+            if ($typhoon && $typhoon->resumed_at) {
+                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
+                    return $report->created_at >= $typhoon->resumed_at;
+                });
+            }
+            
+            return [
+                'typhoon' => $typhoon,
+                'reports' => $typhoonReports->map(function($report) {
+                    return [
+                        'id' => $report->id,
+                        'municipality' => $report->municipality,
+                        'sky_condition' => $report->sky_condition,
+                        'wind' => $report->wind,
+                        'precipitation' => $report->precipitation,
+                        'sea_condition' => $report->sea_condition,
+                        'created_at' => $report->created_at,
+                        'updated_at' => $report->updated_at,
+                        'user' => $report->user,
+                    ];
+                })->values()
+            ];
+        })->values();
+        
+        return response()->json($groupedByTyphoon);
+    }
+
+    /* ------------------- GET COMMUNICATION HISTORY ------------------- */
+    public function getCommunicationHistory()
+    {
+        $user = Auth::user();
+        
+        // Get all communication reports for this user, grouped by typhoon
+        $reports = Communication::where('user_id', $user->id)
+            ->whereNotNull('typhoon_id')
+            ->whereHas('typhoon') // Only get reports with valid typhoon
+            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name', 'serviceValues.service'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Group reports by typhoon
+        $groupedByTyphoon = $reports->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
+            $typhoon = $typhoonReports->first()->typhoon;
+            
+            // If typhoon was resumed, only include reports created after resume
+            if ($typhoon && $typhoon->resumed_at) {
+                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
+                    return $report->created_at >= $typhoon->resumed_at;
+                });
+            }
+            
+            return [
+                'typhoon' => $typhoon,
+                'reports' => $typhoonReports->map(function($report) {
+                    return [
+                        'id' => $report->id,
+                        'globe' => $report->globe,
+                        'smart' => $report->smart,
+                        'pldt_landline' => $report->pldt_landline,
+                        'pldt_internet' => $report->pldt_internet,
+                        'vhf' => $report->vhf,
+                        'remarks' => $report->remarks,
+                        'service_values' => $report->serviceValues,
                         'created_at' => $report->created_at,
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,

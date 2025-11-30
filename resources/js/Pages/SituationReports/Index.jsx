@@ -3,6 +3,7 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
+
 import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
 import NoActiveTyphoonNotification from "@/Components/NoActiveTyphoonNotification";
@@ -184,7 +185,8 @@ export default function Index() {
     // Filter steps based on user permissions
     const steps = allSteps.filter(step => hasPermission(step.permission));
 
-    const [step, setStep] = useState(1);
+    // Initialize step: 0 for card selection (2 forms), 1 for direct form (1 form or 3+ forms)
+    const [step, setStep] = useState(!isAdmin && steps.length === 2 ? 0 : 1);
 
     const { data, setData, errors } = useForm({
         reports:
@@ -361,6 +363,30 @@ export default function Index() {
         transition: { duration: 0.3 },
     };
 
+    // Render form based on step number
+    const renderForm = (stepNumber) => {
+        const stepLabel = steps[stepNumber - 1]?.label;
+        
+        switch(stepLabel) {
+            case "Weather":
+                return <WeatherForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Water Level":
+                return <WaterLevelForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Electricity":
+                return <ElectricityForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Water Services":
+                return <WaterForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Communications":
+                return <CommunicationForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Roads":
+                return <RoadForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Bridges":
+                return <BridgeForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            default:
+                return null;
+        }
+    };
+
     return (
         <SidebarProvider>
             <Toaster position="top-right" />
@@ -415,24 +441,25 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Welcome message for users with limited access */}
-                    {!isAdmin && steps.length === 1 && (
+                    {/* Welcome message for users with limited access (1-2 forms) */}
+                    {!isAdmin && steps.length <= 2 && (
                         <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
                             <div className="flex items-start gap-4">
                                 <div className="flex-shrink-0">
-                                    {steps[0].icon && (
-                                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                            {React.cloneElement(steps[0].icon, { size: 24 })}
-                                        </div>
-                                    )}
+                                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                                        {steps.length === 1 ? (
+                                            React.cloneElement(steps[0].icon, { size: 24 })
+                                        ) : (
+                                            <CheckCircle2 size={24} />
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                         Welcome, {auth.user.name}!
                                     </h3>
                                     <p className="text-gray-600 mb-3">
-                                        You have access to the <span className="font-semibold text-blue-600">{steps[0].label}</span> form. 
-                                        Use this form to submit and manage your reports during active typhoon events.
+                                        You have access to the <span className="font-semibold text-blue-600">{steps.length === 1 ? steps[0].label : steps.map(s => s.label).join(', ')}</span> {steps.length === 1 ? 'form' : 'forms'}. Use this form to submit and manage your reports during active typhoon events.
                                     </p>
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <CheckCircle2 size={16} className="text-green-500" />
@@ -443,29 +470,65 @@ export default function Index() {
                         </div>
                     )}
 
-                    {/* Info message for users with multiple but limited access */}
-                    {!isAdmin && steps.length > 1 && steps.length < 7 && (
-                        <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0">
-                                    <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white">
-                                        <CheckCircle2 size={20} />
-                                    </div>
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-base font-semibold text-gray-900 mb-1">
-                                        Your Assigned Forms
-                                    </h4>
-                                    <p className="text-sm text-gray-600 mb-2">
-                                        You have access to {steps.length} form{steps.length > 1 ? 's' : ''}: {steps.map(s => s.label).join(', ')}
-                                    </p>
-                                </div>
-                            </div>
+                    {/* Card selection for users with exactly 2 forms (CDRRMO) */}
+                    {!isAdmin && steps.length === 2 && step === 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {steps.map((formStep, index) => (
+                                <Card 
+                                    key={index}
+                                    className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
+                                    onClick={() => setStep(index + 1)}
+                                >
+                                    <CardHeader>
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2.5 bg-blue-100 rounded-lg">
+                                                {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg">{formStep.label}</CardTitle>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    Click to {formStep.label === 'Weather' ? 'submit weather conditions' : 'report communication status'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            ))}
                         </div>
                     )}
 
+                    {/* Show selected form for users with 1-2 forms */}
+                    {!isAdmin && steps.length <= 2 && step > 0 && (
+                        <Card className="shadow-lg rounded-2xl border">
+                            <CardContent className="p-6">
+                                <Suspense fallback={<FormLoader />}>
+                                    <AnimatePresence mode="wait">
+                                        <motion.div {...motionProps} key={step}>
+                                            {renderForm(step)}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </Suspense>
+                            </CardContent>
+                            {steps.length === 2 && (
+                                <div className="p-4 border-t bg-gray-50">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setStep(0)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <ChevronLeft size={16} />
+                                        Back to Form Selection
+                                    </Button>
+                                </div>
+                            )}
+                        </Card>
+                    )}
+
+                    {/* Show stepper for users with 3+ forms */}
+                    {(isAdmin || steps.length > 2) && (
                     <Card className="shadow-lg rounded-2xl border">
-                        {steps.length > 1 && (
+                        {steps.length > 2 && (
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
                                     <span className="text-sm font-medium text-gray-500">
@@ -654,7 +717,7 @@ export default function Index() {
                             </AnimatePresence>
                         </CardContent>
 
-                        {steps.length > 1 && (
+                        {steps.length > 2 && (
                             <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
                                 <Button
                                     type="button"
@@ -680,6 +743,7 @@ export default function Index() {
                             </div>
                         )}
                     </Card>
+                    )}
                 </main>
             </SidebarInset>
         </SidebarProvider>

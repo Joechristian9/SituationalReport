@@ -40,6 +40,22 @@ class Communication extends Model
     }
 
     /**
+     * The service values for this communication report.
+     */
+    public function serviceValues()
+    {
+        return $this->hasMany(CommunicationServiceValue::class, 'communication_id');
+    }
+
+    /**
+     * The typhoon this communication report belongs to.
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class);
+    }
+
+    /**
      * Boot method to automatically handle user_id and updated_by.
      */
     protected static function boot()

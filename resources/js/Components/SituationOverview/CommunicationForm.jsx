@@ -1,485 +1,625 @@
-// resources/js/Components/SituationOverview/CommunicationForm.jsx
-
-import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 import { usePage } from "@inertiajs/react";
-import useTableFilter from "@/hooks/useTableFilter";
-
-import { Radio, History, Loader2, PlusCircle, Save } from "lucide-react";
-import {
-    Tooltip,
-    TooltipTrigger,
-    TooltipContent,
-    TooltipProvider,
-} from "@/components/ui/tooltip";
-
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+import { Radio, Loader2, Save, AlertCircle, Plus, X } from "lucide-react";
 
 export default function CommunicationForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { auth } = usePage().props;
+    const { typhoon, auth } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef(null);
     const [originalData, setOriginalData] = useState(null);
-    const debounceTimerRef = useRef(null);
+    const [currentDateTime, setCurrentDateTime] = useState(new Date());
+    const [formData, setFormData] = useState({
+        globe: "",
+        smart: "",
+        pldt_landline: "",
+        pldt_internet: "",
+        vhf: "",
+        remarks: ""
+    });
     
-    const communications = data?.communications ?? [];
+    // Dynamic services state
+    const [services, setServices] = useState({
+        cellphone: [],
+        internet: [],
+        radio: []
+    });
+    const [dynamicValues, setDynamicValues] = useState({});
+    const [showAddService, setShowAddService] = useState(false);
+    const [newService, setNewService] = useState({ name: '', category: 'cellphone' });
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
     
-    // Store original data on mount for change detection
+    const [previousDisabled, setPreviousDisabled] = useState(disabled);
+    // Check if user has communication form access (CDRRMO users)
+    const canManageServices = auth?.user?.permissions?.some(p => p.name === 'access-communication-form') || 
+                              auth?.user?.roles?.some(role => role.name === 'admin');
+    
+    // Fetch available services
     useEffect(() => {
-        if (!originalData) {
-            setOriginalData(JSON.parse(JSON.stringify(communications)));
-        }
-    }, []);
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedCommunications,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-    } = useTableFilter(communications, ['globe', 'smart', 'remarks'], 5);
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target)
-            ) {
-                setShowDropdown(false);
+        const fetchServices = async () => {
+            try {
+                const response = await axios.get(`${APP_URL}/communication-services`);
+                if (response.data && response.data.services) {
+                    setServices(response.data.services);
+                }
+            } catch (err) {
+                console.error('Failed to fetch services:', err);
             }
         };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
+        fetchServices();
+    }, [APP_URL]);
+    
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentDateTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
     }, []);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["communication-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/communication`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
-    });
-
-    // Input change handler using row ID for better pagination support
-    const handleInputChange = useCallback((rowId, event) => {
-        const { name, value } = event.target;
+    
+    useEffect(() => {
+        const communications = data.communications ?? [];
         
-        // Update the row by finding it by ID (works correctly with pagination)
-        const updatedCommunications = communications.map(comm => 
-            comm.id === rowId 
-                ? { ...comm, [name]: value }
-                : comm
-        );
-        setData("communications", updatedCommunications);
-    }, [communications, setData]);
+        // Check if typhoon was recently resumed
+        const typhoonResumedAt = typhoon?.resumed_at;
+        
+        if (communications.length > 0) {
+            const firstComm = communications[0];
+            
+            // If typhoon was resumed and this record was created BEFORE the resume, don't load it
+            if (typhoonResumedAt && firstComm.created_at) {
+                const commCreatedAt = new Date(firstComm.created_at);
+                const resumedAt = new Date(typhoonResumedAt);
+                
+                if (commCreatedAt < resumedAt) {
+                    // This is old data from before resume, keep form empty
+                    return;
+                }
+            }
+            
+            const loadedData = {
+                globe: firstComm.globe || "",
+                smart: firstComm.smart || "",
+                pldt_landline: firstComm.pldt_landline || "",
+                pldt_internet: firstComm.pldt_internet || "",
+                vhf: firstComm.vhf || "",
+                remarks: firstComm.remarks || ""
+            };
+            setFormData(loadedData);
+            
+            // Load dynamic service values
+            if (firstComm.service_values) {
+                const dynamicVals = {};
+                firstComm.service_values.forEach(sv => {
+                    dynamicVals[`service_${sv.service_id}`] = sv.status || "";
+                });
+                setDynamicValues(dynamicVals);
+            }
+            
+            setOriginalData(JSON.parse(JSON.stringify({ ...loadedData, dynamicValues })));
+        }
+    }, [data.communications, typhoon]);
+    
+    useEffect(() => {
+        if (previousDisabled === true && disabled === false) {
+            if (formData.globe || formData.smart || formData.pldt_landline || formData.pldt_internet || formData.vhf || formData.remarks) {
+                const emptyData = {
+                    globe: "",
+                    smart: "",
+                    pldt_landline: "",
+                    pldt_internet: "",
+                    vhf: "",
+                    remarks: ""
+                };
+                setFormData(emptyData);
+                setOriginalData(null);
+            }
+        }
+        setPreviousDisabled(disabled);
+    }, [disabled]);
 
-    const handleAddRow = () => {
-        setData("communications", [
-            ...communications,
-            {
-                id: `new-${Date.now()}`,
-                globe: "",
-                smart: "",
-                pldt_landline: "",
-                pldt_internet: "",
-                vhf: "",
-                remarks: "",
-            },
-        ]);
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (name.startsWith('service_')) {
+            setDynamicValues(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+    
+    const handleAddService = async () => {
+        if (!newService.name.trim()) {
+            toast.error("Please enter a service name");
+            return;
+        }
+        
+        try {
+            const response = await axios.post(`${APP_URL}/communication-services`, newService);
+            if (response.data && response.data.service) {
+                // Refresh services
+                const servicesResponse = await axios.get(`${APP_URL}/communication-services`);
+                if (servicesResponse.data && servicesResponse.data.services) {
+                    setServices(servicesResponse.data.services);
+                }
+                toast.success("Service added successfully!");
+                setNewService({ name: '', category: 'cellphone' });
+                setShowAddService(false);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || "Failed to add service");
+        }
+    };
+    
+    const handleRemoveService = (serviceId) => {
+        setServiceToDelete(serviceId);
+        setShowConfirmDelete(true);
+    };
+    
+    const confirmRemoveService = async () => {
+        if (!serviceToDelete) return;
+        
+        try {
+            await axios.delete(`${APP_URL}/communication-services/${serviceToDelete}`);
+            // Refresh services
+            const response = await axios.get(`${APP_URL}/communication-services`);
+            if (response.data && response.data.services) {
+                setServices(response.data.services);
+            }
+            toast.success("Service removed successfully!");
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || "Failed to remove service");
+        } finally {
+            setShowConfirmDelete(false);
+            setServiceToDelete(null);
+        }
     };
 
-    // Check if data has changed
+    const handleRemarksFocus = () => {
+        if (!formData.remarks || formData.remarks.trim() === '') {
+            const dateTimeString = currentDateTime.toLocaleString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            setFormData(prev => ({
+                ...prev,
+                remarks: `As of ${dateTimeString}: `
+            }));
+        }
+    };
+
+    const hasData = useMemo(() => {
+        const hasFormData = formData.globe.trim() !== '' || 
+               formData.smart.trim() !== '' || 
+               formData.pldt_landline.trim() !== '' || 
+               formData.pldt_internet.trim() !== '' || 
+               formData.vhf.trim() !== '' || 
+               formData.remarks.trim() !== '';
+        
+        const hasDynamicData = Object.values(dynamicValues).some(val => val.trim() !== '');
+        
+        return hasFormData || hasDynamicData;
+    }, [formData, dynamicValues]);
+
     const hasChanges = useMemo(() => {
-        if (!originalData) return false;
-        return JSON.stringify(originalData) !== JSON.stringify(communications);
-    }, [originalData, communications]);
-    
-    // Validate communications before submission
-    const validateCommunications = useCallback(() => {
-        const errors = [];
-        
-        communications.forEach((comm, index) => {
-            // At least one service field should be filled
-            const hasData = comm.globe || comm.smart || comm.pldt_landline || 
-                           comm.pldt_internet || comm.vhf;
-            if (!hasData) {
-                errors.push(`Row ${index + 1}: At least one service status is required`);
-            }
-        });
-        
-        return errors;
-    }, [communications]);
+        if (!originalData) return hasData;
+        const currentData = { ...formData, dynamicValues };
+        return JSON.stringify(originalData) !== JSON.stringify(currentData);
+    }, [originalData, formData, dynamicValues, hasData]);
 
     const handleSubmit = async () => {
         if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            toast.error("Forms are currently disabled.");
             return;
         }
-        // Check if there are any changes
         if (!hasChanges) {
             toast.info("No changes to save");
-            return;
-        }
-        
-        // Validate data before submission
-        const validationErrors = validateCommunications();
-        if (validationErrors.length > 0) {
-            toast.error(validationErrors[0]);
             return;
         }
         
         setIsSaving(true);
         
         try {
-            // Clean string IDs for new rows
-            const cleanedCommunications = communications.map(comm => ({
-                ...comm,
-                id: typeof comm.id === 'string' ? null : comm.id
-            }));
+            // Prepare service values for submission
+            const serviceValues = Object.entries(dynamicValues).map(([key, value]) => ({
+                service_id: parseInt(key.replace('service_', '')),
+                status: value
+            })).filter(sv => sv.status.trim() !== '');
             
             const response = await axios.post(`${APP_URL}/communication-reports`, {
-                communications: cleanedCommunications,
+                communications: [{
+                    ...formData,
+                    service_values: serviceValues
+                }],
             });
             
-            // Update local state with server response if available
-            // Only overwrite if the server actually returns at least one communication
-            if (response.data && Array.isArray(response.data.communications) && response.data.communications.length > 0) {
+            if (response.data && Array.isArray(response.data.communications)) {
                 setData("communications", response.data.communications);
-                // Update original data to reflect saved state
-                setOriginalData(JSON.parse(JSON.stringify(response.data.communications)));
-            } else {
-                // No communications returned – keep current data as the saved state
-                setOriginalData(JSON.parse(JSON.stringify(communications)));
+                setOriginalData(JSON.parse(JSON.stringify({ ...formData, dynamicValues })));
             }
             
-            // Invalidate modification history once
-            queryClient.invalidateQueries(['communication-modifications']);
-            
-            toast.success("Communication reports saved successfully!");
+            toast.success("Communication report saved successfully!");
         } catch (err) {
             console.error(err);
-            
-            // Provide more specific error messages
-            const errorMessage = err.response?.data?.message || 
-                                err.response?.data?.error ||
-                                "Failed to save communication reports. Please try again.";
-            
-            toast.error(errorMessage);
+            toast.error(err.response?.data?.message || "Failed to save communication report.");
         } finally {
             setIsSaving(false);
         }
     };
 
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
-
     return (
-        <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-green-100 text-green-600 p-2 rounded-lg">
-                        <Radio size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Communication Services Status
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Enter details of communication services availability.
-                        </p>
-                    </div>
+        <>
+        <div className="space-y-6">
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
+                    <Radio className="w-6 h-6 text-white" />
                 </div>
-
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search communication services..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
-                        <DownloadExcelButton
-                            data={communications}
-                            fileName="Communication_Services_Report"
-                            sheetName="Communications"
-                        />
-                    </div>
-                </div>
-
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Globe</th>
-                                <th className="p-3 border-r">Smart</th>
-                                <th className="p-3 border-r">PLDT Landline</th>
-                                <th className="p-3 border-r">PLDT Internet</th>
-                                <th className="p-3 border-r">VHF Radio</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedCommunications.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <Radio size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No service matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedCommunications.map((row, index) => {
-                                const fields = [
-                                    "globe",
-                                    "smart",
-                                    "pldt_landline",
-                                    "pldt_internet",
-                                    "vhf",
-                                    "remarks",
-                                ];
-
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            // Use row ID + field for row-specific tracking
-                                            const historyKey = `${row.id}_${field}`;
-                                            const fieldHistory =
-                                                modificationData?.history?.[historyKey] || [];
-                                            const latestChange =
-                                                fieldHistory[0];
-                                            const previousChange =
-                                                fieldHistory.length > 1
-                                                    ? fieldHistory[1]
-                                                    : null;
-
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        <input
-                                                            name={field}
-                                                            value={
-                                                                row[field] ?? ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleInputChange(
-                                                                    row.id,
-                                                                    e
-                                                                )
-                                                            }
-                                                            placeholder="Enter value..."
-                                                            disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-10 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                        />
-                                                        {fieldHistory.length >
-                                                            0 && (
-                                                            <div className="absolute top-1/2 -translate-y-1/2 right-3">
-                                                                <Tooltip>
-                                                                    <TooltipTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <History className="w-5 h-5 text-slate-400 hover:text-blue-600 cursor-pointer" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="right"
-                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
-                                                                    >
-                                                                        <div className="text-sm space-y-2">
-                                                                            <div>
-                                                                                <p className="text-sm font-bold text-white mb-1">
-                                                                                    Latest
-                                                                                    Change:
-                                                                                </p>
-                                                                                <p>
-                                                                                    <span className="font-semibold text-blue-300">
-                                                                                        {
-                                                                                            latestChange
-                                                                                                .user
-                                                                                                ?.name
-                                                                                        }
-                                                                                    </span>{" "}
-                                                                                    changed
-                                                                                    from{" "}
-                                                                                    <span className="text-red-400 font-mono">
-                                                                                        {latestChange.old ??
-                                                                                            "nothing"}
-                                                                                    </span>{" "}
-                                                                                    to{" "}
-                                                                                    <span className="text-green-400 font-mono">
-                                                                                        {latestChange.new ??
-                                                                                            "nothing"}
-                                                                                    </span>
-                                                                                </p>
-                                                                                <p className="text-xs text-gray-400">
-                                                                                    {new Date(
-                                                                                        latestChange.date
-                                                                                    ).toLocaleString()}
-                                                                                </p>
-                                                                            </div>
-                                                                            {previousChange && (
-                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
-                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
-                                                                                        Previous
-                                                                                        Change:
-                                                                                    </p>
-                                                                                    <p>
-                                                                                        <span className="font-semibold text-blue-300">
-                                                                                            {
-                                                                                                previousChange
-                                                                                                    .user
-                                                                                                    ?.name
-                                                                                            }
-                                                                                        </span>{" "}
-                                                                                        changed
-                                                                                        from{" "}
-                                                                                        <span className="text-red-400 font-mono">
-                                                                                            {previousChange.old ??
-                                                                                                "nothing"}
-                                                                                        </span>{" "}
-                                                                                        to{" "}
-                                                                                        <span className="text-green-400 font-mono">
-                                                                                            {previousChange.new ??
-                                                                                                "nothing"}
-                                                                                        </span>
-                                                                                    </p>
-                                                                                    <p className="text-xs text-gray-400">
-                                                                                        {new Date(
-                                                                                            previousChange.date
-                                                                                        ).toLocaleString()}
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {latestChange && row[field] && row[field] !== '' && (
-                                                        <p className="text-xs text-slate-500 mt-2">
-                                                            Last modified by{" "}
-                                                            <span className="font-medium text-blue-700">
-                                                                {
-                                                                    latestChange
-                                                                        .user
-                                                                        ?.name
-                                                                }
-                                                            </span>
-                                                        </p>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                    {errors.communications && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.communications}
-                        </div>
-                    )}
-                </div>
-
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || !hasChanges || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : (hasChanges ? 'Save Communication Report' : 'No Changes')}</span>
-                            </>
-                        )}
-                    </button>
+                <div className="flex-1">
+                    <h4 className="font-bold text-white mb-1 text-lg">📡 Communication Status Update</h4>
+                    <p className="text-purple-50 text-sm">
+                        One report per typhoon — update anytime to keep information current. All changes are tracked in History.
+                    </p>
                 </div>
             </div>
-        </TooltipProvider>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="bg-gradient-to-r from-purple-50 to-purple-100/50 border-b border-slate-200">
+                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={2 + (services.cellphone?.length || 0)}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                        CELLPHONE (SMS & CALL)
+                                    </div>
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => { setNewService({ name: '', category: 'cellphone' }); setShowAddService(true); }}
+                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            disabled={disabled}
+                                        >
+                                            <Plus className="w-3 h-3" /> Add
+                                        </button>
+                                    )}
+                                </div>
+                            </th>
+                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={1 + (services.internet?.length || 0)}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                        Internet
+                                    </div>
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => { setNewService({ name: '', category: 'internet' }); setShowAddService(true); }}
+                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            disabled={disabled}
+                                        >
+                                            <Plus className="w-3 h-3" /> Add
+                                        </button>
+                                    )}
+                                </div>
+                            </th>
+                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={1 + (services.radio?.length || 0)}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                        Radio
+                                    </div>
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => { setNewService({ name: '', category: 'radio' }); setShowAddService(true); }}
+                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            disabled={disabled}
+                                        >
+                                            <Plus className="w-3 h-3" /> Add
+                                        </button>
+                                    )}
+                                </div>
+                            </th>
+                            <th className="text-left p-4 font-semibold text-slate-700">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                    REMARKS
+                                </div>
+                            </th>
+                        </tr>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                            {/* Default cellphone services */}
+                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">GLOBE</th>
+                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">SMART</th>
+                            
+                            {/* Dynamic cellphone services */}
+                            {services.cellphone?.map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                                    {service.name}
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => handleRemoveService(service.id)}
+                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            disabled={disabled}
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </th>
+                            ))}
+                            
+                            {/* Default internet service */}
+                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">POLARIS</th>
+                            
+                            {/* Dynamic internet services */}
+                            {services.internet?.map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                                    {service.name}
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => handleRemoveService(service.id)}
+                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            disabled={disabled}
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </th>
+                            ))}
+                            
+                            {/* Default radio service */}
+                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">VHF</th>
+                            
+                            {/* Dynamic radio services */}
+                            {services.radio?.map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                                    {service.name}
+                                    {canManageServices && (
+                                        <button
+                                            onClick={() => handleRemoveService(service.id)}
+                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            disabled={disabled}
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </th>
+                            ))}
+                            
+                            <th className="text-center p-3 font-medium text-slate-600 text-sm"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="hover:bg-slate-50/50 transition-colors">
+                            {/* Default cellphone inputs */}
+                            <td className="p-3 border-r border-slate-200">
+                                <input
+                                    type="text"
+                                    name="globe"
+                                    value={formData.globe}
+                                    onChange={handleInputChange}
+                                    disabled={disabled}
+                                    placeholder="e.g., Serviceable"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                />
+                            </td>
+                            <td className="p-3 border-r border-slate-200">
+                                <input
+                                    type="text"
+                                    name="smart"
+                                    value={formData.smart}
+                                    onChange={handleInputChange}
+                                    disabled={disabled}
+                                    placeholder="e.g., Serviceable"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                />
+                            </td>
+                            
+                            {/* Dynamic cellphone inputs */}
+                            {services.cellphone?.map(service => (
+                                <td key={service.id} className="p-3 border-r border-slate-200">
+                                    <input
+                                        type="text"
+                                        name={`service_${service.id}`}
+                                        value={dynamicValues[`service_${service.id}`] || ""}
+                                        onChange={handleInputChange}
+                                        disabled={disabled}
+                                        placeholder="e.g., Serviceable"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    />
+                                </td>
+                            ))}
+                            
+                            {/* Default internet input */}
+                            <td className="p-3 border-r border-slate-200">
+                                <input
+                                    type="text"
+                                    name="pldt_internet"
+                                    value={formData.pldt_internet}
+                                    onChange={handleInputChange}
+                                    disabled={disabled}
+                                    placeholder="e.g., Serviceable"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                />
+                            </td>
+                            
+                            {/* Dynamic internet inputs */}
+                            {services.internet?.map(service => (
+                                <td key={service.id} className="p-3 border-r border-slate-200">
+                                    <input
+                                        type="text"
+                                        name={`service_${service.id}`}
+                                        value={dynamicValues[`service_${service.id}`] || ""}
+                                        onChange={handleInputChange}
+                                        disabled={disabled}
+                                        placeholder="e.g., Serviceable"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    />
+                                </td>
+                            ))}
+                            
+                            {/* Default radio input */}
+                            <td className="p-3 border-r border-slate-200">
+                                <input
+                                    type="text"
+                                    name="vhf"
+                                    value={formData.vhf}
+                                    onChange={handleInputChange}
+                                    disabled={disabled}
+                                    placeholder="e.g., Functional"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                />
+                            </td>
+                            
+                            {/* Dynamic radio inputs */}
+                            {services.radio?.map(service => (
+                                <td key={service.id} className="p-3 border-r border-slate-200">
+                                    <input
+                                        type="text"
+                                        name={`service_${service.id}`}
+                                        value={dynamicValues[`service_${service.id}`] || ""}
+                                        onChange={handleInputChange}
+                                        disabled={disabled}
+                                        placeholder="e.g., Functional"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    />
+                                </td>
+                            ))}
+                            
+                            {/* Remarks */}
+                            <td className="p-3">
+                                <textarea
+                                    name="remarks"
+                                    value={formData.remarks}
+                                    onChange={handleInputChange}
+                                    onFocus={handleRemarksFocus}
+                                    rows="2"
+                                    disabled={disabled}
+                                    placeholder="Click to auto-fill date and time..."
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm resize-none"
+                                />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="flex justify-end pt-5 border-t border-slate-200">
+                <button
+                    onClick={handleSubmit}
+                    disabled={isSaving || !hasChanges || !hasData || disabled}
+                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                >
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Submitting...</span>
+                        </>
+                    ) : !hasData ? (
+                        <>
+                            <AlertCircle className="w-5 h-5" />
+                            <span>Fill in the form</span>
+                        </>
+                    ) : hasChanges ? (
+                        <>
+                            <Save className="w-5 h-5" />
+                            <span>Submit Report</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>No Changes</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+        
+        {/* Add Service Modal - Moved outside main container */}
+        {showAddService && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+                <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Add New Service</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Service Name</label>
+                            <input
+                                type="text"
+                                value={newService.name}
+                                onChange={(e) => setNewService(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="e.g., TM, DITO, Sky Cable"
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                            <select
+                                value={newService.category}
+                                onChange={(e) => setNewService(prev => ({ ...prev, category: e.target.value }))}
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                            >
+                                <option value="cellphone">Cellphone (SMS & Call)</option>
+                                <option value="internet">Internet</option>
+                                <option value="radio">Radio</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={() => setShowAddService(false)}
+                            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleAddService}
+                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        >
+                            Add Service
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        
+        {/* Confirmation Modal for Deleting Service */}
+        {showConfirmDelete && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+                <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Remove Service</h3>
+                    <p className="text-slate-600 mb-6">
+                        Are you sure you want to remove this service? This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => {
+                                setShowConfirmDelete(false);
+                                setServiceToDelete(null);
+                            }}
+                            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={confirmRemoveService}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }
+

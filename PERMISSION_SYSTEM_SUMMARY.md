@@ -14,7 +14,7 @@ The system now has role-based access control where users can only access specifi
 | **CEO** | ceo@gmail.com | Communication, Roads, Bridges |
 | **PNP** | pnp@gmail.com | Incidents, Casualties, Injured, Missing, Tourists |
 | **CSWDO** | cswdo@gmail.com | Pre-Emptive, Damaged Houses, Pre-Positioning, Assistance Extended |
-| **CDRRMO** | cdrrmo@gmail.com | ALL FORMS (Coordinator) |
+| **CDRRMO** | cdrrmo@gmail.com | 🌤️ Weather, 📡 Communication ONLY |
 | **Admin** | admin@gmail.com | ALL FORMS + Management |
 | **Barangays** | *.@barangay.local | ALL EXCEPT Electricity & Water Service |
 
@@ -101,7 +101,7 @@ Expected: Only Water Service form visible
 ```
 Email: cdrrmo@gmail.com
 Password: wardead123
-Expected: All forms visible
+Expected: Only Weather and Communication forms visible
 ```
 
 ## 📝 Files Modified

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
+
 import { RiMenuFold2Fill } from "react-icons/ri";
 
 import { NavMain } from "@/components/nav-main";
@@ -27,6 +28,7 @@ import {
     Calendar, // Import a calendar or year icon
     Cloud,
     History,
+    Radio,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -133,6 +135,15 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-communication-form') &&
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
+    
+    // Check if user only has weather and communication access (CDRRMO)
+    const isCDRRMO = hasPermission('access-weather-form') && 
+        hasPermission('access-communication-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-road-form') &&
+        !hasPermission('access-bridge-form');
 
     const navMain = [
         {
@@ -157,7 +168,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 {
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : isCDRRMO ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user", "admin"],
                     icon: BarChart3,
@@ -222,6 +233,29 @@ export function AppSidebar({ ...props }) {
                 },
             ],
         },
+        // Report History dropdown for CDRRMO users
+        ...(isCDRRMO ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Weather History",
+                    url: route("weather.history"),
+                    roles: ["user", "admin"],
+                    icon: Cloud,
+                    permission: "access-weather-form",
+                },
+                {
+                    title: "Communication History",
+                    url: route("communication.history"),
+                    roles: ["user", "admin"],
+                    icon: Radio,
+                    permission: "access-communication-form",
+                }
+            ]
+        }] : []),
         /*
          * Annual Reports menu (temporarily disabled).
          * Re-enable this block when annual reports are needed again.

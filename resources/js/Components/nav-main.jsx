@@ -35,6 +35,7 @@ export function NavMain({ items = [] }) {
     const [newYear, setNewYear] = useState('');
     const [yearError, setYearError] = useState('');
     const [isAnnualReportsOpen, setIsAnnualReportsOpen] = useState(true);
+    const [isReportHistoryOpen, setIsReportHistoryOpen] = useState(true);
 
     const handleAddYear = () => {
         setYearError('');
@@ -155,7 +156,7 @@ export function NavMain({ items = [] }) {
                                                             <span>{subItem.title}</span>
                                                         </a>
                                                     </SidebarMenuSubButton>
-                                                    {isAnnualReports && subItem.isCustom && (
+                                                    {(isAnnualReports && subItem.isCustom || subItem.canRemove) && (
                                                         <button
                                                             onClick={(e) => {
                                                                 e.preventDefault();
@@ -165,7 +166,7 @@ export function NavMain({ items = [] }) {
                                                                 }
                                                             }}
                                                             className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                                                            title="Remove this year"
+                                                            title={subItem.canRemove ? "Remove from active forms" : "Remove this year"}
                                                         >
                                                             <X className="h-3 w-3" />
                                                         </button>
@@ -210,6 +211,40 @@ export function NavMain({ items = [] }) {
                                     {!isCollapsed &&
                                         hasSubItems &&
                                         renderSubMenu()}
+                                </SidebarMenuItem>
+                            );
+                        }
+
+                        // Report History with dropdown functionality
+                        if (item.title === "Report History") {
+                            return (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton
+                                        onClick={() => setIsReportHistoryOpen(!isReportHistoryOpen)}
+                                        tooltip={item.title}
+                                        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {Icon && (
+                                                <Icon
+                                                    className="h-5 w-5"
+                                                    color="white"
+                                                />
+                                            )}
+                                            {!isCollapsed && (
+                                                <span>{item.title}</span>
+                                            )}
+                                        </div>
+                                        {!isCollapsed && hasSubItems && (
+                                            <ChevronDown
+                                                className={`h-4 w-4 transition-transform duration-200 ${
+                                                    isReportHistoryOpen ? 'rotate-180' : ''
+                                                }`}
+                                                color="white"
+                                            />
+                                        )}
+                                    </SidebarMenuButton>
+                                    {!isCollapsed && hasSubItems && isReportHistoryOpen && renderSubMenu()}
                                 </SidebarMenuItem>
                             );
                         }
