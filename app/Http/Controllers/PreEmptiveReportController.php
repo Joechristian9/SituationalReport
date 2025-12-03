@@ -274,4 +274,35 @@ class PreEmptiveReportController extends Controller
             ]);
         }
     }
+
+    /**
+     * Get Pre-Emptive Reports History
+     */
+    public function getPreEmptiveHistory(Request $request)
+    {
+        try {
+            $typhoonId = $request->query('typhoon_id');
+            
+            $query = PreEmptiveReport::with(['user:id,name', 'typhoon:id,name'])
+                ->orderBy('updated_at', 'desc');
+            
+            if ($typhoonId) {
+                $query->where('typhoon_id', $typhoonId);
+            }
+            
+            $reports = $query->get();
+            
+            return response()->json([
+                'reports' => $reports,
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pre-emptive history: ' . $e->getMessage());
+            return response()->json([
+                'reports' => [],
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

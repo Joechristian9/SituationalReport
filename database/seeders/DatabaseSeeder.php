@@ -118,6 +118,8 @@ class DatabaseSeeder extends Seeder
         $cdrrmo->givePermissionTo([
             'access-weather-form',
             'access-communication-form',
+            'access-pre-emptive-form',
+            'access-pre-positioning-form',
         ]);
 
         $adminRole = Role::create(['name' => 'admin']);

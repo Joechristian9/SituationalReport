@@ -136,9 +136,11 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
     
-    // Check if user only has weather and communication access (CDRRMO)
+    // Check if user is CDRRMO (weather, communication, pre-emptive, pre-positioning)
     const isCDRRMO = hasPermission('access-weather-form') && 
         hasPermission('access-communication-form') &&
+        hasPermission('access-pre-emptive-form') &&
+        hasPermission('access-pre-positioning-form') &&
         !hasPermission('access-electricity-form') &&
         !hasPermission('access-water-service-form') &&
         !hasPermission('access-water-level-form') &&
@@ -189,13 +191,13 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                {
+                ...(!isCDRRMO ? [{
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                     roles: ["user", "admin"],
                     icon: ClipboardList,
                     permission: "access-pre-emptive-form",
-                },
+                }] : []),
                 {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
@@ -203,13 +205,13 @@ export function AppSidebar({ ...props }) {
                     icon: FileWarning,
                     permission: "access-declaration-form",
                 },
-                {
+                ...(!isCDRRMO ? [{
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user", "admin"],
                     icon: MapPin,
                     permission: "access-pre-positioning-form",
-                },
+                }] : []),
                 {
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
@@ -253,6 +255,13 @@ export function AppSidebar({ ...props }) {
                     roles: ["user", "admin"],
                     icon: Radio,
                     permission: "access-communication-form",
+                },
+                {
+                    title: "Pre-Emptive History",
+                    url: route("pre-emptive.history"),
+                    roles: ["user", "admin"],
+                    icon: ClipboardList,
+                    permission: "access-pre-emptive-form",
                 }
             ]
         }] : []),

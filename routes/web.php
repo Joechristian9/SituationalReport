@@ -84,6 +84,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         return inertia('CommunicationHistory/Index');
     })->name('communication.history');
 
+    // Pre-Emptive History Page - accessible even without active typhoon
+    Route::get('/pre-emptive/history', function () {
+        return inertia('PreEmptiveHistory/Index');
+    })->name('pre-emptive.history');
+
     // ============= MODIFICATIONS (Accessible without active typhoon) =============
     Route::prefix('modifications')->group(function () {
         Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
@@ -318,6 +323,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
+    Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');
 });
 
 require __DIR__ . '/auth.php';

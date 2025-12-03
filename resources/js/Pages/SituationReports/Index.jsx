@@ -31,6 +31,8 @@ import {
     Landmark,
     HelpCircle,
     Loader2,
+    ClipboardList,
+    MapPin,
 } from "lucide-react";
 
 // Lazy load form components for better performance
@@ -41,6 +43,8 @@ const WaterForm = lazy(() => import("@/Components/SituationOverview/WaterForm"))
 const CommunicationForm = lazy(() => import("@/Components/SituationOverview/CommunicationForm"));
 const RoadForm = lazy(() => import("@/Components/SituationOverview/RoadForm"));
 const BridgeForm = lazy(() => import("@/Components/SituationOverview/BridgeForm"));
+const PreEmptiveReportsForm = lazy(() => import("@/Components/SituationOverview/PreEmptiveReportsForm"));
+const PrePositioningReportsForm = lazy(() => import("@/Components/SituationOverview/PrePositioningReportsForm"));
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -180,13 +184,15 @@ export default function Index() {
         { label: "Communications", icon: <Phone size={18} />, permission: "access-communication-form" },
         { label: "Roads", icon: <Route size={18} />, permission: "access-road-form" },
         { label: "Bridges", icon: <Landmark size={18} />, permission: "access-bridge-form" },
+        { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form" },
+        { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form" },
     ];
 
     // Filter steps based on user permissions
     const steps = allSteps.filter(step => hasPermission(step.permission));
 
-    // Initialize step: 0 for card selection (2 forms), 1 for direct form (1 form or 3+ forms)
-    const [step, setStep] = useState(!isAdmin && steps.length === 2 ? 0 : 1);
+    // Initialize step: 0 for card selection (2-4 forms), 1 for direct form (1 form or 5+ forms)
+    const [step, setStep] = useState(!isAdmin && steps.length >= 2 && steps.length <= 4 ? 0 : 1);
 
     const { data, setData, errors } = useForm({
         reports:
@@ -202,6 +208,31 @@ export default function Index() {
                           sea_condition: "",
                       },
                   ],
+        preEmptiveReports: [
+            {
+                id: null,
+                barangay: '',
+                evacuation_center: '',
+                families: '',
+                persons: '',
+                outside_center: '',
+                outside_families: '',
+                outside_persons: '',
+                total_families: 0,
+                total_persons: 0,
+            },
+        ],
+        prePositioning: [
+            {
+                id: null,
+                asset_type: '',
+                description: '',
+                quantity: '',
+                location: '',
+                deployed_by: '',
+                remarks: '',
+            },
+        ],
         waterLevels:
             waterLevels && waterLevels.length > 0
                 ? waterLevels
@@ -382,6 +413,10 @@ export default function Index() {
                 return <RoadForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             case "Bridges":
                 return <BridgeForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Pre-Emptive Reports":
+                return <PreEmptiveReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Pre-positioning":
+                return <PrePositioningReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             default:
                 return null;
         }
@@ -441,8 +476,8 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Welcome message for users with limited access (1-2 forms) */}
-                    {!isAdmin && steps.length <= 2 && (
+                    {/* Welcome message for users with limited access (1-4 forms) */}
+                    {!isAdmin && steps.length >= 1 && steps.length <= 4 && (
                         <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
                             <div className="flex items-start gap-4">
                                 <div className="flex-shrink-0">
@@ -459,7 +494,7 @@ export default function Index() {
                                         Welcome, {auth.user.name}!
                                     </h3>
                                     <p className="text-gray-600 mb-3">
-                                        You have access to the <span className="font-semibold text-blue-600">{steps.length === 1 ? steps[0].label : steps.map(s => s.label).join(', ')}</span> {steps.length === 1 ? 'form' : 'forms'}. Use this form to submit and manage your reports during active typhoon events.
+                                        You have access to <span className="font-semibold text-blue-600">{steps.length}</span> {steps.length === 1 ? 'form' : 'forms'}. Select a form below to submit and manage your reports during active typhoon events.
                                     </p>
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <CheckCircle2 size={16} className="text-green-500" />
@@ -470,35 +505,44 @@ export default function Index() {
                         </div>
                     )}
 
-                    {/* Card selection for users with exactly 2 forms (CDRRMO) */}
-                    {!isAdmin && steps.length === 2 && step === 0 && (
+                    {/* Card selection for users with 2-4 forms (CDRRMO) */}
+                    {!isAdmin && steps.length >= 2 && steps.length <= 4 && step === 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {steps.map((formStep, index) => (
-                                <Card 
-                                    key={index}
-                                    className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
-                                    onClick={() => setStep(index + 1)}
-                                >
-                                    <CardHeader>
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 bg-blue-100 rounded-lg">
-                                                {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                            {steps.map((formStep, index) => {
+                                const descriptions = {
+                                    'Weather': 'Submit weather conditions',
+                                    'Communications': 'Report communication status',
+                                    'Pre-Emptive Reports': 'Submit pre-emptive evacuation reports',
+                                    'Pre-positioning': 'Report deployment of response assets'
+                                };
+                                
+                                return (
+                                    <Card 
+                                        key={index}
+                                        className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
+                                        onClick={() => setStep(index + 1)}
+                                    >
+                                        <CardHeader>
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2.5 bg-blue-100 rounded-lg">
+                                                    {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-lg">{formStep.label}</CardTitle>
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        {descriptions[formStep.label] || `Click to submit ${formStep.label.toLowerCase()}`}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <CardTitle className="text-lg">{formStep.label}</CardTitle>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Click to {formStep.label === 'Weather' ? 'submit weather conditions' : 'report communication status'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                            ))}
+                                        </CardHeader>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     )}
 
-                    {/* Show selected form for users with 1-2 forms */}
-                    {!isAdmin && steps.length <= 2 && step > 0 && (
+                    {/* Show selected form for users with 1-4 forms */}
+                    {!isAdmin && steps.length >= 1 && steps.length <= 4 && step > 0 && (
                         <Card className="shadow-lg rounded-2xl border">
                             <CardContent className="p-6">
                                 <Suspense fallback={<FormLoader />}>
@@ -509,7 +553,7 @@ export default function Index() {
                                     </AnimatePresence>
                                 </Suspense>
                             </CardContent>
-                            {steps.length === 2 && (
+                            {steps.length >= 2 && steps.length <= 4 && (
                                 <div className="p-4 border-t bg-gray-50">
                                     <Button
                                         type="button"
@@ -525,10 +569,10 @@ export default function Index() {
                         </Card>
                     )}
 
-                    {/* Show stepper for users with 3+ forms */}
-                    {(isAdmin || steps.length > 2) && (
+                    {/* Show stepper for users with 5+ forms (admins) */}
+                    {(isAdmin || steps.length > 4) && (
                     <Card className="shadow-lg rounded-2xl border">
-                        {steps.length > 2 && (
+                        {steps.length > 4 && (
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
                                     <span className="text-sm font-medium text-gray-500">

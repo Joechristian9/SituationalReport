@@ -56,6 +56,14 @@ class PreEmptiveReport extends Model
     }
 
     /**
+     * Each pre-emptive report belongs to a typhoon.
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'typhoon_id');
+    }
+
+    /**
      * Boot method to automatically handle user_id and updated_by.
      */
     protected static function boot()
