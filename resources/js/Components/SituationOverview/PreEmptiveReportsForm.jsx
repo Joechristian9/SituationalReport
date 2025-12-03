@@ -255,13 +255,13 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
 
     return (
         <div className="space-y-6">
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
                 <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
                     <Users className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
                     <h4 className="font-bold text-white mb-1 text-lg">👥 Pre-Emptive Evacuation Report</h4>
-                    <p className="text-purple-50 text-sm">
+                    <p className="text-blue-50 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
@@ -360,7 +360,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="text"
                                                         value={loc.location}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'location', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                                         placeholder="Location"
                                                         disabled={disabled}
                                                     />
@@ -370,7 +370,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.families}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'families', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-center"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />
@@ -380,7 +380,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.persons}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'persons', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-center"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />
@@ -405,7 +405,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                         onClick={() => addOutsideLocation(brgy.id)}
                                                                         className="cursor-pointer"
                                                                     >
-                                                                        <Plus className="mr-2 h-4 w-4 text-green-600" />
+                                                                        <Plus className="mr-2 h-4 w-4 text-blue-600" />
                                                                         <span>Add Outside Location</span>
                                                                     </DropdownMenuItem>
                                                                     {barangays.length > 1 && (
@@ -448,7 +448,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
                 >
                     {isSaving ? (
                         <>
