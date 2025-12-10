@@ -39,6 +39,14 @@ class IncidentMonitored extends Model
     }
 
     /**
+     * Relationship to typhoon
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'typhoon_id');
+    }
+
+    /**
      * Automatically set `user_id` and `updated_by`
      */
     protected static function boot()

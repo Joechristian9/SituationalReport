@@ -218,5 +218,33 @@ class IncidentMonitoredController extends Controller
         return response()->json(['history' => $history]);
     }
 
+    /**
+     * Display incident history page
+     */
+    public function history()
+    {
+        return inertia('IncidentHistory/Index');
+    }
 
+    /**
+     * API endpoint for incident history
+     */
+    public function apiHistory()
+    {
+        $incidents = IncidentMonitored::with(['typhoon', 'user'])
+            ->latest()
+            ->limit(200)
+            ->get();
+
+        // Group by typhoon
+        $groupedByTyphoon = $incidents->groupBy('typhoon_id')->map(function ($reports, $typhoonId) {
+            $typhoon = $reports->first()->typhoon;
+            return [
+                'typhoon' => $typhoon,
+                'reports' => $reports->values()
+            ];
+        })->values();
+
+        return response()->json($groupedByTyphoon);
+    }
 }

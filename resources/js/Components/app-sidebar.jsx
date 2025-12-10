@@ -281,6 +281,13 @@ export function AppSidebar({ ...props }) {
                     permission: "access-pre-emptive-form",
                 },
                 {
+                    title: "Incident History",
+                    url: route("incident.history"),
+                    roles: ["user", "admin"],
+                    icon: Flame,
+                    permission: "access-incident-form",
+                },
+                {
                     title: "Agriculture History",
                     url: route("agriculture.history"),
                     roles: ["user", "admin"],

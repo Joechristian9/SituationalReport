@@ -94,6 +94,10 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->middleware('permission:access-agriculture-form')
         ->name('agriculture.history');
 
+    // Incident History Page - accessible even without active typhoon
+    Route::get('/incident/history', [IncidentMonitoredController::class, 'history'])
+        ->name('incident.history');
+
     // ============= MODIFICATIONS (Accessible without active typhoon) =============
     Route::prefix('modifications')->group(function () {
         Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
@@ -337,6 +341,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/agriculture-history', [App\Http\Controllers\AgricultureReportController::class, 'apiHistory'])
         ->middleware('permission:access-agriculture-form')
         ->name('api.agriculture-history');
+    Route::get('/api/incident-history', [IncidentMonitoredController::class, 'apiHistory'])->name('api.incident-history');
 });
 
 require __DIR__ . '/auth.php';
