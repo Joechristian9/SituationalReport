@@ -29,6 +29,7 @@ import {
     Cloud,
     History,
     Radio,
+    Sprout,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -146,6 +147,15 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-water-level-form') &&
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
+    
+    // Check if user only has agriculture access (CAO)
+    const isCAO = hasPermission('access-agriculture-form') && 
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-communication-form') &&
+        !hasPermission('access-road-form') &&
+        !hasPermission('access-bridge-form');
 
     const navMain = [
         {
@@ -233,6 +243,13 @@ export function AppSidebar({ ...props }) {
                     icon: HeartHandshake,
                     permission: "access-assistance-extended",
                 }] : []),
+                ...(!isAdmin ? [{
+                    title: "Agriculture",
+                    url: route("situation-reports.index"),
+                    roles: ["user"],
+                    icon: Sprout,
+                    permission: "access-agriculture-form",
+                }] : []),
             ],
         },
         // Report History dropdown for CDRRMO users
@@ -262,6 +279,29 @@ export function AppSidebar({ ...props }) {
                     roles: ["user", "admin"],
                     icon: ClipboardList,
                     permission: "access-pre-emptive-form",
+                },
+                {
+                    title: "Agriculture History",
+                    url: route("agriculture.history"),
+                    roles: ["user", "admin"],
+                    icon: Sprout,
+                    permission: "access-agriculture-form",
+                }
+            ]
+        }] : []),
+        // Report History dropdown for CAO users
+        ...(isCAO ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Agriculture History",
+                    url: route("agriculture.history"),
+                    roles: ["user", "admin"],
+                    icon: Sprout,
+                    permission: "access-agriculture-form",
                 }
             ]
         }] : []),

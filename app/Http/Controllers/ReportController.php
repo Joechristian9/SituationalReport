@@ -25,6 +25,7 @@ use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\SuspensionOfWork;
 use App\Models\Communication;
+use App\Models\AgricultureReport;
 
 class ReportController extends Controller
 {
@@ -74,6 +75,7 @@ class ReportController extends Controller
             'communicationReports' => $applyLimit($queryCondition(Communication::query())->latest())->get(),
             'roadReports'         => $applyLimit($queryCondition(Road::query())->latest())->get(),
             'bridgeReports'       => $applyLimit($queryCondition(Bridge::query())->latest())->get(),
+            'agricultureReports'  => $applyLimit($queryCondition(AgricultureReport::query())->latest())->get(),
             'preEmptiveReports'   => $preEmptiveReports,
             'uscDeclarations'     => $applyLimit($queryCondition(UscDeclaration::query())->latest())->get(),
             'incidentReports'     => $applyLimit($queryCondition(IncidentMonitored::query())->latest())->get(),

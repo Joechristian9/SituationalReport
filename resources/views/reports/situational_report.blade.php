@@ -298,6 +298,7 @@
     @include('reports.partials.water_services')
     @include('reports.partials.communication')
     @include('reports.partials.roads_and_bridges')
+    @include('reports.partials.agriculture')
     @include('reports.partials.pre_emptive_evacuation')
     @include('reports.partials.declaration_state_of_calamity')
     @include('reports.partials.pre_positioning_of_assets')

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             'access-damaged-houses-form',
             'access-response-operations',
             'access-assistance-extended',
+            'access-agriculture-form',
         ];
 
         foreach ($permissions as $permission) {
@@ -122,6 +123,14 @@ class DatabaseSeeder extends Seeder
             'access-pre-positioning-form',
             'access-incident-form',
         ]);
+
+        $cao = User::factory()->create([
+            'name' => 'Chief Administrative Officer',
+            'email' => 'cao@gmail.com',
+            'password' => bcrypt('wardead123'),
+        ]);
+        $cao->assignRole($role);
+        $cao->givePermissionTo('access-agriculture-form');
 
         $adminRole = Role::create(['name' => 'admin']);
         $admin = User::factory()->create([

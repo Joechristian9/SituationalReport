@@ -89,6 +89,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         return inertia('PreEmptiveHistory/Index');
     })->name('pre-emptive.history');
 
+    // Agriculture History Page - accessible even without active typhoon
+    Route::get('/agriculture/history', [App\Http\Controllers\AgricultureReportController::class, 'history'])
+        ->middleware('permission:access-agriculture-form')
+        ->name('agriculture.history');
+
     // ============= MODIFICATIONS (Accessible without active typhoon) =============
     Route::prefix('modifications')->group(function () {
         Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
@@ -199,6 +204,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         ->name('incident-monitored.index');
     Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
         ->name('modifications.incident-monitored');
+
+    // Agriculture Reports
+    Route::post('/agriculture-reports', [App\Http\Controllers\AgricultureReportController::class, 'store'])
+        ->middleware('permission:access-agriculture-form')
+        ->name('agriculture-reports.store');
 
     // Casualties Dead
     Route::resource('casualties', CasualtyController::class)
@@ -324,6 +334,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
     Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');
+    Route::get('/api/agriculture-history', [App\Http\Controllers\AgricultureReportController::class, 'apiHistory'])
+        ->middleware('permission:access-agriculture-form')
+        ->name('api.agriculture-history');
 });
 
 require __DIR__ . '/auth.php';

@@ -31,6 +31,7 @@ import {
     CheckCircle2,
     ArrowLeft,
     Flame,
+    Sprout,
 } from "lucide-react";
 
 // Lazy load form components for better performance
@@ -44,6 +45,7 @@ const BridgeForm = lazy(() => import("@/Components/SituationOverview/BridgeForm"
 const PreEmptiveReportsForm = lazy(() => import("@/Components/SituationOverview/PreEmptiveReportsForm"));
 const PrePositioningReportsForm = lazy(() => import("@/Components/SituationOverview/PrePositioningReportsForm"));
 const IncidentMonitoredForm = lazy(() => import("@/Components/Effects/IncidentMonitoredForm"));
+const AgricultureForm = lazy(() => import("@/Components/Agriculture/AgricultureForm"));
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -186,6 +188,7 @@ export default function Index() {
         { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form" },
         { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form" },
         { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form" },
+        { label: "Agriculture", icon: <Sprout size={18} />, permission: "access-agriculture-form" },
     ];
 
     // Filter steps based on user permissions
@@ -241,6 +244,16 @@ export default function Index() {
                 location: '',
                 description: '',
                 remarks: '',
+            },
+        ],
+        agriculture: [
+            {
+                id: null,
+                crops_affected: '',
+                standing_crop_ha: '',
+                stage_of_crop: '',
+                total_area_affected_ha: '',
+                total_production_loss: '',
             },
         ],
         waterLevels:
@@ -427,6 +440,8 @@ export default function Index() {
                 return <PrePositioningReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             case "Incident Monitored":
                 return <IncidentMonitoredForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Agriculture":
+                return <AgricultureForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             default:
                 return null;
         }
