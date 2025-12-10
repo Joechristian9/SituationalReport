@@ -27,9 +27,15 @@
         .report-header {
             display: table;
             width: 100%;
-            border-bottom: 3px solid #003d82;
             padding-bottom: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 0;
+        }
+        
+        .header-border {
+            width: 100%;
+            border-bottom: 3px solid #003d82;
+            margin: 0 -40px 15px -40px;
+            padding: 0 40px;
         }
         
         .header-left, .header-center, .header-right {
@@ -116,6 +122,18 @@
                 padding: 15px;
                 max-width: 100%;
             }
+            
+            /* Make header repeat on every page using thead */
+            .report-header {
+                page-break-inside: avoid;
+            }
+            
+            /* Add page break before main sections */
+            .main-title {
+                page-break-before: auto;
+                page-break-after: avoid;
+            }
+            
             /* Optimize header for PDF */
             .header-logo {
                 width: 60px;
@@ -133,9 +151,16 @@
             /* Optimize tables for PDF */
             table {
                 font-size: 11px;
+                page-break-inside: auto;
+            }
+            table thead {
+                display: table-header-group;
             }
             th, td {
                 padding: 4px;
+            }
+            tr {
+                page-break-inside: avoid;
             }
         @endif
         
@@ -183,8 +208,44 @@
         </div>
     </header>
     
-    <div class="pdf-header-info">
-        <p>As of: {{ now()->format('h:i A, F d, Y') }}</p>
+    {{-- Full-width blue border line --}}
+    <div class="header-border"></div>
+    
+    {{-- Memorandum Section --}}
+    <div style="margin-top: 30px; margin-bottom: 30px;">
+        <div style="border-top: 3px solid #cc0000; margin-bottom: 15px;"></div>
+        <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">MEMORANDUM</h2>
+        
+        <table style="width: 100%; border: none; margin-bottom: 20px;">
+            <tr style="border: none;">
+                <td style="width: 15%; border: none; padding: 5px 0; font-weight: bold;">FOR</td>
+                <td style="width: 5%; border: none; padding: 5px 0;">:</td>
+                <td style="border: none; padding: 5px 0;">OCDRO2; DILG, PDRRMO</td>
+            </tr>
+            <tr style="border: none;">
+                <td style="border: none; padding: 5px 0; font-weight: bold;">FROM</td>
+                <td style="border: none; padding: 5px 0;">:</td>
+                <td style="border: none; padding: 5px 0;">CDRRMO ILAGAN</td>
+            </tr>
+            <tr style="border: none;">
+                <td style="border: none; padding: 5px 0; font-weight: bold;">SUBJECT</td>
+                <td style="border: none; padding: 5px 0;">:</td>
+                <td style="border: none; padding: 5px 0; font-weight: bold;">
+                    TERMINAL REPORT re: TYPHOON "{{ strtoupper($typhoonName ?? 'N/A') }}"
+                </td>
+            </tr>
+            <tr style="border: none;">
+                <td style="border: none; padding: 5px 0; font-weight: bold;">DATE</td>
+                <td style="border: none; padding: 5px 0;">:</td>
+                <td style="border: none; padding: 5px 0;">As of {{ now()->format('d F Y / g:i A') }}</td>
+            </tr>
+        </table>
+        
+        <div style="border-bottom: 2px solid #333; margin-bottom: 10px;"></div>
+        
+        <p style="font-size: 12px; font-style: italic; color: #666; margin-bottom: 20px;">
+            Sources: CDRRMO member-agencies, BDRRMC and others:
+        </p>
     </div>
 
     <div class="main-title">
