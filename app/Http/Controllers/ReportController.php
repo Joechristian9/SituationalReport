@@ -110,9 +110,19 @@ class ReportController extends Controller
         // Fetch the data for the selected year.
         $data = $this->getReportData($selectedYear);
 
+        // Get typhoon name from the most recent weather report
+        $typhoonName = 'N/A';
+        if (isset($data['weatherReports']) && $data['weatherReports']->count() > 0) {
+            $latestReport = $data['weatherReports']->first();
+            if (isset($latestReport->typhoon) && $latestReport->typhoon) {
+                $typhoonName = $latestReport->typhoon->name ?? 'N/A';
+            }
+        }
+
         // Render the Blade view, passing the data and selected year.
         return view('reports.situational_report', array_merge($data, [
             'selectedYear' => $selectedYear,
+            'typhoonName' => $typhoonName,
         ]));
     }
 
@@ -132,9 +142,19 @@ class ReportController extends Controller
         // Fetch the data for that year (with reduced limits for PDF)
         $data = $this->getReportData($selectedYear, true);
 
+        // Get typhoon name from the most recent weather report
+        $typhoonName = 'N/A';
+        if (isset($data['weatherReports']) && $data['weatherReports']->count() > 0) {
+            $latestReport = $data['weatherReports']->first();
+            if (isset($latestReport->typhoon) && $latestReport->typhoon) {
+                $typhoonName = $latestReport->typhoon->name ?? 'N/A';
+            }
+        }
+
         // Load the same Blade view, but pass an 'isDownloading' flag.
         $pdf = Pdf::loadView('reports.situational_report', array_merge($data, [
             'selectedYear' => $selectedYear,
+            'typhoonName' => $typhoonName,
             'isDownloading' => true, // This flag hides the download button in the PDF
         ]));
 

@@ -1,9 +1,9 @@
 <!-- =========== DECLARATION OF STATE OF CALAMITY SECTION =========== -->
 <div class="main-title">
-    DECLARATION OF STATE OF CALAMITY
+    III. DECLARATION OF STATE OF CALAMITY
 </div>
 <div class="section-title">
-    DECLARATION OF STATE OF CALAMITY
+    E.  DECLARATION OF STATE OF CALAMITY
 </div>
 
 <table>

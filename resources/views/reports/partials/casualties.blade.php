@@ -1,6 +1,6 @@
 <!-- =========== CASUALTIES REPORT SECTION =========== -->
 <div class="section-title" style="page-break-before: auto;">
-    C. CASUALTIES
+    H.  CASUALTIES
 </div>
 
 @include('reports.partials.dead')

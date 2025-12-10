@@ -1,6 +1,6 @@
 <!-- =========== DAMAGED HOUSES SECTION =========== -->
 <div class="section-title" style="page-break-before: auto;">
-    E. DAMAGED HOUSES
+    J.  DAMAGED HOUSES
 </div>
 
 <table>

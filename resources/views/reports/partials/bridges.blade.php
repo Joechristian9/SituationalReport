@@ -1,17 +1,17 @@
-<!-- =========== E.2 BRIDGES =========== -->
-<div class="subtitle" style="font-weight: bold; margin-top: 15px; margin-bottom: 10px;">
-    F.2 Bridges
+<!-- =========== C.2 BRIDGES/OVERFLOW BRIDGES =========== -->
+<div class="subtitle" style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; padding-left: 60px;">
+    C.2 BRIDGES/OVERFLOW BRIDGES
 </div>
 
 <table>
     <thead>
         <tr>
-            <th class="align-left">Classification</th>
-            <th class="align-left">Name of Bridge</th>
+            <th class="align-left">Road<br>Classification</th>
+            <th class="align-left">Name of<br>Bridges</th>
             <th class="align-left">Status</th>
-            <th class="align-left">Areas Affected</th>
-            <th class="align-left">Re-routing</th>
-            <th class="align-left">Remarks</th>
+            <th class="align-left">Areas/Barangays<br>Affected</th>
+            <th class="align-left">Re-<br>routing</th>
+            <th class="align-left">REMARKS</th>
         </tr>
     </thead>
     <tbody>

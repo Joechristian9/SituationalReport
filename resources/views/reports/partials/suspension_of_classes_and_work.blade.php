@@ -1,5 +1,5 @@
 <div class="section-title">
-    F. Suspension of Classes and Work
+    K.  Suspension of Classes and Work
 </div>
 
 @include('reports.partials.suspension_of_classes')

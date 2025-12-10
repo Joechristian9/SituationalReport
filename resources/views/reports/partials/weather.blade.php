@@ -1,31 +1,33 @@
 <!-- =========== WEATHER REPORT SECTION =========== -->
 <div class="section-title">
-    A. PRESENT WEATHER
+    A. PRESENT WEATHER:
 </div>
 
-<table>
-    <thead>
-        <tr>
-            <th class="align-left">Municipality</th>
-            <th>Sky Condition</th>
-            <th>Wind</th>
-            <th>Precipitation</th>
-            <th>Sea Condition</th>
-        </tr>
-    </thead>
-    <tbody>
-        @forelse($weatherReports as $report)
+@if($weatherReports->count() > 0)
+    @php $report = $weatherReports->first(); @endphp
+    <table>
+        <tbody>
             <tr>
-                <td class="align-left">{{ $report['municipality'] }}</td>
-                <td>{{ $report['sky_condition'] }}</td>
-                <td>{{ $report['wind'] }}</td>
-                <td>{{ $report['precipitation'] }}</td>
-                <td>{{ $report['sea_condition'] }}</td>
+                <td rowspan="4" style="width: 25%; vertical-align: middle; text-align: center; color: #666;">
+                    {{ $report['municipality'] ?? 'City of Ilagan' }}
+                </td>
+                <td style="width: 25%; font-weight: bold; color: #333;">Sky Condition</td>
+                <td style="width: 50%; color: #333;">{{ $report['sky_condition'] ?? 'N/A' }}</td>
             </tr>
-        @empty
             <tr>
-                <td colspan="5">No weather data available.</td>
+                <td style="font-weight: bold; color: #333;">Wind</td>
+                <td style="color: #333;">{{ $report['wind'] ?? 'N/A' }}</td>
             </tr>
-        @endforelse
-    </tbody>
-</table>
+            <tr>
+                <td style="font-weight: bold; color: #333;">Precipitation</td>
+                <td style="color: #333;">{{ $report['precipitation'] ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold; color: #333;">Sea Condition</td>
+                <td style="color: #333;">{{ $report['sea_condition'] ?? 'N/A' }}</td>
+            </tr>
+        </tbody>
+    </table>
+@else
+    <p style="font-style: italic; color: #666;">No weather data available.</p>
+@endif

@@ -1,6 +1,6 @@
 <!-- =========== WATER LEVEL REPORT SECTION =========== -->
 <div class="section-title">
-    B. WATER LEVEL STATION
+    C.  WATER LEVEL STATION
 </div>
 <div class="subtitle">
     Source of Data: Water Level Monitoring System

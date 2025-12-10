@@ -96,13 +96,54 @@
         /* == END: ENHANCED HEADER STYLES                                == */
         /* ================================================================ */
         
-        .main-title { background-color: #FFC107; color: #333; padding: 12px; font-weight: bold; font-size: 16px; margin: 30px 0 25px 0; text-align: center; border-radius: 4px; }
+        .main-title { 
+            background-color: #4472C4; 
+            color: white; 
+            padding: 10px 15px; 
+            font-weight: bold; 
+            font-size: 14px; 
+            margin: 20px 0 15px 0; 
+            text-align: left;
+            letter-spacing: 1px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin: 15px 0 10px 0;
+            color: #333;
+            padding-left: 40px;
+        }
+        
+        .subtitle {
+            font-size: 12px;
+            margin: 10px 0 8px 0;
+            color: #666;
+            padding-left: 60px;
+        }
+        
         .pdf-header-info p { margin: 0; padding: 2px 0; font-size: 13px; }
         
-        /* --- Original Table Styling --- */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-        th, td { border: 1px solid #999; text-align: center; padding: 6px; }
-        th { background-color: #e9ecef; font-weight: bold; }
+        /* --- Table Styling to match image --- */
+        table { 
+            width: calc(100% - 60px);
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
+            border: 1px solid #666;
+            margin-left: 60px;
+        }
+        th, td { 
+            border: 1px solid #666; 
+            text-align: left; 
+            padding: 6px 10px; 
+            font-size: 11px;
+            vertical-align: middle;
+            background-color: #fff;
+        }
+        th { 
+            font-weight: bold; 
+            color: #333;
+        }
         
         /* --- Download Button --- */
         .download-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; transition: background-color 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
@@ -249,11 +290,10 @@
     </div>
 
     <div class="main-title">
-        SITUATION OVERVIEW
+        I. SITUATION OVERVIEW
     </div>
 
     @include('reports.partials.weather')
-    @include('reports.partials.water_level')
     @include('reports.partials.electricity')
     @include('reports.partials.water_services')
     @include('reports.partials.communication')
