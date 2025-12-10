@@ -1,401 +1,315 @@
-// resources/js/Components/Effects/IncidentMonitoredForm.jsx
-
-import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
-import useTableFilter from "@/hooks/useTableFilter";
-
-import { AlertTriangle, History, Loader2, PlusCircle, Save } from "lucide-react";
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import useAppUrl from '@/hooks/useAppUrl';
+import { usePage } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
 import {
-    Tooltip,
-    TooltipTrigger,
-    TooltipContent,
-    TooltipProvider,
-} from "@/components/ui/tooltip";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { AlertTriangle, Save, Plus, Loader2, AlertCircle, MoreVertical, Trash2 } from 'lucide-react';
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-export default function IncidentMonitoredForm({ data, setData, errors, disabled = false }) {
+export default function IncidentMonitoredForm({ data, setData, disabled = false }) {
     const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
+    const { typhoon } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
-    
-    const incidents = data?.incidents ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedIncidents,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-    } = useTableFilter(incidents, ['kinds_of_incident', 'location'], 5);
+    const [originalData, setOriginalData] = useState(null);
+    const [previousDisabled, setPreviousDisabled] = useState(disabled);
+    const [incidents, setIncidents] = useState([
+        {
+            id: Date.now(),
+            kinds_of_incident: '',
+            date_time: '',
+            location: '',
+            description: '',
+            remarks: ''
+        }
+    ]);
 
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["incident-monitored-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/incident-monitored`);
-            return data;
-        },
-        enabled: false, // Disable this query - modifications not needed for basic functionality
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: false, // Don't retry on failure
-    });
+    // Load existing data from props
+    useEffect(() => {
+        const existingIncidents = data.incidents ?? [];
+        
+        const typhoonResumedAt = typhoon?.resumed_at;
+        
+        if (existingIncidents.length > 0) {
+            if (typhoonResumedAt && existingIncidents[0].created_at) {
+                const incidentCreatedAt = new Date(existingIncidents[0].created_at);
+                const resumedAt = new Date(typhoonResumedAt);
+                
+                if (incidentCreatedAt < resumedAt) {
+                    return;
+                }
+            }
+            
+            setIncidents(existingIncidents);
+            setOriginalData(JSON.parse(JSON.stringify(existingIncidents)));
+        }
+    }, [data.incidents, typhoon]);
 
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...incidents];
-        newRows[index][name] = value;
-        setData("incidents", newRows);
+    // Clear form when re-enabled after being disabled
+    useEffect(() => {
+        if (previousDisabled === true && disabled === false) {
+            const hasAnyData = incidents.some(incident => 
+                incident.kinds_of_incident || incident.date_time || incident.location || 
+                incident.description || incident.remarks
+            );
+            
+            if (hasAnyData) {
+                setIncidents([{
+                    id: Date.now(),
+                    kinds_of_incident: '',
+                    date_time: '',
+                    location: '',
+                    description: '',
+                    remarks: ''
+                }]);
+                setOriginalData(null);
+            }
+        }
+        setPreviousDisabled(disabled);
+    }, [disabled, previousDisabled, incidents]);
+
+    const addIncident = () => {
+        setIncidents([...incidents, {
+            id: Date.now(),
+            kinds_of_incident: '',
+            date_time: '',
+            location: '',
+            description: '',
+            remarks: ''
+        }]);
     };
 
-    const handleAddRow = () => {
-        setData("incidents", [
-            ...incidents,
-            {
-                id: `new-${Date.now()}`,
-                kinds_of_incident: "",
-                date_time: "",
-                location: "",
-                description: "",
-                remarks: "",
-            },
-        ]);
+    const removeIncident = (id) => {
+        if (incidents.length > 1) {
+            setIncidents(incidents.filter(incident => incident.id !== id));
+        }
     };
+
+    const updateIncident = (id, field, value) => {
+        setIncidents(incidents.map(incident => 
+            incident.id === id ? { ...incident, [field]: value } : incident
+        ));
+    };
+
+    // Check if form has any data
+    const hasData = useMemo(() => {
+        return incidents.some(incident => 
+            incident.kinds_of_incident.trim() !== '' || 
+            incident.date_time.trim() !== '' || 
+            incident.location.trim() !== '' || 
+            incident.description.trim() !== '' || 
+            incident.remarks.trim() !== ''
+        );
+    }, [incidents]);
+
+    // Check if data has changed
+    const hasChanges = useMemo(() => {
+        if (!originalData) return hasData;
+        return JSON.stringify(originalData) !== JSON.stringify(incidents);
+    }, [originalData, incidents, hasData]);
 
     const handleSubmit = async () => {
         if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            toast.error("Forms are currently disabled.");
             return;
         }
+        if (!hasChanges) {
+            toast.info("No changes to save");
+            return;
+        }
+        
         setIsSaving(true);
+        
         try {
-            // Clean string IDs for new rows
-            const cleanedIncidents = incidents.map(incident => ({
-                ...incident,
-                id: typeof incident.id === 'string' ? null : incident.id
-            }));
+            const response = await axios.post(`${APP_URL}/incident-monitored`, {
+                incidents: incidents
+            });
             
-            const response = await axios.post(
-                `${APP_URL}/incident-monitored`, 
-                { incidents: cleanedIncidents },
-                { headers: { 'Accept': 'application/json' } }
-            );
-            
-            // Update local state with server response if available
-            if (response.data && response.data.incidents) {
+            if (response.data && Array.isArray(response.data.incidents)) {
                 setData("incidents", response.data.incidents);
-                
-                // Invalidate and refetch modification history after state update
-                await queryClient.invalidateQueries(['incident-monitored-modifications']);
+                setOriginalData(JSON.parse(JSON.stringify(incidents)));
             }
             
-            toast.success(response.data?.message || "Incidents Report saved successfully!");
+            toast.success("Incident reports saved successfully!");
         } catch (err) {
-            console.error("Save error:", err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
+            console.error(err);
+            toast.error(err.response?.data?.message || "Failed to save incident reports.");
         } finally {
             setIsSaving(false);
-            // Force refetch after small delay to ensure data is fresh
-            setTimeout(() => {
-                queryClient.invalidateQueries(['incident-monitored-modifications']);
-            }, 200);
         }
     };
 
-    // Don't show error for 403 (permission issues) - just continue without modification history
-    if (isError && error?.response?.status !== 403) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
-
     return (
-        <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-red-100 text-red-600 p-2 rounded-lg">
-                        <AlertTriangle size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Incidents Monitored
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Record details of incidents being monitored.
-                        </p>
-                    </div>
+        <div className="space-y-6">
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
+                    <AlertTriangle className="w-6 h-6 text-white" />
                 </div>
-
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by incident type or location..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
-                        <DownloadExcelButton
-                            data={incidents}
-                            fileName="Incident_Monitored_Report"
-                            sheetName="Incidents"
-                        />
-                    </div>
-                </div>
-
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Kinds of Incident</th>
-                                <th className="p-3 border-r">Date & Time</th>
-                                <th className="p-3 border-r">Location</th>
-                                <th className="p-3 border-r">Description</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedIncidents.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="4" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <AlertTriangle size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No incident matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedIncidents.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "kinds_of_incident",
-                                    "date_time",
-                                    "location",
-                                    "description",
-                                    "remarks",
-                                ];
-
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            const historyKey = `${row.id}_${field}`;
-                                            const fieldHistory =
-                                                modificationData?.history?.[historyKey] || [];
-                                            const latestChange = fieldHistory[0];
-                                            const previousChange =
-                                                fieldHistory.length > 1
-                                                    ? fieldHistory[1]
-                                                    : null;
-
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        {field === 'description' ? (
-                                                            <textarea
-                                                                name={field}
-                                                                value={row[field] ?? ""}
-                                                                onChange={(e) =>
-                                                                    handleInputChange(actualIndex, e)
-                                                                }
-                                                                placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
-                                                                rows="2"
-                                                                disabled={disabled}
-                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-10 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                            />
-                                                        ) : (
-                                                            <input
-                                                                type={field === 'date_time' ? 'datetime-local' : 'text'}
-                                                                name={field}
-                                                                value={row[field] ?? ""}
-                                                                onChange={(e) =>
-                                                                    handleInputChange(actualIndex, e)
-                                                                }
-                                                                placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
-                                                                disabled={disabled}
-                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-10 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                            />
-                                                        )}
-                                                        {fieldHistory.length > 0 && (
-                                                            <div className="absolute top-1/2 -translate-y-1/2 right-3">
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <History className="w-5 h-5 text-slate-400 hover:text-blue-600 cursor-pointer" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="right"
-                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
-                                                                    >
-                                                                        <div className="text-sm space-y-2">
-                                                                            <div>
-                                                                                <p className="text-sm font-bold text-white mb-1">
-                                                                                    Latest Change:
-                                                                                </p>
-                                                                                <p>
-                                                                                    <span className="font-semibold text-blue-300">
-                                                                                        {latestChange.user?.name}
-                                                                                    </span>{" "}
-                                                                                    changed from{" "}
-                                                                                    <span className="text-red-400 font-mono">
-                                                                                        {latestChange.old ?? "nothing"}
-                                                                                    </span>{" "}
-                                                                                    to{" "}
-                                                                                    <span className="text-green-400 font-mono">
-                                                                                        {latestChange.new ?? "nothing"}
-                                                                                    </span>
-                                                                                </p>
-                                                                                <p className="text-xs text-gray-400">
-                                                                                    {new Date(latestChange.date).toLocaleString()}
-                                                                                </p>
-                                                                            </div>
-                                                                            {previousChange && (
-                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
-                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
-                                                                                        Previous Change:
-                                                                                    </p>
-                                                                                    <p>
-                                                                                        <span className="font-semibold text-blue-300">
-                                                                                            {previousChange.user?.name}
-                                                                                        </span>{" "}
-                                                                                        changed from{" "}
-                                                                                        <span className="text-red-400 font-mono">
-                                                                                            {previousChange.old ?? "nothing"}
-                                                                                        </span>{" "}
-                                                                                        to{" "}
-                                                                                        <span className="text-green-400 font-mono">
-                                                                                            {previousChange.new ?? "nothing"}
-                                                                                        </span>
-                                                                                    </p>
-                                                                                    <p className="text-xs text-gray-400">
-                                                                                        {new Date(previousChange.date).toLocaleString()}
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {latestChange && row[field] && row[field] !== '' && (
-                                                        <p className="text-xs text-slate-500 mt-2">
-                                                            Last modified by{" "}
-                                                            <span className="font-medium text-blue-700">
-                                                                {latestChange.user?.name}
-                                                            </span>
-                                                        </p>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                    {errors.incidents && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.incidents}
-                        </div>
-                    )}
-                </div>
-
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save Incidents Report'}</span>
-                            </>
-                        )}
-                    </button>
+                <div className="flex-1">
+                    <h4 className="font-bold text-white mb-1 text-lg">⚠️ Incidents Monitored</h4>
+                    <p className="text-red-50 text-sm">
+                        One report per typhoon — update anytime to keep information current. All changes are tracked in History.
+                    </p>
                 </div>
             </div>
-        </TooltipProvider>
+
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-500 rounded-lg">
+                            <AlertTriangle className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-900">Incident Reports</h3>
+                            <p className="text-sm text-gray-600">Add multiple incidents and their details</p>
+                        </div>
+                    </div>
+                    <Button
+                        type="button"
+                        onClick={addIncident}
+                        disabled={disabled}
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        size="sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Incident
+                    </Button>
+                </div>
+
+                <div className="bg-white rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead className="bg-red-500 text-white">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Kinds of Incident</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Date & Time</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Location</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Description</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Remarks</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white w-24">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {incidents.map((incident) => (
+                                    <tr key={incident.id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 border-r border-gray-200">
+                                            <input
+                                                type="text"
+                                                value={incident.kinds_of_incident}
+                                                onChange={(e) => updateIncident(incident.id, 'kinds_of_incident', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                placeholder="e.g., Flooding, Landslide"
+                                                disabled={disabled}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 border-r border-gray-200">
+                                            <input
+                                                type="datetime-local"
+                                                value={incident.date_time}
+                                                onChange={(e) => updateIncident(incident.id, 'date_time', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                disabled={disabled}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 border-r border-gray-200">
+                                            <input
+                                                type="text"
+                                                value={incident.location}
+                                                onChange={(e) => updateIncident(incident.id, 'location', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                placeholder="e.g 33 Barangays flooded..."
+                                                disabled={disabled}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 border-r border-gray-200">
+                                            <textarea
+                                                value={incident.description}
+                                                onChange={(e) => updateIncident(incident.id, 'description', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                placeholder="Description"
+                                                rows="2"
+                                                disabled={disabled}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 border-r border-gray-200">
+                                            <textarea
+                                                value={incident.remarks}
+                                                onChange={(e) => updateIncident(incident.id, 'remarks', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                placeholder="Remarks"
+                                                rows="2"
+                                                disabled={disabled}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            {incidents.length > 1 ? (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0"
+                                                            disabled={disabled}
+                                                        >
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() => removeIncident(incident.id)}
+                                                            className="cursor-pointer text-red-600"
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            <span>Remove Incident</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">-</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-end pt-5 border-t border-slate-200">
+                <button
+                    onClick={handleSubmit}
+                    disabled={isSaving || !hasChanges || !hasData || disabled}
+                    className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                >
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Submitting...</span>
+                        </>
+                    ) : !hasData ? (
+                        <>
+                            <AlertCircle className="w-5 h-5" />
+                            <span>Fill in the form</span>
+                        </>
+                    ) : hasChanges ? (
+                        <>
+                            <Save className="w-5 h-5" />
+                            <span>Submit Report</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>No Changes</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
     );
 }

@@ -217,4 +217,6 @@ class IncidentMonitoredController extends Controller
 
         return response()->json(['history' => $history]);
     }
+
+
 }

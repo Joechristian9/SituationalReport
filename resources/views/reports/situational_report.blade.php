@@ -23,42 +23,68 @@
         /* == START: ENHANCED HEADER STYLES                              == */
         /* ================================================================ */
         
-        /* --- Shared Header Styles (for Web & PDF) --- */
+        /* --- Header with Logos Styles --- */
         .report-header {
-            display: flex; /* Use flexbox for alignment */
-            align-items: center; /* Vertically center items */
-            border-bottom: 1px solid #e0e0e0; /* A soft separator line */
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            display: table;
+            width: 100%;
+            border-bottom: 3px solid #003d82;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
         }
-
-        .report-header img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 15px; /* Add space between logo and title */
+        
+        .header-left, .header-center, .header-right {
+            display: table-cell;
+            vertical-align: middle;
         }
-
-        .report-header .title-container {
-            text-align: left; /* Ensure text is left-aligned */
+        
+        .header-left, .header-right {
+            width: 90px;
+            text-align: center;
         }
-
-        /* --- Main Title Styling --- */
-        .report-header h1 {
-            font-size: 26px; /* Larger font for more impact */
+        
+        .header-center {
+            text-align: center;
+            padding: 0 10px;
+        }
+        
+        .header-logo {
+            width: 75px;
+            height: 75px;
+        }
+        
+        .header-center h1 {
             margin: 0;
-            font-weight: 600; /* Bolder, but not overly heavy */
-            color: #2c3e50; /* A dark, professional color */
+            line-height: 1.2;
+            font-size: 13px;
+            font-weight: normal;
+            color: #333;
         }
-        /* --- Sub-heading Styling --- */
-        .report-header p {
-            font-size: 15px;
-            margin: 4px 0 0 0; /* Adjust top margin for perfect spacing */
-            color: #8a8a8a; /* Lighter color for secondary info */
-            letter-spacing: 0.5px; /* Adds an elegant, airy feel */
+        
+        .header-center h2 {
+            margin: 1px 0;
+            line-height: 1.2;
+            font-size: 17px;
+            font-weight: bold;
+            color: #003d82;
         }
-        .report-header p strong {
-            color: #555; /* Make the year slightly darker for readability */
+        
+        .header-center p {
+            margin: 1px 0;
+            line-height: 1.3;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .header-center .office-title {
+            margin-top: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            color: #555;
+        }
+        
+        .header-center .office-address {
+            font-size: 9px;
+            color: #777;
         }
         /* ================================================================ */
         /* == END: ENHANCED HEADER STYLES                                == */
@@ -90,13 +116,16 @@
                 padding: 15px;
                 max-width: 100%;
             }
-            /* Simplify header for PDF */
-            .report-header {
-                border-bottom: 2px solid #333;
+            /* Optimize header for PDF */
+            .header-logo {
+                width: 60px;
+                height: 60px;
             }
-            .report-header img {
-                width: 40px;
-                height: 40px;
+            .header-center h1 {
+                font-size: 12px;
+            }
+            .header-center h2 {
+                font-size: 14px;
             }
             .report-header h1 {
                 font-size: 22px;
@@ -127,12 +156,30 @@
 
 <div class="report-container">
 
-    {{-- Header for both WEB and PDF --}}
+    {{-- Header with logos for both WEB and PDF --}}
     <header class="report-header">
-        
-        <div class="title-container">
-            <h1>Situational Report</h1>
-            <p>For the Year: <strong>{{ $selectedYear }}</strong></p>
+        <div class="header-left">
+            @php
+                $imagePath = public_path('images/ilagan.jpeg');
+                $imageData = base64_encode(file_get_contents($imagePath));
+                $src = 'data:image/jpeg;base64,' . $imageData;
+            @endphp
+            <img src="{{ $src }}" alt="City of Ilagan Logo" class="header-logo">
+        </div>
+        <div class="header-center">
+            <h1>Republic of the Philippines</h1>
+            <h2>CITY OF ILAGAN</h2>
+            <h1>Province of Isabela</h1>
+            <p class="office-title">CITY DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</p>
+            <p class="office-address">CDRRMO Building, City Hall Compound, San Vicente, City of Ilagan, Isabela 3300</p>
+        </div>
+        <div class="header-right">
+            @php
+                $imagePath = public_path('images/ilagan.jpeg');
+                $imageData = base64_encode(file_get_contents($imagePath));
+                $src = 'data:image/jpeg;base64,' . $imageData;
+            @endphp
+            <img src="{{ $src }}" alt="City of Ilagan Logo" class="header-logo">
         </div>
     </header>
     
