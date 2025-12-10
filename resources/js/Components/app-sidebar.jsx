@@ -169,14 +169,14 @@ export function AppSidebar({ ...props }) {
                     icon: Cloud,
                     permission: null,
                 },
-                {
+                ...(!isAdmin ? [{
                     title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : isCDRRMO ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: BarChart3,
                     permission: null, // Will be checked separately
                     requiresAnyPermission: true,
-                },
+                }] : []),
                 ...(isElectricityOnly ? [{
                     title: "Report History",
                     url: route("electricity.history"),
@@ -191,48 +191,48 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                ...(!isCDRRMO ? [{
+                ...(!isCDRRMO && !isAdmin ? [{
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: ClipboardList,
                     permission: "access-pre-emptive-form",
                 }] : []),
-                {
+                ...(!isAdmin ? [{
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: FileWarning,
                     permission: "access-declaration-form",
-                },
-                ...(!isCDRRMO ? [{
+                }] : []),
+                ...(!isCDRRMO && !isAdmin ? [{
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: MapPin,
                     permission: "access-pre-positioning-form",
                 }] : []),
-                {
+                ...(!isCDRRMO && !isAdmin ? [{
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: Flame,
                     permission: "access-incident-form",
-                },
-                {
+                }] : []),
+                ...(!isAdmin ? [{
                     title: "Response Operations",
                     url: route("response-operations.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: Users,
                     permission: "access-response-operations",
-                },
-                {
+                }] : []),
+                ...(!isAdmin ? [{
                     title: "Assistance Extended",
                     url: route("assistance.index"),
-                    roles: ["user", "admin"],
+                    roles: ["user"],
                     icon: HeartHandshake,
                     permission: "access-assistance-extended",
-                },
+                }] : []),
             ],
         },
         // Report History dropdown for CDRRMO users

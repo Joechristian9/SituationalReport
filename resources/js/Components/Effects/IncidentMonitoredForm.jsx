@@ -56,7 +56,9 @@ export default function IncidentMonitoredForm({ data, setData, errors, disabled 
             const { data } = await axios.get(`${APP_URL}/modifications/incident-monitored`);
             return data;
         },
+        enabled: false, // Disable this query - modifications not needed for basic functionality
         staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: false, // Don't retry on failure
     });
 
     const handleInputChange = (index, event) => {
@@ -129,7 +131,8 @@ export default function IncidentMonitoredForm({ data, setData, errors, disabled 
         }
     };
 
-    if (isError) {
+    // Don't show error for 403 (permission issues) - just continue without modification history
+    if (isError && error?.response?.status !== 403) {
         return (
             <div className="text-red-500 p-4">
                 Error fetching modification data: {error.message}

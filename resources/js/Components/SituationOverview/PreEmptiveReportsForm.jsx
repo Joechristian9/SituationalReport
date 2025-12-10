@@ -282,7 +282,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                         type="button"
                         onClick={addBarangay}
                         disabled={disabled}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         size="sm"
                     >
                         <Plus className="w-4 h-4" />
@@ -320,7 +320,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="text"
                                                                 value={brgy.barangay}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'barangay', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
                                                                 placeholder="Barangay"
                                                                 disabled={disabled}
                                                             />
@@ -328,7 +328,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="text"
                                                                 value={brgy.evacuation_center}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'evacuation_center', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2 disabled:cursor-not-allowed disabled:bg-gray-100"
                                                                 placeholder="Evacuation Center"
                                                                 disabled={disabled}
                                                             />
@@ -338,7 +338,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="number"
                                                                 value={brgy.families}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'families', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
                                                                 placeholder="0"
                                                                 disabled={disabled}
                                                             />
@@ -348,7 +348,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="number"
                                                                 value={brgy.persons}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'persons', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
                                                                 placeholder="0"
                                                                 disabled={disabled}
                                                             />
@@ -360,7 +360,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="text"
                                                         value={loc.location}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'location', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
                                                         placeholder="Location"
                                                         disabled={disabled}
                                                     />
@@ -370,7 +370,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.families}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'families', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />
@@ -380,7 +380,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.persons}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'persons', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />

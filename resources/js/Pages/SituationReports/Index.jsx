@@ -17,11 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-    ChevronLeft,
-    ChevronRight,
-    CheckCircle2,
     Cloud,
     Waves,
     Zap,
@@ -29,10 +25,12 @@ import {
     Phone,
     Route,
     Landmark,
-    HelpCircle,
     Loader2,
     ClipboardList,
     MapPin,
+    CheckCircle2,
+    ArrowLeft,
+    Flame,
 } from "lucide-react";
 
 // Lazy load form components for better performance
@@ -45,6 +43,7 @@ const RoadForm = lazy(() => import("@/Components/SituationOverview/RoadForm"));
 const BridgeForm = lazy(() => import("@/Components/SituationOverview/BridgeForm"));
 const PreEmptiveReportsForm = lazy(() => import("@/Components/SituationOverview/PreEmptiveReportsForm"));
 const PrePositioningReportsForm = lazy(() => import("@/Components/SituationOverview/PrePositioningReportsForm"));
+const IncidentMonitoredForm = lazy(() => import("@/Components/Effects/IncidentMonitoredForm"));
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -186,13 +185,14 @@ export default function Index() {
         { label: "Bridges", icon: <Landmark size={18} />, permission: "access-bridge-form" },
         { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form" },
         { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form" },
+        { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form" },
     ];
 
     // Filter steps based on user permissions
     const steps = allSteps.filter(step => hasPermission(step.permission));
 
-    // Initialize step: 0 for card selection (2-4 forms), 1 for direct form (1 form or 5+ forms)
-    const [step, setStep] = useState(!isAdmin && steps.length >= 2 && steps.length <= 4 ? 0 : 1);
+    // No stepper - show all forms directly
+    const [activeForm, setActiveForm] = useState(steps[0]?.label || null);
 
     const { data, setData, errors } = useForm({
         reports:
@@ -230,6 +230,16 @@ export default function Index() {
                 quantity: '',
                 location: '',
                 deployed_by: '',
+                remarks: '',
+            },
+        ],
+        incidents: [
+            {
+                id: null,
+                kinds_of_incident: '',
+                date_time: '',
+                location: '',
+                description: '',
                 remarks: '',
             },
         ],
@@ -395,10 +405,8 @@ export default function Index() {
     };
 
     // Render form based on step number
-    const renderForm = (stepNumber) => {
-        const stepLabel = steps[stepNumber - 1]?.label;
-        
-        switch(stepLabel) {
+    const renderForm = (formLabel) => {
+        switch(formLabel) {
             case "Weather":
                 return <WeatherForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             case "Water Level":
@@ -417,6 +425,8 @@ export default function Index() {
                 return <PreEmptiveReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             case "Pre-positioning":
                 return <PrePositioningReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+            case "Incident Monitored":
+                return <IncidentMonitoredForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
             default:
                 return null;
         }
@@ -441,8 +451,7 @@ export default function Index() {
                                 (r) => r.name?.toLowerCase() === "admin"
                             );
 
-                            const currentStepLabel =
-                                steps[step - 1]?.label || "Situational Report";
+                            const currentFormLabel = activeForm || "Situational Report";
 
                             const crumbs = isAdmin
                                 ? [
@@ -451,11 +460,11 @@ export default function Index() {
                                           label: "Dashboard",
                                       },
                                       { label: "Situational Report" },
-                                      { label: currentStepLabel },
+                                      { label: currentFormLabel },
                                   ]
                                 : [
                                       { label: "Situational Report" },
-                                      { label: currentStepLabel },
+                                      { label: currentFormLabel },
                                   ];
 
                             return <Breadcrumbs crumbs={crumbs} />;
@@ -476,317 +485,95 @@ export default function Index() {
                 </header>
 
                 <main className="w-full p-6 h-full bg-gray-50">
-                    {/* Welcome message for users with limited access (1-4 forms) */}
-                    {!isAdmin && steps.length >= 1 && steps.length <= 4 && (
-                        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-                            <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0">
-                                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                        {steps.length === 1 ? (
-                                            React.cloneElement(steps[0].icon, { size: 24 })
-                                        ) : (
+                    {/* Welcome message and card selection */}
+                    {!activeForm && (
+                        <>
+                            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
                                             <CheckCircle2 size={24} />
-                                        )}
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                        Welcome, {auth.user.name}!
-                                    </h3>
-                                    <p className="text-gray-600 mb-3">
-                                        You have access to <span className="font-semibold text-blue-600">{steps.length}</span> {steps.length === 1 ? 'form' : 'forms'}. Select a form below to submit and manage your reports during active typhoon events.
-                                    </p>
-                                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                                        <CheckCircle2 size={16} className="text-green-500" />
-                                        <span>Your submissions will be included in the consolidated situational report</span>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                            Welcome, {auth.user.name}!
+                                        </h3>
+                                        <p className="text-gray-600 mb-3">
+                                            You have access to <span className="font-semibold text-blue-600">{steps.length}</span> {steps.length === 1 ? 'form' : 'forms'}. Select a form below to submit and manage your reports during active typhoon events.
+                                        </p>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                            <CheckCircle2 size={16} className="text-green-500" />
+                                            <span>Your submissions will be included in the consolidated situational report</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    {/* Card selection for users with 2-4 forms (CDRRMO) */}
-                    {!isAdmin && steps.length >= 2 && steps.length <= 4 && step === 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {steps.map((formStep, index) => {
-                                const descriptions = {
-                                    'Weather': 'Submit weather conditions',
-                                    'Communications': 'Report communication status',
-                                    'Pre-Emptive Reports': 'Submit pre-emptive evacuation reports',
-                                    'Pre-positioning': 'Report deployment of response assets'
-                                };
-                                
-                                return (
-                                    <Card 
-                                        key={index}
-                                        className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
-                                        onClick={() => setStep(index + 1)}
-                                    >
-                                        <CardHeader>
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 bg-blue-100 rounded-lg">
-                                                    {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                            {/* Card selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {steps.map((formStep) => {
+                                    const descriptions = {
+                                        'Weather': 'Submit weather conditions',
+                                        'Water Level': 'Report water level readings',
+                                        'Electricity': 'Report electricity service status',
+                                        'Water Services': 'Report water service status',
+                                        'Communications': 'Report communication status',
+                                        'Roads': 'Report road conditions',
+                                        'Bridges': 'Report bridge conditions',
+                                        'Pre-Emptive Reports': 'Submit pre-emptive evacuation reports',
+                                        'Pre-positioning': 'Report deployment of response assets',
+                                        'Incident Monitored': 'Record details of incidents being monitored',
+                                    };
+                                    
+                                    return (
+                                        <Card 
+                                            key={formStep.label}
+                                            className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
+                                            onClick={() => setActiveForm(formStep.label)}
+                                        >
+                                            <CardHeader>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 bg-blue-100 rounded-lg">
+                                                        {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-lg">{formStep.label}</CardTitle>
+                                                        <p className="text-sm text-gray-600 mt-1">
+                                                            {descriptions[formStep.label] || `Click to submit ${formStep.label.toLowerCase()}`}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <CardTitle className="text-lg">{formStep.label}</CardTitle>
-                                                    <p className="text-sm text-gray-600 mt-1">
-                                                        {descriptions[formStep.label] || `Click to submit ${formStep.label.toLowerCase()}`}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Show selected form for users with 1-4 forms */}
-                    {!isAdmin && steps.length >= 1 && steps.length <= 4 && step > 0 && (
-                        <Card className="shadow-lg rounded-2xl border">
-                            <CardContent className="p-6">
-                                <Suspense fallback={<FormLoader />}>
-                                    <AnimatePresence mode="wait">
-                                        <motion.div {...motionProps} key={step}>
-                                            {renderForm(step)}
-                                        </motion.div>
-                                    </AnimatePresence>
-                                </Suspense>
-                            </CardContent>
-                            {steps.length >= 2 && steps.length <= 4 && (
-                                <div className="p-4 border-t bg-gray-50">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setStep(0)}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <ChevronLeft size={16} />
-                                        Back to Form Selection
-                                    </Button>
-                                </div>
-                            )}
-                        </Card>
-                    )}
-
-                    {/* Show stepper for users with 5+ forms (admins) */}
-                    {(isAdmin || steps.length > 4) && (
-                    <Card className="shadow-lg rounded-2xl border">
-                        {steps.length > 4 && (
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-500">
-                                        Report {step} of {steps.length}
-                                    </span>
-                                </CardTitle>
-                            
-                                <div className="relative w-full mt-8">
-                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
-                                        <div
-                                            className="h-0.5 bg-blue-600 transition-all duration-500"
-                                            style={{
-                                                width: `${
-                                                    ((step - 1) /
-                                                        (steps.length - 1)) *
-                                                    100
-                                                }%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                    <div className="relative flex justify-between z-10">
-                                    {steps.map((item, index) => {
-                                        const stepNumber = index + 1;
-                                        const isActive = step === stepNumber;
-                                        const isPast = step > stepNumber;
-                                        const wasVisited = step > stepNumber;
-                                        const empty =
-                                            wasVisited &&
-                                            isStepEmpty(stepNumber);
-                                        const renderIcon = () => {
-                                            if (empty)
-                                                return (
-                                                    <HelpCircle
-                                                        size={20}
-                                                        className="text-gray-400"
-                                                    />
-                                                );
-                                            if (wasVisited && !empty)
-                                                return (
-                                                    <CheckCircle2
-                                                        size={22}
-                                                        className="text-emerald-500"
-                                                    />
-                                                );
-                                            return item.icon;
-                                        };
-                                        return (
-                                            <button
-                                                key={index}
-                                                type="button"
-                                                onClick={() =>
-                                                    setStep(stepNumber)
-                                                }
-                                                className="flex flex-col items-center focus:outline-none group transition"
-                                            >
-                                                <div
-                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                                                        empty
-                                                            ? "border-gray-300 bg-gray-50 text-gray-400"
-                                                            : wasVisited &&
-                                                              !empty
-                                                            ? "border-emerald-500 bg-emerald-50 text-emerald-500"
-                                                            : isActive
-                                                            ? "border-blue-500 bg-blue-50 text-blue-500 shadow-lg scale-110"
-                                                            : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400 group-hover:text-blue-500"
-                                                    }`}
-                                                >
-                                                    {renderIcon()}
-                                                </div>
-                                                <span
-                                                    className={`mt-2 text-xs transition-colors duration-300 ${
-                                                        empty
-                                                            ? "text-gray-400"
-                                                            : wasVisited &&
-                                                              !empty
-                                                            ? "text-emerald-600 font-medium"
-                                                            : isActive
-                                                            ? "text-blue-600 font-semibold"
-                                                            : "text-gray-500 group-hover:text-blue-500"
-                                                    }`}
-                                                >
-                                                    {item.label}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    );
+                                })}
                             </div>
-                            </CardHeader>
-                        )}
+                        </>
+                    )}
 
-                        <CardContent className="space-y-8 min-h-[300px]">
-                            <AnimatePresence mode="wait">
-                                {steps[step - 1]?.label === "Weather" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <WeatherForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Water Level" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <WaterLevelForm
-                                                data={{ reports: data.waterLevels }}
-                                                setData={(updater) => {
-                                                    const newReports = updater({
-                                                        reports: data.waterLevels,
-                                                    }).reports;
-                                                    setData(
-                                                        "waterLevels",
-                                                        newReports
-                                                    );
-                                                }}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Electricity" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <ElectricityForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Water Services" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <WaterForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Communications" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <CommunicationForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Roads" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <RoadForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                                {steps[step - 1]?.label === "Bridges" && (
-                                    <motion.div key={step} {...motionProps}>
-                                        <Suspense fallback={<FormLoader />}>
-                                            <BridgeForm
-                                                data={data}
-                                                setData={setData}
-                                                errors={errors}
-                                                disabled={formsDisabled}
-                                            />
-                                        </Suspense>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </CardContent>
-
-                        {steps.length > 2 && (
-                            <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
+                    {/* Show active form with back button */}
+                    {activeForm && (
+                        <>
+                            <div className="mb-4">
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    disabled={step === 1}
-                                    onClick={() => setStep(step - 1)}
+                                    onClick={() => setActiveForm(null)}
                                     className="flex items-center gap-2"
                                 >
-                                    <ChevronLeft size={16} />
-                                    Back
+                                    <ArrowLeft size={16} />
+                                    Back to Form Selection
                                 </Button>
-
-                                {step < steps.length && (
-                                    <Button
-                                        type="button"
-                                        onClick={() => setStep(step + 1)}
-                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                                    >
-                                        Next
-                                        <ChevronRight size={16} />
-                                    </Button>
-                                )}
                             </div>
-                        )}
-                    </Card>
+                            <Card className="shadow-lg rounded-2xl border">
+                                <CardContent className="p-6">
+                                    <Suspense fallback={<FormLoader />}>
+                                        {renderForm(activeForm)}
+                                    </Suspense>
+                                </CardContent>
+                            </Card>
+                        </>
                     )}
                 </main>
             </SidebarInset>

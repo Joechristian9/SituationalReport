@@ -120,6 +120,7 @@ class DatabaseSeeder extends Seeder
             'access-communication-form',
             'access-pre-emptive-form',
             'access-pre-positioning-form',
+            'access-incident-form',
         ]);
 
         $adminRole = Role::create(['name' => 'admin']);
