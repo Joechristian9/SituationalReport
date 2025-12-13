@@ -195,7 +195,7 @@ export default function Index() {
     const steps = allSteps.filter(step => hasPermission(step.permission));
 
     // No stepper - show all forms directly
-    const [activeForm, setActiveForm] = useState(steps[0]?.label || null);
+    const [activeForm, setActiveForm] = useState(null);
 
     const { data, setData, errors } = useForm({
         reports:

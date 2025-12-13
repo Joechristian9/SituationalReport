@@ -31,6 +31,8 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
     const [newService, setNewService] = useState({ name: '', category: 'cellphone' });
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const [serviceToDelete, setServiceToDelete] = useState(null);
+    const [isAddingService, setIsAddingService] = useState(false);
+    const [isRemovingService, setIsRemovingService] = useState(false);
     
     const [previousDisabled, setPreviousDisabled] = useState(disabled);
     // Check if user has communication form access (CDRRMO users)
@@ -141,6 +143,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
             return;
         }
         
+        setIsAddingService(true);
         try {
             const response = await axios.post(`${APP_URL}/communication-services`, newService);
             if (response.data && response.data.service) {
@@ -156,6 +159,8 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to add service");
+        } finally {
+            setIsAddingService(false);
         }
     };
     
@@ -167,6 +172,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
     const confirmRemoveService = async () => {
         if (!serviceToDelete) return;
         
+        setIsRemovingService(true);
         try {
             await axios.delete(`${APP_URL}/communication-services/${serviceToDelete}`);
             // Refresh services
@@ -179,6 +185,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to remove service");
         } finally {
+            setIsRemovingService(false);
             setShowConfirmDelete(false);
             setServiceToDelete(null);
         }
@@ -582,9 +589,11 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                         </button>
                         <button
                             onClick={handleAddService}
-                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                            disabled={isAddingService}
+                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Add Service
+                            {isAddingService && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isAddingService ? 'Adding...' : 'Add Service'}
                         </button>
                     </div>
                 </div>
@@ -611,9 +620,11 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                         </button>
                         <button
                             onClick={confirmRemoveService}
-                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            disabled={isRemovingService}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Remove
+                            {isRemovingService && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isRemovingService ? 'Removing...' : 'Remove'}
                         </button>
                     </div>
                 </div>
