@@ -17,11 +17,12 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade'); // when user is deleted, records are removed
 
-            $table->string('status')->nullable(); // Operational / Partial / Outage
+            $table->text('status')->nullable(); // Status description (can be long text)
             $table->text('barangays_affected')->nullable(); // list of affected barangays
 
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('remarks')->nullable(); // extra notes
+            $table->foreignId('typhoon_id')->nullable()->constrained('typhoons')->onDelete('cascade');
             $table->timestamps();
         });
     }

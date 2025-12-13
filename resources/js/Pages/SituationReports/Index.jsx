@@ -195,7 +195,8 @@ export default function Index() {
     const steps = allSteps.filter(step => hasPermission(step.permission));
 
     // No stepper - show all forms directly
-    const [activeForm, setActiveForm] = useState(null);
+    // Auto-select the form if user only has access to one form
+    const [activeForm, setActiveForm] = useState(steps.length === 1 ? steps[0].label : null);
 
     const { data, setData, errors } = useForm({
         reports:
@@ -570,17 +571,20 @@ export default function Index() {
                     {/* Show active form with back button */}
                     {activeForm && (
                         <>
-                            <div className="mb-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setActiveForm(null)}
-                                    className="flex items-center gap-2"
-                                >
-                                    <ArrowLeft size={16} />
-                                    Back to Form Selection
-                                </Button>
-                            </div>
+                            {/* Only show back button if user has access to multiple forms */}
+                            {steps.length > 1 && (
+                                <div className="mb-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setActiveForm(null)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <ArrowLeft size={16} />
+                                        Back to Form Selection
+                                    </Button>
+                                </div>
+                            )}
                             <Card className="shadow-lg rounded-2xl border">
                                 <CardContent className="p-6">
                                     <Suspense fallback={<FormLoader />}>

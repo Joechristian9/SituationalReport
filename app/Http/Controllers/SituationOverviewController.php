@@ -279,45 +279,29 @@ class SituationOverviewController extends Controller
         $validated = $request->validate([
             'electricityServices' => 'required|array',
             'electricityServices.*.id' => ['nullable', 'integer'],
-            'electricityServices.*.status' => 'nullable|string|max:255',
-            'electricityServices.*.barangays_affected' => 'nullable|string|max:500',
-            'electricityServices.*.remarks' => 'nullable|string|max:500',
+            'electricityServices.*.status' => 'nullable|string',
+            'electricityServices.*.barangays_affected' => 'nullable|string',
+            'electricityServices.*.remarks' => 'nullable|string',
         ]);
 
-        // ONE REPORT PER TYPHOON: Find or create a single electricity report for this typhoon
         $user = Auth::user();
         
-        // Get the first service data (we only need one report per typhoon)
-        $serviceData = $validated['electricityServices'][0] ?? [];
-        
-        // Skip if completely empty
-        if (empty(array_filter($serviceData))) {
-            return response()->json([
-                'message' => 'No data to save',
-                'electricityServices' => []
-            ]);
-        }
-
-        // Find the most recent report for this typhoon and user
-        $existingService = ElectricityService::where('typhoon_id', $activeTyphoon->id)
+        // Delete existing reports for this typhoon and user
+        ElectricityService::where('typhoon_id', $activeTyphoon->id)
             ->where('user_id', $user->id)
-            ->latest()
-            ->first();
+            ->delete();
 
-        // Determine if we should create a new record or update existing
-        $shouldCreateNew = false;
+        $savedServices = [];
         
-        if (!$existingService) {
-            // No existing record, create new
-            $shouldCreateNew = true;
-        } elseif ($activeTyphoon->resumed_at) {
-            // If typhoon was resumed, check if existing record was created BEFORE the resume
-            // If so, create a new record to preserve history
-            $shouldCreateNew = $existingService->created_at < $activeTyphoon->resumed_at;
-        }
+        // Create new reports
+        foreach ($validated['electricityServices'] as $serviceData) {
+            // Skip empty rows
+            if (empty($serviceData['status']) && 
+                empty($serviceData['barangays_affected']) && 
+                empty($serviceData['remarks'])) {
+                continue;
+            }
 
-        if ($shouldCreateNew) {
-            // Create new record (preserves history after resume)
             $service = ElectricityService::create([
                 'typhoon_id' => $activeTyphoon->id,
                 'user_id' => $user->id,
@@ -326,18 +310,11 @@ class SituationOverviewController extends Controller
                 'remarks' => $serviceData['remarks'] ?? null,
                 'updated_by' => Auth::id(),
             ]);
-        } else {
-            // Update existing record (normal update behavior)
-            $existingService->update([
-                'status' => $serviceData['status'] ?? null,
-                'barangays_affected' => $serviceData['barangays_affected'] ?? null,
-                'remarks' => $serviceData['remarks'] ?? null,
-                'updated_by' => Auth::id(),
-            ]);
-            $service = $existingService;
+            
+            $savedServices[] = $service;
         }
 
-        // Return the single most recent report for this typhoon
+        // Return all reports for this typhoon
         $updatedQuery = ElectricityService::with('user:id,name')
             ->where('typhoon_id', $activeTyphoon->id);
 
@@ -346,7 +323,7 @@ class SituationOverviewController extends Controller
         }
 
         $updatedServices = $updatedQuery
-            ->orderBy('updated_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->get();
         
         return response()->json([

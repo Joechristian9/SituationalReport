@@ -5,8 +5,8 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 import { usePage } from "@inertiajs/react";
-
-import { Zap, Loader2, Save, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Zap, Loader2, Save, AlertCircle } from "lucide-react";
+import AddRowButton from "@/Components/ui/AddRowButton";
 
 export default function ElectricityForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -14,72 +14,78 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [currentDateTime, setCurrentDateTime] = useState(new Date());
-    const [formData, setFormData] = useState({
-        overall_status: "",
+    const [rows, setRows] = useState([{
+        id: null,
+        status: "",
         barangays_affected: "",
         remarks: ""
-    });
+    }]);
     
-    // Track previous disabled state to detect resume
     const [previousDisabled, setPreviousDisabled] = useState(disabled);
     
-    // Update current date/time every second for real-time display
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentDateTime(new Date());
         }, 1000);
-        
         return () => clearInterval(timer);
     }, []);
     
-    // Load existing data on mount and when data changes
     useEffect(() => {
         const services = data.electricityServices ?? [];
+        
+        // Check if typhoon was recently resumed
+        const typhoonResumedAt = typhoon?.resumed_at;
+        
         if (services.length > 0) {
             const firstService = services[0];
-            const loadedData = {
-                overall_status: firstService.status || "",
-                barangays_affected: firstService.barangays_affected || "",
-                remarks: firstService.remarks || ""
-            };
             
-            setFormData(loadedData);
-            setOriginalData(JSON.parse(JSON.stringify(loadedData)));
+            // If typhoon was resumed and this record was created BEFORE the resume, don't load it
+            if (typhoonResumedAt && firstService.created_at) {
+                const serviceCreatedAt = new Date(firstService.created_at);
+                const resumedAt = new Date(typhoonResumedAt);
+                
+                if (serviceCreatedAt < resumedAt) {
+                    // This is old data from before resume, keep form empty
+                    return;
+                }
+            }
+            
+            const loadedRows = services.map(service => ({
+                id: service.id,
+                status: service.status || "",
+                barangays_affected: service.barangays_affected || "",
+                remarks: service.remarks || ""
+            }));
+            
+            setRows(loadedRows);
+            setOriginalData(JSON.parse(JSON.stringify(loadedRows)));
         }
-    }, [data.electricityServices]);
+    }, [data.electricityServices, typhoon]);
     
-    // Detect when typhoon is resumed (disabled changes from true to false)
     useEffect(() => {
-        // If it was disabled and now it's enabled (resumed)
         if (previousDisabled === true && disabled === false) {
-            // Clear the form for new report (silently, no toast notification)
-            if (formData.overall_status || formData.barangays_affected || formData.remarks) {
-                const emptyData = {
-                    overall_status: "",
+            const hasData = rows.some(row => row.status || row.barangays_affected || row.remarks);
+            if (hasData) {
+                setRows([{
+                    id: null,
+                    status: "",
                     barangays_affected: "",
                     remarks: ""
-                };
-                setFormData(emptyData);
+                }]);
                 setOriginalData(null);
-                // No toast here - the Index.jsx already shows a resume notification
             }
         }
-        
-        // Update previous disabled state
         setPreviousDisabled(disabled);
     }, [disabled]);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+    const handleInputChange = (index, field, value) => {
+        const newRows = [...rows];
+        newRows[index][field] = value;
+        setRows(newRows);
     };
 
-    const handleRemarksFocus = () => {
-        // Auto-fill timestamp if remarks field is empty
-        if (!formData.remarks || formData.remarks.trim() === '') {
+    const handleRemarksFocus = (index) => {
+        if (!rows[index].remarks || rows[index].remarks.trim() === '') {
             const dateTimeString = currentDateTime.toLocaleString('en-US', {
                 month: 'long',
                 day: 'numeric',
@@ -89,32 +95,51 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 hour12: true
             });
             
-            setFormData(prev => ({
-                ...prev,
-                remarks: `As of ${dateTimeString}: `
-            }));
+            const newRows = [...rows];
+            newRows[index].remarks = `As of ${dateTimeString}: `;
+            setRows(newRows);
         }
     };
 
-    // Check if form has any data
-    const hasData = useMemo(() => {
-        return formData.overall_status.trim() !== '' || 
-               formData.barangays_affected.trim() !== '' || 
-               formData.remarks.trim() !== '';
-    }, [formData]);
+    const addRow = () => {
+        setRows([...rows, {
+            id: null,
+            status: "",
+            barangays_affected: "",
+            remarks: ""
+        }]);
+    };
 
-    // Check if data has changed
+    const hasData = useMemo(() => {
+        return rows.some(row => 
+            row.status.trim() !== '' || 
+            row.barangays_affected.trim() !== '' || 
+            row.remarks.trim() !== ''
+        );
+    }, [rows]);
+
     const hasChanges = useMemo(() => {
-        if (!originalData) {
-            // If no original data, check if form has any content
-            return hasData;
-        }
-        return JSON.stringify(originalData) !== JSON.stringify(formData);
-    }, [originalData, formData, hasData]);
+        if (!originalData) return hasData;
+        
+        // Filter out empty rows before comparing
+        const filteredRows = rows.filter(row => 
+            row.status.trim() !== '' || 
+            row.barangays_affected.trim() !== '' || 
+            row.remarks.trim() !== ''
+        );
+        
+        const filteredOriginal = originalData.filter(row => 
+            row.status.trim() !== '' || 
+            row.barangays_affected.trim() !== '' || 
+            row.remarks.trim() !== ''
+        );
+        
+        return JSON.stringify(filteredOriginal) !== JSON.stringify(filteredRows);
+    }, [originalData, rows]);
 
     const handleSubmit = async () => {
         if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            toast.error("Forms are currently disabled.");
             return;
         }
 
@@ -126,30 +151,26 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
         setIsSaving(true);
         
         try {
-            const serviceData = {
-                status: formData.overall_status,
-                barangays_affected: formData.barangays_affected,
-                remarks: formData.remarks
-            };
+            // Filter out empty rows
+            const validRows = rows.filter(row => 
+                row.status.trim() !== '' || 
+                row.barangays_affected.trim() !== '' || 
+                row.remarks.trim() !== ''
+            );
 
             const response = await axios.post(`${APP_URL}/electricity-reports`, {
-                electricityServices: [serviceData],
+                electricityServices: validRows,
             });
             
-            if (response.data && Array.isArray(response.data.electricityServices) && response.data.electricityServices.length > 0) {
+            if (response.data && Array.isArray(response.data.electricityServices)) {
                 setData("electricityServices", response.data.electricityServices);
-                setOriginalData(JSON.parse(JSON.stringify(formData)));
-            } else {
-                setOriginalData(JSON.parse(JSON.stringify(formData)));
+                setOriginalData(JSON.parse(JSON.stringify(rows)));
             }
             
             toast.success("Electricity report saved successfully!");
         } catch (err) {
             console.error(err);
-            const errorMessage = err.response?.data?.message || 
-                                err.response?.data?.error ||
-                                "Failed to save electricity report. Please try again.";
-            toast.error(errorMessage);
+            toast.error(err.response?.data?.message || "Failed to save electricity report.");
         } finally {
             setIsSaving(false);
         }
@@ -157,115 +178,112 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
 
     return (
         <div className="space-y-6">
-            {/* Info Banner */}
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
+            <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
                 <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
                     <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">⚡ Power Status Update</h4>
-                    <p className="text-blue-50 text-sm">
+                    <h4 className="font-bold text-white mb-1 text-lg">⚡ Electricity Status Update</h4>
+                    <p className="text-yellow-50 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
             </div>
 
-            {/* Form Fields */}
-            <div className="space-y-5">
-                {/* Overall Status */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">1</span>
-                        What's the current power situation?
-                    </label>
-                    <textarea
-                        name="overall_status"
-                        value={formData.overall_status}
-                        onChange={handleInputChange}
-                        rows="4"
-                        disabled={disabled}
-                        placeholder="e.g., Normal operations, Partial outage in some areas, Complete blackout..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
-                    />
-                </div>
-
-                {/* Affected Barangays */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">2</span>
-                        Which barangays are affected?
-                    </label>
-                    <textarea
-                        name="barangays_affected"
-                        value={formData.barangays_affected}
-                        onChange={handleInputChange}
-                        rows="4"
-                        disabled={disabled}
-                        placeholder="List the barangays experiencing power issues..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
-                    />
-                </div>
-
-                {/* Additional Remarks */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">3</span>
-                        Any additional details?
-                    </label>
-                    <textarea
-                        name="remarks"
-                        value={formData.remarks}
-                        onChange={handleInputChange}
-                        onFocus={handleRemarksFocus}
-                        rows="5"
-                        disabled={disabled}
-                        placeholder="Click to auto-fill date and time, then add your remarks..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
-                    />
-                </div>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100/50 border-b border-slate-200">
+                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200 w-1/3">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                    STATUS OF ELECTRICITY SERVICES
+                                </div>
+                            </th>
+                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200 w-1/3">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                    BARANGAYS AFFECTED
+                                </div>
+                            </th>
+                            <th className="text-left p-4 font-semibold text-slate-700 w-1/3">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                    REMARKS
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, index) => (
+                            <tr key={index} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0">
+                                <td className="p-3 border-r border-slate-200">
+                                    <textarea
+                                        value={row.status}
+                                        onChange={(e) => handleInputChange(index, 'status', e.target.value)}
+                                        disabled={disabled}
+                                        rows="3"
+                                        placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                    />
+                                </td>
+                                <td className="p-3 border-r border-slate-200">
+                                    <textarea
+                                        value={row.barangays_affected}
+                                        onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
+                                        disabled={disabled}
+                                        rows="3"
+                                        placeholder="List affected barangays..."
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                    />
+                                </td>
+                                <td className="p-3">
+                                    <textarea
+                                        value={row.remarks}
+                                        onChange={(e) => handleInputChange(index, 'remarks', e.target.value)}
+                                        onFocus={() => handleRemarksFocus(index)}
+                                        disabled={disabled}
+                                        rows="3"
+                                        placeholder="Click to auto-fill date and time..."
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
-            {/* Submit Button */}
+            <AddRowButton onClick={addRow} disabled={disabled} label="Add Status Entry" />
+
             <div className="flex justify-end pt-5 border-t border-slate-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
                 >
                     {isSaving ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
                             <span>Submitting...</span>
                         </>
+                    ) : !hasData ? (
+                        <>
+                            <AlertCircle className="w-5 h-5" />
+                            <span>Fill in the form</span>
+                        </>
+                    ) : hasChanges ? (
+                        <>
+                            <Save className="w-5 h-5" />
+                            <span>Submit Report</span>
+                        </>
                     ) : (
                         <>
-                            {!hasData ? (
-                                <>
-                                    <AlertCircle className="w-5 h-5" />
-                                    <span>Fill in the form</span>
-                                </>
-                            ) : hasChanges ? (
-                                <>
-                                    <Save className="w-5 h-5" />
-                                    <span>Submit Report</span>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <span>All Set! ✓</span>
-                                </>
-                            )}
+                            <span>No Changes</span>
                         </>
                     )}
                 </button>
             </div>
-
-            {errors.electricityServices && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm px-4 py-3 rounded-r-lg flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.electricityServices}
-                </div>
-            )}
         </div>
     );
 }
