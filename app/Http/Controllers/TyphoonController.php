@@ -429,4 +429,158 @@ class TyphoonController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Show form submission status for all users
+     */
+    public function formSubmissionStatus()
+    {
+        $activeTyphoon = Typhoon::getActiveTyphoon();
+        
+        // Get all users with their permissions (excluding admins)
+        $users = \App\Models\User::with('permissions')
+            ->whereHas('roles', function($query) {
+                $query->where('name', 'user');
+            })
+            ->get()
+            ->map(function($user) use ($activeTyphoon) {
+                $hasSubmitted = false;
+                $lastSubmission = null;
+                $submittedForms = [];
+                
+                if ($activeTyphoon) {
+                    // Define form mappings with table names and display names
+                    $formMappings = [
+                        'weather_reports' => 'Weather Report',
+                        'electricity_services' => 'Electricity Services',
+                        'water_services' => 'Water Services',
+                        'communications' => 'Communication Services',
+                        'pre_emptive_reports' => 'Pre-Emptive Evacuation',
+                        'incident_monitored' => 'Incident Monitored',
+                        'casualties' => 'Casualties',
+                        'injureds' => 'Injured',
+                        'missing' => 'Missing Persons',
+                        'pre_positionings' => 'Pre-Positioning',
+                        'usc_declarations' => 'USC Declaration',
+                        'damaged_house_reports' => 'Damaged Houses',
+                        'affected_tourists' => 'Affected Tourists',
+                        'response_operations' => 'Response Operations',
+                        'assistance_extendeds' => 'Assistance Extended',
+                        'assistance_provided_lgus' => 'Assistance Provided LGUs',
+                        'suspension_of_classes' => 'Suspension of Classes',
+                        'suspension_of_works' => 'Suspension of Work',
+                        'bridges' => 'Bridges',
+                        'roads' => 'Roads',
+                        'water_levels' => 'Water Levels',
+                    ];
+                    
+                    // Check tables with user_id
+                    foreach ($formMappings as $table => $displayName) {
+                        try {
+                            $records = \DB::table($table)
+                                ->where('typhoon_id', $activeTyphoon->id)
+                                ->where('user_id', $user->id)
+                                ->latest('updated_at')
+                                ->get();
+                            
+                            if ($records->isNotEmpty()) {
+                                $hasSubmitted = true;
+                                $latestRecord = $records->first();
+                                
+                                if (!$lastSubmission || $latestRecord->updated_at > $lastSubmission) {
+                                    $lastSubmission = $latestRecord->updated_at;
+                                }
+                                
+                                $submittedForms[] = [
+                                    'name' => $displayName,
+                                    'table' => $table,
+                                    'count' => $records->count(),
+                                    'last_updated' => $latestRecord->updated_at,
+                                ];
+                            }
+                        } catch (\Exception $e) {
+                            // Table might not exist, skip it
+                            \Log::debug("Table {$table} check failed for user {$user->id}: " . $e->getMessage());
+                        }
+                    }
+                    
+                    // Special handling for agriculture_reports (no user_id)
+                    if ($user->permissions->contains('name', 'access-agriculture-form')) {
+                        $agricultureRecords = \DB::table('agriculture_reports')
+                            ->where('typhoon_id', $activeTyphoon->id)
+                            ->latest('updated_at')
+                            ->get();
+                        
+                        if ($agricultureRecords->isNotEmpty()) {
+                            $hasSubmitted = true;
+                            $latestRecord = $agricultureRecords->first();
+                            
+                            if (!$lastSubmission || $latestRecord->updated_at > $lastSubmission) {
+                                $lastSubmission = $latestRecord->updated_at;
+                            }
+                            
+                            $submittedForms[] = [
+                                'name' => 'Agriculture Report',
+                                'table' => 'agriculture_reports',
+                                'count' => $agricultureRecords->count(),
+                                'last_updated' => $latestRecord->updated_at,
+                            ];
+                        }
+                    }
+                }
+                
+                // Get list of submitted form types (for coloring in UI)
+                $submittedFormTypes = array_map(function($form) {
+                    return $form['table'];
+                }, $submittedForms);
+                
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'has_submitted' => $hasSubmitted,
+                    'last_submission' => $lastSubmission,
+                    'permissions' => $user->permissions->pluck('name')->toArray(),
+                    'submitted_forms' => $submittedForms,
+                    'submitted_form_types' => $submittedFormTypes,
+                ];
+            });
+        
+        return Inertia::render('Admin/FormSubmissionStatus', [
+            'users' => $users,
+            'activeTyphoon' => $activeTyphoon,
+        ]);
+    }
+
+    /**
+     * Get detailed form data for a specific user
+     */
+    public function getUserFormData(Request $request, $userId)
+    {
+        $activeTyphoon = Typhoon::getActiveTyphoon();
+        
+        if (!$activeTyphoon) {
+            return response()->json(['error' => 'No active typhoon'], 404);
+        }
+        
+        $table = $request->input('table');
+        $user = \App\Models\User::findOrFail($userId);
+        
+        // Fetch data from the specified table
+        $query = \DB::table($table)
+            ->where('typhoon_id', $activeTyphoon->id);
+        
+        // Only add user_id filter if the table has that column
+        if ($table !== 'agriculture_reports') {
+            $query->where('user_id', $userId);
+        }
+        
+        $data = $query->latest('updated_at')->get();
+        
+        return response()->json([
+            'form_name' => $request->input('form_name'),
+            'user_name' => $user->name,
+            'data' => $data,
+        ]);
+    }
 }

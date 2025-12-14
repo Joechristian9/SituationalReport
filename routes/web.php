@@ -315,6 +315,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
     
+    // Form Submission Status (Admin only)
+    Route::get('admin/form-submission-status', [TyphoonController::class, 'formSubmissionStatus'])
+        ->name('admin.form-submission-status');
+    Route::get('admin/user-form-data/{userId}', [TyphoonController::class, 'getUserFormData'])
+        ->name('admin.user-form-data');
+    
     // Typhoon Management (Admin only)
     Route::prefix('typhoons')->group(function () {
         Route::get('/', [TyphoonController::class, 'index'])->name('typhoons.index');

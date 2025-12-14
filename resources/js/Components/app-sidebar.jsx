@@ -30,6 +30,7 @@ import {
     History,
     Radio,
     Sprout,
+    ClipboardCheck,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -137,16 +138,17 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
     
-    // Check if user is CDRRMO (weather, communication, pre-emptive, pre-positioning)
+    // Check if user is CDRRMO (weather, communication, pre-emptive, incident)
     const isCDRRMO = hasPermission('access-weather-form') && 
         hasPermission('access-communication-form') &&
         hasPermission('access-pre-emptive-form') &&
-        hasPermission('access-pre-positioning-form') &&
+        hasPermission('access-incident-form') &&
         !hasPermission('access-electricity-form') &&
         !hasPermission('access-water-service-form') &&
         !hasPermission('access-water-level-form') &&
         !hasPermission('access-road-form') &&
-        !hasPermission('access-bridge-form');
+        !hasPermission('access-bridge-form') &&
+        !hasPermission('access-pre-positioning-form');
     
     // Check if user only has agriculture access (CAO)
     const isCAO = hasPermission('access-agriculture-form') && 
@@ -177,6 +179,13 @@ export function AppSidebar({ ...props }) {
                     url: route("typhoons.index"),
                     roles: ["admin"],
                     icon: Cloud,
+                    permission: null,
+                },
+                {
+                    title: "Form Submission Status",
+                    url: route("admin.form-submission-status"),
+                    roles: ["admin"],
+                    icon: ClipboardCheck,
                     permission: null,
                 },
                 ...(!isAdmin ? [{

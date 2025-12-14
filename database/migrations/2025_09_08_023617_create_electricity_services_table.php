@@ -22,7 +22,6 @@ return new class extends Migration
 
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('remarks')->nullable(); // extra notes
-            $table->foreignId('typhoon_id')->nullable()->constrained('typhoons')->onDelete('cascade');
             $table->timestamps();
         });
     }
