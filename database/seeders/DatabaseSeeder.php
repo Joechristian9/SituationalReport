@@ -62,7 +62,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $ceo->assignRole($role);
         $ceo->givePermissionTo([
-            'access-communication-form',
             'access-road-form',
             'access-bridge-form',
         ]);

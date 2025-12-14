@@ -163,6 +163,18 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-incident-form') &&
         !hasPermission('access-pre-positioning-form');
     
+    // Check if user is CEO (road and bridge only)
+    const isCEO = hasPermission('access-road-form') && 
+        hasPermission('access-bridge-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-communication-form') &&
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-pre-emptive-form') &&
+        !hasPermission('access-incident-form') &&
+        !hasPermission('access-pre-positioning-form');
+    
     // Check if user only has agriculture access (CAO)
     const isCAO = hasPermission('access-agriculture-form') && 
         !hasPermission('access-weather-form') &&
@@ -202,7 +214,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 ...(!isAdmin ? [{
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC) ? "Reports" : "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO) ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
@@ -361,6 +373,29 @@ export function AppSidebar({ ...props }) {
                 //     icon: MapPin,
                 //     permission: "access-bridge-form",
                 // },
+            ]
+        }] : []),
+        // Report History dropdown for CEO users
+        ...(isCEO ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Road History",
+                    url: route("road.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-road-form",
+                },
+                {
+                    title: "Bridge History",
+                    url: route("bridge.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-bridge-form",
+                },
             ]
         }] : []),
         // Report History dropdown for CAO users

@@ -1101,4 +1101,96 @@ class SituationOverviewController extends Controller
         
         return response()->json($groupedByTyphoon);
     }
+
+    /* ------------------- GET ROAD HISTORY ------------------- */
+    public function getRoadHistory()
+    {
+        $user = Auth::user();
+        
+        // Get all road reports for this user, grouped by typhoon
+        $reports = Road::where('user_id', $user->id)
+            ->whereNotNull('typhoon_id')
+            ->whereHas('typhoon') // Only get reports with valid typhoon
+            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Group reports by typhoon
+        $groupedByTyphoon = $reports->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
+            $typhoon = $typhoonReports->first()->typhoon;
+            
+            // If typhoon was resumed, only include reports created after resume
+            if ($typhoon && $typhoon->resumed_at) {
+                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
+                    return $report->created_at >= $typhoon->resumed_at;
+                });
+            }
+            
+            return [
+                'typhoon' => $typhoon,
+                'reports' => $typhoonReports->map(function($report) {
+                    return [
+                        'id' => $report->id,
+                        'road_classification' => $report->road_classification,
+                        'name_of_road' => $report->name_of_road,
+                        'status' => $report->status,
+                        'areas_barangays_affected' => $report->areas_barangays_affected,
+                        're_routing' => $report->re_routing,
+                        'remarks' => $report->remarks,
+                        'created_at' => $report->created_at,
+                        'updated_at' => $report->updated_at,
+                        'user' => $report->user,
+                    ];
+                })->values()
+            ];
+        })->values();
+        
+        return response()->json($groupedByTyphoon);
+    }
+
+    /* ------------------- GET BRIDGE HISTORY ------------------- */
+    public function getBridgeHistory()
+    {
+        $user = Auth::user();
+        
+        // Get all bridge reports for this user, grouped by typhoon
+        $reports = Bridge::where('user_id', $user->id)
+            ->whereNotNull('typhoon_id')
+            ->whereHas('typhoon') // Only get reports with valid typhoon
+            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Group reports by typhoon
+        $groupedByTyphoon = $reports->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
+            $typhoon = $typhoonReports->first()->typhoon;
+            
+            // If typhoon was resumed, only include reports created after resume
+            if ($typhoon && $typhoon->resumed_at) {
+                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
+                    return $report->created_at >= $typhoon->resumed_at;
+                });
+            }
+            
+            return [
+                'typhoon' => $typhoon,
+                'reports' => $typhoonReports->map(function($report) {
+                    return [
+                        'id' => $report->id,
+                        'bridge_classification' => $report->bridge_classification,
+                        'name_of_bridge' => $report->name_of_bridge,
+                        'status' => $report->status,
+                        'areas_barangays_affected' => $report->areas_barangays_affected,
+                        're_routing' => $report->re_routing,
+                        'remarks' => $report->remarks,
+                        'created_at' => $report->created_at,
+                        'updated_at' => $report->updated_at,
+                        'user' => $report->user,
+                    ];
+                })->values()
+            ];
+        })->values();
+        
+        return response()->json($groupedByTyphoon);
+    }
 }

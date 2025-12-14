@@ -98,6 +98,16 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/incident/history', [IncidentMonitoredController::class, 'history'])
         ->name('incident.history');
 
+    // Road History Page - accessible even without active typhoon
+    Route::get('/road/history', function () {
+        return inertia('RoadHistory/Index');
+    })->name('road.history');
+
+    // Bridge History Page - accessible even without active typhoon
+    Route::get('/bridge/history', function () {
+        return inertia('BridgeHistory/Index');
+    })->name('bridge.history');
+
     // ============= MODIFICATIONS (Accessible without active typhoon) =============
     Route::prefix('modifications')->group(function () {
         Route::get('/weather', [SituationOverviewController::class, 'weatherModification'])->name('modifications.weather');
@@ -348,6 +358,8 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('permission:access-agriculture-form')
         ->name('api.agriculture-history');
     Route::get('/api/incident-history', [IncidentMonitoredController::class, 'apiHistory'])->name('api.incident-history');
+    Route::get('/api/road-history', [SituationOverviewController::class, 'getRoadHistory'])->name('api.road-history');
+    Route::get('/api/bridge-history', [SituationOverviewController::class, 'getBridgeHistory'])->name('api.bridge-history');
 });
 
 require __DIR__ . '/auth.php';

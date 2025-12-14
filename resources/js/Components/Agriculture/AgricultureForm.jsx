@@ -146,34 +146,29 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
 
     return (
         <div className="space-y-6">
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                    <Sprout className="w-6 h-6 text-white" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <Sprout className="w-6 h-6 text-gray-700" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">🌾 Agriculture Report</h4>
-                    <p className="text-green-50 text-sm">
+                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Agriculture Report</h4>
+                    <p className="text-gray-600 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-500 rounded-lg">
-                            <Sprout className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-900">Crops Affected</h3>
-                            <p className="text-sm text-gray-600">Add multiple crops and their damage details</p>
-                        </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Crops Affected</h3>
+                        <p className="text-sm text-gray-600">Add multiple crops and their damage details</p>
                     </div>
                     <Button
                         type="button"
                         onClick={addCrop}
                         disabled={disabled}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                         size="sm"
                     >
                         <Plus className="w-4 h-4" />
@@ -181,20 +176,20 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                     </Button>
                 </div>
 
-                <div className="bg-white rounded-lg overflow-hidden">
+                <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
-                            <thead className="bg-green-500 text-white">
+                            <thead className="bg-gray-100 border-b border-gray-200">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white" rowSpan="2">Crops<br/>affected</th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white" colSpan="4">Area Affected</th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white w-24" rowSpan="2">Action</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700" rowSpan="2">Crops<br/>affected</th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700" colSpan="4">Area Affected</th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 w-24" rowSpan="2">Action</th>
                                 </tr>
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Standing<br/>Crop (Ha)</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Stage of<br/>crop</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">TOTAL<br/>Area<br/>Affected<br/>(Ha)</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white">Total Production<br/>Loss</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Standing<br/>Crop (Ha)</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Stage of<br/>crop</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">TOTAL<br/>Area<br/>Affected<br/>(Ha)</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Production<br/>Loss</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -205,7 +200,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 type="text"
                                                 value={crop.crops_affected}
                                                 onChange={(e) => updateCrop(crop.id, 'crops_affected', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                 placeholder="e.g., RICE, CORN, HVCC"
                                                 disabled={disabled}
                                             />
@@ -216,7 +211,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 step="0.01"
                                                 value={crop.standing_crop_ha}
                                                 onChange={(e) => updateCrop(crop.id, 'standing_crop_ha', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                 placeholder="0.00"
                                                 disabled={disabled}
                                             />
@@ -226,7 +221,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 type="text"
                                                 value={crop.stage_of_crop}
                                                 onChange={(e) => updateCrop(crop.id, 'stage_of_crop', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                 placeholder="e.g., Vegetative"
                                                 disabled={disabled}
                                             />
@@ -237,7 +232,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 step="0.01"
                                                 value={crop.total_area_affected_ha}
                                                 onChange={(e) => updateCrop(crop.id, 'total_area_affected_ha', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                 placeholder="0.00"
                                                 disabled={disabled}
                                             />
@@ -248,7 +243,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 step="0.01"
                                                 value={crop.total_production_loss}
                                                 onChange={(e) => updateCrop(crop.id, 'total_production_loss', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                 placeholder="0.00"
                                                 disabled={disabled}
                                             />
@@ -289,11 +284,11 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-5 border-t border-slate-200">
+            <div className="flex justify-end pt-5 border-t border-gray-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>
