@@ -178,63 +178,54 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
 
     return (
         <div className="space-y-6">
-            <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                    <Zap className="w-6 h-6 text-white" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <Zap className="w-6 h-6 text-gray-700" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">⚡ Electricity Status Update</h4>
-                    <p className="text-yellow-50 text-sm">
-                        One report per typhoon — update anytime to keep information current. All changes are tracked in History.
+                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Electricity Status Update</h4>
+                    <p className="text-gray-600 text-sm">
+                        One report per typhoon — update anytime to keep information current.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100/50 border-b border-slate-200">
-                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200 w-1/3">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                    STATUS OF ELECTRICITY SERVICES
-                                </div>
+                        <tr className="bg-gray-100 border-b border-gray-200">
+                            <th className="text-left p-4 font-medium text-gray-700 w-1/3">
+                                STATUS OF ELECTRICITY SERVICES
                             </th>
-                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200 w-1/3">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                    BARANGAYS AFFECTED
-                                </div>
+                            <th className="text-left p-4 font-medium text-gray-700 w-1/3">
+                                BARANGAYS AFFECTED
                             </th>
-                            <th className="text-left p-4 font-semibold text-slate-700 w-1/3">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                    REMARKS
-                                </div>
+                            <th className="text-left p-4 font-medium text-gray-700 w-1/3">
+                                REMARKS
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         {rows.map((row, index) => (
-                            <tr key={index} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0">
-                                <td className="p-3 border-r border-slate-200">
+                            <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                                <td className="p-3">
                                     <textarea
                                         value={row.status}
                                         onChange={(e) => handleInputChange(index, 'status', e.target.value)}
                                         disabled={disabled}
                                         rows="3"
                                         placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                     />
                                 </td>
-                                <td className="p-3 border-r border-slate-200">
+                                <td className="p-3">
                                     <textarea
                                         value={row.barangays_affected}
                                         onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
                                         disabled={disabled}
                                         rows="3"
                                         placeholder="List affected barangays..."
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                     />
                                 </td>
                                 <td className="p-3">
@@ -245,7 +236,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                         disabled={disabled}
                                         rows="3"
                                         placeholder="Click to auto-fill date and time..."
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-yellow-300 shadow-sm resize-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                     />
                                 </td>
                             </tr>
@@ -254,13 +245,13 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 </table>
             </div>
 
-            <AddRowButton onClick={addRow} disabled={disabled} label="Add Status Entry" />
-
-            <div className="flex justify-end pt-5 border-t border-slate-200">
+            <div className="flex justify-between items-center">
+                <AddRowButton onClick={addRow} disabled={disabled} label="Add Status Entry" />
+                
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
                 >
                     {isSaving ? (
                         <>

@@ -31,6 +31,7 @@ import {
     Radio,
     Sprout,
     ClipboardCheck,
+    Zap,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -150,6 +151,18 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-bridge-form') &&
         !hasPermission('access-pre-positioning-form');
     
+    // Check if user is BDRRMC (electricity, communication, road, bridge, pre-emptive)
+    const isBDRRMC = hasPermission('access-electricity-form') && 
+        hasPermission('access-communication-form') &&
+        hasPermission('access-road-form') &&
+        hasPermission('access-bridge-form') &&
+        hasPermission('access-pre-emptive-form') &&
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-incident-form') &&
+        !hasPermission('access-pre-positioning-form');
+    
     // Check if user only has agriculture access (CAO)
     const isCAO = hasPermission('access-agriculture-form') && 
         !hasPermission('access-weather-form') &&
@@ -189,7 +202,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 ...(!isAdmin ? [{
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : isCDRRMO ? "Reports" : "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC) ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
@@ -210,7 +223,7 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                ...(!isCDRRMO && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                     roles: ["user"],
@@ -224,14 +237,14 @@ export function AppSidebar({ ...props }) {
                     icon: FileWarning,
                     permission: "access-declaration-form",
                 }] : []),
-                ...(!isCDRRMO && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user"],
                     icon: MapPin,
                     permission: "access-pre-positioning-form",
                 }] : []),
-                ...(!isCDRRMO && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
                     roles: ["user"],
@@ -303,6 +316,51 @@ export function AppSidebar({ ...props }) {
                     icon: Sprout,
                     permission: "access-agriculture-form",
                 }
+            ]
+        }] : []),
+        // Report History dropdown for BDRRMC users
+        ...(isBDRRMC ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Electricity History",
+                    url: route("electricity.history"),
+                    roles: ["user", "admin"],
+                    icon: Zap,
+                    permission: "access-electricity-form",
+                },
+                {
+                    title: "Communication History",
+                    url: route("communication.history"),
+                    roles: ["user", "admin"],
+                    icon: Radio,
+                    permission: "access-communication-form",
+                },
+                {
+                    title: "Pre-Emptive History",
+                    url: route("pre-emptive.history"),
+                    roles: ["user", "admin"],
+                    icon: ClipboardList,
+                    permission: "access-pre-emptive-form",
+                },
+                // TODO: Add Road and Bridge history routes when they're created
+                // {
+                //     title: "Road History",
+                //     url: route("road.history"),
+                //     roles: ["user", "admin"],
+                //     icon: MapPin,
+                //     permission: "access-road-form",
+                // },
+                // {
+                //     title: "Bridge History",
+                //     url: route("bridge.history"),
+                //     roles: ["user", "admin"],
+                //     icon: MapPin,
+                //     permission: "access-bridge-form",
+                // },
             ]
         }] : []),
         // Report History dropdown for CAO users

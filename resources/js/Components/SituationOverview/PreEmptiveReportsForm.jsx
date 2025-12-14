@@ -255,34 +255,29 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
 
     return (
         <div className="space-y-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                    <Users className="w-6 h-6 text-white" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <Users className="w-6 h-6 text-gray-700" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">👥 Pre-Emptive Evacuation Report</h4>
-                    <p className="text-blue-50 text-sm">
-                        One report per typhoon — update anytime to keep information current. All changes are tracked in History.
+                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Pre-Emptive Evacuation Report</h4>
+                    <p className="text-gray-600 text-sm">
+                        One report per typhoon — update anytime to keep information current.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500 rounded-lg">
-                            <Users className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-900">Evacuation Centers</h3>
-                            <p className="text-sm text-gray-600">Add multiple evacuation centers and their details</p>
-                        </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Evacuation Centers</h3>
+                        <p className="text-sm text-gray-600">Add multiple evacuation centers and their details</p>
                     </div>
                     <Button
                         type="button"
                         onClick={addBarangay}
                         disabled={disabled}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                         size="sm"
                     >
                         <Plus className="w-4 h-4" />
@@ -290,22 +285,22 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                     </Button>
                 </div>
 
-                <div className="bg-white rounded-lg overflow-hidden">
+                <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
-                            <thead className="bg-blue-500 text-white">
+                            <thead className="bg-gray-100 border-b border-gray-200">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold border border-white" rowSpan="2">Barangay/Evacuation Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white" colSpan="2">Inside Evacuation Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white" colSpan="3">Outside Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold border border-white w-24" rowSpan="2">Action</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700" rowSpan="2">Barangay/Evacuation Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700" colSpan="2">Inside Evacuation Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700" colSpan="3">Outside Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 w-24" rowSpan="2">Action</th>
                                 </tr>
                                 <tr>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold border border-white">Families</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold border border-white">Individuals</th>
-                                    <th className="px-4 py-2 text-left text-xs font-semibold border border-white">Location</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold border border-white">Families</th>
-                                    <th className="px-4 py-2 text-center text-xs font-semibold border border-white">Individuals</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Families</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Individuals</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Location</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Families</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Individuals</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -320,7 +315,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="text"
                                                                 value={brgy.barangay}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'barangay', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                                 placeholder="Barangay"
                                                                 disabled={disabled}
                                                             />
@@ -328,7 +323,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="text"
                                                                 value={brgy.evacuation_center}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'evacuation_center', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2 disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2 disabled:cursor-not-allowed disabled:bg-gray-50"
                                                                 placeholder="Evacuation Center"
                                                                 disabled={disabled}
                                                             />
@@ -338,7 +333,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="number"
                                                                 value={brgy.families}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'families', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-50"
                                                                 placeholder="0"
                                                                 disabled={disabled}
                                                             />
@@ -348,7 +343,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                                 type="number"
                                                                 value={brgy.persons}
                                                                 onChange={(e) => updateBarangay(brgy.id, 'persons', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-50"
                                                                 placeholder="0"
                                                                 disabled={disabled}
                                                             />
@@ -360,7 +355,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="text"
                                                         value={loc.location}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'location', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                         placeholder="Location"
                                                         disabled={disabled}
                                                     />
@@ -370,7 +365,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.families}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'families', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-50"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />
@@ -380,7 +375,7 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                                                         type="number"
                                                         value={loc.persons}
                                                         onChange={(e) => updateOutsideLocation(brgy.id, loc.id, 'persons', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-100"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-center disabled:cursor-not-allowed disabled:bg-gray-50"
                                                         placeholder="0"
                                                         disabled={disabled}
                                                     />
@@ -444,11 +439,11 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                 </div>
             </div>
 
-            <div className="flex justify-end pt-5 border-t border-slate-200">
+            <div className="flex justify-end pt-5 border-t border-gray-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

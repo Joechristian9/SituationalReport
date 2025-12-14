@@ -3,10 +3,13 @@
     A. PRESENT WEATHER:
 </div>
 
-@if($weatherReports->count() > 0)
-    @php $report = $weatherReports->first(); @endphp
-    <table>
-        <tbody>
+@php 
+    $report = $weatherReports->count() > 0 ? $weatherReports->first() : null;
+@endphp
+
+<table>
+    <tbody>
+        @if($report)
             <tr>
                 <td rowspan="4" style="width: 25%; vertical-align: middle; text-align: center; color: #666;">
                     {{ $report['municipality'] ?? 'City of Ilagan' }}
@@ -26,8 +29,12 @@
                 <td style="font-weight: bold; color: #333;">Sea Condition</td>
                 <td style="color: #333;">{{ $report['sea_condition'] ?? 'N/A' }}</td>
             </tr>
-        </tbody>
-    </table>
-@else
-    <p style="font-style: italic; color: #666;">No weather data available.</p>
-@endif
+        @else
+            <tr>
+                <td colspan="3" style="font-style: italic; color: #666; text-align: center; padding: 10px;">
+                    No weather data available.
+                </td>
+            </tr>
+        @endif
+    </tbody>
+</table>

@@ -270,32 +270,31 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
     return (
         <>
         <div className="space-y-6">
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                    <Radio className="w-6 h-6 text-white" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <Radio className="w-6 h-6 text-gray-700" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">📡 Communication Status Update</h4>
-                    <p className="text-purple-50 text-sm">
+                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Communication Status Update</h4>
+                    <p className="text-gray-600 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-gradient-to-r from-purple-50 to-purple-100/50 border-b border-slate-200">
-                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={2 + (services.cellphone?.length || 0)}>
+                        <tr className="bg-gray-100 border-b border-gray-200">
+                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={2 + (services.cellphone?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                                         CELLPHONE (SMS & CALL)
                                     </div>
                                     {canManageServices && (
                                         <button
                                             onClick={() => { setNewService({ name: '', category: 'cellphone' }); setShowAddService(true); }}
-                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded flex items-center gap-1"
                                             disabled={disabled}
                                         >
                                             <Plus className="w-3 h-3" /> Add
@@ -303,16 +302,15 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={1 + (services.internet?.length || 0)}>
+                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={1 + (services.internet?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                                         Internet
                                     </div>
                                     {canManageServices && (
                                         <button
                                             onClick={() => { setNewService({ name: '', category: 'internet' }); setShowAddService(true); }}
-                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded flex items-center gap-1"
                                             disabled={disabled}
                                         >
                                             <Plus className="w-3 h-3" /> Add
@@ -320,16 +318,15 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-slate-700 border-r border-slate-200" colSpan={1 + (services.radio?.length || 0)}>
+                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={1 + (services.radio?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                                         Radio
                                     </div>
                                     {canManageServices && (
                                         <button
                                             onClick={() => { setNewService({ name: '', category: 'radio' }); setShowAddService(true); }}
-                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded flex items-center gap-1"
                                             disabled={disabled}
                                         >
                                             <Plus className="w-3 h-3" /> Add
@@ -337,21 +334,22 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-slate-700">
+                            <th className="text-left p-4 font-semibold text-gray-700">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                                     REMARKS
                                 </div>
                             </th>
                         </tr>
-                        <tr className="bg-slate-50 border-b border-slate-200">
+                        <tr className="bg-gray-50 border-b border-gray-200">
                             {/* Default cellphone services */}
-                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">GLOBE</th>
-                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">SMART</th>
+                            <th className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm">GLOBE</th>
+                            <th className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm">SMART</th>
                             
                             {/* Dynamic cellphone services */}
-                            {services.cellphone?.map(service => (
-                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                            {services.cellphone?.filter(service => 
+                                !['GLOBE', 'SMART'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm relative group">
                                     {service.name}
                                     {canManageServices && (
                                         <button
@@ -366,11 +364,13 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                             ))}
                             
                             {/* Default internet service */}
-                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">POLARIS</th>
+                            <th className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm">POLARIS</th>
                             
                             {/* Dynamic internet services */}
-                            {services.internet?.map(service => (
-                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                            {services.internet?.filter(service => 
+                                !['POLARIS'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm relative group">
                                     {service.name}
                                     {canManageServices && (
                                         <button
@@ -385,11 +385,13 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                             ))}
                             
                             {/* Default radio service */}
-                            <th className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm">VHF</th>
+                            <th className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm">VHF</th>
                             
                             {/* Dynamic radio services */}
-                            {services.radio?.map(service => (
-                                <th key={service.id} className="text-center p-3 font-medium text-slate-600 border-r border-slate-200 text-sm relative group">
+                            {services.radio?.filter(service => 
+                                !['VHF'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <th key={service.id} className="text-center p-3 font-medium text-gray-600 border-r border-gray-200 text-sm relative group">
                                     {service.name}
                                     {canManageServices && (
                                         <button
@@ -403,13 +405,13 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                 </th>
                             ))}
                             
-                            <th className="text-center p-3 font-medium text-slate-600 text-sm"></th>
+                            <th className="text-center p-3 font-medium text-gray-600 text-sm"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="hover:bg-slate-50/50 transition-colors">
+                        <tr className="hover:bg-gray-50 transition-colors">
                             {/* Default cellphone inputs */}
-                            <td className="p-3 border-r border-slate-200">
+                            <td className="p-3 border-r border-gray-200">
                                 <input
                                     type="text"
                                     name="globe"
@@ -417,10 +419,10 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Serviceable"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                 />
                             </td>
-                            <td className="p-3 border-r border-slate-200">
+                            <td className="p-3 border-r border-gray-200">
                                 <input
                                     type="text"
                                     name="smart"
@@ -428,13 +430,15 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Serviceable"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                 />
                             </td>
                             
                             {/* Dynamic cellphone inputs */}
-                            {services.cellphone?.map(service => (
-                                <td key={service.id} className="p-3 border-r border-slate-200">
+                            {services.cellphone?.filter(service => 
+                                !['GLOBE', 'SMART'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <td key={service.id} className="p-3 border-r border-gray-200">
                                     <input
                                         type="text"
                                         name={`service_${service.id}`}
@@ -442,13 +446,13 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., Serviceable"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                     />
                                 </td>
                             ))}
                             
                             {/* Default internet input */}
-                            <td className="p-3 border-r border-slate-200">
+                            <td className="p-3 border-r border-gray-200">
                                 <input
                                     type="text"
                                     name="pldt_internet"
@@ -456,13 +460,15 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Serviceable"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                 />
                             </td>
                             
                             {/* Dynamic internet inputs */}
-                            {services.internet?.map(service => (
-                                <td key={service.id} className="p-3 border-r border-slate-200">
+                            {services.internet?.filter(service => 
+                                !['POLARIS'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <td key={service.id} className="p-3 border-r border-gray-200">
                                     <input
                                         type="text"
                                         name={`service_${service.id}`}
@@ -470,13 +476,13 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., Serviceable"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                     />
                                 </td>
                             ))}
                             
                             {/* Default radio input */}
-                            <td className="p-3 border-r border-slate-200">
+                            <td className="p-3 border-r border-gray-200">
                                 <input
                                     type="text"
                                     name="vhf"
@@ -484,13 +490,15 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Functional"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                 />
                             </td>
                             
                             {/* Dynamic radio inputs */}
-                            {services.radio?.map(service => (
-                                <td key={service.id} className="p-3 border-r border-slate-200">
+                            {services.radio?.filter(service => 
+                                !['VHF'].includes(service.name.toUpperCase())
+                            ).map(service => (
+                                <td key={service.id} className="p-3 border-r border-gray-200">
                                     <input
                                         type="text"
                                         name={`service_${service.id}`}
@@ -498,7 +506,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., Functional"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm text-center"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center"
                                     />
                                 </td>
                             ))}
@@ -513,7 +521,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     rows="2"
                                     disabled={disabled}
                                     placeholder="Click to auto-fill date and time..."
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-purple-300 shadow-sm resize-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                 />
                             </td>
                         </tr>
@@ -521,11 +529,11 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                 </table>
             </div>
 
-            <div className="flex justify-end pt-5 border-t border-slate-200">
+            <div className="flex justify-end pt-5 border-t border-gray-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

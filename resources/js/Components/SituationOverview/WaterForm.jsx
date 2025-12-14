@@ -163,13 +163,13 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
     return (
         <div className="space-y-6">
             {/* Info Banner */}
-            <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                    <Droplet className="w-6 h-6 text-white" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <Droplet className="w-6 h-6 text-gray-700" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1 text-lg">💧 Water Services Status</h4>
-                    <p className="text-blue-50 text-sm">
+                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Water Services Status</h4>
+                    <p className="text-gray-600 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
@@ -178,10 +178,9 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
             {/* Form Fields */}
             <div className="space-y-5">
                 {/* Source of Water */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full text-xs font-bold">1</span>
-                        What's the source of water?
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Source of Water
                     </label>
                     <input
                         type="text"
@@ -190,15 +189,14 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                         onChange={handleInputChange}
                         disabled={disabled}
                         placeholder="e.g., Deep well, Spring, Water district..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-slate-300 placeholder:text-slate-400"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
                     />
                 </div>
 
                 {/* Barangays Served */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full text-xs font-bold">2</span>
-                        Which barangays are served?
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Barangays Served
                     </label>
                     <textarea
                         name="barangays_served"
@@ -207,15 +205,14 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                         rows="4"
                         disabled={disabled}
                         placeholder="List the barangays served by this water source..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                     />
                 </div>
 
                 {/* Status */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full text-xs font-bold">3</span>
-                        What's the current status?
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Current Status
                     </label>
                     <textarea
                         name="status"
@@ -224,15 +221,14 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                         rows="4"
                         disabled={disabled}
                         placeholder="e.g., Fully operational, Intermittent supply, Temporarily unavailable due to maintenance..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                     />
                 </div>
 
                 {/* Remarks */}
-                <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full text-xs font-bold">4</span>
-                        Any additional details?
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Additional Details
                     </label>
                     <textarea
                         name="remarks"
@@ -242,17 +238,17 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                         rows="5"
                         disabled={disabled}
                         placeholder="Click to auto-fill date and time, then add your remarks..."
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed resize-none hover:border-slate-300 placeholder:text-slate-400"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                     />
                 </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-5 border-t border-slate-200">
+            <div className="flex justify-end pt-5 border-t border-gray-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-cyan-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2 transition-all"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>
@@ -274,7 +270,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             ) : (
                                 <>
                                     <CheckCircle2 className="w-5 h-5" />
-                                    <span>All Set! ✓</span>
+                                    <span>No Changes</span>
                                 </>
                             )}
                         </>
@@ -283,7 +279,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
             </div>
 
             {errors.waterServices && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm px-4 py-3 rounded-r-lg flex items-center gap-2">
+                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm px-4 py-3 rounded flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
                     {errors.waterServices}
                 </div>

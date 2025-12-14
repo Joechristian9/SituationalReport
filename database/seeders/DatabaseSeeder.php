@@ -55,22 +55,6 @@ class DatabaseSeeder extends Seeder
         $iselco2->assignRole($role);
         $iselco2->givePermissionTo('access-electricity-form');
 
-        $bdrrmc = User::factory()->create([
-            'name' => 'Bdrrmc',
-            'email' => 'bdrrmo@gmail.com',
-            'password' => bcrypt('wardead123'),
-        ]);
-        $bdrrmc->assignRole($role);
-        $bdrrmc->givePermissionTo([
-            'access-pre-emptive-form',
-            'access-incident-form',
-            'access-casualty-form',
-            'access-injured-form',
-            'access-missing-form',
-            'access-response-operations',
-            'access-assistance-extended',
-        ]);
-
         $ceo = User::factory()->create([
             'name' => 'Ceo',
             'email' => 'ceo@gmail.com',
@@ -130,6 +114,20 @@ class DatabaseSeeder extends Seeder
         ]);
         $cao->assignRole($role);
         $cao->givePermissionTo('access-agriculture-form');
+
+        $bdrrmc = User::factory()->create([
+            'name' => 'BDRRMC',
+            'email' => 'bdrrmc@gmail.com',
+            'password' => bcrypt('wardead123'),
+        ]);
+        $bdrrmc->assignRole($role);
+        $bdrrmc->givePermissionTo([
+            'access-electricity-form',
+            'access-communication-form',
+            'access-road-form',
+            'access-bridge-form',
+            'access-pre-emptive-form',
+        ]);
 
         $adminRole = Role::create(['name' => 'admin']);
         $admin = User::factory()->create([

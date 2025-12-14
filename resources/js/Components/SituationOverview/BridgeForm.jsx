@@ -198,56 +198,35 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
 
     return (
         <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="space-y-6">
                 {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-purple-100 text-purple-600 p-2 rounded-lg">
-                        <Landmark size={24} />
+                <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                        <Landmark className="w-6 h-6 text-gray-700" />
                     </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Bridges / Overflow Bridges
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Enter the condition and accessibility of bridges.
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1 text-lg">Bridges / Overflow Bridges</h4>
+                        <p className="text-gray-600 text-sm">
+                            One report per typhoon — update anytime to keep information current.
                         </p>
                     </div>
                 </div>
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by bridge name..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
-                        <DownloadExcelButton
-                            data={bridges}
-                            fileName="Bridges_Report"
-                            sheetName="Bridges"
-                        />
-                    </div>
-                </div>
-
                 {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Classification</th>
-                                <th className="p-3 border-r">Name of Bridge</th>
-                                <th className="p-3 border-r">Status</th>
-                                <th className="p-3 border-r">Areas Affected</th>
-                                <th className="p-3 border-r">Re-routing</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
+                            <thead className="bg-gray-100 border-b border-gray-200">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Road Classification</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name of Bridges</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Areas/Barangays Affected</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Re-routing</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">REMARKS</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
                             {paginatedBridges.length === 0 && searchTerm ? (
                                 <tr>
                                     <td colSpan="6" className="p-8 text-center">
@@ -285,7 +264,7 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
                                 return (
                                     <tr
                                         key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
+                                        className="hover:bg-gray-50"
                                     >
                                         {fields.map((field) => {
                                             // Use row ID + field for row-specific tracking
@@ -315,60 +294,15 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
                                             return (
                                                 <td
                                                     key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
+                                                    className="px-4 py-3"
                                                 >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        {field ===
-                                                        "road_classification" ? (
-                                                            <select
-                                                                {...commonProps}
-                                                            >
-                                                                <option value="">
-                                                                    Select
-                                                                    Classification
-                                                                </option>
-                                                                <option value="National Road">
-                                                                    National
-                                                                    Road
-                                                                </option>
-                                                                <option value="Provincial Road">
-                                                                    Provincial
-                                                                    Road
-                                                                </option>
-                                                                <option value="Municipality Road">
-                                                                    Municipality
-                                                                    Road
-                                                                </option>
-                                                                <option value="Barangay Road">
-                                                                    Barangay
-                                                                    Road
-                                                                </option>
-                                                            </select>
-                                                        ) : field ===
-                                                          "status" ? (
-                                                            <select
-                                                                {...commonProps}
-                                                            >
-                                                                <option value="">
-                                                                    Select
-                                                                    Status
-                                                                </option>
-                                                                <option value="passable">
-                                                                    Passable
-                                                                </option>
-                                                                <option value="not_passable">
-                                                                    Not Passable
-                                                                </option>
-                                                            </select>
-                                                        ) : (
-                                                            <input
-                                                                {...commonProps}
-                                                                placeholder="Enter value..."
-                                                            />
-                                                        )}
+                                                    <div className="relative">
+                                                        <textarea
+                                                            {...commonProps}
+                                                            placeholder="Enter value..."
+                                                            rows="2"
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 resize-none"
+                                                        />
 
                                                         {fieldHistory.length >
                                                             0 && (
@@ -472,8 +406,9 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
                                     </tr>
                                 );
                             })}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                     {errors.bridges && (
                         <div className="text-red-500 text-sm mt-2 px-3">
                             {errors.bridges}
@@ -490,32 +425,34 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
                 />
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4">
+                    <button
+                        type="button"
+                        onClick={handleAddRow}
+                        disabled={disabled}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg disabled:cursor-not-allowed disabled:opacity-50 transition shadow-sm"
+                    >
+                        <PlusCircle className="w-4 h-4" />
+                        Add Row
+                    </button>
 
                     <button
                         onClick={handleSubmit}
                         disabled={isSaving || !hasChanges || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
                     >
                         {isSaving ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
                                 <span>Saving...</span>
                             </>
-                        ) : (
+                        ) : hasChanges ? (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : (hasChanges ? 'Save Bridges Report' : 'No Changes')}</span>
+                                <span>Save Bridges Report</span>
                             </>
+                        ) : (
+                            <span>No Changes</span>
                         )}
                     </button>
                 </div>
