@@ -255,19 +255,19 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
 
     return (
         <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                    <Users className="w-6 h-6 text-gray-700" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                    <Users className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Pre-Emptive Evacuation Report</h4>
-                    <p className="text-gray-600 text-sm">
+                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Pre-Emptive Evacuation Report</h4>
+                    <p className="text-blue-700 text-sm">
                         One report per typhoon — update anytime to keep information current.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+            <div className="bg-white border-2 border-blue-200 rounded-xl shadow-md p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">Evacuation Centers</h3>
@@ -288,12 +288,12 @@ export default function PreEmptiveReportsForm({ data, setData, disabled = false 
                 <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
-                            <thead className="bg-gray-100 border-b border-gray-200">
+                            <thead className="bg-blue-50 border-b border-blue-200">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700" rowSpan="2">Barangay/Evacuation Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700" colSpan="2">Inside Evacuation Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700" colSpan="3">Outside Center</th>
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 w-24" rowSpan="2">Action</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900" rowSpan="2">Barangay/Evacuation Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-blue-900" colSpan="2">Inside Evacuation Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-blue-900" colSpan="3">Outside Center</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-blue-900 w-24" rowSpan="2">Action</th>
                                 </tr>
                                 <tr>
                                     <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Families</th>

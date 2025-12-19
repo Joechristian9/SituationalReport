@@ -280,23 +280,23 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                 <main className="w-full p-6 bg-gray-50">
                     <div className="max-w-7xl mx-auto space-y-6">
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-md">
                             <div className="flex items-start gap-4">
                                 <div className="flex-shrink-0">
-                                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                        <Clock className="w-6 h-6" />
+                                    <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+                                        <FileText className="w-7 h-7" />
                                     </div>
                                 </div>
                                 <div className="flex-1">
-                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Submission Status</h1>
+                                    <h1 className="text-2xl font-bold text-blue-900 mb-2">Form Submission Status</h1>
                                     {activeTyphoon ? (
-                                        <p className="text-gray-600">
-                                            Monitoring form submissions for <span className="font-semibold text-blue-600">{activeTyphoon.name}</span>
+                                        <p className="text-blue-700">
+                                            Monitoring form submissions for <span className="font-semibold text-blue-800">{activeTyphoon.name}</span>
                                         </p>
                                     ) : (
-                                        <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-2 rounded-lg inline-flex">
+                                        <div className="flex items-center gap-2 text-amber-800 bg-amber-100 px-3 py-2 rounded-lg inline-flex border border-amber-200">
                                             <AlertCircle className="w-5 h-5" />
-                                            <span>No active typhoon - showing all users</span>
+                                            <span className="font-medium">No active typhoon - showing all users</span>
                                         </div>
                                     )}
                                 </div>
@@ -331,24 +331,24 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                         {/* Users Table */}
                         {users.length > 0 ? (
                             <>
-                                <Card>
+                                <Card className="border-2 border-blue-200 shadow-md rounded-xl overflow-hidden">
                                     <CardContent className="p-0">
                                         <Table>
                                             <TableHeader>
-                                                <TableRow className="bg-gray-50">
-                                                    <TableHead className="w-12 font-semibold">#</TableHead>
-                                                    <TableHead className="font-semibold">Name</TableHead>
-                                                    <TableHead className="font-semibold">Email</TableHead>
-                                                    <TableHead className="font-semibold">Status</TableHead>
-                                                    <TableHead className="font-semibold">Assigned Forms</TableHead>
-                                                    <TableHead className="font-semibold">Last Submission</TableHead>
-                                                    <TableHead className="font-semibold text-center">Actions</TableHead>
+                                                <TableRow className="bg-blue-50 border-b border-blue-200">
+                                                    <TableHead className="w-12 font-semibold text-blue-900">#</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900">Name</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900">Email</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900">Status</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900">Assigned Forms</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900">Last Submission</TableHead>
+                                                    <TableHead className="font-semibold text-blue-900 text-center">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {paginatedUsers.length > 0 ? (
                                                     paginatedUsers.map((user, index) => (
-                                                        <TableRow key={user.id} className="hover:bg-gray-50">
+                                                        <TableRow key={user.id} className="hover:bg-blue-50 border-b border-blue-100">
                                                             <TableCell className="font-medium text-gray-500">
                                                                 {startIndex + index + 1}
                                                             </TableCell>
@@ -385,7 +385,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                         variant="ghost"
                                                                         size="sm"
                                                                         onClick={() => handleViewDetails(user)}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 font-medium"
                                                                     >
                                                                         <Eye className="w-4 h-4 mr-1" />
                                                                         View

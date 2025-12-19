@@ -122,25 +122,25 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
 
     return (
         <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                    <Cloud className="w-6 h-6 text-gray-700" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                    <Cloud className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Weather Conditions Update</h4>
-                    <p className="text-gray-600 text-sm">
+                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Weather Conditions Update</h4>
+                    <p className="text-blue-700 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-hidden">
                 <table className="w-full">
                     <tbody>
-                        <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="bg-gray-100 font-semibold text-gray-800 p-5 border-r border-gray-200 w-1/3 align-middle" rowSpan="4">
+                        <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
+                            <td className="bg-gradient-to-br from-blue-100 to-indigo-100 font-semibold text-blue-900 p-5 border-r border-blue-200 w-1/3 align-middle" rowSpan="4">
                                 <div className="flex flex-col items-center gap-2">
-                                    <span className="text-xs uppercase tracking-wide text-gray-600 font-medium">Location</span>
+                                    <span className="text-xs uppercase tracking-wide text-blue-700 font-semibold">Location</span>
                                     <input
                                         type="text"
                                         name="municipality"
@@ -148,11 +148,11 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="City of Ilagan"
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center font-semibold text-gray-700"
+                                        className="w-full px-4 py-2.5 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed text-center font-semibold text-gray-700 shadow-sm"
                                     />
                                 </div>
                             </td>
-                            <td className="bg-gray-50 font-medium text-gray-700 p-4 border-r border-gray-200 w-1/4">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200 w-1/4">
                                 Sky Condition
                             </td>
                             <td className="p-4 bg-white">
@@ -163,12 +163,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Cloudy, Partly cloudy, Clear skies"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                 />
                             </td>
                         </tr>
-                        <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="bg-gray-50 font-medium text-gray-700 p-4 border-r border-gray-200">
+                        <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
                                 Wind
                             </td>
                             <td className="p-4 bg-white">
@@ -179,12 +179,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., Light winds, Moderate winds"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                 />
                             </td>
                         </tr>
-                        <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="bg-gray-50 font-medium text-gray-700 p-4 border-r border-gray-200">
+                        <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
                                 Precipitation
                             </td>
                             <td className="p-4 bg-white">
@@ -195,12 +195,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., No rain in the last 12 hours"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                 />
                             </td>
                         </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="bg-gray-50 font-medium text-gray-700 p-4 border-r border-gray-200">
+                        <tr className="hover:bg-blue-50 transition-colors">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
                                 Sea Condition
                             </td>
                             <td className="p-4 bg-white">
@@ -211,7 +211,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     onChange={handleInputChange}
                                     disabled={disabled}
                                     placeholder="e.g., N/A, Calm, Moderate waves"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                 />
                             </td>
                         </tr>
@@ -219,11 +219,11 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                 </table>
             </div>
 
-            <div className="flex justify-end pt-5 border-t border-gray-200">
+            <div className="flex justify-end pt-5 border-t border-blue-200">
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all hover:shadow-lg"
                 >
                     {isSaving ? (
                         <>

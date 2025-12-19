@@ -200,30 +200,30 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
         <TooltipProvider>
             <div className="space-y-6">
                 {/* Header */}
-                <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
-                    <div className="bg-gray-100 p-3 rounded-lg">
-                        <Landmark className="w-6 h-6 text-gray-700" />
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                    <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                        <Landmark className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1 text-lg">Bridges / Overflow Bridges</h4>
-                        <p className="text-gray-600 text-sm">
+                        <h4 className="font-semibold text-blue-900 mb-1 text-lg">Bridges / Overflow Bridges</h4>
+                        <p className="text-blue-700 text-sm">
                             One report per typhoon — update anytime to keep information current.
                         </p>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-md">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-sm">
-                            <thead className="bg-gray-100 border-b border-gray-200">
+                            <thead className="bg-blue-50 border-b border-blue-200">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Road Classification</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name of Bridges</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Areas/Barangays Affected</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Re-routing</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">REMARKS</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Road Classification</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Name of Bridges</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Status</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Areas/Barangays Affected</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Re-routing</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">REMARKS</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">

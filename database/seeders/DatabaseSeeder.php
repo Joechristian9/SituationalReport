@@ -73,11 +73,9 @@ class DatabaseSeeder extends Seeder
         ]);
         $pnp->assignRole($role);
         $pnp->givePermissionTo([
+            'access-road-form',
+            'access-bridge-form',
             'access-incident-form',
-            'access-casualty-form',
-            'access-injured-form',
-            'access-missing-form',
-            'access-tourist-form',
         ]);
 
         $cswdo = User::factory()->create([

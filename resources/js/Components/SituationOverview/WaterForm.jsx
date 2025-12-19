@@ -163,13 +163,13 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
     return (
         <div className="space-y-6">
             {/* Info Banner */}
-            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                    <Droplet className="w-6 h-6 text-gray-700" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                    <Droplet className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Water Services Status</h4>
-                    <p className="text-gray-600 text-sm">
+                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Water Services Status</h4>
+                    <p className="text-blue-700 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>

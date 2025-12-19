@@ -35,17 +35,37 @@ import {
 } from "lucide-react";
 
 // Lazy load form components for better performance
-const WeatherForm = lazy(() => import("@/Components/SituationOverview/WeatherForm"));
-const WaterLevelForm = lazy(() => import("@/Components/SituationOverview/WaterLevelForm"));
-const ElectricityForm = lazy(() => import("@/Components/SituationOverview/ElectricityForm"));
-const WaterForm = lazy(() => import("@/Components/SituationOverview/WaterForm"));
-const CommunicationForm = lazy(() => import("@/Components/SituationOverview/CommunicationForm"));
+const WeatherForm = lazy(() =>
+    import("@/Components/SituationOverview/WeatherForm")
+);
+const WaterLevelForm = lazy(() =>
+    import("@/Components/SituationOverview/WaterLevelForm")
+);
+const ElectricityForm = lazy(() =>
+    import("@/Components/SituationOverview/ElectricityForm")
+);
+const WaterForm = lazy(() =>
+    import("@/Components/SituationOverview/WaterForm")
+);
+const CommunicationForm = lazy(() =>
+    import("@/Components/SituationOverview/CommunicationForm")
+);
 const RoadForm = lazy(() => import("@/Components/SituationOverview/RoadForm"));
-const BridgeForm = lazy(() => import("@/Components/SituationOverview/BridgeForm"));
-const PreEmptiveReportsForm = lazy(() => import("@/Components/SituationOverview/PreEmptiveReportsForm"));
-const PrePositioningReportsForm = lazy(() => import("@/Components/SituationOverview/PrePositioningReportsForm"));
-const IncidentMonitoredForm = lazy(() => import("@/Components/Effects/IncidentMonitoredForm"));
-const AgricultureForm = lazy(() => import("@/Components/Agriculture/AgricultureForm"));
+const BridgeForm = lazy(() =>
+    import("@/Components/SituationOverview/BridgeForm")
+);
+const PreEmptiveReportsForm = lazy(() =>
+    import("@/Components/SituationOverview/PreEmptiveReportsForm")
+);
+const PrePositioningReportsForm = lazy(() =>
+    import("@/Components/SituationOverview/PrePositioningReportsForm")
+);
+const IncidentMonitoredForm = lazy(() =>
+    import("@/Components/Effects/IncidentMonitoredForm")
+);
+const AgricultureForm = lazy(() =>
+    import("@/Components/Agriculture/AgricultureForm")
+);
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -68,14 +88,17 @@ export default function Index() {
     } = usePage().props;
 
     // Check if forms should be disabled (no active typhoon, ended, or paused)
-    const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended' || typhoon?.active?.status === 'paused';
+    const formsDisabled =
+        !typhoon?.hasActive ||
+        typhoon?.active?.status === "ended" ||
+        typhoon?.active?.status === "paused";
 
     // Poll for typhoon status changes - using localStorage to prevent spam
     useEffect(() => {
         // Get the last known state from localStorage
         const getLastKnownState = () => {
             try {
-                const stored = localStorage.getItem('lastTyphoonState');
+                const stored = localStorage.getItem("lastTyphoonState");
                 return stored ? JSON.parse(stored) : null;
             } catch {
                 return null;
@@ -88,64 +111,82 @@ export default function Index() {
                 status: typhoon?.active?.status,
                 hasActive: typhoon?.hasActive,
                 typhoonId: typhoon?.active?.id,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             };
-            localStorage.setItem('lastTyphoonState', JSON.stringify(currentState));
+            localStorage.setItem(
+                "lastTyphoonState",
+                JSON.stringify(currentState)
+            );
         };
 
         const checkTyphoonStatus = async () => {
             try {
-                const response = await fetch('/api/typhoon/active', {
+                const response = await fetch("/api/typhoon/active", {
                     headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
                 });
-                
+
                 if (!response.ok) return;
-                
+
                 const data = await response.json();
                 const lastKnown = getLastKnownState();
-                
+
                 // If no last known state, save current and return
                 if (!lastKnown) {
                     saveCurrentState();
                     return;
                 }
-                
+
                 const newStatus = data.currentTyphoon?.status;
                 const newHasActive = data.hasActiveTyphoon;
                 const newTyphoonId = data.currentTyphoon?.id;
-                
+
                 // Check if anything actually changed
                 const statusChanged = lastKnown.status !== newStatus;
                 const hasActiveChanged = lastKnown.hasActive !== newHasActive;
                 const typhoonIdChanged = lastKnown.typhoonId !== newTyphoonId;
-                
+
                 // Only reload if there's a real change
                 if (statusChanged || hasActiveChanged || typhoonIdChanged) {
                     // Save the new state BEFORE reloading
-                    localStorage.setItem('lastTyphoonState', JSON.stringify({
-                        status: newStatus,
-                        hasActive: newHasActive,
-                        typhoonId: newTyphoonId,
-                        timestamp: Date.now()
-                    }));
-                    
+                    localStorage.setItem(
+                        "lastTyphoonState",
+                        JSON.stringify({
+                            status: newStatus,
+                            hasActive: newHasActive,
+                            typhoonId: newTyphoonId,
+                            timestamp: Date.now(),
+                        })
+                    );
+
                     // Reload the page
-                    router.reload({ 
+                    router.reload({
                         preserveScroll: true,
                         onSuccess: () => {
-                            if (newStatus === 'paused' && lastKnown.status === 'active') {
-                                toast.error('Typhoon report has been paused. Forms are now disabled.');
-                            } else if (newStatus === 'active' && lastKnown.status === 'paused') {
-                                toast.success('Typhoon report has been resumed. Forms are now enabled.');
+                            if (
+                                newStatus === "paused" &&
+                                lastKnown.status === "active"
+                            ) {
+                                toast.error(
+                                    "Typhoon report has been paused. Forms are now disabled."
+                                );
+                            } else if (
+                                newStatus === "active" &&
+                                lastKnown.status === "paused"
+                            ) {
+                                toast.success(
+                                    "Typhoon report has been resumed. Forms are now enabled."
+                                );
                             } else if (!newHasActive && lastKnown.hasActive) {
-                                toast.error('Typhoon report has been ended. Forms are now disabled.');
+                                toast.error(
+                                    "Typhoon report has been ended. Forms are now disabled."
+                                );
                             } else if (newHasActive && !lastKnown.hasActive) {
-                                toast.success('New typhoon report created!');
+                                toast.success("New typhoon report created!");
                             }
-                        }
+                        },
                     });
                 }
             } catch (error) {
@@ -160,7 +201,7 @@ export default function Index() {
         const startDelay = setTimeout(() => {
             // Check every 5 seconds
             const interval = setInterval(checkTyphoonStatus, 5000);
-            
+
             return () => clearInterval(interval);
         }, 3000);
 
@@ -168,8 +209,8 @@ export default function Index() {
     }, []); // Empty deps - only run once
 
     // Get user permissions
-    const userPermissions = auth?.user?.permissions?.map(p => p.name) || [];
-    const isAdmin = auth?.user?.roles?.some(r => r.name === 'admin');
+    const userPermissions = auth?.user?.permissions?.map((p) => p.name) || [];
+    const isAdmin = auth?.user?.roles?.some((r) => r.name === "admin");
 
     // Helper function to check if user has permission
     const hasPermission = (permission) => {
@@ -178,25 +219,71 @@ export default function Index() {
 
     // Define all possible steps with their permissions
     const allSteps = [
-        { label: "Weather", icon: <Cloud size={18} />, permission: "access-weather-form" },
-        { label: "Water Level", icon: <Waves size={18} />, permission: "access-water-level-form" },
-        { label: "Electricity", icon: <Zap size={18} />, permission: "access-electricity-form" },
-        { label: "Water Services", icon: <Droplet size={18} />, permission: "access-water-service-form" },
-        { label: "Communications", icon: <Phone size={18} />, permission: "access-communication-form" },
-        { label: "Roads", icon: <Route size={18} />, permission: "access-road-form" },
-        { label: "Bridges", icon: <Landmark size={18} />, permission: "access-bridge-form" },
-        { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form" },
-        { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form" },
-        { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form" },
-        { label: "Agriculture", icon: <Sprout size={18} />, permission: "access-agriculture-form" },
+        {
+            label: "Weather",
+            icon: <Cloud size={18} />,
+            permission: "access-weather-form",
+        },
+        {
+            label: "Water Level",
+            icon: <Waves size={18} />,
+            permission: "access-water-level-form",
+        },
+        {
+            label: "Electricity",
+            icon: <Zap size={18} />,
+            permission: "access-electricity-form",
+        },
+        {
+            label: "Water Services",
+            icon: <Droplet size={18} />,
+            permission: "access-water-service-form",
+        },
+        {
+            label: "Communications",
+            icon: <Phone size={18} />,
+            permission: "access-communication-form",
+        },
+        {
+            label: "Roads",
+            icon: <Route size={18} />,
+            permission: "access-road-form",
+        },
+        {
+            label: "Bridges",
+            icon: <Landmark size={18} />,
+            permission: "access-bridge-form",
+        },
+        {
+            label: "Pre-Emptive Reports",
+            icon: <ClipboardList size={18} />,
+            permission: "access-pre-emptive-form",
+        },
+        {
+            label: "Pre-positioning",
+            icon: <MapPin size={18} />,
+            permission: "access-pre-positioning-form",
+        },
+        {
+            label: "Incident Monitored",
+            icon: <Flame size={18} />,
+            permission: "access-incident-form",
+        },
+        {
+            label: "Agriculture",
+            icon: <Sprout size={18} />,
+            permission: "access-agriculture-form",
+        },
     ];
 
     // Filter steps based on user permissions
-    const steps = allSteps.filter(step => hasPermission(step.permission));
+    const steps = allSteps.filter((step) => hasPermission(step.permission));
 
     // No stepper - show all forms directly
     // Auto-select the form if user only has access to one form
-    const [activeForm, setActiveForm] = useState(steps.length === 1 ? steps[0].label : null);
+    const [activeForm, setActiveForm] = useState(
+        steps.length === 1 ? steps[0].label : null
+    );
 
     const { data, setData, errors } = useForm({
         reports:
@@ -215,13 +302,13 @@ export default function Index() {
         preEmptiveReports: [
             {
                 id: null,
-                barangay: '',
-                evacuation_center: '',
-                families: '',
-                persons: '',
-                outside_center: '',
-                outside_families: '',
-                outside_persons: '',
+                barangay: "",
+                evacuation_center: "",
+                families: "",
+                persons: "",
+                outside_center: "",
+                outside_families: "",
+                outside_persons: "",
                 total_families: 0,
                 total_persons: 0,
             },
@@ -229,32 +316,32 @@ export default function Index() {
         prePositioning: [
             {
                 id: null,
-                asset_type: '',
-                description: '',
-                quantity: '',
-                location: '',
-                deployed_by: '',
-                remarks: '',
+                asset_type: "",
+                description: "",
+                quantity: "",
+                location: "",
+                deployed_by: "",
+                remarks: "",
             },
         ],
         incidents: [
             {
                 id: null,
-                kinds_of_incident: '',
-                date_time: '',
-                location: '',
-                description: '',
-                remarks: '',
+                kinds_of_incident: "",
+                date_time: "",
+                location: "",
+                description: "",
+                remarks: "",
             },
         ],
         agriculture: [
             {
                 id: null,
-                crops_affected: '',
-                standing_crop_ha: '',
-                stage_of_crop: '',
-                total_area_affected_ha: '',
-                total_production_loss: '',
+                crops_affected: "",
+                standing_crop_ha: "",
+                stage_of_crop: "",
+                total_area_affected_ha: "",
+                total_production_loss: "",
             },
         ],
         waterLevels:
@@ -420,29 +507,106 @@ export default function Index() {
 
     // Render form based on step number
     const renderForm = (formLabel) => {
-        switch(formLabel) {
+        switch (formLabel) {
             case "Weather":
-                return <WeatherForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <WeatherForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Water Level":
-                return <WaterLevelForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <WaterLevelForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Electricity":
-                return <ElectricityForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <ElectricityForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Water Services":
-                return <WaterForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <WaterForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Communications":
-                return <CommunicationForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <CommunicationForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Roads":
-                return <RoadForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <RoadForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Bridges":
-                return <BridgeForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <BridgeForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Pre-Emptive Reports":
-                return <PreEmptiveReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <PreEmptiveReportsForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Pre-positioning":
-                return <PrePositioningReportsForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <PrePositioningReportsForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Incident Monitored":
-                return <IncidentMonitoredForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <IncidentMonitoredForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             case "Agriculture":
-                return <AgricultureForm data={data} setData={setData} errors={errors} disabled={formsDisabled} />;
+                return (
+                    <AgricultureForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             default:
                 return null;
         }
@@ -460,43 +624,66 @@ export default function Index() {
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
+                        <Separator
+                            orientation="vertical"
+                            className="h-6 mx-2"
+                        />
                         {(() => {
                             const user = usePage().props.auth.user;
                             const isAdmin = user.roles?.some(
                                 (r) => r.name?.toLowerCase() === "admin"
                             );
 
-                            const currentFormLabel = activeForm || "Situational Report";
-
+                            // Build breadcrumbs based on whether a form is selected
                             const crumbs = isAdmin
-                                ? [
-                                      {
-                                          href: route("admin.dashboard"),
-                                          label: "Dashboard",
-                                      },
-                                      { label: "Situational Report" },
-                                      { label: currentFormLabel },
-                                  ]
-                                : [
-                                      { label: "Situational Report" },
-                                      { label: currentFormLabel },
-                                  ];
+                                ? activeForm
+                                    ? [
+                                          {
+                                              href: route("admin.dashboard"),
+                                              label: "Dashboard",
+                                          },
+                                          {
+                                              href: route(
+                                                  "situation-reports.index"
+                                              ),
+                                              label: "Situational Report",
+                                          },
+                                          { label: activeForm },
+                                      ]
+                                    : [
+                                          {
+                                              href: route("admin.dashboard"),
+                                              label: "Dashboard",
+                                          },
+                                          { label: "Situational Report" },
+                                      ]
+                                : activeForm
+                                  ? [
+                                        {
+                                            href: route(
+                                                "situation-reports.index"
+                                            ),
+                                            label: "Situational Report",
+                                        },
+                                        { label: activeForm },
+                                    ]
+                                  : [{ label: "Situational Report" }];
 
                             return <Breadcrumbs crumbs={crumbs} />;
                         })()}
                     </div>
                     <div className="flex items-center gap-3">
-                        <NoActiveTyphoonNotification 
+                        <NoActiveTyphoonNotification
                             typhoon={typhoon?.active}
                             hasActive={typhoon?.hasActive}
                         />
-                        {typhoon?.hasActive && typhoon?.active?.status === 'active' && (
-                            <ActiveTyphoonHeader 
-                                typhoon={typhoon?.active}
-                                hasActive={typhoon?.hasActive}
-                            />
-                        )}
+                        {typhoon?.hasActive &&
+                            typhoon?.active?.status === "active" && (
+                                <ActiveTyphoonHeader
+                                    typhoon={typhoon?.active}
+                                    hasActive={typhoon?.hasActive}
+                                />
+                            )}
                     </div>
                 </header>
 
@@ -504,60 +691,137 @@ export default function Index() {
                     {/* Welcome message and card selection */}
                     {!activeForm && (
                         <>
-                            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                            <CheckCircle2 size={24} />
+                            {/* Enhanced Welcome Card */}
+                            <div className="relative mb-8 overflow-hidden rounded-2xl shadow-lg">
+                                {/* Gradient Background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
+
+                                {/* Decorative Elements */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+
+                                {/* Content */}
+                                <div className="relative p-8">
+                                    <div className="flex items-start gap-6">
+                                        <div className="flex-shrink-0">
+                                            <div className="relative">
+                                                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl animate-pulse"></div>
+                                                <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl">
+                                                    <CheckCircle2
+                                                        size={32}
+                                                        className="text-blue-600"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Welcome, {auth.user.name}!
-                                        </h3>
-                                        <p className="text-gray-600 mb-3">
-                                            You have access to <span className="font-semibold text-blue-600">{steps.length}</span> {steps.length === 1 ? 'form' : 'forms'}. Select a form below to submit and manage your reports during active typhoon events.
-                                        </p>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                                            <CheckCircle2 size={16} className="text-green-500" />
-                                            <span>Your submissions will be included in the consolidated situational report</span>
+                                        <div className="flex-1">
+                                            <h2 className="text-2xl font-bold text-white mb-2">
+                                                Welcome, {auth.user.name}!
+                                            </h2>
+                                            <p className="text-blue-50 text-lg mb-4">
+                                                Select a form below to submit
+                                                and manage your reports during
+                                                active typhoon events.
+                                            </p>
+                                            <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/30">
+                                                <CheckCircle2
+                                                    size={20}
+                                                    className="text-green-300 flex-shrink-0"
+                                                />
+                                                <span className="text-white text-sm">
+                                                    Your submissions will be
+                                                    included in the consolidated
+                                                    situational report
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Card selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Enhanced Card Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {steps.map((formStep) => {
                                     const descriptions = {
-                                        'Weather': 'Submit weather conditions',
-                                        'Water Level': 'Report water level readings',
-                                        'Electricity': 'Report electricity service status',
-                                        'Water Services': 'Report water service status',
-                                        'Communications': 'Report communication status',
-                                        'Roads': 'Report road conditions',
-                                        'Bridges': 'Report bridge conditions',
-                                        'Pre-Emptive Reports': 'Submit pre-emptive evacuation reports',
-                                        'Pre-positioning': 'Report deployment of response assets',
-                                        'Incident Monitored': 'Record details of incidents being monitored',
+                                        Weather:
+                                            "Submit weather conditions and forecasts",
+                                        "Water Level":
+                                            "Report water level readings from gauging stations",
+                                        Electricity:
+                                            "Report electricity service status and outages",
+                                        "Water Services":
+                                            "Report water service status and disruptions",
+                                        Communications:
+                                            "Report communication network status",
+                                        Roads: "Report road conditions and accessibility",
+                                        Bridges:
+                                            "Report bridge conditions and accessibility",
+                                        "Pre-Emptive Reports":
+                                            "Submit pre-emptive evacuation reports",
+                                        "Pre-positioning":
+                                            "Report deployment of response assets",
+                                        "Incident Monitored":
+                                            "Record details of incidents being monitored",
+                                        Agriculture:
+                                            "Report agricultural damage and crop losses",
                                     };
-                                    
+
                                     return (
-                                        <Card 
+                                        <Card
                                             key={formStep.label}
-                                            className="cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
-                                            onClick={() => setActiveForm(formStep.label)}
+                                            className="group relative cursor-pointer overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                                            onClick={() =>
+                                                setActiveForm(formStep.label)
+                                            }
                                         >
-                                            <CardHeader>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2.5 bg-blue-100 rounded-lg">
-                                                        {React.cloneElement(formStep.icon, { size: 24, className: "text-blue-600" })}
+                                            {/* Hover Gradient Effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                            <CardHeader className="relative">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="relative flex-shrink-0">
+                                                        {/* Icon Glow Effect */}
+                                                        <div className="absolute inset-0 bg-blue-400/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                                        <div className="relative p-3 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl group-hover:from-blue-200 group-hover:to-indigo-200 transition-colors duration-300">
+                                                            {React.cloneElement(
+                                                                formStep.icon,
+                                                                {
+                                                                    size: 28,
+                                                                    className:
+                                                                        "text-blue-600 group-hover:text-blue-700 transition-colors duration-300",
+                                                                }
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <CardTitle className="text-lg">{formStep.label}</CardTitle>
-                                                        <p className="text-sm text-gray-600 mt-1">
-                                                            {descriptions[formStep.label] || `Click to submit ${formStep.label.toLowerCase()}`}
+                                                    <div className="flex-1 min-w-0">
+                                                        <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 mb-2">
+                                                            {formStep.label}
+                                                        </CardTitle>
+                                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                                            {descriptions[
+                                                                formStep.label
+                                                            ] ||
+                                                                `Click to submit ${formStep.label.toLowerCase()}`}
                                                         </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Arrow Indicator */}
+                                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                                                        <svg
+                                                            className="w-4 h-4 text-white"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M9 5l7 7-7 7"
+                                                            />
+                                                        </svg>
                                                     </div>
                                                 </div>
                                             </CardHeader>

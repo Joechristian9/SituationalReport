@@ -113,10 +113,10 @@ class BarangaySeeder extends Seeder
             'Annafunan East'
         ];
 
-        // Barangay-specific permissions (excluding electricity and water service)
+        // Barangay-specific permissions (excluding electricity, water service, water level, and pre-positioning)
         $barangayPermissions = [
             'access-weather-form',
-            'access-water-level-form',
+            // 'access-water-level-form', // EXCLUDED for barangays
             // 'access-electricity-form', // EXCLUDED for barangays
             // 'access-water-service-form', // EXCLUDED for barangays
             'access-communication-form',
@@ -124,7 +124,7 @@ class BarangaySeeder extends Seeder
             'access-bridge-form',
             'access-pre-emptive-form',
             'access-declaration-form',
-            'access-pre-positioning-form',
+            // 'access-pre-positioning-form', // EXCLUDED for barangays
             'access-incident-form',
             'access-casualty-form',
             'access-injured-form',

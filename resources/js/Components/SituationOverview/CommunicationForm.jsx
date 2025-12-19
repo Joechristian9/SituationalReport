@@ -270,23 +270,23 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
     return (
         <>
         <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-start gap-4 shadow-sm">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                    <Radio className="w-6 h-6 text-gray-700" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                    <Radio className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">Communication Status Update</h4>
-                    <p className="text-gray-600 text-sm">
+                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Communication Status Update</h4>
+                    <p className="text-blue-700 text-sm">
                         One report per typhoon — update anytime to keep information current. All changes are tracked in History.
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+            <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-gray-100 border-b border-gray-200">
-                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={2 + (services.cellphone?.length || 0)}>
+                        <tr className="bg-blue-50 border-b border-blue-200">
+                            <th className="text-left p-4 font-semibold text-blue-900 border-r border-blue-200" colSpan={2 + (services.cellphone?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         CELLPHONE (SMS & CALL)
@@ -302,7 +302,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={1 + (services.internet?.length || 0)}>
+                            <th className="text-left p-4 font-semibold text-blue-900 border-r border-blue-200" colSpan={1 + (services.internet?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         Internet
@@ -318,7 +318,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-gray-700 border-r border-gray-200" colSpan={1 + (services.radio?.length || 0)}>
+                            <th className="text-left p-4 font-semibold text-blue-900 border-r border-blue-200" colSpan={1 + (services.radio?.length || 0)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         Radio
@@ -334,7 +334,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     )}
                                 </div>
                             </th>
-                            <th className="text-left p-4 font-semibold text-gray-700">
+                            <th className="text-left p-4 font-semibold text-blue-900">
                                 <div className="flex items-center gap-2">
                                     REMARKS
                                 </div>

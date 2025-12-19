@@ -175,6 +175,18 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-incident-form') &&
         !hasPermission('access-pre-positioning-form');
     
+    // Check if user is PNP (road, bridge, and incident monitored)
+    const isPNP = hasPermission('access-road-form') && 
+        hasPermission('access-bridge-form') &&
+        hasPermission('access-incident-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-communication-form') &&
+        !hasPermission('access-weather-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-pre-emptive-form') &&
+        !hasPermission('access-pre-positioning-form');
+    
     // Check if user only has agriculture access (CAO)
     const isCAO = hasPermission('access-agriculture-form') && 
         !hasPermission('access-weather-form') &&
@@ -183,6 +195,20 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-communication-form') &&
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
+    
+    // Check if user is a Barangay user (has many permissions but not electricity/water service/water level/pre-positioning)
+    // Barangay users should only see "Situation Overview" menu
+    const isBarangay = hasPermission('access-weather-form') &&
+        hasPermission('access-communication-form') &&
+        hasPermission('access-road-form') &&
+        hasPermission('access-bridge-form') &&
+        hasPermission('access-pre-emptive-form') &&
+        hasPermission('access-declaration-form') &&
+        hasPermission('access-incident-form') &&
+        !hasPermission('access-electricity-form') &&
+        !hasPermission('access-water-service-form') &&
+        !hasPermission('access-water-level-form') &&
+        !hasPermission('access-pre-positioning-form');
 
     const navMain = [
         {
@@ -214,7 +240,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 ...(!isAdmin ? [{
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO) ? "Reports" : "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP) ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
@@ -235,42 +261,42 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isBarangay && !isAdmin ? [{
                     title: "Pre-Emptive Reports",
                     url: route("preemptive-reports.index"),
                     roles: ["user"],
                     icon: ClipboardList,
                     permission: "access-pre-emptive-form",
                 }] : []),
-                ...(!isAdmin ? [{
+                ...(!isBarangay && !isAdmin ? [{
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                     roles: ["user"],
                     icon: FileWarning,
                     permission: "access-declaration-form",
                 }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isBarangay && !isAdmin ? [{
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user"],
                     icon: MapPin,
                     permission: "access-pre-positioning-form",
                 }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isAdmin ? [{
+                ...(!isCDRRMO && !isBDRRMC && !isPNP && !isBarangay && !isAdmin ? [{
                     title: "Incidents Monitored",
                     url: route("incident-monitored.index"),
                     roles: ["user"],
                     icon: Flame,
                     permission: "access-incident-form",
                 }] : []),
-                ...(!isAdmin ? [{
+                ...(!isBarangay && !isAdmin ? [{
                     title: "Response Operations",
                     url: route("response-operations.index"),
                     roles: ["user"],
                     icon: Users,
                     permission: "access-response-operations",
                 }] : []),
-                ...(!isAdmin ? [{
+                ...(!isBarangay && !isAdmin ? [{
                     title: "Assistance Extended",
                     url: route("assistance.index"),
                     roles: ["user"],
@@ -395,6 +421,36 @@ export function AppSidebar({ ...props }) {
                     roles: ["user", "admin"],
                     icon: MapPin,
                     permission: "access-bridge-form",
+                },
+            ]
+        }] : []),
+        // Report History dropdown for PNP users
+        ...(isPNP ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Road History",
+                    url: route("road.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-road-form",
+                },
+                {
+                    title: "Bridge History",
+                    url: route("bridge.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-bridge-form",
+                },
+                {
+                    title: "Incident History",
+                    url: route("incident.history"),
+                    roles: ["user", "admin"],
+                    icon: Flame,
+                    permission: "access-incident-form",
                 },
             ]
         }] : []),
