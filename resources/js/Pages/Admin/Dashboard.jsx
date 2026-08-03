@@ -146,11 +146,11 @@ export default function Dashboard({
                                 )}
 
                                 {activeTab === "environment" && (
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <WeatherGraph
-                                                weatherReports={weatherReports}
-                                            />
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
+                                        <WeatherGraph
+                                            weatherReports={weatherReports}
+                                        />
+                                        <div className="flex flex-col gap-4 md:gap-6">
                                             <EvacuationGraph
                                                 preEmptiveReports={preEmptiveReports}
                                                 evacuationType={evacuationType}
@@ -160,8 +160,8 @@ export default function Dashboard({
                                                 searchQuery={searchQuery}
                                                 onSearchChange={setSearchQuery}
                                             />
+                                            <WaterLevelGraph waterLevels={waterLevels} />
                                         </div>
-                                        <WaterLevelGraph waterLevels={waterLevels} />
                                     </div>
                                 )}
 

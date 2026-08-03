@@ -196,19 +196,19 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
     
-    // Check if user is a Barangay user (has many permissions but not electricity/water service/water level/pre-positioning)
+    // Check if user is a Barangay user (has 6 specific permissions but not electricity/water service/water level/pre-positioning)
     // Barangay users should only see "Situation Overview" menu
     const isBarangay = hasPermission('access-weather-form') &&
         hasPermission('access-communication-form') &&
         hasPermission('access-road-form') &&
         hasPermission('access-bridge-form') &&
         hasPermission('access-pre-emptive-form') &&
-        hasPermission('access-declaration-form') &&
         hasPermission('access-incident-form') &&
         !hasPermission('access-electricity-form') &&
         !hasPermission('access-water-service-form') &&
         !hasPermission('access-water-level-form') &&
-        !hasPermission('access-pre-positioning-form');
+        !hasPermission('access-pre-positioning-form') &&
+        !hasPermission('access-declaration-form');
 
     const navMain = [
         {
@@ -240,7 +240,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 ...(!isAdmin ? [{
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP) ? "Reports" : "Situation Overview",
+                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP || isBarangay) ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
@@ -444,6 +444,57 @@ export function AppSidebar({ ...props }) {
                     roles: ["user", "admin"],
                     icon: MapPin,
                     permission: "access-bridge-form",
+                },
+                {
+                    title: "Incident History",
+                    url: route("incident.history"),
+                    roles: ["user", "admin"],
+                    icon: Flame,
+                    permission: "access-incident-form",
+                },
+            ]
+        }] : []),
+        // Report History dropdown for Barangay users
+        ...(isBarangay ? [{
+            title: "Report History",
+            url: "#",
+            icon: History,
+            roles: ["user", "admin"],
+            items: [
+                {
+                    title: "Weather History",
+                    url: route("weather.history"),
+                    roles: ["user", "admin"],
+                    icon: Cloud,
+                    permission: "access-weather-form",
+                },
+                {
+                    title: "Communication History",
+                    url: route("communication.history"),
+                    roles: ["user", "admin"],
+                    icon: Radio,
+                    permission: "access-communication-form",
+                },
+                {
+                    title: "Road History",
+                    url: route("road.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-road-form",
+                },
+                {
+                    title: "Bridge History",
+                    url: route("bridge.history"),
+                    roles: ["user", "admin"],
+                    icon: MapPin,
+                    permission: "access-bridge-form",
+                },
+                {
+                    title: "Pre-Emptive History",
+                    url: route("pre-emptive.history"),
+                    roles: ["user", "admin"],
+                    icon: ClipboardList,
+                    permission: "access-pre-emptive-form",
                 },
                 {
                     title: "Incident History",

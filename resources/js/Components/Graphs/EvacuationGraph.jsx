@@ -185,41 +185,41 @@ const EvacuationGraph = ({
                 <>
                     {/* Statistics Summary Cards */}
                     {stats && (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Users size={14} className="text-blue-600" />
-                                    <span className="text-xs font-medium text-blue-700">Total Persons</span>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                            <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <Users size={12} className="text-blue-600" />
+                                    <span className="text-xs font-medium text-blue-700">Persons</span>
                                 </div>
-                                <p className="text-xl font-bold text-blue-900">{stats.totalPersons.toLocaleString()}</p>
+                                <p className="text-lg font-bold text-blue-900">{stats.totalPersons.toLocaleString()}</p>
                             </div>
-                            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Home size={14} className="text-green-600" />
-                                    <span className="text-xs font-medium text-green-700">Total Families</span>
+                            <div className="bg-green-50 rounded-lg p-2 border border-green-200">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <Home size={12} className="text-green-600" />
+                                    <span className="text-xs font-medium text-green-700">Families</span>
                                 </div>
-                                <p className="text-xl font-bold text-green-900">{stats.totalFamilies.toLocaleString()}</p>
+                                <p className="text-lg font-bold text-green-900">{stats.totalFamilies.toLocaleString()}</p>
                             </div>
-                            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <MapPin size={14} className="text-purple-600" />
+                            <div className="bg-purple-50 rounded-lg p-2 border border-purple-200">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <MapPin size={12} className="text-purple-600" />
                                     <span className="text-xs font-medium text-purple-700">Barangays</span>
                                 </div>
-                                <p className="text-xl font-bold text-purple-900">{stats.totalBarangays}</p>
+                                <p className="text-lg font-bold text-purple-900">{stats.totalBarangays}</p>
                             </div>
-                            <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <TrendingUp size={14} className="text-orange-600" />
+                            <div className="bg-orange-50 rounded-lg p-2 border border-orange-200">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <TrendingUp size={12} className="text-orange-600" />
                                     <span className="text-xs font-medium text-orange-700">Highest</span>
                                 </div>
-                                <p className="text-sm font-bold text-orange-900 truncate" title={stats.maxEvacuated.barangay}>
+                                <p className="text-xs font-bold text-orange-900 truncate" title={stats.maxEvacuated.barangay}>
                                     {stats.maxEvacuated.barangay}
                                 </p>
                                 <p className="text-xs text-orange-600">{stats.maxEvacuated.persons.toLocaleString()} persons</p>
                             </div>
                         </div>
                     )}
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={240}>
                     <BarChart
                         data={filteredGraphData}
                         margin={{ top: 5, right: 10, left: -15, bottom: 50 }}

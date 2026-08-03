@@ -46,7 +46,7 @@ Route::middleware('auth')->group(function () {
 // Situation Reports
 Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
-    // Dashboard - accessible even without active typhoon
+    // Dashboard - accessible even without active typhoon (for regular users)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
@@ -321,14 +321,72 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('admin/dashboard', function () {
-        return Inertia::render('Admin/Dashboard');
+    // Admin Dashboard - accessible even without active typhoon (for admins only)
+    Route::get('admin-dashboard', function () {
+        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        
+        if (!$activeTyphoon) {
+            return Inertia::render('Admin/Dashboard', [
+                'weatherReports' => [],
+                'waterLevels' => [],
+                'preEmptiveReports' => [],
+                'casualties' => [],
+                'injured' => [],
+                'missing' => [],
+            ]);
+        }
+        
+        // Fetch only recent data for the active typhoon (limit to last 50 records for performance)
+        $weatherReports = \App\Models\WeatherReport::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $waterLevels = \App\Models\WaterLevel::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $preEmptiveReports = \App\Models\PreEmptiveReport::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(100)
+            ->get();
+            
+        $casualties = \App\Models\Casualty::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $injured = \App\Models\Injured::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $missing = \App\Models\Missing::where('typhoon_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+        
+        return Inertia::render('Admin/Dashboard', [
+            'weatherReports' => $weatherReports,
+            'waterLevels' => $waterLevels,
+            'preEmptiveReports' => $preEmptiveReports,
+            'casualties' => $casualties,
+            'injured' => $injured,
+            'missing' => $missing,
+        ]);
     })->name('admin.dashboard');
     
     // Form Submission Status (Admin only)
-    Route::get('admin/form-submission-status', [TyphoonController::class, 'formSubmissionStatus'])
+    Route::get('form-submission-status', [TyphoonController::class, 'formSubmissionStatus'])
         ->name('admin.form-submission-status');
-    Route::get('admin/user-form-data/{userId}', [TyphoonController::class, 'getUserFormData'])
+    Route::get('user-form-data/{userId}', [TyphoonController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
     
     // Typhoon Management (Admin only)

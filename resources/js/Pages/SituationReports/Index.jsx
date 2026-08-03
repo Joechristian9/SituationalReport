@@ -687,48 +687,48 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-6 h-full bg-gray-50">
+                <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
                     {/* Welcome message and card selection */}
                     {!activeForm && (
                         <>
                             {/* Enhanced Welcome Card */}
-                            <div className="relative mb-8 overflow-hidden rounded-2xl shadow-lg">
+                            <div className="relative mb-6 overflow-hidden rounded-xl shadow-md">
                                 {/* Gradient Background */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
 
                                 {/* Decorative Elements */}
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
                                 {/* Content */}
-                                <div className="relative p-8">
-                                    <div className="flex items-start gap-6">
+                                <div className="relative p-6">
+                                    <div className="flex flex-col sm:flex-row items-start gap-4">
                                         <div className="flex-shrink-0">
                                             <div className="relative">
-                                                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl animate-pulse"></div>
-                                                <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl">
+                                                <div className="absolute inset-0 bg-white/30 rounded-xl blur-lg animate-pulse"></div>
+                                                <div className="relative w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl flex items-center justify-center shadow-lg">
                                                     <CheckCircle2
-                                                        size={32}
+                                                        size={24}
                                                         className="text-blue-600"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex-1">
-                                            <h2 className="text-2xl font-bold text-white mb-2">
+                                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1.5">
                                                 Welcome, {auth.user.name}!
                                             </h2>
-                                            <p className="text-blue-50 text-lg mb-4">
+                                            <p className="text-blue-50 text-sm sm:text-base mb-3">
                                                 Select a form below to submit
                                                 and manage your reports during
                                                 active typhoon events.
                                             </p>
-                                            <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/30">
+                                            <div className="flex items-center gap-2.5 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/30">
                                                 <CheckCircle2
-                                                    size={20}
+                                                    size={18}
                                                     className="text-green-300 flex-shrink-0"
                                                 />
-                                                <span className="text-white text-sm">
+                                                <span className="text-white text-xs sm:text-sm">
                                                     Your submissions will be
                                                     included in the consolidated
                                                     situational report
@@ -740,7 +740,7 @@ export default function Index() {
                             </div>
 
                             {/* Enhanced Card Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {steps.map((formStep) => {
                                     const descriptions = {
                                         Weather:
@@ -769,62 +769,66 @@ export default function Index() {
                                     return (
                                         <Card
                                             key={formStep.label}
-                                            className="group relative cursor-pointer overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                                            className="group relative cursor-pointer overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 bg-white"
                                             onClick={() =>
                                                 setActiveForm(formStep.label)
                                             }
                                         >
                                             {/* Hover Gradient Effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                                            <CardHeader className="relative">
-                                                <div className="flex items-start gap-4">
+                                            <CardHeader className="relative p-4">
+                                                <div className="flex items-center gap-3">
                                                     <div className="relative flex-shrink-0">
                                                         {/* Icon Glow Effect */}
-                                                        <div className="absolute inset-0 bg-blue-400/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                                        <div className="relative p-3 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl group-hover:from-blue-200 group-hover:to-indigo-200 transition-colors duration-300">
+                                                        <div className="absolute inset-0 bg-blue-400/30 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                                        <div className="relative p-2.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg group-hover:from-blue-500 group-hover:to-indigo-500 transition-all duration-300">
                                                             {React.cloneElement(
                                                                 formStep.icon,
                                                                 {
-                                                                    size: 28,
+                                                                    size: 20,
                                                                     className:
-                                                                        "text-blue-600 group-hover:text-blue-700 transition-colors duration-300",
+                                                                        "text-blue-600 group-hover:text-white transition-colors duration-300",
                                                                 }
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 mb-2">
+                                                        <CardTitle className="text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 leading-tight">
                                                             {formStep.label}
                                                         </CardTitle>
-                                                        <p className="text-sm text-gray-600 leading-relaxed">
-                                                            {descriptions[
-                                                                formStep.label
-                                                            ] ||
-                                                                `Click to submit ${formStep.label.toLowerCase()}`}
-                                                        </p>
+                                                    </div>
+                                                    {/* Arrow Indicator */}
+                                                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-1 group-hover:translate-x-0">
+                                                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg">
+                                                            <svg
+                                                                className="w-3.5 h-3.5 text-white"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M9 5l7 7-7 7"
+                                                                />
+                                                            </svg>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Arrow Indicator */}
-                                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                                                        <svg
-                                                            className="w-4 h-4 text-white"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth={2}
-                                                                d="M9 5l7 7-7 7"
-                                                            />
-                                                        </svg>
-                                                    </div>
-                                                </div>
+                                                {/* Description Text */}
+                                                <p className="text-xs text-gray-600 leading-relaxed mt-2.5 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
+                                                    {descriptions[
+                                                        formStep.label
+                                                    ] ||
+                                                        `Click to submit ${formStep.label.toLowerCase()}`}
+                                                </p>
                                             </CardHeader>
+
+                                            {/* Bottom Accent Line */}
+                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                                         </Card>
                                     );
                                 })}

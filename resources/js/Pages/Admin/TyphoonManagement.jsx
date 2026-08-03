@@ -85,6 +85,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                 const year = new Date(typhoon.started_at).getFullYear();
                 return year === parseInt(selectedYear);
             });
+            console.log(`Filtered by year ${selectedYear}:`, filtered.length, 'typhoons found');
         }
 
         // Filter by search query
@@ -128,12 +129,24 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
             // Escape to close modals
             if (e.key === 'Escape') {
                 if (showSuggestions) setShowSuggestions(false);
+                if (showYearDropdown) setShowYearDropdown(false);
+            }
+        };
+
+        const handleClickOutside = (e) => {
+            // Close year dropdown when clicking outside
+            if (showYearDropdown && !e.target.closest('.year-filter-container')) {
+                setShowYearDropdown(false);
             }
         };
 
         window.addEventListener('keydown', handleKeyPress);
-        return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [showSuggestions]);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            window.removeEventListener('keydown', handleKeyPress);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSuggestions, showYearDropdown]);
 
     // Optimized handlers with useCallback
     const handleCreateTyphoon = useCallback(async (e) => {
@@ -319,64 +332,85 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <Card className="border-2 border-blue-200 bg-white shadow-lg rounded-xl overflow-hidden">
-                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
-                                        <div className="flex items-center justify-between flex-wrap gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 bg-blue-600 rounded-lg shadow-md">
-                                                    <Cloud className="w-6 h-6 text-white" />
+                                <Card className="border-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-xl rounded-2xl overflow-hidden">
+                                    <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b-0 pb-6">
+                                        <div className="flex items-center justify-between flex-wrap gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
+                                                    <Cloud className="w-7 h-7 text-white" />
                                                 </div>
                                                 <div>
-                                                    <CardTitle className="text-base text-blue-900">Active Typhoon Report</CardTitle>
-                                                    <p className="text-xs text-blue-600 mt-0.5">Real-time monitoring</p>
+                                                    <CardTitle className="text-lg text-white font-bold flex items-center gap-2">
+                                                        Active Typhoon Report
+                                                        <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                                    </CardTitle>
+                                                    <p className="text-sm text-blue-100 mt-1">Real-time monitoring and tracking</p>
                                                 </div>
                                             </div>
                                             {activeTyphoon.status === 'paused' ? (
-                                                <Badge className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full shadow-sm">
-                                                    <Pause className="w-3.5 h-3.5 mr-1.5" />
+                                                <Badge className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-full shadow-lg font-semibold">
+                                                    <Pause className="w-4 h-4 mr-1.5" />
                                                     Paused
                                                 </Badge>
                                             ) : (
-                                                <Badge className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full shadow-sm">
-                                                    <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                                                <Badge className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-full shadow-lg font-semibold">
+                                                    <CheckCircle className="w-4 h-4 mr-1.5" />
                                                     Active
                                                 </Badge>
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
-                                        <div className="space-y-4">
-                                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                                <h3 className="text-xl font-bold text-gray-900 mb-1">{activeTyphoon.name}</h3>
-                                                {activeTyphoon.description && (
-                                                    <p className="text-sm text-gray-700">{activeTyphoon.description}</p>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                                        <Calendar className="w-4 h-4 text-blue-600" />
+                                    <CardContent className="pt-8 pb-6 px-6">
+                                        <div className="space-y-6">
+                                            {/* Typhoon Name & Description */}
+                                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="p-2 bg-blue-600 rounded-lg mt-1">
+                                                        <AlertTriangle className="w-5 h-5 text-white" />
                                                     </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Started</p>
-                                                        <p className="text-sm text-gray-900 font-medium">
-                                                            {format(new Date(activeTyphoon.started_at), 'PPP p')}
+                                                    <div className="flex-1">
+                                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">{activeTyphoon.name}</h3>
+                                                        {activeTyphoon.description && (
+                                                            <p className="text-sm text-gray-700 leading-relaxed">{activeTyphoon.description}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Info Grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="group flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200">
+                                                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-200">
+                                                        <Calendar className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Started</p>
+                                                        <p className="text-sm text-gray-900 font-bold">
+                                                            {format(new Date(activeTyphoon.started_at), 'PPP')}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                            {format(new Date(activeTyphoon.started_at), 'p')}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                                        <User className="w-4 h-4 text-blue-600" />
+                                                <div className="group flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200">
+                                                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-200">
+                                                        <User className="w-5 h-5 text-white" />
                                                     </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Created by</p>
-                                                        <p className="text-sm text-gray-900 font-medium">
+                                                    <div className="flex-1">
+                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created by</p>
+                                                        <p className="text-sm text-gray-900 font-bold">
                                                             {activeTyphoon.creator?.name}
                                                         </p>
+                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                            Administrator
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 mt-4">
+
+                                            {/* Action Buttons */}
+                                            <div className="flex flex-wrap gap-3 pt-2">
                                                 {activeTyphoon.status === 'active' && (
                                                     <Button
                                                         onClick={() => {
@@ -384,7 +418,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                             setIsPauseModalOpen(true);
                                                         }}
                                                         variant="outline"
-                                                        className="flex items-center gap-2"
+                                                        className="flex items-center gap-2 border-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
                                                     >
                                                         <Pause className="w-4 h-4" />
                                                         Pause Report
@@ -398,7 +432,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                                 setIsResumeModalOpen(true);
                                                             }}
                                                             variant="outline"
-                                                            className="flex items-center gap-2"
+                                                            className="flex items-center gap-2 border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
                                                         >
                                                             <Play className="w-4 h-4" />
                                                             Resume Report
@@ -406,7 +440,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                         <Button
                                                             onClick={() => handleDownloadSnapshot(activeTyphoon)}
                                                             variant="outline"
-                                                            className="flex items-center gap-2"
+                                                            className="flex items-center gap-2 border-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
                                                         >
                                                             <FileDown className="w-4 h-4" />
                                                             Download Snapshot
@@ -418,8 +452,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                         setSelectedTyphoon(activeTyphoon);
                                                         setIsEndModalOpen(true);
                                                     }}
-                                                    variant="destructive"
-                                                    className="flex items-center gap-2"
+                                                    className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                                                 >
                                                     <StopCircle className="w-4 h-4" />
                                                     End Report
@@ -448,21 +481,34 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                         </div>
                                         <CardDescription className="mt-1">
                                             View all typhoon reports and their status
+                                            {selectedYear !== 'all' && (
+                                                <span className="ml-2 text-blue-600 font-semibold">
+                                                    • Showing {filteredTyphoons.length} typhoon{filteredTyphoons.length !== 1 ? 's' : ''} from {selectedYear}
+                                                </span>
+                                            )}
                                         </CardDescription>
                                     </div>
                                     {typhoons.length > 0 && (
                                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                                             {/* Year Filter */}
-                                            <div className="relative">
+                                            <div className="relative year-filter-container">
                                                 <button
                                                     onClick={() => setShowYearDropdown(!showYearDropdown)}
-                                                    onBlur={() => setTimeout(() => setShowYearDropdown(false), 200)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-blue-200 bg-white rounded-md hover:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors min-w-[140px]"
+                                                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors min-w-[140px] ${
+                                                        selectedYear !== 'all' 
+                                                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                                            : 'border-blue-200 bg-white text-slate-700'
+                                                    }`}
                                                 >
-                                                    <Calendar className="w-4 h-4 text-blue-600" />
-                                                    <span className="text-slate-700 flex-1 text-left">
+                                                    <Calendar className={`w-4 h-4 ${selectedYear !== 'all' ? 'text-blue-600' : 'text-blue-600'}`} />
+                                                    <span className="flex-1 text-left">
                                                         {selectedYear === 'all' ? 'All Years' : selectedYear}
                                                     </span>
+                                                    {selectedYear !== 'all' && (
+                                                        <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full">
+                                                            {filteredTyphoons.length}
+                                                        </span>
+                                                    )}
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         className={`h-4 w-4 text-slate-500 transition-transform ${
@@ -488,7 +534,8 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                         className="absolute left-0 mt-2 w-48 bg-white border border-blue-200 rounded-lg shadow-lg z-50 overflow-hidden"
                                                     >
                                                         <button
-                                                            onClick={() => {
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault();
                                                                 setSelectedYear('all');
                                                                 setShowYearDropdown(false);
                                                             }}
@@ -521,7 +568,8 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                             return (
                                                                 <button
                                                                     key={year}
-                                                                    onClick={() => {
+                                                                    onMouseDown={(e) => {
+                                                                        e.preventDefault();
                                                                         setSelectedYear(year.toString());
                                                                         setShowYearDropdown(false);
                                                                     }}
@@ -643,12 +691,16 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-blue-100 bg-white">
-                                                {filteredTyphoons.length === 0 ? (
+                                                {paginationData.paginatedTyphoons.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
                                                             <div className="flex flex-col items-center gap-2">
                                                                 <Search className="w-8 h-8 text-slate-400" />
-                                                                <p>No typhoons found matching "{searchQuery}"</p>
+                                                                {searchQuery || selectedYear !== 'all' ? (
+                                                                    <p>No typhoons found matching your filters</p>
+                                                                ) : (
+                                                                    <p>No typhoons found</p>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>

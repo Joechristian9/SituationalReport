@@ -135,6 +135,9 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole($adminRole);
         $admin->givePermissionTo(Permission::all());
 
-        $this->call(BarangaySeeder::class);
+        $this->call([
+            BarangaySeeder::class,
+            DummyDataSeeder::class,
+        ]);
     }
 }

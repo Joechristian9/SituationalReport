@@ -1011,20 +1011,22 @@ class SituationOverviewController extends Controller
     }
 
     /* ------------------- GET WEATHER HISTORY ------------------- */
-    public function getWeatherHistory()
+    public function getWeatherHistory(Request $request)
     {
         $user = Auth::user();
+        $perPage = $request->input('per_page', 20); // Default 20 items per page
+        $page = $request->input('page', 1);
         
-        // Get all weather reports for this user, grouped by typhoon
+        // Get paginated weather reports for this user
         $reports = WeatherReport::where('user_id', $user->id)
             ->whereNotNull('typhoon_id')
             ->whereHas('typhoon') // Only get reports with valid typhoon
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
         
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->getCollection()->groupBy('typhoon_id')->map(function($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
             
             // If typhoon was resumed, only include reports created after resume
@@ -1052,7 +1054,13 @@ class SituationOverviewController extends Controller
             ];
         })->values();
         
-        return response()->json($groupedByTyphoon);
+        return response()->json([
+            'data' => $groupedByTyphoon,
+            'current_page' => $reports->currentPage(),
+            'last_page' => $reports->lastPage(),
+            'per_page' => $reports->perPage(),
+            'total' => $reports->total(),
+        ]);
     }
 
     /* ------------------- GET COMMUNICATION HISTORY ------------------- */
