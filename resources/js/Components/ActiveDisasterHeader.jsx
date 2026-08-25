@@ -8,8 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
  * Compact inline component showing active or paused typhoon information
  * Designed to be placed in the header on the right side
  * 
- * @param {Object} typhoon - The active/paused typhoon object (null if no active typhoon)
- * @param {boolean} hasActive - Whether there's an active or paused typhoon
+ * @param {Object} typhoon - The active/paused disaster object (null if no active disaster)
+ * @param {boolean} hasActive - Whether there's an active or paused disaster
  */
 export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
     const [showNotification, setShowNotification] = useState(false);

@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\SuspensionOfClass;
 use App\Models\Modification;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SuspensionOfClassController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the suspension of class records.
      * Optimized: Limit records for better performance
@@ -19,7 +19,7 @@ class SuspensionOfClassController extends Controller
     public function index()
     {
         $typhoonId = $this->getActiveTyphoonId();
-        $suspensionList = SuspensionOfClass::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId))
+        $suspensionList = SuspensionOfClass::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId))
             ->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
@@ -79,7 +79,7 @@ class SuspensionOfClassController extends Controller
                             'remarks'                    => $suspensionData['remarks'] ?? null,
                             'user_id'                    => Auth::id(),
                             'updated_by'                 => Auth::id(),
-                            'typhoon_id'                 => $activeTyphoon->id,
+                            'disaster_id'                 => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -102,7 +102,7 @@ class SuspensionOfClassController extends Controller
                     'remarks'                    => $suspensionData['remarks'] ?? null,
                     'user_id'                    => Auth::id(),
                     'updated_by'                 => Auth::id(),
-                    'typhoon_id'                 => $activeTyphoon->id,
+                    'disaster_id'                 => $activeTyphoon->id,
                 ]);
             }
         }

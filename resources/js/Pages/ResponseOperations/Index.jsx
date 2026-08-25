@@ -3,8 +3,8 @@ import RowsPerPage from "@/Components/ui/RowsPerPage";
 import Pagination from "@/Components/ui/Pagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
-import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
+import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 
 import { useState, useEffect, useMemo } from "react";
 import { usePage, Head } from "@inertiajs/react";

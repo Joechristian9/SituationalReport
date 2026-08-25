@@ -296,7 +296,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                     ) : (
                                         <div className="flex items-center gap-2 text-amber-800 bg-amber-100 px-3 py-2 rounded-lg inline-flex border border-amber-200">
                                             <AlertCircle className="w-5 h-5" />
-                                            <span className="font-medium">No active typhoon - showing all users</span>
+                                            <span className="font-medium">No active disaster - showing all users</span>
                                         </div>
                                     )}
                                 </div>

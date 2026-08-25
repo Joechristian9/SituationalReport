@@ -19,7 +19,7 @@ class WeatherReport extends Model
         'sea_condition',
         'updated_by',
         'user_id',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     /**

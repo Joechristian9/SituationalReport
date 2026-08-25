@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AffectedTourist;
 use App\Models\Modification;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -12,7 +12,7 @@ use Inertia\Inertia;
 
 class AffectedTouristController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the affected tourist records.
      * Optimized: Limit records for better performance
@@ -22,7 +22,7 @@ class AffectedTouristController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $touristsQuery = AffectedTourist::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $touristsQuery = AffectedTourist::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $touristsQuery->where('user_id', $user->id);
@@ -80,7 +80,7 @@ class AffectedTouristController extends Controller
                         'local_tourists' => $touristData['local_tourists'] ?? null,
                         'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
                         'remarks' => $touristData['remarks'] ?? null,
-                        'typhoon_id' => $activeTyphoon->id,
+                        'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -99,7 +99,7 @@ class AffectedTouristController extends Controller
                             'remarks' => $touristData['remarks'] ?? null,
                             'user_id' => Auth::id(),
                             'updated_by' => Auth::id(),
-                            'typhoon_id' => $activeTyphoon->id,
+                            'disaster_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -123,7 +123,7 @@ class AffectedTouristController extends Controller
                     'remarks' => $touristData['remarks'] ?? null,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
-                    'typhoon_id' => $activeTyphoon->id,
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -132,7 +132,7 @@ class AffectedTouristController extends Controller
         $user = Auth::user();
 
         $updatedQuery = AffectedTourist::with('user:id,name')
-            ->where('typhoon_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);

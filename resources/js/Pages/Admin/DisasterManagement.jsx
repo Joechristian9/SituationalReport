@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown } from 'lucide-react';
 import {
     DropdownMenu,
@@ -23,7 +24,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import RowsPerPage from '@/Components/ui/RowsPerPage';
 
-export default function TyphoonManagement({ typhoons, activeTyphoon }) {
+export default function DisasterManagement({ typhoons, activeTyphoon, disasterStats, statusCounts }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
     const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
@@ -38,8 +39,11 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
     const [showYearDropdown, setShowYearDropdown] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [showAllTypes, setShowAllTypes] = useState(false);
+    const [carouselIndex, setCarouselIndex] = useState(0);
     const [formData, setFormData] = useState({
         name: '',
+        disaster_type: '',
         description: '',
     });
 
@@ -158,16 +162,16 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         }
         
         setIsSubmitting(true);
-        const loadingToast = toast.loading('Creating typhoon report...');
+        const loadingToast = toast.loading('Creating disaster report...');
 
         try {
-            const response = await axios.post('/typhoons', formData);
+            const response = await axios.post('/disasters', formData);
             toast.success(response.data.message, { id: loadingToast });
             setIsCreateModalOpen(false);
-            setFormData({ name: '', description: '' });
+            setFormData({ name: '', disaster_type: '', description: '' });
             router.reload({ only: ['typhoons', 'activeTyphoon'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create typhoon report', { id: loadingToast });
+            toast.error(error.response?.data?.message || 'Failed to create disaster report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
@@ -177,16 +181,16 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         if (!selectedTyphoon) return;
         
         setIsSubmitting(true);
-        const loadingToast = toast.loading('Ending typhoon report and generating PDF...');
+        const loadingToast = toast.loading('Ending disaster report and generating PDF...');
 
         try {
-            const response = await axios.post(`/typhoons/${selectedTyphoon.id}/end`);
+            const response = await axios.post(`/disasters/${selectedTyphoon.id}/end`);
             toast.success(response.data.message, { id: loadingToast });
             setIsEndModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ only: ['typhoons', 'activeTyphoon'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to end typhoon report', { id: loadingToast });
+            toast.error(error.response?.data?.message || 'Failed to end disaster report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
@@ -196,10 +200,10 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         if (!selectedTyphoon) return;
         
         setIsSubmitting(true);
-        const loadingToast = toast.loading('Pausing typhoon report...');
+        const loadingToast = toast.loading('Pausing disaster report...');
 
         try {
-            const response = await axios.post(`/typhoons/${selectedTyphoon.id}/pause`);
+            const response = await axios.post(`/disasters/${selectedTyphoon.id}/pause`);
             setIsPauseModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ 
@@ -209,7 +213,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                 }
             });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to pause typhoon report', { id: loadingToast });
+            toast.error(error.response?.data?.message || 'Failed to pause disaster report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
@@ -219,10 +223,10 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         if (!selectedTyphoon) return;
         
         setIsSubmitting(true);
-        const loadingToast = toast.loading('Resuming typhoon report...');
+        const loadingToast = toast.loading('Resuming disaster report...');
 
         try {
-            const response = await axios.post(`/typhoons/${selectedTyphoon.id}/resume`);
+            const response = await axios.post(`/disasters/${selectedTyphoon.id}/resume`);
             setIsResumeModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ 
@@ -232,14 +236,14 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                 }
             });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to resume typhoon report', { id: loadingToast });
+            toast.error(error.response?.data?.message || 'Failed to resume disaster report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
     }, [selectedTyphoon]);
 
     const handleDownloadSnapshot = async (typhoon) => {
-        window.open(`/typhoons/${typhoon.id}/snapshot`, '_blank');
+        window.open(`/disasters/${typhoon.id}/snapshot`, '_blank');
     };
 
     const openDeleteModal = useCallback((typhoon) => {
@@ -251,16 +255,16 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         if (!selectedTyphoon) return;
         
         setIsSubmitting(true);
-        const loadingToast = toast.loading('Deleting typhoon report...');
+        const loadingToast = toast.loading('Deleting disaster report...');
 
         try {
-            const response = await axios.delete(`/typhoons/${selectedTyphoon.id}`);
+            const response = await axios.delete(`/disasters/${selectedTyphoon.id}`);
             toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ only: ['typhoons'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete typhoon report', { id: loadingToast });
+            toast.error(error.response?.data?.message || 'Failed to delete disaster report', { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
@@ -272,7 +276,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
             setIsSubmitting(true);
             toast.loading('Generating PDF report...');
             try {
-                const response = await axios.post(`/typhoons/${typhoon.id}/regenerate-pdf`);
+                const response = await axios.post(`/disasters/${typhoon.id}/regenerate-pdf`);
                 toast.dismiss();
                 toast.success('PDF generated successfully!');
                 router.reload();
@@ -288,7 +292,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
 
         // PDF exists, download it
         try {
-            window.open(`/typhoons/${typhoon.id}/download`, '_blank');
+            window.open(`/disasters/${typhoon.id}/download`, '_blank');
         } catch (error) {
             toast.error('Failed to download PDF');
         }
@@ -298,24 +302,24 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
         <SidebarProvider>
             <Toaster position="top-right" richColors />
             <AppSidebar />
-            <Head title="Typhoon Management" />
+            <Head title="Disaster Management" />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
                         <Separator orientation="vertical" className="h-6 mx-2" />
                         <h1 className="text-lg sm:text-xl font-semibold text-blue-700">
-                            Typhoon Management
+                            Disaster Management
                         </h1>
                     </div>
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
                         disabled={!!activeTyphoon}
                         className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
-                        title={activeTyphoon ? "End the active typhoon before creating a new one" : "Create a new typhoon report"}
+                        title={activeTyphoon ? "End the active disaster before creating a new one" : "Create a new disaster report"}
                     >
                         <Plus className="w-4 h-4" />
-                        <span className="hidden sm:inline">Create New Typhoon Report</span>
+                        <span className="hidden sm:inline">Create New Disaster Report</span>
                         <span className="sm:hidden">New Report</span>
                     </Button>
                 </header>
@@ -323,153 +327,389 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-6">
                     
-                    {/* Active Typhoon Alert */}
-                    <AnimatePresence>
-                        {activeTyphoon && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Card className="border-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-xl rounded-2xl overflow-hidden">
-                                    <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b-0 pb-6">
-                                        <div className="flex items-center justify-between flex-wrap gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
-                                                    <Cloud className="w-7 h-7 text-white" />
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-lg text-white font-bold flex items-center gap-2">
-                                                        Active Typhoon Report
-                                                        <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                                                    </CardTitle>
-                                                    <p className="text-sm text-blue-100 mt-1">Real-time monitoring and tracking</p>
-                                                </div>
-                                            </div>
-                                            {activeTyphoon.status === 'paused' ? (
-                                                <Badge className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-full shadow-lg font-semibold">
-                                                    <Pause className="w-4 h-4 mr-1.5" />
-                                                    Paused
-                                                </Badge>
-                                            ) : (
-                                                <Badge className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-full shadow-lg font-semibold">
-                                                    <CheckCircle className="w-4 h-4 mr-1.5" />
-                                                    Active
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-8 pb-6 px-6">
-                                        <div className="space-y-6">
-                                            {/* Typhoon Name & Description */}
-                                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="p-2 bg-blue-600 rounded-lg mt-1">
-                                                        <AlertTriangle className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">{activeTyphoon.name}</h3>
-                                                        {activeTyphoon.description && (
-                                                            <p className="text-sm text-gray-700 leading-relaxed">{activeTyphoon.description}</p>
+                    {/* Disaster Overview - Featured + Grid Layout */}
+                    {(activeTyphoon || (disasterStats && disasterStats.length > 0)) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 }}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-xl font-bold text-blue-700 flex items-center gap-2">
+                                        <AlertTriangle className="w-5 h-5" />
+                                        Disaster Overview
+                                    </h2>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        {activeTyphoon 
+                                            ? 'Active disaster report and statistics by type' 
+                                            : showAllTypes 
+                                                ? `Showing all ${disasterStats.length} disaster types` 
+                                                : `Showing top ${Math.min(4, disasterStats.length)} disaster types`}
+                                    </p>
+                                </div>
+                                {!activeTyphoon && disasterStats.length > 4 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowAllTypes(!showAllTypes)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {showAllTypes ? (
+                                            <>
+                                                <ChevronLeft className="w-4 h-4" />
+                                                Show Less
+                                            </>
+                                        ) : (
+                                            <>
+                                                View All ({disasterStats.length})
+                                                <ChevronRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
+                            
+                            {/* Featured + Grid Layout: Active Disaster + Carousel */}
+                            {!showAllTypes && activeTyphoon && disasterStats.length > 0 && (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                                    {/* Large Featured Card - Active Disaster */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="lg:col-span-1 lg:row-span-2"
+                                    >
+                                        <Card className="h-full border-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                                            <CardContent className="p-0 h-full flex flex-col">
+                                                {/* Header Section with Status */}
+                                                <div className="bg-white/10 backdrop-blur-sm px-6 py-4 border-b border-white/20">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                                            <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">
+                                                                Active Disaster Report
+                                                            </p>
+                                                        </div>
+                                                        {activeTyphoon.status === 'paused' ? (
+                                                            <Badge className="bg-amber-500 text-white px-3 py-1 rounded-full shadow-lg font-semibold text-xs">
+                                                                <Pause className="w-3 h-3 mr-1" />
+                                                                Paused
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge className="bg-green-500 text-white px-3 py-1 rounded-full shadow-lg font-semibold text-xs">
+                                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                                Active
+                                                            </Badge>
                                                         )}
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Info Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="group flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200">
-                                                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-200">
-                                                        <Calendar className="w-5 h-5 text-white" />
+                                                {/* Main Content */}
+                                                <div className="flex-1 px-6 py-6 space-y-6">
+                                                    {/* Disaster Name */}
+                                                    <div>
+                                                        <h3 className="text-4xl font-black text-white mb-4 leading-tight line-clamp-2 drop-shadow-md">
+                                                            {activeTyphoon.name}
+                                                        </h3>
+                                                        {activeTyphoon.disaster_type && (
+                                                            <Badge className="bg-white/90 text-blue-700 px-4 py-1.5 rounded-lg font-bold shadow-md text-sm">
+                                                                {activeTyphoon.disaster_type}
+                                                            </Badge>
+                                                        )}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Started</p>
-                                                        <p className="text-sm text-gray-900 font-bold">
-                                                            {format(new Date(activeTyphoon.started_at), 'PPP')}
-                                                        </p>
-                                                        <p className="text-xs text-gray-600 mt-0.5">
-                                                            {format(new Date(activeTyphoon.started_at), 'p')}
-                                                        </p>
+
+                                                    {/* Description */}
+                                                    {activeTyphoon.description && (
+                                                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                                            <p className="text-sm text-white leading-relaxed line-clamp-3">
+                                                                {activeTyphoon.description}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Date Info */}
+                                                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-white/20 rounded-lg">
+                                                                <Calendar className="w-5 h-5 text-white" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-blue-100 uppercase tracking-wide mb-1">
+                                                                    Started
+                                                                </p>
+                                                                <p className="text-base font-bold text-white">
+                                                                    {format(new Date(activeTyphoon.started_at), 'PPP')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="group flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200">
-                                                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-200">
-                                                        <User className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created by</p>
-                                                        <p className="text-sm text-gray-900 font-bold">
-                                                            {activeTyphoon.creator?.name}
-                                                        </p>
-                                                        <p className="text-xs text-gray-600 mt-0.5">
-                                                            Administrator
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
 
-                                            {/* Action Buttons */}
-                                            <div className="flex flex-wrap gap-3 pt-2">
-                                                {activeTyphoon.status === 'active' && (
-                                                    <Button
-                                                        onClick={() => {
-                                                            setSelectedTyphoon(activeTyphoon);
-                                                            setIsPauseModalOpen(true);
-                                                        }}
-                                                        variant="outline"
-                                                        className="flex items-center gap-2 border-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
-                                                    >
-                                                        <Pause className="w-4 h-4" />
-                                                        Pause Report
-                                                    </Button>
-                                                )}
-                                                {activeTyphoon.status === 'paused' && (
-                                                    <>
+                                                {/* Action Buttons Footer */}
+                                                <div className="px-6 py-5 bg-white/5 backdrop-blur-sm border-t border-white/10">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {activeTyphoon.status === 'active' && (
+                                                            <Button
+                                                                onClick={() => {
+                                                                    setSelectedTyphoon(activeTyphoon);
+                                                                    setIsPauseModalOpen(true);
+                                                                }}
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="flex-1 flex items-center justify-center gap-2 bg-white/90 border-0 text-amber-700 hover:bg-white hover:scale-105 font-bold shadow-md transition-all"
+                                                            >
+                                                                <Pause className="w-4 h-4" />
+                                                                Pause
+                                                            </Button>
+                                                        )}
+                                                        {activeTyphoon.status === 'paused' && (
+                                                            <>
+                                                                <Button
+                                                                    onClick={() => {
+                                                                        setSelectedTyphoon(activeTyphoon);
+                                                                        setIsResumeModalOpen(true);
+                                                                    }}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="flex-1 flex items-center justify-center gap-2 bg-white/90 border-0 text-green-700 hover:bg-white hover:scale-105 font-bold shadow-md transition-all"
+                                                                >
+                                                                    <Play className="w-4 h-4" />
+                                                                    Resume
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => handleDownloadSnapshot(activeTyphoon)}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="flex items-center justify-center gap-2 bg-white/20 border-0 text-white hover:bg-white/30 hover:scale-105 font-bold shadow-md transition-all"
+                                                                >
+                                                                    <FileDown className="w-4 h-4" />
+                                                                    Snapshot
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                         <Button
                                                             onClick={() => {
                                                                 setSelectedTyphoon(activeTyphoon);
-                                                                setIsResumeModalOpen(true);
+                                                                setIsEndModalOpen(true);
                                                             }}
-                                                            variant="outline"
-                                                            className="flex items-center gap-2 border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                                                            size="sm"
+                                                            className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 hover:scale-105 text-white font-bold shadow-lg transition-all"
                                                         >
-                                                            <Play className="w-4 h-4" />
-                                                            Resume Report
+                                                            <StopCircle className="w-4 h-4" />
+                                                            End
                                                         </Button>
-                                                        <Button
-                                                            onClick={() => handleDownloadSnapshot(activeTyphoon)}
-                                                            variant="outline"
-                                                            className="flex items-center gap-2 border-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
-                                                        >
-                                                            <FileDown className="w-4 h-4" />
-                                                            Download Snapshot
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button
-                                                    onClick={() => {
-                                                        setSelectedTyphoon(activeTyphoon);
-                                                        setIsEndModalOpen(true);
-                                                    }}
-                                                    className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-                                                >
-                                                    <StopCircle className="w-4 h-4" />
-                                                    End Report
-                                                </Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+
+                                    {/* Carousel of Disaster Stats - All Types */}
+                                    <div className="lg:col-span-2 relative">
+                                        <div className="flex items-center gap-4">
+                                            {/* Previous Button */}
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setCarouselIndex(Math.max(0, carouselIndex - 1))}
+                                                disabled={carouselIndex === 0}
+                                                className="shrink-0 h-10 w-10 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </Button>
+
+                                            {/* Carousel Content - 2x2 Grid */}
+                                            <div className="flex-1 overflow-hidden">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <AnimatePresence mode="wait">
+                                                        {disasterStats.slice(carouselIndex * 4, carouselIndex * 4 + 4).map((stat, index) => (
+                                                            <motion.div
+                                                                key={`${stat.disaster_type}-${carouselIndex}`}
+                                                                initial={{ opacity: 0, x: 50 }}
+                                                                animate={{ opacity: 1, x: 0 }}
+                                                                exit={{ opacity: 0, x: -50 }}
+                                                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                                                            >
+                                                                <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
+                                                                    <CardContent className="p-5">
+                                                                        <div className="flex items-center justify-between mb-3">
+                                                                            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
+                                                                                <Cloud className="w-5 h-5 text-white" />
+                                                                            </div>
+                                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                                                                                {((stat.count / statusCounts.total) * 100).toFixed(1)}%
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
+                                                                                {stat.disaster_type}
+                                                                            </p>
+                                                                            <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
+                                                                            <p className="text-xs text-slate-500 mt-1">
+                                                                                {stat.count === 1 ? 'disaster' : 'disasters'} recorded
+                                                                            </p>
+                                                                        </div>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            </motion.div>
+                                                        ))}
+                                                    </AnimatePresence>
+                                                </div>
                                             </div>
+
+                                            {/* Next Button */}
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setCarouselIndex(Math.min(Math.ceil(disasterStats.length / 4) - 1, carouselIndex + 1))}
+                                                disabled={carouselIndex >= Math.ceil(disasterStats.length / 4) - 1}
+                                                className="shrink-0 h-10 w-10 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </Button>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+
+                                        {/* Carousel Indicators */}
+                                        {Math.ceil(disasterStats.length / 4) > 1 && (
+                                            <div className="flex items-center justify-center gap-2 mt-4">
+                                                {Array.from({ length: Math.ceil(disasterStats.length / 4) }).map((_, index) => (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => setCarouselIndex(index)}
+                                                        className={`h-2 rounded-full transition-all duration-300 ${
+                                                            index === carouselIndex 
+                                                                ? 'w-8 bg-blue-600' 
+                                                                : 'w-2 bg-blue-300 hover:bg-blue-400'
+                                                        }`}
+                                                        aria-label={`Go to slide ${index + 1}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* When NO Active Disaster: Show Featured + Grid Layout for Stats */}
+                            {!showAllTypes && !activeTyphoon && disasterStats.length > 0 && (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                                    {/* Large Featured Card - Top Disaster Type */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="lg:col-span-1 lg:row-span-2"
+                                    >
+                                        <Card className="h-full border-blue-300 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+                                            <CardContent className="p-8 h-full flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-6">
+                                                        <div className="p-4 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
+                                                            <Cloud className="w-8 h-8 text-white" />
+                                                        </div>
+                                                        <div className="px-4 py-2 bg-white text-blue-700 text-sm font-bold rounded-full shadow-md">
+                                                            {((disasterStats[0].count / statusCounts.total) * 100).toFixed(1)}%
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-blue-100 mb-2 uppercase tracking-wide">
+                                                            Top Disaster Type
+                                                        </p>
+                                                        <h3 className="text-2xl font-bold text-white mb-1">
+                                                            {disasterStats[0].disaster_type}
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-6">
+                                                    <p className="text-5xl font-black text-white mb-2">{disasterStats[0].count}</p>
+                                                    <p className="text-sm text-blue-100">
+                                                        {disasterStats[0].count === 1 ? 'disaster' : 'disasters'} recorded
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+
+                                    {/* 2x2 Grid of Smaller Cards */}
+                                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {disasterStats.slice(1, 5).map((stat, index) => (
+                                            <motion.div
+                                                key={stat.disaster_type}
+                                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                transition={{ duration: 0.3, delay: (index + 1) * 0.1 }}
+                                            >
+                                                <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
+                                                    <CardContent className="p-5">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
+                                                                <Cloud className="w-5 h-5 text-white" />
+                                                            </div>
+                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                                                                {((stat.count / statusCounts.total) * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
+                                                                {stat.disaster_type}
+                                                            </p>
+                                                            <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
+                                                            <p className="text-xs text-slate-500 mt-1">
+                                                                {stat.count === 1 ? 'disaster' : 'disasters'} recorded
+                                                            </p>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Show All View - Regular Grid */}
+                            {showAllTypes && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {disasterStats.map((stat, index) => (
+                                        <motion.div
+                                            key={stat.disaster_type}
+                                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                                        >
+                                            <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+                                                <CardContent className="p-5">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
+                                                            <Cloud className="w-5 h-5 text-white" />
+                                                        </div>
+                                                        <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                                                            {((stat.count / statusCounts.total) * 100).toFixed(1)}%
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
+                                                            {stat.disaster_type}
+                                                        </p>
+                                                        <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
+                                                        <p className="text-xs text-slate-500 mt-1">
+                                                            {stat.count === 1 ? 'disaster' : 'disasters'} recorded
+                                                        </p>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
 
                     {/* Typhoon History */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 }}
+                        transition={{ duration: 0.3, delay: activeTyphoon ? 0.3 : 0.2 }}
                     >
                         <Card className="border-0 shadow-none">
                             <CardHeader className="px-0">
@@ -477,10 +717,10 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <FileText className="w-5 h-5 text-blue-600" />
-                                            <CardTitle className="text-blue-700">Typhoon Reports History</CardTitle>
+                                            <CardTitle className="text-blue-700">Disaster Reports History</CardTitle>
                                         </div>
                                         <CardDescription className="mt-1">
-                                            View all typhoon reports and their status
+                                            View all disaster reports and their status
                                             {selectedYear !== 'all' && (
                                                 <span className="ml-2 text-blue-600 font-semibold">
                                                     • Showing {filteredTyphoons.length} typhoon{filteredTyphoons.length !== 1 ? 's' : ''} from {selectedYear}
@@ -664,9 +904,9 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                 <Cloud className="w-8 h-8 text-blue-600" />
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Typhoon Reports Yet</h3>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Disaster Reports Yet</h3>
                                         <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
-                                            Create your first typhoon report to get started with data collection
+                                            Create your first disaster report to get started with data collection
                                         </p>
                                         <Button 
                                             onClick={() => setIsCreateModalOpen(true)}
@@ -682,6 +922,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                             <thead className="bg-gradient-to-r from-blue-600 to-blue-700 border-b-2 border-blue-700">
                                                 <tr className="divide-x divide-blue-500">
                                                     <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide">Name</th>
+                                                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden sm:table-cell">Type</th>
                                                     <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Status</th>
                                                     <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden sm:table-cell">Started</th>
                                                     <th className="text-left px-4 py-2.5 text-xs font-semibold text-white uppercase tracking-wide hidden md:table-cell">Ended</th>
@@ -693,7 +934,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                             <tbody className="divide-y divide-blue-100 bg-white">
                                                 {paginationData.paginatedTyphoons.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                                                        <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
                                                             <div className="flex flex-col items-center gap-2">
                                                                 <Search className="w-8 h-8 text-slate-400" />
                                                                 {searchQuery || selectedYear !== 'all' ? (
@@ -720,6 +961,11 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                                             {typhoon.description && (
                                                                 <div className="text-xs text-slate-500 mt-1 line-clamp-1">{typhoon.description}</div>
                                                             )}
+                                                        </td>
+                                                        <td className="px-4 py-3 hidden sm:table-cell">
+                                                            <Badge variant="outline" className="font-medium">
+                                                                {typhoon.disaster_type || 'Not specified'}
+                                                            </Badge>
                                                         </td>
                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                             <Badge 
@@ -904,21 +1150,21 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                             <div className="p-2 bg-blue-100 rounded-full">
                                 <Cloud className="w-5 h-5 text-blue-600" />
                             </div>
-                            <DialogTitle className="text-xl">Create New Typhoon Report</DialogTitle>
+                            <DialogTitle className="text-xl">Create New Disaster Report</DialogTitle>
                         </div>
                         <DialogDescription className="text-base">
-                            Enter the typhoon details. Once created, all forms will be enabled for users to input data.
+                            Enter the disaster details. Once created, all forms will be enabled for users to input data.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateTyphoon}>
                         <div className="space-y-5 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-sm font-semibold">
-                                    Typhoon Name <span className="text-red-500">*</span>
+                                    Disaster Name <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="name"
-                                    placeholder="e.g., Kristine, Leon, Marce"
+                                    placeholder="e.g., Typhoon Kristine, Earthquake, Flooding"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     required
@@ -927,12 +1173,43 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 />
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="disaster_type" className="text-sm font-semibold">
+                                    Disaster Type <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                    value={formData.disaster_type}
+                                    onValueChange={(value) => setFormData({ ...formData, disaster_type: value })}
+                                    disabled={isSubmitting}
+                                    required
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue placeholder="Select disaster type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Typhoon">Typhoon</SelectItem>
+                                        <SelectItem value="Tropical Storm">Tropical Storm</SelectItem>
+                                        <SelectItem value="Tropical Depression">Tropical Depression</SelectItem>
+                                        <SelectItem value="Flood">Flood</SelectItem>
+                                        <SelectItem value="Flash Flood">Flash Flood</SelectItem>
+                                        <SelectItem value="Earthquake">Earthquake</SelectItem>
+                                        <SelectItem value="Landslide">Landslide</SelectItem>
+                                        <SelectItem value="Storm Surge">Storm Surge</SelectItem>
+                                        <SelectItem value="Drought">Drought</SelectItem>
+                                        <SelectItem value="Volcanic Eruption">Volcanic Eruption</SelectItem>
+                                        <SelectItem value="Fire">Fire</SelectItem>
+                                        <SelectItem value="Tornado">Tornado</SelectItem>
+                                        <SelectItem value="Heavy Rainfall">Heavy Rainfall</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="description" className="text-sm font-semibold">
                                     Description <span className="text-slate-400 font-normal">(Optional)</span>
                                 </Label>
                                 <Textarea
                                     id="description"
-                                    placeholder="Additional details about the typhoon (e.g., expected landfall, severity level...)"
+                                    placeholder="Additional details about the disaster (e.g., expected impact, severity level...)"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={4}
@@ -947,7 +1224,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 variant="outline"
                                 onClick={() => {
                                     setIsCreateModalOpen(false);
-                                    setFormData({ name: '', description: '' });
+                                    setFormData({ name: '', disaster_type: '', description: '' });
                                 }}
                                 disabled={isSubmitting}
                                 className="w-full sm:w-auto"
@@ -967,7 +1244,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 ) : (
                                     <>
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Create Typhoon Report
+                                        Create Disaster Report
                                     </>
                                 )}
                             </Button>
@@ -984,7 +1261,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                             <div className="p-2 bg-red-100 rounded-full">
                                 <AlertTriangle className="w-5 h-5 text-red-600" />
                             </div>
-                            <DialogTitle className="text-xl text-red-900">End Typhoon Report</DialogTitle>
+                            <DialogTitle className="text-xl text-red-900">End Disaster Report</DialogTitle>
                         </div>
                         <DialogDescription className="text-base">
                             Are you sure you want to end <strong className="text-slate-900">{selectedTyphoon?.name}</strong>? This action will:
@@ -1052,7 +1329,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                             ) : (
                                 <>
                                     <StopCircle className="w-4 h-4 mr-2" />
-                                    End Typhoon Report
+                                    End Disaster Report
                                 </>
                             )}
                         </Button>
@@ -1068,7 +1345,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                             <div className="p-2 bg-amber-100 rounded-full">
                                 <Pause className="w-5 h-5 text-amber-600" />
                             </div>
-                            <DialogTitle className="text-xl text-amber-900">Pause Typhoon Report</DialogTitle>
+                            <DialogTitle className="text-xl text-amber-900">Pause Disaster Report</DialogTitle>
                         </div>
                         <DialogDescription className="text-base">
                             Temporarily pause <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
@@ -1141,7 +1418,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                             <div className="p-2 bg-green-100 rounded-full">
                                 <Play className="w-5 h-5 text-green-600" />
                             </div>
-                            <DialogTitle className="text-xl text-green-900">Resume Typhoon Report</DialogTitle>
+                            <DialogTitle className="text-xl text-green-900">Resume Disaster Report</DialogTitle>
                         </div>
                         <DialogDescription className="text-base">
                             Resume <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
@@ -1208,7 +1485,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 <AlertTriangle className="w-6 h-6 text-red-600" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl">Delete Typhoon Report</DialogTitle>
+                                <DialogTitle className="text-xl">Delete Disaster Report</DialogTitle>
                                 <DialogDescription className="mt-1">
                                     This action cannot be undone
                                 </DialogDescription>
@@ -1219,7 +1496,7 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                     <div className="py-4">
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <p className="text-sm text-red-900 font-medium mb-2">
-                                Are you sure you want to delete the typhoon report "{selectedTyphoon?.name}"?
+                                Are you sure you want to delete the disaster report "{selectedTyphoon?.name}"?
                             </p>
                             <p className="text-sm text-red-700">
                                 All associated data including weather reports, evacuation records, casualties, and other related information will be permanently removed.
@@ -1270,9 +1547,9 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                 <Cloud className="w-6 h-6 text-blue-600" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl">Typhoon Report Details</DialogTitle>
+                                <DialogTitle className="text-xl">Disaster Report Details</DialogTitle>
                                 <DialogDescription className="mt-1">
-                                    Complete information about this typhoon report
+                                    Complete information about this disaster report
                                 </DialogDescription>
                             </div>
                         </div>
@@ -1307,6 +1584,15 @@ export default function TyphoonManagement({ typhoons, activeTyphoon }) {
                                         )}
                                     </Badge>
                                 </div>
+                                
+                                {selectedTyphoon.disaster_type && (
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-600 mb-1">Disaster Type:</p>
+                                        <Badge variant="outline" className="font-medium text-sm">
+                                            {selectedTyphoon.disaster_type}
+                                        </Badge>
+                                    </div>
+                                )}
                                 
                                 {selectedTyphoon.description && (
                                     <div>

@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\PrePositioning;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PrePositioningController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Show list of Pre-Positionings
      * Optimized: Limit records for better performance
@@ -20,7 +20,7 @@ class PrePositioningController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $prePositioningsQuery = PrePositioning::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $prePositioningsQuery = PrePositioning::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $prePositioningsQuery->where('user_id', $user->id);
@@ -102,7 +102,7 @@ class PrePositioningController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedRecords[] = PrePositioning::create($data);
             }
         }

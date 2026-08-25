@@ -1,8 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
-import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
+import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import {
     SidebarProvider,
     SidebarInset,

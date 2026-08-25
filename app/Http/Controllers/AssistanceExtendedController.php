@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\AssistanceExtended;
 use App\Models\Modification;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class AssistanceExtendedController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
 
     /**
      * Display a listing of the resource.
@@ -22,7 +22,7 @@ class AssistanceExtendedController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $assistancesQuery = AssistanceExtended::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $assistancesQuery = AssistanceExtended::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $assistancesQuery->where('user_id', $user->id);
@@ -79,7 +79,7 @@ class AssistanceExtendedController extends Controller
                         'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
                         'amount'                  => $assistanceData['amount'] ?? null,
                         'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
-                        'typhoon_id'              => $activeTyphoon->id,
+                        'disaster_id'              => $activeTyphoon->id,
                         'updated_by'              => Auth::id(),
                     ]);
                 }
@@ -92,7 +92,7 @@ class AssistanceExtendedController extends Controller
                     'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
                     'user_id'                 => Auth::id(),
                     'updated_by'              => Auth::id(),
-                    'typhoon_id'              => $activeTyphoon->id,
+                    'disaster_id'              => $activeTyphoon->id,
                 ]);
             }
         }
@@ -101,7 +101,7 @@ class AssistanceExtendedController extends Controller
         $user = Auth::user();
 
         $updatedQuery = AssistanceExtended::with('user:id,name')
-            ->where('typhoon_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);

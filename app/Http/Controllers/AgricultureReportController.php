@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgricultureReport;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AgricultureReportController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
 
     /**
      * Display agriculture report history page
@@ -28,13 +28,13 @@ class AgricultureReportController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         
         $agriculture = AgricultureReport::with(['typhoon', 'typhoon.creator'])
-            ->when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId))
+            ->when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId))
             ->latest()
             ->limit(200)
             ->get();
 
         // Group by typhoon
-        $groupedByTyphoon = $agriculture->groupBy('typhoon_id')->map(function ($reports, $typhoonId) {
+        $groupedByTyphoon = $agriculture->groupBy('disaster_id')->map(function ($reports, $typhoonId) {
             $typhoon = $reports->first()->typhoon;
             return [
                 'typhoon' => $typhoon,
@@ -72,7 +72,7 @@ class AgricultureReportController extends Controller
         DB::beginTransaction();
         try {
             // Delete existing reports for this typhoon and user
-            AgricultureReport::where('typhoon_id', $typhoonId)->delete();
+            AgricultureReport::where('disaster_id', $typhoonId)->delete();
 
             // Create new reports
             $savedCrops = [];
@@ -87,7 +87,7 @@ class AgricultureReportController extends Controller
                 }
 
                 $crop = AgricultureReport::create([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $typhoonId,
                     'crops_affected' => $cropData['crops_affected'] ?? null,
                     'standing_crop_ha' => $cropData['standing_crop_ha'] ?? null,
                     'stage_of_crop' => $cropData['stage_of_crop'] ?? null,

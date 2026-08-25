@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssistanceProvidedLgu;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class AssistanceProvidedLguController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
 
     public function index()
     {
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $assistancesQuery = AssistanceProvidedLgu::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $assistancesQuery = AssistanceProvidedLgu::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $assistancesQuery->where('user_id', $user->id);
@@ -65,7 +65,7 @@ class AssistanceProvidedLguController extends Controller
                 ...$assistance,
                 'user_id'    => Auth::id(),
                 'updated_by' => Auth::id(),
-                'typhoon_id' => $activeTyphoon->id,
+                'disaster_id' => $activeTyphoon->id,
             ]);
         }
 

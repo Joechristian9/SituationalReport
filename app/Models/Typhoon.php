@@ -9,8 +9,16 @@ class Typhoon extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'disasters';
+
     protected $fillable = [
         'name',
+        'disaster_type',
         'description',
         'status',
         'started_at',

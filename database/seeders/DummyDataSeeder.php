@@ -13,35 +13,78 @@ class DummyDataSeeder extends Seeder
     {
         $adminUser = User::where('email', 'admin@gmail.com')->first();
         
-        // Philippine typhoon names list
-        $typhoonNames = [
-            'Aghon', 'Bising', 'Carina', 'Dindo', 'Enteng', 'Ferdie', 'Gener', 'Helen',
-            'Igme', 'Julian', 'Kristine', 'Leon', 'Marce', 'Nika', 'Ofel', 'Pepito',
-            'Quinta', 'Rolly', 'Siony', 'Tonyo', 'Ulysses', 'Vicky', 'Warren', 'Yoyong',
-            'Zosimo', 'Alamid', 'Bruno', 'Conching', 'Dolor', 'Ernie', 'Florante', 'Gardo',
-            'Huaning', 'Ismael', 'Julio', 'Karding', 'Luis', 'Maymay', 'Neneng', 'Obet',
-            'Paeng', 'Quedan', 'Ramon', 'Sarah', 'Tino', 'Ursula', 'Viring', 'Waldo',
-            'Yayang', 'Zigzag'
+        // Disaster names with types
+        $disastersData = [
+            ['name' => 'Tropical Storm Aghon', 'type' => 'Tropical Storm'],
+            ['name' => 'Flood Event Cagayan Valley', 'type' => 'Flood'],
+            ['name' => 'Typhoon Kristine', 'type' => 'Typhoon'],
+            ['name' => 'Earthquake Magnitude 6.5', 'type' => 'Earthquake'],
+            ['name' => 'Landslide Cordillera Region', 'type' => 'Landslide'],
+            ['name' => 'Typhoon Leon', 'type' => 'Typhoon'],
+            ['name' => 'Flash Flood Isabela', 'type' => 'Flash Flood'],
+            ['name' => 'Storm Surge Event', 'type' => 'Storm Surge'],
+            ['name' => 'Heavy Rainfall Depression', 'type' => 'Heavy Rainfall'],
+            ['name' => 'Tropical Cyclone Marce', 'type' => 'Typhoon'],
+            ['name' => 'Flooding Northern Luzon', 'type' => 'Flood'],
+            ['name' => 'Typhoon Nika', 'type' => 'Typhoon'],
+            ['name' => 'Severe Weather Disturbance', 'type' => 'Other'],
+            ['name' => 'Monsoon Enhanced Rainfall', 'type' => 'Heavy Rainfall'],
+            ['name' => 'Typhoon Ofel', 'type' => 'Typhoon'],
+            ['name' => 'Flood Emergency 2024', 'type' => 'Flood'],
+            ['name' => 'Tropical Storm Pepito', 'type' => 'Tropical Storm'],
+            ['name' => 'Regional Flooding Event', 'type' => 'Flood'],
+            ['name' => 'Southwest Monsoon Flooding', 'type' => 'Flood'],
+            ['name' => 'Typhoon Quinta', 'type' => 'Typhoon'],
+            ['name' => 'Flash Flood Warning', 'type' => 'Flash Flood'],
+            ['name' => 'Severe Tropical Storm', 'type' => 'Tropical Storm'],
+            ['name' => 'Typhoon Rolly', 'type' => 'Typhoon'],
+            ['name' => 'Heavy Rainfall Event', 'type' => 'Heavy Rainfall'],
+            ['name' => 'Monsoon Depression', 'type' => 'Tropical Depression'],
+            ['name' => 'Typhoon Siony', 'type' => 'Typhoon'],
+            ['name' => 'Widespread Flooding', 'type' => 'Flood'],
+            ['name' => 'Tropical Depression', 'type' => 'Tropical Depression'],
+            ['name' => 'Storm System Northern PH', 'type' => 'Other'],
+            ['name' => 'Typhoon Ulysses', 'type' => 'Typhoon'],
+            ['name' => 'Regional Flood Emergency', 'type' => 'Flood'],
+            ['name' => 'Severe Weather Alert', 'type' => 'Other'],
+            ['name' => 'Tropical Storm Vicky', 'type' => 'Tropical Storm'],
+            ['name' => 'Monsoon Flood Event', 'type' => 'Flood'],
+            ['name' => 'Typhoon Warren', 'type' => 'Typhoon'],
+            ['name' => 'Heavy Rainfall Warning', 'type' => 'Heavy Rainfall'],
+            ['name' => 'Flash Flood Alert', 'type' => 'Flash Flood'],
+            ['name' => 'Typhoon Yoyong', 'type' => 'Typhoon'],
+            ['name' => 'Severe Flooding Event', 'type' => 'Flood'],
+            ['name' => 'Tropical Storm Zosimo', 'type' => 'Tropical Storm'],
+            ['name' => 'Regional Emergency', 'type' => 'Other'],
+            ['name' => 'Monsoon Season Flood', 'type' => 'Flood'],
+            ['name' => 'Typhoon Bruno', 'type' => 'Typhoon'],
+            ['name' => 'Severe Weather Event', 'type' => 'Other'],
+            ['name' => 'Tropical Depression Dolor', 'type' => 'Tropical Depression'],
+            ['name' => 'Flood Alert Northern Luzon', 'type' => 'Flood'],
+            ['name' => 'Typhoon Gener', 'type' => 'Typhoon'],
+            ['name' => 'Regional Disaster', 'type' => 'Other'],
+            ['name' => 'Heavy Rainfall Alert', 'type' => 'Heavy Rainfall'],
+            ['name' => 'Severe Storm Event', 'type' => 'Other']
         ];
 
         $descriptions = [
-            'Severe tropical storm affecting Northern Luzon',
-            'Tropical depression with moderate rainfall',
-            'Strong typhoon with heavy winds and rainfall',
-            'Super typhoon with destructive winds',
-            'Tropical storm bringing continuous rain',
-            'Weak tropical depression',
-            'Intense typhoon with storm surge',
-            'Moderate tropical storm',
-            'Category 5 super typhoon',
-            'Fast-moving tropical cyclone'
+            'Severe weather system affecting Northern Luzon with heavy rainfall',
+            'Widespread flooding due to continuous heavy rains',
+            'Strong tropical cyclone with destructive winds and storm surge',
+            'Natural disaster requiring immediate emergency response',
+            'Weather-related emergency affecting multiple municipalities',
+            'Severe flooding across river systems in the region',
+            'Intense weather disturbance with heavy precipitation',
+            'Emergency situation requiring evacuation and rescue operations',
+            'Critical weather event with significant infrastructure damage',
+            'Multi-hazard disaster affecting agricultural and residential areas'
         ];
 
-        $typhoonIds = [];
+        $disasterIds = [];
         
-        // Create 50 typhoons with varied statuses and dates
+        // Create 50 disasters with varied statuses and dates
         for ($i = 0; $i < 50; $i++) {
-            // Most recent typhoon (active) starts 3 days ago, others go back in time
+            // Most recent disaster (active) starts 3 days ago, others go back in time
             $daysAgo = $i === 0 ? 3 : (30 + ($i * 7));
             $startDate = Carbon::now()->subDays($daysAgo);
             
@@ -56,8 +99,9 @@ class DummyDataSeeder extends Seeder
                 $endedBy = $adminUser->id;
             }
             
-            $typhoonIds[] = DB::table('typhoons')->insertGetId([
-                'name' => $typhoonNames[$i],
+            $disasterIds[] = DB::table('disasters')->insertGetId([
+                'name' => $disastersData[$i]['name'],
+                'disaster_type' => $disastersData[$i]['type'],
                 'description' => $descriptions[$i % count($descriptions)],
                 'status' => $status,
                 'started_at' => $startDate,
@@ -77,7 +121,7 @@ class DummyDataSeeder extends Seeder
         $cswdoUser = User::where('email', 'cswdo@gmail.com')->first();
         $caoUser = User::where('email', 'cao@gmail.com')->first();
 
-        $this->command->info('Created 50 typhoons...');
+        $this->command->info('Created 50 disasters...');
 
         // Weather Reports - All for Ilagan with different conditions
         $weatherConditions = [
@@ -113,15 +157,15 @@ class DummyDataSeeder extends Seeder
             ],
         ];
 
-        // Add weather reports for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add weather reports for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             // For active typhoon (index 0), create reports from last 3 days with recent timestamps
             if ($index === 0) {
                 // Create 5 weather reports spread over the last 3 days, with the latest being very recent
                 foreach ($weatherConditions as $condIndex => $condition) {
                     $hoursAgo = ($condIndex * 12); // Space them 12 hours apart
                     DB::table('weather_reports')->insert([
-                        'typhoon_id' => $typhoonId,
+                        'disaster_id' => $disasterId,
                         'user_id' => $cdrrmoUser->id,
                         'municipality' => 'Ilagan',
                         'sky_condition' => $condition['sky_condition'],
@@ -136,7 +180,7 @@ class DummyDataSeeder extends Seeder
                 $daysAgo = $index === 1 ? 30 : (30 + ($index * 7));
                 foreach ($weatherConditions as $condIndex => $condition) {
                     DB::table('weather_reports')->insert([
-                        'typhoon_id' => $typhoonId,
+                        'disaster_id' => $disasterId,
                         'user_id' => $cdrrmoUser->id,
                         'municipality' => 'Ilagan',
                         'sky_condition' => $condition['sky_condition'],
@@ -150,7 +194,7 @@ class DummyDataSeeder extends Seeder
             }
         }
         
-        $this->command->info('Created weather reports for all typhoons...');
+        $this->command->info('Created weather reports for all disasters...');
 
         // Water Levels
         $waterLevelData = [
@@ -159,12 +203,12 @@ class DummyDataSeeder extends Seeder
             ['gauging_station' => 'Ilagan River', 'current_level' => 4.8, 'alarm_level' => 7.0, 'critical_level' => 9.0, 'affected_areas' => 'Barangay Centro, Barangay Bagong Bayan'],
         ];
 
-        // Add water levels for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add water levels for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($waterLevelData as $data) {
                 DB::table('water_levels')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $cdrrmoUser->id,
                     'gauging_station' => $data['gauging_station'],
                     'current_level' => $data['current_level'] + (rand(-20, 20) / 10),
@@ -184,12 +228,12 @@ class DummyDataSeeder extends Seeder
             ['status' => 'Complete power interruption', 'barangays_affected' => 'Barangay Centro, Barangay Bagong Bayan, Barangay Naguilian, Barangay San Juan', 'remarks' => 'Major transformer damage, requires replacement parts'],
         ];
 
-        // Add electricity services for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add electricity services for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             $dataIndex = $index % count($electricityData);
             DB::table('electricity_services')->insert([
-                'typhoon_id' => $typhoonId,
+                'disaster_id' => $disasterId,
                 'user_id' => $iselco2User->id,
                 'status' => $electricityData[$dataIndex]['status'],
                 'barangays_affected' => $electricityData[$dataIndex]['barangays_affected'],
@@ -206,12 +250,12 @@ class DummyDataSeeder extends Seeder
             ['source' => 'Spring Source - Naguilian', 'barangays' => 'Barangay Naguilian, Barangay San Felipe', 'status' => 'Temporarily suspended', 'remarks' => 'Source contaminated by flooding, water treatment ongoing'],
         ];
 
-        // Add water services for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add water services for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($waterServiceData as $data) {
                 DB::table('water_services')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $iwdUser->id,
                     'source_of_water' => $data['source'],
                     'barangays_served' => $data['barangays'],
@@ -231,12 +275,12 @@ class DummyDataSeeder extends Seeder
             ['classification' => 'Barangay Road', 'name' => 'Alibagu Interior Road', 'status' => 'Not Passable', 'areas' => 'Sitio Malaya', 're_routing' => 'Via main barangay road', 'remarks' => 'Landslide blocking road'],
         ];
 
-        // Add roads for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add roads for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($roadData as $data) {
                 DB::table('roads')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $ceoUser->id,
                     'road_classification' => $data['classification'],
                     'name_of_road' => $data['name'],
@@ -257,12 +301,12 @@ class DummyDataSeeder extends Seeder
             ['classification' => 'Municipal', 'name' => 'San Felipe Bridge', 'status' => 'Not Passable', 'areas' => 'Barangay San Felipe, Barangay Naguilian', 're_routing' => 'Via Maharlika Highway', 'remarks' => 'Bridge submerged, water over deck'],
         ];
 
-        // Add bridges for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add bridges for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($bridgeData as $data) {
                 DB::table('bridges')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $ceoUser->id,
                     'road_classification' => $data['classification'],
                     'name_of_bridge' => $data['name'],
@@ -284,8 +328,8 @@ class DummyDataSeeder extends Seeder
             ['barangay' => 'Naguilian', 'center' => 'Naguilian High School', 'families' => 54, 'persons' => 216, 'outside_center' => 'Relatives and friends', 'outside_families' => 20, 'outside_persons' => 80],
         ];
 
-        // Add pre-emptive evacuations for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add pre-emptive evacuations for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($preEmptiveData as $data) {
                 $familyVariation = rand(-10, 15);
@@ -295,7 +339,7 @@ class DummyDataSeeder extends Seeder
                 $outsidePersons = $outsideFamilies * 4;
                 
                 DB::table('pre_emptive_reports')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $cswdoUser->id,
                     'barangay' => $data['barangay'],
                     'evacuation_center' => $data['center'],
@@ -320,13 +364,13 @@ class DummyDataSeeder extends Seeder
             ['kind' => 'Power Line Down', 'datetime' => Carbon::now()->subHours(8), 'location' => 'Barangay Marana', 'description' => 'Electric post damaged by strong winds', 'remarks' => 'ISELCO II notified, repair crew dispatched'],
         ];
 
-        // Add incidents for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add incidents for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($incidentData as $incIndex => $data) {
                 $incidentDate = Carbon::now()->subDays($daysAgo)->subHours($incIndex * 3);
                 DB::table('incident_monitored')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $pnpUser->id,
                     'kinds_of_incident' => $data['kind'],
                     'date_time' => $incidentDate,
@@ -349,14 +393,14 @@ class DummyDataSeeder extends Seeder
             ['barangay' => 'Bagong Bayan', 'partially' => 12, 'totally' => 2],
         ];
 
-        // Add damaged houses for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add damaged houses for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($damagedHousesData as $data) {
                 $partially = max(0, $data['partially'] + rand(-5, 10));
                 $totally = max(0, $data['totally'] + rand(-2, 5));
                 DB::table('damaged_house_reports')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'user_id' => $cswdoUser->id,
                     'barangay' => $data['barangay'],
                     'partially' => $partially,
@@ -376,12 +420,12 @@ class DummyDataSeeder extends Seeder
             ['crops' => 'BANANA', 'standing_crop' => 95.75, 'stage' => 'Fruiting', 'area_affected' => 35.50, 'production_loss' => 650000.00, 'remarks' => 'Banana plants uprooted by strong winds'],
         ];
 
-        // Add agriculture reports for all typhoons
-        foreach ($typhoonIds as $index => $typhoonId) {
+        // Add agriculture reports for all disasters
+        foreach ($disasterIds as $index => $disasterId) {
             $daysAgo = 30 + ($index * 7);
             foreach ($agricultureData as $data) {
                 DB::table('agriculture_reports')->insert([
-                    'typhoon_id' => $typhoonId,
+                    'disaster_id' => $disasterId,
                     'crops_affected' => $data['crops'],
                     'standing_crop_ha' => $data['standing_crop'] + rand(-50, 100),
                     'stage_of_crop' => $data['stage'],
@@ -395,9 +439,9 @@ class DummyDataSeeder extends Seeder
         }
 
         $this->command->info('Dummy data seeded successfully!');
-        $this->command->info('- 50 Typhoons created with comprehensive history');
+        $this->command->info('- 50 Disasters created with comprehensive history (various disaster types)');
         $this->command->info('- Weather reports for Ilagan with varying conditions (250 reports)');
-        $this->command->info('- Water levels, electricity, water services for all typhoons');
+        $this->command->info('- Water levels, electricity, water services for all disasters');
         
         // Casualties (Dead)
         $casualtiesData = [
@@ -406,13 +450,13 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Pedro Reyes', 'age' => 58, 'sex' => 'male', 'address' => 'Barangay Marana, Ilagan City', 'cause_of_death' => 'Fallen tree', 'place_of_incident' => 'Maharlika Highway'],
         ];
 
-        // Get the FIRST typhoon (which is the active one - Aghon)
-        $activeTyphoonId = DB::table('typhoons')->where('status', 'active')->value('id');
+        // Get the FIRST disaster (which is the active one)
+        $activeDisasterId = DB::table('disasters')->where('status', 'active')->value('id');
         
-        // Add casualties for active typhoon only
+        // Add casualties for active disaster only
         foreach ($casualtiesData as $data) {
             DB::table('casualties')->insert([
-                'typhoon_id' => $activeTyphoonId,
+                'disaster_id' => $activeDisasterId,
                 'user_id' => $cdrrmoUser->id,
                 'name' => $data['name'],
                 'age' => $data['age'],
@@ -438,7 +482,7 @@ class DummyDataSeeder extends Seeder
         // Add injured persons for active typhoon only
         foreach ($injuredData as $data) {
             DB::table('injureds')->insert([
-                'typhoon_id' => $activeTyphoonId,
+                'disaster_id' => $activeDisasterId,
                 'user_id' => $cdrrmoUser->id,
                 'name' => $data['name'],
                 'age' => $data['age'],
@@ -462,7 +506,7 @@ class DummyDataSeeder extends Seeder
         // Add missing persons for active typhoon only
         foreach ($missingData as $data) {
             DB::table('missing')->insert([
-                'typhoon_id' => $activeTyphoonId,
+                'disaster_id' => $activeDisasterId,
                 'user_id' => $cdrrmoUser->id,
                 'name' => $data['name'],
                 'age' => $data['age'],
@@ -475,11 +519,11 @@ class DummyDataSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('- Casualties: 3 dead, 5 injured, 2 missing (for active typhoon)');
-        $this->command->info('- Roads and bridges status for all typhoons');
+        $this->command->info('- Casualties: 3 dead, 5 injured, 2 missing (for active disaster)');
+        $this->command->info('- Roads and bridges status for all disasters');
         $this->command->info('- Pre-emptive evacuations with varied numbers');
-        $this->command->info('- Incidents monitored for all typhoons');
-        $this->command->info('- Damaged houses reports for all typhoons');
-        $this->command->info('- Agriculture reports for all typhoons (200 reports)');
+        $this->command->info('- Incidents monitored for all disasters');
+        $this->command->info('- Damaged houses reports for all disasters');
+        $this->command->info('- Agriculture reports for all disasters (200 reports)');
     }
 }

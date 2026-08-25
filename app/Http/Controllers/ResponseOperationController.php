@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\ResponseOperation;
 use App\Models\Modification;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ResponseOperationController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
@@ -20,7 +20,7 @@ class ResponseOperationController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $operationsQuery = ResponseOperation::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $operationsQuery = ResponseOperation::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $operationsQuery->where('user_id', $user->id);
@@ -78,7 +78,7 @@ class ResponseOperationController extends Controller
                         'location'  => $responseData['location'] ?? null,
                         'actions'   => $responseData['actions'] ?? null,
                         'remarks'   => $responseData['remarks'] ?? null,
-                        'typhoon_id' => $activeTyphoon->id,
+                        'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -97,7 +97,7 @@ class ResponseOperationController extends Controller
                             'remarks'   => $responseData['remarks'] ?? null,
                             'user_id'   => Auth::id(),
                             'updated_by' => Auth::id(),
-                            'typhoon_id' => $activeTyphoon->id,
+                            'disaster_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -122,7 +122,7 @@ class ResponseOperationController extends Controller
                     'remarks'   => $responseData['remarks'] ?? null,
                     'user_id'   => Auth::id(),
                     'updated_by' => Auth::id(),
-                    'typhoon_id' => $activeTyphoon->id,
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -131,7 +131,7 @@ class ResponseOperationController extends Controller
         $user = Auth::user();
 
         $updatedQuery = ResponseOperation::with('user:id,name')
-            ->where('typhoon_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);

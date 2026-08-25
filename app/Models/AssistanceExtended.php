@@ -18,7 +18,7 @@ class AssistanceExtended extends Model
         'beneficiaries',
         'user_id',
         'updated_by',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     /**

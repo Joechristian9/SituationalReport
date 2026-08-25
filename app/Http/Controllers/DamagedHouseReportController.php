@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\DamagedHouseReport;
 use App\Models\Modification;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DamagedHouseReportController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
@@ -21,7 +21,7 @@ class DamagedHouseReportController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $damagedQuery = DamagedHouseReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $damagedQuery = DamagedHouseReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $damagedQuery->where('user_id', $user->id);
@@ -76,7 +76,7 @@ class DamagedHouseReportController extends Controller
                         'partially' => $reportData['partially'] ?? 0,
                         'totally' => $reportData['totally'] ?? 0,
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
-                        'typhoon_id' => $activeTyphoon->id,
+                        'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -93,7 +93,7 @@ class DamagedHouseReportController extends Controller
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
                         'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
-                        'typhoon_id' => $activeTyphoon->id,
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
                 }
             }
@@ -111,7 +111,7 @@ class DamagedHouseReportController extends Controller
                     'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
-                    'typhoon_id' => $activeTyphoon->id,
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -120,7 +120,7 @@ class DamagedHouseReportController extends Controller
         $user = Auth::user();
 
         $updatedQuery = DamagedHouseReport::with('user:id,name')
-            ->where('typhoon_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);

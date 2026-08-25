@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckTyphoonStatus
+class CheckDisasterStatus
 {
     /**
      * Handle an incoming request.
@@ -28,13 +28,13 @@ class CheckTyphoonStatus
         if (!$typhoon) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'No active typhoon report. Forms are currently disabled.',
+                    'message' => 'No active disaster report. Forms are currently disabled.',
                     'hasActiveTyphoon' => false,
                 ], 403);
             }
 
             // For Inertia requests, redirect to dashboard with message
-            return redirect()->route('dashboard')->with('error', 'No active typhoon report. Forms are currently disabled.');
+            return redirect()->route('dashboard')->with('error', 'No active disaster report. Forms are currently disabled.');
         }
 
         // If typhoon is paused, allow page to load but forms will be disabled

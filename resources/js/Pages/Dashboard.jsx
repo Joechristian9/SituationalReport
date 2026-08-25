@@ -6,8 +6,8 @@ import {
 } from "@/Components/ui/sidebar";
 import { Head, usePage } from "@inertiajs/react";
 import { Separator } from "@radix-ui/react-dropdown-menu";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
-import NoActiveTyphoonNotification from "@/Components/NoActiveTyphoonNotification";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
+import NoActiveTyphoonNotification from "@/Components/NoActiveDisasterNotification";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { AlertCircle, Zap, Droplets, AlertTriangle, CheckCircle } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
@@ -106,9 +106,9 @@ export default function Dashboard() {
                                         <AlertCircle className="w-6 h-6 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-amber-900">No Active Typhoon Report</h3>
+                                        <h3 className="text-lg font-semibold text-amber-900">No Active Disaster Report</h3>
                                         <p className="text-sm text-amber-700 mt-1">
-                                            There is currently no active typhoon report. Forms are disabled until an administrator creates a new typhoon report.
+                                            There is currently no active disaster report. Forms are disabled until an administrator creates a new disaster report.
                                         </p>
                                     </div>
                                 </div>

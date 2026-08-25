@@ -13,9 +13,9 @@ export default function TyphoonStatusBanner() {
                 <div className="flex items-center">
                     <AlertCircle className="w-5 h-5 text-gray-600 mr-3" />
                     <div>
-                        <p className="font-semibold text-gray-800">No Active Typhoon</p>
+                        <p className="font-semibold text-gray-800">No Active Disaster</p>
                         <p className="text-sm text-gray-600">
-                            Forms are currently disabled. Wait for admin to create a new typhoon report.
+                            Forms are currently disabled. Wait for admin to create a new disaster report.
                         </p>
                     </div>
                 </div>

@@ -9,8 +9,8 @@ import { Head, usePage } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
-import NoActiveTyphoonBadge from "@/Components/NoActiveTyphoonBadge";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
+import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
 
 // Lazy load heavy components - only load when needed
 const WeatherDashboard = lazy(() => import("@/Components/Weather/WeatherDashboard"));

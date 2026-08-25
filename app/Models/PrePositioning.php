@@ -20,7 +20,7 @@ class PrePositioning extends Model
         'area_of_deployment',
         'user_id',
         'updated_by',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     public function user()

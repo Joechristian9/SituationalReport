@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\UscDeclaration;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class UscDeclarationController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Show list of USC Declarations
      * Optimized: Limit records for better performance
@@ -77,7 +77,7 @@ class UscDeclarationController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedDeclarations[] = UscDeclaration::create($data);
             }
         }

@@ -4,9 +4,9 @@ import React, { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 
-import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
-import NoActiveTyphoonNotification from "@/Components/NoActiveTyphoonNotification";
+import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
+import NoActiveTyphoonNotification from "@/Components/NoActiveDisasterNotification";
 import {
     SidebarProvider,
     SidebarInset,
@@ -87,7 +87,7 @@ export default function Index() {
         auth,
     } = usePage().props;
 
-    // Check if forms should be disabled (no active typhoon, ended, or paused)
+    // Check if forms should be disabled (no active disaster, ended, or paused)
     const formsDisabled =
         !typhoon?.hasActive ||
         typhoon?.active?.status === "ended" ||
@@ -121,7 +121,7 @@ export default function Index() {
 
         const checkTyphoonStatus = async () => {
             try {
-                const response = await fetch("/api/typhoon/active", {
+                const response = await fetch("/api/disaster/active", {
                     headers: {
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",

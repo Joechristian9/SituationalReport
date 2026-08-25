@@ -20,7 +20,7 @@ class Road extends Model
         'remarks',
         'user_id',
         'updated_by',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     public function user()

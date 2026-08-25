@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Casualty;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class CasualtyController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Show list of casualties
      * Optimized: Limit records for better performance
@@ -20,7 +20,7 @@ class CasualtyController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $casualtiesQuery = Casualty::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $casualtiesQuery = Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $casualtiesQuery->where('user_id', $user->id);
@@ -105,7 +105,7 @@ class CasualtyController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedCasualties[] = Casualty::create($data);
             }
         }

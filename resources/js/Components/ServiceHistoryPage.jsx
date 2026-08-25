@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, History, Clock, Cloud, Eye, Edit, ChevronDown, ChevronUp, Calendar, MoreVertical } from "lucide-react";
+import { Loader2, History, Clock, Cloud, Eye, Edit, ChevronDown, ChevronUp, Calendar, MoreVertical, FileText, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     DropdownMenu,
@@ -38,7 +38,6 @@ export default function ServiceHistoryPage({
     const APP_URL = useAppUrl();
     const [selectedReport, setSelectedReport] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [expandedTyphoons, setExpandedTyphoons] = useState({});
 
     const { data: historyData, isLoading } = useQuery({
         queryKey: [`${serviceType}-history`],
@@ -49,11 +48,12 @@ export default function ServiceHistoryPage({
         staleTime: 1000 * 60 * 5,
     });
 
-    const toggleTyphoon = (typhoonId) => {
-        setExpandedTyphoons(prev => ({
-            ...prev,
-            [typhoonId]: !prev[typhoonId]
-        }));
+    const viewPDF = (typhoonId) => {
+        window.open(`${APP_URL}/api/${serviceType}-history/${typhoonId}/pdf`, '_blank');
+    };
+
+    const downloadPDF = (typhoonId) => {
+        window.location.href = `${APP_URL}/api/${serviceType}-history/${typhoonId}/pdf?download=1`;
     };
 
     const viewReport = (report) => {
@@ -110,100 +110,101 @@ export default function ServiceHistoryPage({
                                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                             </div>
                         ) : historyData && historyData.length > 0 ? (
-                            <div className="space-y-4">
-                                {historyData.map((typhoonGroup) => {
-                                    const isExpanded = expandedTyphoons[typhoonGroup.typhoon.id];
-                                    
-                                    return (
-                                        <Card key={typhoonGroup.typhoon.id} className="overflow-hidden border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-all duration-200">
-                                            <CardHeader 
-                                                className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-200 group"
-                                                onClick={() => toggleTyphoon(typhoonGroup.typhoon.id)}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="bg-blue-100 p-2.5 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                                            <Cloud className="w-5 h-5 text-blue-600" />
-                                                        </div>
-                                                        <div>
-                                                            <CardTitle className="text-lg flex items-center gap-2 font-bold">
-                                                                {typhoonGroup.typhoon.name}
-                                                                {getTyphoonStatusBadge(typhoonGroup.typhoon.status)}
-                                                            </CardTitle>
-                                                            <div className="flex items-center gap-3 mt-1.5 text-sm text-gray-600">
-                                                                <span className="flex items-center gap-1">
-                                                                    <History className="w-3.5 h-3.5" />
-                                                                    {typhoonGroup.reports.length} report{typhoonGroup.reports.length !== 1 ? 's' : ''}
-                                                                </span>
-                                                                <span className="text-gray-400">•</span>
-                                                                <span className="flex items-center gap-1">
-                                                                    <Calendar className="w-3.5 h-3.5" />
-                                                                    {new Date(typhoonGroup.typhoon.started_at).toLocaleDateString('en-US', { 
-                                                                        month: 'short', 
-                                                                        day: 'numeric', 
-                                                                        year: 'numeric' 
-                                                                    })}
-                                                                </span>
+                            <Card className="overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100/50 hover:from-gray-100 hover:to-gray-100">
+                                                <TableHead className="font-semibold text-gray-700 w-[50px]">#</TableHead>
+                                                <TableHead className="font-semibold text-gray-700">Disaster Name</TableHead>
+                                                <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                                                <TableHead className="font-semibold text-gray-700">Reports</TableHead>
+                                                <TableHead className="font-semibold text-gray-700">Date</TableHead>
+                                                <TableHead className="font-semibold text-gray-700 text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {historyData.map((typhoonGroup, index) => (
+                                                <TableRow 
+                                                    key={typhoonGroup.typhoon.id}
+                                                    className="hover:bg-blue-50/50 transition-colors duration-150"
+                                                >
+                                                    <TableCell className="font-medium text-gray-500">
+                                                        {index + 1}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="bg-blue-100 p-2 rounded-lg">
+                                                                <Cloud className="w-4 h-4 text-blue-600" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-semibold text-gray-900">
+                                                                    {typhoonGroup.typhoon.name}
+                                                                </div>
+                                                                {typhoonGroup.typhoon.disaster_type && (
+                                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                                        {typhoonGroup.typhoon.disaster_type}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {isExpanded ? (
-                                                            <ChevronUp className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                                                        ) : (
-                                                            <ChevronDown className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </CardHeader>
-                                            
-                                            {isExpanded && (
-                                                <CardContent className="pt-0 pb-4">
-                                                    <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100/50 hover:from-gray-100 hover:to-gray-100">
-                                                                    {columns.map((col, idx) => (
-                                                                        <TableHead 
-                                                                            key={idx} 
-                                                                            className={`font-semibold text-gray-700 ${col.className || ''}`}
-                                                                        >
-                                                                            {col.label}
-                                                                        </TableHead>
-                                                                    ))}
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {typhoonGroup.reports.map((report, index) => (
-                                                                    <TableRow 
-                                                                        key={report.id} 
-                                                                        className="hover:bg-blue-50/50 transition-colors duration-150 border-b border-gray-100 last:border-0"
-                                                                    >
-                                                                        {renderCellContent(report, index, typhoonGroup.reports.length, {
-                                                                            Icon,
-                                                                            getStatusColor,
-                                                                            viewReport,
-                                                                            editReport,
-                                                                            typhoonStatus: typhoonGroup.typhoon.status,
-                                                                            MoreVertical,
-                                                                            DropdownMenu,
-                                                                            DropdownMenuContent,
-                                                                            DropdownMenuItem,
-                                                                            DropdownMenuTrigger,
-                                                                            Eye,
-                                                                            Edit
-                                                                        })}
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </div>
-                                                </CardContent>
-                                            )}
-                                        </Card>
-                                    );
-                                })}
-                            </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {getTyphoonStatusBadge(typhoonGroup.typhoon.status)}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                                                            <History className="w-3.5 h-3.5 text-gray-400" />
+                                                            {typhoonGroup.reports.length} report{typhoonGroup.reports.length !== 1 ? 's' : ''}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="space-y-0.5">
+                                                            <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                                                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                                                {new Date(typhoonGroup.typhoon.started_at).toLocaleDateString('en-US', { 
+                                                                    month: 'short', 
+                                                                    day: 'numeric', 
+                                                                    year: 'numeric' 
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0 hover:bg-gray-100"
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-48">
+                                                                <DropdownMenuItem
+                                                                    onClick={() => viewPDF(typhoonGroup.typhoon.id)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <FileText className="w-4 h-4 mr-2" />
+                                                                    View PDF
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => downloadPDF(typhoonGroup.typhoon.id)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <Download className="w-4 h-4 mr-2" />
+                                                                    Download PDF
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </Card>
                         ) : (
                             <Card>
                                 <CardContent className="py-16 text-center">

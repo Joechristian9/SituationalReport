@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Injured;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class InjuredController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the injured records.
      * Optimized: Limit records for better performance
@@ -20,7 +20,7 @@ class InjuredController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $injuredQuery = Injured::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $injuredQuery = Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $injuredQuery->where('user_id', $user->id);
@@ -111,7 +111,7 @@ class InjuredController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedInjured[] = Injured::create($data);
             }
         }

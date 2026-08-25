@@ -111,9 +111,9 @@ export function NavMain({ items = [] }) {
                                                     "admin.dashboard";
                                             else if (
                                                 subItem.title ===
-                                                "Typhoon Management"
+                                                "Disaster Management"
                                             )
-                                                routePattern = "typhoons";
+                                                routePattern = "disasters";
                                             else if (
                                                 subItem.title ===
                                                 "Form Submission Status"

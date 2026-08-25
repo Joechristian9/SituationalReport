@@ -5,11 +5,11 @@ namespace App\Traits;
 use App\Models\Typhoon;
 use Illuminate\Http\JsonResponse;
 
-trait ValidatesTyphoonStatus
+trait ValidatesDisasterStatus
 {
     /**
-     * Check if there's an active typhoon
-     * Returns error response if no active typhoon exists
+     * Check if there's an active disaster
+     * Returns error response if no active disaster exists
      * 
      * @return JsonResponse|null Returns null if valid, JsonResponse with error if invalid
      */
@@ -19,7 +19,7 @@ trait ValidatesTyphoonStatus
         
         if (!$activeTyphoon) {
             return response()->json([
-                'message' => 'No active typhoon report. Please wait for an administrator to create a typhoon report before submitting data.',
+                'message' => 'No active disaster report. Please wait for an administrator to create a disaster report before submitting data.',
                 'error' => 'NO_ACTIVE_TYPHOON',
             ], 403);
         }

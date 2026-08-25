@@ -19,7 +19,7 @@ class WaterLevel extends Model
         'affected_areas',
         'updated_by',
         'user_id',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     /**

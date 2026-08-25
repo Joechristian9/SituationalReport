@@ -6,15 +6,15 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 
 /**
- * TyphoonStatusAlert Component
- * Displays the current typhoon status with visual alerts
+ * DisasterStatusAlert Component
+ * Displays the current disaster status with visual alerts
  * 
- * @param {Object} typhoon - The active typhoon object (null if no active typhoon)
- * @param {boolean} hasActive - Whether there's an active typhoon
+ * @param {Object} typhoon - The active disaster object (null if no active disaster)
+ * @param {boolean} hasActive - Whether there's an active disaster
  * @param {boolean} formsDisabled - Whether forms should be disabled
  */
-export default function TyphoonStatusAlert({ typhoon, hasActive, formsDisabled = false }) {
-    // No active typhoon - show warning
+export default function DisasterStatusAlert({ typhoon, hasActive, formsDisabled = false }) {
+    // No active disaster - show warning
     if (!hasActive || !typhoon) {
         return (
             <motion.div
@@ -29,9 +29,9 @@ export default function TyphoonStatusAlert({ typhoon, hasActive, formsDisabled =
                                 <AlertTriangle className="w-5 h-5 text-white" />
                             </div>
                             <div className="flex-1">
-                                <CardTitle className="text-amber-900 text-lg">No Active Typhoon Report</CardTitle>
+                                <CardTitle className="text-amber-900 text-lg">No Active Disaster Report</CardTitle>
                                 <p className="text-sm text-amber-700 mt-1">
-                                    Forms are currently disabled. An administrator must create a typhoon report before you can input data.
+                                    Forms are currently disabled. An administrator must create a disaster report before you can input data.
                                 </p>
                             </div>
                         </div>
@@ -57,7 +57,7 @@ export default function TyphoonStatusAlert({ typhoon, hasActive, formsDisabled =
                                     <Cloud className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-slate-900 text-lg">Typhoon Report Ended</CardTitle>
+                                    <CardTitle className="text-slate-900 text-lg">Disaster Report Ended</CardTitle>
                                     <p className="text-sm text-slate-700 mt-1">
                                         <strong>{typhoon.name}</strong> - All forms are now disabled. Data collection has been completed.
                                     </p>
@@ -106,7 +106,7 @@ export default function TyphoonStatusAlert({ typhoon, hasActive, formsDisabled =
                                 <Cloud className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <CardTitle className="text-blue-900 text-lg">Active Typhoon: {typhoon.name}</CardTitle>
+                                <CardTitle className="text-blue-900 text-lg">Active Disaster: {typhoon.name}</CardTitle>
                                 {typhoon.description && (
                                     <p className="text-sm text-blue-700 mt-1">{typhoon.description}</p>
                                 )}

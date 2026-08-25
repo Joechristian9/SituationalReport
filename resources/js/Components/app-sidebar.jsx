@@ -226,8 +226,8 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 {
-                    title: "Typhoon Management",
-                    url: route("typhoons.index"),
+                    title: "Disaster Management",
+                    url: route("disasters.index"),
                     roles: ["admin"],
                     icon: Cloud,
                     permission: null,

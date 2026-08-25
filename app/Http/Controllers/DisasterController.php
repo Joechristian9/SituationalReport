@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-class TyphoonController extends Controller
+class DisasterController extends Controller
 {
     /**
-     * Display typhoon management page
+     * Display disaster management page
      * Optimized with eager loading and selective fields
      */
     public function index()
@@ -20,20 +20,37 @@ class TyphoonController extends Controller
             'creator:id,name',
             'ender:id,name'
         ])
-        ->select('id', 'name', 'description', 'status', 'started_at', 'ended_at', 'created_by', 'ended_by', 'pdf_path')
+        ->select('id', 'name', 'disaster_type', 'description', 'status', 'started_at', 'ended_at', 'created_by', 'ended_by', 'pdf_path')
         ->latest('started_at')
         ->get();
 
         // Get active or paused typhoon with creator info
         $activeTyphoon = Typhoon::with('creator:id,name')
             ->whereIn('status', ['active', 'paused'])
-            ->select('id', 'name', 'description', 'status', 'started_at', 'created_by')
+            ->select('id', 'name', 'disaster_type', 'description', 'status', 'started_at', 'created_by')
             ->latest('started_at')
             ->first();
 
-        return Inertia::render('Admin/TyphoonManagement', [
+        // Get disaster statistics by type
+        $disasterStats = Typhoon::select('disaster_type', \DB::raw('count(*) as count'))
+            ->whereNotNull('disaster_type')
+            ->groupBy('disaster_type')
+            ->orderBy('count', 'desc')
+            ->get();
+
+        // Get total counts by status
+        $statusCounts = [
+            'total' => Typhoon::count(),
+            'active' => Typhoon::where('status', 'active')->count(),
+            'paused' => Typhoon::where('status', 'paused')->count(),
+            'ended' => Typhoon::where('status', 'ended')->count(),
+        ];
+
+        return Inertia::render('Admin/DisasterManagement', [
             'typhoons' => $typhoons,
             'activeTyphoon' => $activeTyphoon,
+            'disasterStats' => $disasterStats,
+            'statusCounts' => $statusCounts,
         ]);
     }
 
@@ -63,14 +80,15 @@ class TyphoonController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:typhoons,name',
+            'name' => 'required|string|max:255|unique:disasters,name',
+            'disaster_type' => 'required|string|in:Typhoon,Tropical Storm,Tropical Depression,Flood,Flash Flood,Earthquake,Landslide,Storm Surge,Drought,Volcanic Eruption,Fire,Tornado,Heavy Rainfall,Other',
             'description' => 'nullable|string|max:1000',
         ]);
 
-        // Check if there's already an active typhoon (optimized query)
+        // Check if there's already an active disaster (optimized query)
         if (Typhoon::where('status', 'active')->exists()) {
             return response()->json([
-                'message' => 'There is already an active typhoon. Please end it before creating a new one.',
+                'message' => 'There is already an active disaster. Please end it before creating a new one.',
             ], 422);
         }
 
@@ -78,6 +96,7 @@ class TyphoonController extends Controller
         try {
             $typhoon = Typhoon::create([
                 'name' => $validated['name'],
+                'disaster_type' => $validated['disaster_type'],
                 'description' => $validated['description'] ?? null,
                 'status' => 'active',
                 'started_at' => now(),
@@ -87,15 +106,15 @@ class TyphoonController extends Controller
             \DB::commit();
 
             return response()->json([
-                'message' => 'Typhoon report created successfully. Users can now input data.',
+                'message' => 'Disaster report created successfully. Users can now input data.',
                 'typhoon' => $typhoon->load('creator:id,name'),
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Typhoon creation failed', ['error' => $e->getMessage()]);
+            \Log::error('Disaster creation failed', ['error' => $e->getMessage()]);
             
             return response()->json([
-                'message' => 'Failed to create typhoon report. Please try again.',
+                'message' => 'Failed to create disaster report. Please try again.',
             ], 500);
         }
     }
@@ -103,7 +122,7 @@ class TyphoonController extends Controller
     /**
      * Update typhoon details
      */
-    public function update(Request $request, Typhoon $typhoon)
+    public function update(Request $request, Typhoon $disaster)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -111,32 +130,32 @@ class TyphoonController extends Controller
         ]);
 
         // Only allow updating if typhoon is still active
-        if ($typhoon->status === 'ended') {
+        if ($disaster->status === 'ended') {
             return response()->json([
                 'message' => 'Cannot update an ended typhoon report.',
             ], 422);
         }
 
-        $typhoon->update($validated);
+        $disaster->update($validated);
 
         return response()->json([
             'message' => 'Typhoon report updated successfully.',
-            'typhoon' => $typhoon->load('creator'),
+            'typhoon' => $disaster->load('creator'),
         ]);
     }
 
     /**
      * Pause a typhoon report temporarily
      */
-    public function pause(Typhoon $typhoon)
+    public function pause(Typhoon $disaster)
     {
-        if ($typhoon->status === 'ended') {
+        if ($disaster->status === 'ended') {
             return response()->json([
                 'message' => 'Cannot pause an ended typhoon report.',
             ], 422);
         }
 
-        if ($typhoon->status === 'paused') {
+        if ($disaster->status === 'paused') {
             return response()->json([
                 'message' => 'This typhoon report is already paused.',
             ], 422);
@@ -144,7 +163,7 @@ class TyphoonController extends Controller
 
         \DB::beginTransaction();
         try {
-            $typhoon->update([
+            $disaster->update([
                 'status' => 'paused',
                 'paused_at' => now(),
                 'paused_by' => auth()->id(),
@@ -154,7 +173,7 @@ class TyphoonController extends Controller
 
             return response()->json([
                 'message' => 'Typhoon report paused successfully. Forms are now disabled.',
-                'typhoon' => $typhoon->load(['creator:id,name', 'pauser:id,name']),
+                'typhoon' => $disaster->load(['creator:id,name', 'pauser:id,name']),
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -169,9 +188,9 @@ class TyphoonController extends Controller
     /**
      * Resume a paused typhoon report
      */
-    public function resume(Typhoon $typhoon)
+    public function resume(Typhoon $disaster)
     {
-        if ($typhoon->status !== 'paused') {
+        if ($disaster->status !== 'paused') {
             return response()->json([
                 'message' => 'Can only resume a paused typhoon report.',
             ], 422);
@@ -179,7 +198,7 @@ class TyphoonController extends Controller
 
         \DB::beginTransaction();
         try {
-            $typhoon->update([
+            $disaster->update([
                 'status' => 'active',
                 'resumed_at' => now(),
                 'resumed_by' => auth()->id(),
@@ -189,7 +208,7 @@ class TyphoonController extends Controller
 
             return response()->json([
                 'message' => 'Typhoon report resumed successfully. Forms are now enabled.',
-                'typhoon' => $typhoon->load(['creator:id,name', 'resumer:id,name']),
+                'typhoon' => $disaster->load(['creator:id,name', 'resumer:id,name']),
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -204,11 +223,11 @@ class TyphoonController extends Controller
     /**
      * Download current data snapshot for paused typhoon
      */
-    public function downloadSnapshot(Typhoon $typhoon)
+    public function downloadSnapshot(Typhoon $disaster)
     {
         try {
             // Generate PDF for current state
-            $pdfPath = $this->generatePdfReport($typhoon);
+            $pdfPath = $this->generatePdfReport($disaster);
             
             $fullPath = storage_path('app/public/' . $pdfPath);
             
@@ -222,7 +241,7 @@ class TyphoonController extends Controller
             return response()->download($fullPath)->deleteFileAfterSend(true);
         } catch (\Exception $e) {
             \Log::error('Snapshot download failed', [
-                'typhoon_id' => $typhoon->id,
+                'disaster_id' => $disaster->id,
                 'error' => $e->getMessage(),
             ]);
             
@@ -236,9 +255,9 @@ class TyphoonController extends Controller
      * End a typhoon report and generate PDF
      * Optimized with transaction and async PDF generation
      */
-    public function end(Typhoon $typhoon)
+    public function end(Typhoon $disaster)
     {
-        if ($typhoon->status === 'ended') {
+        if ($disaster->status === 'ended') {
             return response()->json([
                 'message' => 'This typhoon report has already been ended.',
             ], 422);
@@ -247,7 +266,7 @@ class TyphoonController extends Controller
         \DB::beginTransaction();
         try {
             // Update typhoon status
-            $typhoon->update([
+            $disaster->update([
                 'status' => 'ended',
                 'ended_at' => now(),
                 'ended_by' => auth()->id(),
@@ -257,27 +276,27 @@ class TyphoonController extends Controller
 
             // Generate PDF report (non-blocking)
             try {
-                $pdfPath = $this->generatePdfReport($typhoon);
+                $pdfPath = $this->generatePdfReport($disaster);
                 
-                $typhoon->update([
+                $disaster->update([
                     'pdf_path' => $pdfPath,
                 ]);
 
                 return response()->json([
                     'message' => 'Typhoon report ended successfully. PDF generated.',
-                    'typhoon' => $typhoon->load(['creator:id,name', 'ender:id,name']),
+                    'typhoon' => $disaster->load(['creator:id,name', 'ender:id,name']),
                     'pdf_path' => $pdfPath,
                 ]);
             } catch (\Exception $e) {
                 // Log the error for debugging
                 \Log::error('PDF Generation Failed', [
-                    'typhoon_id' => $typhoon->id,
+                    'disaster_id' => $disaster->id,
                     'error' => $e->getMessage(),
                 ]);
                 
                 return response()->json([
                     'message' => 'Typhoon ended successfully. PDF generation will be completed shortly.',
-                    'typhoon' => $typhoon->load(['creator:id,name', 'ender:id,name']),
+                    'typhoon' => $disaster->load(['creator:id,name', 'ender:id,name']),
                 ], 200);
             }
         } catch (\Exception $e) {
@@ -335,15 +354,15 @@ class TyphoonController extends Controller
     /**
      * Download typhoon PDF report
      */
-    public function downloadPdf(Typhoon $typhoon)
+    public function downloadPdf(Typhoon $disaster)
     {
-        if (!$typhoon->pdf_path) {
+        if (!$disaster->pdf_path) {
             return response()->json([
                 'message' => 'PDF report not available for this typhoon.',
             ], 404);
         }
 
-        $fullPath = storage_path('app/public/' . $typhoon->pdf_path);
+        $fullPath = storage_path('app/public/' . $disaster->pdf_path);
         
         if (!file_exists($fullPath)) {
             return response()->json([
@@ -357,29 +376,29 @@ class TyphoonController extends Controller
     /**
      * Regenerate PDF for an ended typhoon
      */
-    public function regeneratePdf(Typhoon $typhoon)
+    public function regeneratePdf(Typhoon $disaster)
     {
-        if ($typhoon->status !== 'ended') {
+        if ($disaster->status !== 'ended') {
             return response()->json([
                 'message' => 'Can only regenerate PDF for ended typhoons.',
             ], 422);
         }
 
         try {
-            $pdfPath = $this->generatePdfReport($typhoon);
+            $pdfPath = $this->generatePdfReport($disaster);
             
-            $typhoon->update([
+            $disaster->update([
                 'pdf_path' => $pdfPath,
             ]);
 
             return response()->json([
                 'message' => 'PDF generated successfully.',
-                'typhoon' => $typhoon->load(['creator', 'ender']),
+                'typhoon' => $disaster->load(['creator', 'ender']),
                 'pdf_path' => $pdfPath,
             ]);
         } catch (\Exception $e) {
             \Log::error('PDF Regeneration Failed', [
-                'typhoon_id' => $typhoon->id,
+                'disaster_id' => $disaster->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -395,10 +414,10 @@ class TyphoonController extends Controller
      * Delete a typhoon report
      * Optimized with transaction and file cleanup
      */
-    public function destroy(Typhoon $typhoon)
+    public function destroy(Typhoon $disaster)
     {
         // Only allow deleting if not active
-        if ($typhoon->status === 'active') {
+        if ($disaster->status === 'active') {
             return response()->json([
                 'message' => 'Cannot delete an active typhoon. Please end it first.',
             ], 422);
@@ -407,14 +426,14 @@ class TyphoonController extends Controller
         \DB::beginTransaction();
         try {
             // Delete associated PDF file if exists
-            if ($typhoon->pdf_path) {
-                $fullPath = storage_path('app/public/' . $typhoon->pdf_path);
+            if ($disaster->pdf_path) {
+                $fullPath = storage_path('app/public/' . $disaster->pdf_path);
                 if (file_exists($fullPath)) {
                     @unlink($fullPath);
                 }
             }
 
-            $typhoon->delete();
+            $disaster->delete();
             \DB::commit();
 
             return response()->json([
@@ -462,14 +481,17 @@ class TyphoonController extends Controller
             'water_levels' => 'Water Levels',
         ];
         
-        // Pre-fetch all submission data in bulk if there's an active typhoon
+        // Initialize variables before the closure
         $submissionsByUser = [];
+        $agricultureData = null;
+        
+        // Pre-fetch all submission data in bulk if there's an active typhoon
         if ($activeTyphoon) {
             foreach ($formMappings as $table => $displayName) {
                 try {
                     $records = \DB::table($table)
                         ->select('user_id', \DB::raw('COUNT(*) as count'), \DB::raw('MAX(updated_at) as last_updated'))
-                        ->where('typhoon_id', $activeTyphoon->id)
+                        ->where('disaster_id', $activeTyphoon->id)
                         ->whereNotNull('user_id')
                         ->groupBy('user_id')
                         ->get();
@@ -493,12 +515,12 @@ class TyphoonController extends Controller
             // Check agriculture_reports separately (no user_id)
             try {
                 $agricultureCount = \DB::table('agriculture_reports')
-                    ->where('typhoon_id', $activeTyphoon->id)
+                    ->where('disaster_id', $activeTyphoon->id)
                     ->count();
                 
                 if ($agricultureCount > 0) {
                     $agricultureLastUpdated = \DB::table('agriculture_reports')
-                        ->where('typhoon_id', $activeTyphoon->id)
+                        ->where('disaster_id', $activeTyphoon->id)
                         ->max('updated_at');
                     
                     // Store agriculture data separately to be added to users with permission
@@ -566,7 +588,7 @@ class TyphoonController extends Controller
         $activeTyphoon = Typhoon::getActiveTyphoon();
         
         if (!$activeTyphoon) {
-            return response()->json(['error' => 'No active typhoon'], 404);
+            return response()->json(['error' => 'No active disaster'], 404);
         }
         
         $table = $request->input('table');
@@ -574,7 +596,7 @@ class TyphoonController extends Controller
         
         // Fetch data from the specified table
         $query = \DB::table($table)
-            ->where('typhoon_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id);
         
         // Only add user_id filter if the table has that column
         if ($table !== 'agriculture_reports') {

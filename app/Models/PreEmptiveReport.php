@@ -36,7 +36,7 @@ class PreEmptiveReport extends Model
         'total_persons',
         'user_id',
         'updated_by',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     /**
@@ -60,7 +60,7 @@ class PreEmptiveReport extends Model
      */
     public function typhoon()
     {
-        return $this->belongsTo(Typhoon::class, 'typhoon_id');
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
     }
 
     /**

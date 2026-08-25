@@ -3,8 +3,8 @@ import { Bell, X, AlertCircle, Pause } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * NoActiveTyphoonNotification Component
- * Shows a bell icon with notification when there's no active typhoon or typhoon is paused
+ * NoActiveDisasterNotification Component
+ * Shows a bell icon with notification when there's no active disaster or disaster is paused
  * Displays a popup with information when clicked
  */
 export default function NoActiveTyphoonNotification({ typhoon, hasActive }) {
@@ -24,9 +24,9 @@ export default function NoActiveTyphoonNotification({ typhoon, hasActive }) {
 
     // Determine message based on status
     const getTitle = () => {
-        if (isPaused) return 'Typhoon Report Paused';
-        if (isEnded) return 'Typhoon Report Ended';
-        return 'No Active Typhoon';
+        if (isPaused) return 'Disaster Report Paused';
+        if (isEnded) return 'Disaster Report Ended';
+        return 'No Active Disaster';
     };
 
     const getMessage = () => {
@@ -34,9 +34,9 @@ export default function NoActiveTyphoonNotification({ typhoon, hasActive }) {
             return `The ${typhoon.name} typhoon report has been temporarily paused by the administrator.`;
         }
         if (isEnded) {
-            return `The ${typhoon.name} typhoon report has been ended.`;
+            return `The ${typhoon.name} disaster report has been ended.`;
         }
-        return 'There is currently no active typhoon report.';
+        return 'There is currently no active disaster report.';
     };
 
     const getIcon = () => {

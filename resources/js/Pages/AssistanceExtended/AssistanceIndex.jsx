@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import TyphoonStatusAlert from "@/Components/TyphoonStatusAlert";
-import ActiveTyphoonHeader from "@/Components/ActiveTyphoonHeader";
+import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
+import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import {
     SidebarProvider,
     SidebarInset,

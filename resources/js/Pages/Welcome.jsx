@@ -16,28 +16,51 @@ export default function Welcome({ auth }) {
                         </Link>
                     ) : (
                         <div className="flex gap-4">
-                            <Link
+                            {/* <Link
                                 href={route('login')}
                                 className="px-6 py-2.5 bg-gradient-to-r from-[#003d82] to-[#4472C4] text-white font-semibold rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                             >
                                 Log in
-                            </Link>
+                            </Link> */}
                         </div>
                     )}
                 </nav>
 
                 {/* Hero Section */}
-                <div className="relative flex min-h-screen flex-col items-center justify-center px-6">
-                    {/* Decorative circles */}
-                    <div className="absolute top-20 right-20 w-72 h-72 bg-blue-200 opacity-20 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-300 opacity-20 rounded-full blur-3xl"></div>
+                <div className="relative flex min-h-screen flex-col items-center justify-center px-6 overflow-hidden">
+                    {/* Blurry 3D Visual Elements */}
+                    {/* Large orb - top right */}
+                    <div className="absolute top-10 right-10 w-96 h-96 bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200 opacity-30 rounded-full blur-3xl transform-gpu"></div>
+                    
+                    {/* Medium orb - bottom left */}
+                    <div className="absolute bottom-20 left-10 w-80 h-80 bg-gradient-to-tr from-indigo-300 via-blue-300 to-sky-200 opacity-25 rounded-full blur-3xl transform-gpu"></div>
+                    
+                    {/* Small orb - top left */}
+                    <div className="absolute top-32 left-32 w-64 h-64 bg-gradient-to-br from-cyan-300 to-blue-200 opacity-20 rounded-full blur-2xl transform-gpu"></div>
+                    
+                    {/* Small orb - bottom right */}
+                    <div className="absolute bottom-32 right-32 w-72 h-72 bg-gradient-to-tl from-blue-300 to-indigo-200 opacity-20 rounded-full blur-2xl transform-gpu"></div>
+                    
+                    {/* Tiny accent orb - middle right */}
+                    <div className="absolute top-1/2 right-20 w-48 h-48 bg-gradient-to-bl from-sky-400 to-blue-300 opacity-25 rounded-full blur-xl transform-gpu"></div>
+                    
+                    {/* Tiny accent orb - middle left */}
+                    <div className="absolute top-1/3 left-16 w-56 h-56 bg-gradient-to-br from-blue-200 to-cyan-300 opacity-20 rounded-full blur-xl transform-gpu"></div>
+                    
+                    {/* Center soft glow */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-100 via-transparent to-transparent opacity-30 rounded-full blur-3xl"></div>
                     
                     <div className="relative z-10 text-center max-w-5xl">
-                        {/* Logo */}
-                        <div className="mb-8 flex justify-center">
+                        {/* Logos - Side by Side */}
+                        <div className="mb-8 flex justify-center items-center gap-8">
                             <img 
                                 src="/images/ilagan.jpeg" 
                                 alt="City of Ilagan Logo" 
+                                className="w-40 h-40 rounded-full border-8 border-white shadow-2xl"
+                            />
+                            <img 
+                                src="/images/cdrrmo_logo.jpg" 
+                                alt="CDRRMO Logo" 
                                 className="w-40 h-40 rounded-full border-8 border-white shadow-2xl"
                             />
                         </div>

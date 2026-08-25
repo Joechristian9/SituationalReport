@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\PreEmptiveReport;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PreEmptiveReportController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
 
     /**
      * Show list of Pre-Emptive Reports
@@ -21,7 +21,7 @@ class PreEmptiveReportController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $reportsQuery = PreEmptiveReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $reportsQuery = PreEmptiveReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $reportsQuery->where('user_id', $user->id);
@@ -83,7 +83,7 @@ class PreEmptiveReportController extends Controller
                 'total_persons'     => $report['total_persons'] ?? null,
                 'user_id'           => Auth::id(),
                 'updated_by'        => Auth::id(),
-                'typhoon_id'        => $activeTyphoon->id,
+                'disaster_id'        => $activeTyphoon->id,
             ]);
         }
 
@@ -177,7 +177,7 @@ class PreEmptiveReportController extends Controller
                         'outside_persons' => $reportData['outside_persons'] ?? null,
                         'total_families' => $reportData['total_families'] ?? null,
                         'total_persons' => $reportData['total_persons'] ?? null,
-                        'typhoon_id' => $activeTyphoon->id,
+                        'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                     $savedReports[] = $report->fresh();
@@ -194,7 +194,7 @@ class PreEmptiveReportController extends Controller
                     'outside_persons' => $reportData['outside_persons'] ?? null,
                     'total_families' => $reportData['total_families'] ?? null,
                     'total_persons' => $reportData['total_persons'] ?? null,
-                    'typhoon_id' => $activeTyphoon->id,
+                    'disaster_id' => $activeTyphoon->id,
                     'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
                 ]);
@@ -203,7 +203,7 @@ class PreEmptiveReportController extends Controller
         }
 
         // Return the fresh data (after save) so the frontend can reflect the changes
-        $reloadedQuery = PreEmptiveReport::where('typhoon_id', $activeTyphoon->id);
+        $reloadedQuery = PreEmptiveReport::where('disaster_id', $activeTyphoon->id);
 
         $user = Auth::user();
         if ($user && !$user->isAdmin()) {
@@ -281,13 +281,13 @@ class PreEmptiveReportController extends Controller
     public function getPreEmptiveHistory(Request $request)
     {
         try {
-            $typhoonId = $request->query('typhoon_id');
+            $typhoonId = $request->query('disaster_id');
             
             $query = PreEmptiveReport::with(['user:id,name', 'typhoon:id,name'])
                 ->orderBy('updated_at', 'desc');
             
             if ($typhoonId) {
-                $query->where('typhoon_id', $typhoonId);
+                $query->where('disaster_id', $typhoonId);
             }
             
             $reports = $query->get();

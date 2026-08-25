@@ -19,7 +19,7 @@ class IncidentMonitored extends Model
         'remarks',
         'user_id',
         'updated_by',
-        'typhoon_id',
+        'disaster_id',
     ];
 
     /**
@@ -43,7 +43,7 @@ class IncidentMonitored extends Model
      */
     public function typhoon()
     {
-        return $this->belongsTo(Typhoon::class, 'typhoon_id');
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
     }
 
     /**

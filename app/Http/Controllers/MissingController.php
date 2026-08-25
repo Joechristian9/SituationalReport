@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Missing; // 1. Use the Missing model
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class MissingController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Display a listing of the missing person records.
      * Optimized: Limit records for better performance
@@ -20,7 +20,7 @@ class MissingController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $missingQuery = Missing::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $missingQuery = Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
             $missingQuery->where('user_id', $user->id);
@@ -108,7 +108,7 @@ class MissingController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedMissing[] = Missing::create($data);
             }
         }

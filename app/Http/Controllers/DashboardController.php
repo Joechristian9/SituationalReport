@@ -22,7 +22,7 @@ class DashboardController extends Controller
         if ($activeTyphoon && $user && !$user->isAdmin()) {
             // Fetch latest electricity report for ISELCO users
             if ($user->can('access-electricity-form')) {
-                $electricityReport = ElectricityService::where('typhoon_id', $activeTyphoon->id)
+                $electricityReport = ElectricityService::where('disaster_id', $activeTyphoon->id)
                     ->where('user_id', $user->id)
                     ->latest('updated_at')
                     ->first();
@@ -30,7 +30,7 @@ class DashboardController extends Controller
 
             // Fetch latest water service report for IWD users
             if ($user->can('access-water-service-form')) {
-                $waterReport = WaterService::where('typhoon_id', $activeTyphoon->id)
+                $waterReport = WaterService::where('disaster_id', $activeTyphoon->id)
                     ->where('user_id', $user->id)
                     ->latest('updated_at')
                     ->first();

@@ -18,7 +18,7 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Http\Controllers\SuspensionOfWorkController;
-use App\Http\Controllers\TyphoonController;
+use App\Http\Controllers\DisasterController;
 use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -336,38 +336,38 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             ]);
         }
         
-        // Fetch only recent data for the active typhoon (limit to last 50 records for performance)
-        $weatherReports = \App\Models\WeatherReport::where('typhoon_id', $activeTyphoon->id)
+        // Fetch only recent data for the active disaster (limit to last 50 records for performance)
+        $weatherReports = \App\Models\WeatherReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
             
-        $waterLevels = \App\Models\WaterLevel::where('typhoon_id', $activeTyphoon->id)
+        $waterLevels = \App\Models\WaterLevel::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
             
-        $preEmptiveReports = \App\Models\PreEmptiveReport::where('typhoon_id', $activeTyphoon->id)
+        $preEmptiveReports = \App\Models\PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(100)
             ->get();
             
-        $casualties = \App\Models\Casualty::where('typhoon_id', $activeTyphoon->id)
+        $casualties = \App\Models\Casualty::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
             
-        $injured = \App\Models\Injured::where('typhoon_id', $activeTyphoon->id)
+        $injured = \App\Models\Injured::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
             
-        $missing = \App\Models\Missing::where('typhoon_id', $activeTyphoon->id)
+        $missing = \App\Models\Missing::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
@@ -384,30 +384,31 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     })->name('admin.dashboard');
     
     // Form Submission Status (Admin only)
-    Route::get('form-submission-status', [TyphoonController::class, 'formSubmissionStatus'])
+    Route::get('form-submission-status', [DisasterController::class, 'formSubmissionStatus'])
         ->name('admin.form-submission-status');
-    Route::get('user-form-data/{userId}', [TyphoonController::class, 'getUserFormData'])
+    Route::get('user-form-data/{userId}', [DisasterController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
     
-    // Typhoon Management (Admin only)
-    Route::prefix('typhoons')->group(function () {
-        Route::get('/', [TyphoonController::class, 'index'])->name('typhoons.index');
-        Route::post('/', [TyphoonController::class, 'store'])->name('typhoons.store');
-        Route::patch('/{typhoon}', [TyphoonController::class, 'update'])->name('typhoons.update');
-        Route::post('/{typhoon}/pause', [TyphoonController::class, 'pause'])->name('typhoons.pause');
-        Route::post('/{typhoon}/resume', [TyphoonController::class, 'resume'])->name('typhoons.resume');
-        Route::get('/{typhoon}/snapshot', [TyphoonController::class, 'downloadSnapshot'])->name('typhoons.snapshot');
-        Route::post('/{typhoon}/end', [TyphoonController::class, 'end'])->name('typhoons.end');
-        Route::post('/{typhoon}/regenerate-pdf', [TyphoonController::class, 'regeneratePdf'])->name('typhoons.regenerate-pdf');
-        Route::delete('/{typhoon}', [TyphoonController::class, 'destroy'])->name('typhoons.destroy');
-        Route::get('/{typhoon}/download', [TyphoonController::class, 'downloadPdf'])->name('typhoons.download');
+    // Disaster Management (Admin only)
+    Route::prefix('disasters')->group(function () {
+        Route::get('/', [DisasterController::class, 'index'])->name('disasters.index');
+        Route::post('/', [DisasterController::class, 'store'])->name('disasters.store');
+        Route::patch('/{disaster}', [DisasterController::class, 'update'])->name('disasters.update');
+        Route::post('/{disaster}/pause', [DisasterController::class, 'pause'])->name('disasters.pause');
+        Route::post('/{disaster}/resume', [DisasterController::class, 'resume'])->name('disasters.resume');
+        Route::get('/{disaster}/snapshot', [DisasterController::class, 'downloadSnapshot'])->name('disasters.snapshot');
+        Route::post('/{disaster}/end', [DisasterController::class, 'end'])->name('disasters.end');
+        Route::post('/{disaster}/regenerate-pdf', [DisasterController::class, 'regeneratePdf'])->name('disasters.regenerate-pdf');
+        Route::delete('/{disaster}', [DisasterController::class, 'destroy'])->name('disasters.destroy');
+        Route::get('/{disaster}/download', [DisasterController::class, 'downloadPdf'])->name('disasters.download');
     });
 });
 
-// API route for checking active typhoon (accessible by all authenticated users)
+// API route for checking active disaster (accessible by all authenticated users)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/api/typhoon/active', [TyphoonController::class, 'getActiveTyphoon'])->name('api.typhoon.active');
+    Route::get('/api/disaster/active', [DisasterController::class, 'getActiveTyphoon'])->name('api.disaster.active');
     Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
+    Route::get('/api/electricity-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewElectricityPdf'])->name('api.electricity-history.pdf');
     Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');

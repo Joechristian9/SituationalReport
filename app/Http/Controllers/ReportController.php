@@ -30,7 +30,7 @@ use App\Models\AgricultureReport;
 class ReportController extends Controller
 {
     /**
-     * Fetch all necessary report data from the database based on a given year or typhoon_id.
+     * Fetch all necessary report data from the database based on a given year or disaster_id.
      * Optimized: Different limits for web view vs PDF, selective columns
      * @param int|null $year Filter by year
      * @param bool $forPdf Use smaller limits for PDF generation
@@ -43,11 +43,11 @@ class ReportController extends Controller
         $useLimit = !$typhoonId;
         $limit = $forPdf ? 100 : 500;
         
-        // Build query condition - prioritize typhoon_id over year
+        // Build query condition - prioritize disaster_id over year
         $queryCondition = function ($query) use ($year, $typhoonId) {
             if ($typhoonId) {
                 // Filter by specific typhoon - includes ALL reports for this typhoon (history)
-                return $query->where('typhoon_id', $typhoonId);
+                return $query->where('disaster_id', $typhoonId);
             } elseif ($year) {
                 return $query->whereYear('created_at', $year);
             }

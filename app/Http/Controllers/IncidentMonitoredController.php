@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\IncidentMonitored;
-use App\Traits\ValidatesTyphoonStatus;
+use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class IncidentMonitoredController extends Controller
 {
-    use ValidatesTyphoonStatus;
+    use ValidatesDisasterStatus;
     /**
      * Show list of monitored incidents
      * Optimized: Limit records for better performance
@@ -20,49 +20,49 @@ class IncidentMonitoredController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $incidentsQuery = IncidentMonitored::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $incidentsQuery = IncidentMonitored::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $incidentsQuery->where('user_id', $user->id);
         }
         $incidents = $incidentsQuery->latest()->limit(200)->get();
 
-        $casualtiesQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $casualtiesQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $casualtiesQuery->where('user_id', $user->id);
         }
         $casualties = $casualtiesQuery->latest()->limit(200)->get();
 
-        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $injuredQuery->where('user_id', $user->id);
         }
         $injured = $injuredQuery->latest()->limit(200)->get();
 
-        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $missingQuery->where('user_id', $user->id);
         }
         $missing = $missingQuery->latest()->limit(200)->get();
 
-        $affectedTouristsQuery = \App\Models\AffectedTourist::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $affectedTouristsQuery = \App\Models\AffectedTourist::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $affectedTouristsQuery->where('user_id', $user->id);
         }
         $affectedTourists = $affectedTouristsQuery->latest()->limit(200)->get();
 
-        $damagedHousesQuery = \App\Models\DamagedHouseReport::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $damagedHousesQuery = \App\Models\DamagedHouseReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $damagedHousesQuery->where('user_id', $user->id);
         }
         $damagedHouses = $damagedHousesQuery->latest()->limit(200)->get();
 
-        $suspensionOfClassesQuery = \App\Models\SuspensionOfClass::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $suspensionOfClassesQuery = \App\Models\SuspensionOfClass::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $suspensionOfClassesQuery->where('user_id', $user->id);
         }
         $suspensionOfClasses = $suspensionOfClassesQuery->latest()->limit(200)->get();
 
-        $suspensionOfWorkQuery = \App\Models\SuspensionOfWork::when($typhoonId, fn($q) => $q->where('typhoon_id', $typhoonId));
+        $suspensionOfWorkQuery = \App\Models\SuspensionOfWork::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         if ($user && !$user->isAdmin()) {
             $suspensionOfWorkQuery->where('user_id', $user->id);
         }
@@ -146,7 +146,7 @@ class IncidentMonitoredController extends Controller
             } else {
                 // Create new record
                 $data['user_id'] = Auth::id();
-                $data['typhoon_id'] = $activeTyphoon->id;
+                $data['disaster_id'] = $activeTyphoon->id;
                 $savedIncidents[] = IncidentMonitored::create($data);
             }
         }
@@ -237,7 +237,7 @@ class IncidentMonitoredController extends Controller
             ->get();
 
         // Group by typhoon
-        $groupedByTyphoon = $incidents->groupBy('typhoon_id')->map(function ($reports, $typhoonId) {
+        $groupedByTyphoon = $incidents->groupBy('disaster_id')->map(function ($reports, $typhoonId) {
             $typhoon = $reports->first()->typhoon;
             return [
                 'typhoon' => $typhoon,

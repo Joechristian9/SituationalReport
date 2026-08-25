@@ -10,7 +10,7 @@ class AgricultureReport extends Model
     use HasFactory;
 
     protected $fillable = [
-        'typhoon_id',
+        'disaster_id',
         'crops_affected',
         'standing_crop_ha',
         'stage_of_crop',
