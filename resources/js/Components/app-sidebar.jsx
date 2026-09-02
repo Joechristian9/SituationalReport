@@ -261,13 +261,6 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isBarangay && !isAdmin ? [{
-                    title: "Pre-Emptive Reports",
-                    url: route("preemptive-reports.index"),
-                    roles: ["user"],
-                    icon: ClipboardList,
-                    permission: "access-pre-emptive-form",
-                }] : []),
                 ...(!isBarangay && !isAdmin ? [{
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),

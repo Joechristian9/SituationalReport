@@ -1,15 +1,18 @@
 // resources/js/Components/SituationOverview/ElectricityForm.jsx
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 import { usePage } from "@inertiajs/react";
 import { Zap, Loader2, Save, AlertCircle } from "lucide-react";
 import AddRowButton from "@/Components/ui/AddRowButton";
+import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 
 export default function ElectricityForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const { typhoon } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
@@ -22,6 +25,27 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     }]);
     
     const [previousDisabled, setPreviousDisabled] = useState(disabled);
+    
+    // Fetch modification history
+    const {
+        data: modificationData,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["electricity-modifications"],
+        queryFn: async () => {
+            const { data } = await axios.get(`${APP_URL}/modifications/electricity`);
+            return data;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    // Helper function to get field modification history
+    const getFieldHistory = (recordId, fieldName) => {
+        if (!modificationData?.history) return [];
+        const historyKey = `${recordId}_${fieldName}`;
+        return modificationData.history[historyKey] || [];
+    };
     
     useEffect(() => {
         const timer = setInterval(() => {
@@ -167,6 +191,9 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 setOriginalData(JSON.parse(JSON.stringify(rows)));
             }
             
+            // Invalidate modification history
+            await queryClient.invalidateQueries(['electricity-modifications']);
+            
             toast.success("Electricity report saved successfully!");
         } catch (err) {
             console.error(err);
@@ -209,35 +236,56 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                         {rows.map((row, index) => (
                             <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
                                 <td className="p-3">
-                                    <textarea
-                                        value={row.status}
-                                        onChange={(e) => handleInputChange(index, 'status', e.target.value)}
-                                        disabled={disabled}
-                                        rows="3"
-                                        placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                    />
+                                    <div className="relative">
+                                        <textarea
+                                            value={row.status}
+                                            onChange={(e) => handleInputChange(index, 'status', e.target.value)}
+                                            disabled={disabled}
+                                            rows="3"
+                                            placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
+                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                        />
+                                        <ModificationIndicator 
+                                            recordId={row.id} 
+                                            fieldName="status"
+                                            getFieldHistory={getFieldHistory}
+                                        />
+                                    </div>
                                 </td>
                                 <td className="p-3">
-                                    <textarea
-                                        value={row.barangays_affected}
-                                        onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
-                                        disabled={disabled}
-                                        rows="3"
-                                        placeholder="List affected barangays..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                    />
+                                    <div className="relative">
+                                        <textarea
+                                            value={row.barangays_affected}
+                                            onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
+                                            disabled={disabled}
+                                            rows="3"
+                                            placeholder="List affected barangays..."
+                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                        />
+                                        <ModificationIndicator 
+                                            recordId={row.id} 
+                                            fieldName="barangays_affected"
+                                            getFieldHistory={getFieldHistory}
+                                        />
+                                    </div>
                                 </td>
                                 <td className="p-3">
-                                    <textarea
-                                        value={row.remarks}
-                                        onChange={(e) => handleInputChange(index, 'remarks', e.target.value)}
-                                        onFocus={() => handleRemarksFocus(index)}
-                                        disabled={disabled}
-                                        rows="3"
-                                        placeholder="Click to auto-fill date and time..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                    />
+                                    <div className="relative">
+                                        <textarea
+                                            value={row.remarks}
+                                            onChange={(e) => handleInputChange(index, 'remarks', e.target.value)}
+                                            onFocus={() => handleRemarksFocus(index)}
+                                            disabled={disabled}
+                                            rows="3"
+                                            placeholder="Click to auto-fill date and time..."
+                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                        />
+                                        <ModificationIndicator 
+                                            recordId={row.id} 
+                                            fieldName="remarks"
+                                            getFieldHistory={getFieldHistory}
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         ))}

@@ -113,4 +113,47 @@ class AgricultureReportController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get modification history for Agriculture Reports
+     */
+    public function getModifications()
+    {
+        $modifications = \App\Models\Modification::where('model_type', 'AgricultureReport')
+            ->with('user:id,name')
+            ->latest()
+            ->get();
+
+        $history = [];
+
+        foreach ($modifications as $mod) {
+            $changedFields = is_string($mod->changed_fields) 
+                ? json_decode($mod->changed_fields, true) 
+                : $mod->changed_fields;
+            
+            if (!is_array($changedFields)) {
+                continue;
+            }
+            
+            foreach ($changedFields as $fieldName => $fieldData) {
+                $key = "{$mod->model_id}_{$fieldName}";
+                
+                if (!isset($history[$key])) {
+                    $history[$key] = [];
+                }
+                
+                $history[$key][] = [
+                    'user' => $mod->user ?? ['name' => $fieldData['user']['name'] ?? 'Unknown'],
+                    'field' => $fieldName,
+                    'old' => $fieldData['old'] ?? null,
+                    'new' => $fieldData['new'] ?? null,
+                    'date' => $mod->created_at,
+                ];
+            }
+        }
+
+        return response()->json([
+            'history' => (object)$history,
+        ]);
+    }
 }

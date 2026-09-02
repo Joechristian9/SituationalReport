@@ -140,7 +140,32 @@ class IncidentMonitoredController extends Controller
 
                 $incidentMonitored = $incidentQuery->first();
                 if ($incidentMonitored) {
-                    $incidentMonitored->update($data);
+                    // Only update fields that have changed
+                    $fieldsToUpdate = [];
+                    
+                    if ($incidentMonitored->kinds_of_incident !== ($incident['kinds_of_incident'] ?? null)) {
+                        $fieldsToUpdate['kinds_of_incident'] = $incident['kinds_of_incident'] ?? null;
+                    }
+                    if ($incidentMonitored->date_time !== ($incident['date_time'] ?? null)) {
+                        $fieldsToUpdate['date_time'] = $incident['date_time'] ?? null;
+                    }
+                    if ($incidentMonitored->location !== ($incident['location'] ?? null)) {
+                        $fieldsToUpdate['location'] = $incident['location'] ?? null;
+                    }
+                    if ($incidentMonitored->description !== ($incident['description'] ?? null)) {
+                        $fieldsToUpdate['description'] = $incident['description'] ?? null;
+                    }
+                    if ($incidentMonitored->remarks !== ($incident['remarks'] ?? null)) {
+                        $fieldsToUpdate['remarks'] = $incident['remarks'] ?? null;
+                    }
+                    
+                    // Always update updated_by
+                    $fieldsToUpdate['updated_by'] = Auth::id();
+                    
+                    // Only call update if there are changes
+                    if (count($fieldsToUpdate) > 1) { // More than just updated_by
+                        $incidentMonitored->update($fieldsToUpdate);
+                    }
                     $savedIncidents[] = $incidentMonitored->fresh();
                 }
             } else {

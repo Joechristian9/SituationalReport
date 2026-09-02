@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $role = Role::create(['name' => 'user']);
 
+        // Define all permissions
         $permissions = [
             'access-weather-form',
             'access-water-level-form',
@@ -49,7 +50,7 @@ class DatabaseSeeder extends Seeder
 
         $iselco2 = User::factory()->create([
             'name' => 'Iselco II',
-            'email' => 'iselco2@gmail.com',
+            'email' => 'iselco2@gmail.com',                
             'password' => bcrypt('wardead123'),
         ]);
         $iselco2->assignRole($role);
@@ -97,12 +98,7 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('wardead123'),
         ]);
         $cdrrmo->assignRole($role);
-        $cdrrmo->givePermissionTo([
-            'access-weather-form',
-            'access-communication-form',
-            'access-pre-emptive-form',
-            'access-incident-form',
-        ]);
+        $cdrrmo->givePermissionTo(Permission::all()); // CDRRMO has access to all forms
 
         $cao = User::factory()->create([
             'name' => 'Chief Administrative Officer',

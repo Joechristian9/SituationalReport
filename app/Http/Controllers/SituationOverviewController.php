@@ -120,21 +120,29 @@ class SituationOverviewController extends Controller
             if (!empty($reportData['id'])) {
                 $weatherReport = WeatherReport::find($reportData['id']);
                 if ($weatherReport) {
-                    // Fill the model with new data (doesn't save yet)
-                    $weatherReport->fill([
-                        'municipality'  => $reportData['municipality'],
-                        'sky_condition' => $reportData['sky_condition'],
-                        'wind'          => $reportData['wind'],
-                        'precipitation' => $reportData['precipitation'],
-                        'sea_condition' => $reportData['sea_condition'],
-                        'disaster_id'    => $activeTyphoon->id,
-                        'updated_by'    => Auth::id(),
-                    ]);
+                    // Only update fields that have actually changed
+                    $fieldsToUpdate = [];
                     
-                    // Only save if actual data fields changed (excluding updated_by and timestamps)
-                    if ($weatherReport->isDirty(['municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition'])) {
-                        $weatherReport->updated_by = Auth::id();
-                        $weatherReport->save();
+                    if ($weatherReport->municipality !== $reportData['municipality']) {
+                        $fieldsToUpdate['municipality'] = $reportData['municipality'];
+                    }
+                    if ($weatherReport->sky_condition !== ($reportData['sky_condition'] ?? null)) {
+                        $fieldsToUpdate['sky_condition'] = $reportData['sky_condition'] ?? null;
+                    }
+                    if ($weatherReport->wind !== ($reportData['wind'] ?? null)) {
+                        $fieldsToUpdate['wind'] = $reportData['wind'] ?? null;
+                    }
+                    if ($weatherReport->precipitation !== ($reportData['precipitation'] ?? null)) {
+                        $fieldsToUpdate['precipitation'] = $reportData['precipitation'] ?? null;
+                    }
+                    if ($weatherReport->sea_condition !== ($reportData['sea_condition'] ?? null)) {
+                        $fieldsToUpdate['sea_condition'] = $reportData['sea_condition'] ?? null;
+                    }
+                    
+                    // Only save if there are actual changes
+                    if (!empty($fieldsToUpdate)) {
+                        $fieldsToUpdate['updated_by'] = Auth::id();
+                        $weatherReport->update($fieldsToUpdate);
                     }
                 }
             }
@@ -470,16 +478,36 @@ class SituationOverviewController extends Controller
             if (!empty($commData['id']) && is_numeric($commData['id'])) {
                 $communication = Communication::find($commData['id']);
                 if ($communication) {
-                    $communication->update([
-                        'globe' => $commData['globe'] ?? null,
-                        'smart' => $commData['smart'] ?? null,
-                        'pldt_landline' => $commData['pldt_landline'] ?? null,
-                        'pldt_internet' => $commData['pldt_internet'] ?? null,
-                        'vhf' => $commData['vhf'] ?? null,
-                        'remarks' => $commData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
-                        'updated_by' => Auth::id(),
-                    ]);
+                    // Only update fields that have changed
+                    $fieldsToUpdate = [];
+                    
+                    if ($communication->globe !== ($commData['globe'] ?? null)) {
+                        $fieldsToUpdate['globe'] = $commData['globe'] ?? null;
+                    }
+                    if ($communication->smart !== ($commData['smart'] ?? null)) {
+                        $fieldsToUpdate['smart'] = $commData['smart'] ?? null;
+                    }
+                    if ($communication->pldt_landline !== ($commData['pldt_landline'] ?? null)) {
+                        $fieldsToUpdate['pldt_landline'] = $commData['pldt_landline'] ?? null;
+                    }
+                    if ($communication->pldt_internet !== ($commData['pldt_internet'] ?? null)) {
+                        $fieldsToUpdate['pldt_internet'] = $commData['pldt_internet'] ?? null;
+                    }
+                    if ($communication->vhf !== ($commData['vhf'] ?? null)) {
+                        $fieldsToUpdate['vhf'] = $commData['vhf'] ?? null;
+                    }
+                    if ($communication->remarks !== ($commData['remarks'] ?? null)) {
+                        $fieldsToUpdate['remarks'] = $commData['remarks'] ?? null;
+                    }
+                    
+                    // Always update disaster_id and updated_by
+                    $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
+                    $fieldsToUpdate['updated_by'] = Auth::id();
+                    
+                    // Only call update if there are changes
+                    if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
+                        $communication->update($fieldsToUpdate);
+                    }
                     
                     // Handle dynamic service values
                     if (isset($commData['service_values']) && is_array($commData['service_values'])) {

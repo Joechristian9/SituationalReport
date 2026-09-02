@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useAppUrl from '@/hooks/useAppUrl';
 import { usePage } from '@inertiajs/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -10,10 +11,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ModificationIndicator from '@/Components/shared/ModificationIndicator';
 import { Sprout, Save, Plus, Loader2, AlertCircle, MoreVertical, Trash2 } from 'lucide-react';
 
 export default function AgricultureForm({ data, setData, disabled = false }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const { typhoon } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
@@ -28,6 +31,27 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
             total_production_loss: ''
         }
     ]);
+
+    // Fetch modification history
+    const {
+        data: modificationData,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["agriculture-modifications"],
+        queryFn: async () => {
+            const { data } = await axios.get(`${APP_URL}/modifications/agriculture-reports`);
+            return data;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    // Helper function to get field modification history
+    const getFieldHistory = (recordId, fieldName) => {
+        if (!modificationData?.history) return [];
+        const historyKey = `${recordId}_${fieldName}`;
+        return modificationData.history[historyKey] || [];
+    };
 
     // Load existing data from props
     useEffect(() => {
@@ -133,6 +157,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
             if (response.data && Array.isArray(response.data.agriculture)) {
                 setData("agriculture", response.data.agriculture);
                 setOriginalData(JSON.parse(JSON.stringify(crops)));
+                
+                // Invalidate and refetch modification history
+                await queryClient.invalidateQueries(['agriculture-modifications']);
             }
             
             toast.success("Agriculture reports saved successfully!");
@@ -141,8 +168,20 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
             toast.error(err.response?.data?.message || "Failed to save agriculture reports.");
         } finally {
             setIsSaving(false);
+            // Force refetch after small delay to ensure data is fresh
+            setTimeout(() => {
+                queryClient.invalidateQueries(['agriculture-modifications']);
+            }, 200);
         }
     };
+
+    if (isError) {
+        return (
+            <div className="text-red-500 p-4">
+                Error fetching modification data: {error.message}
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -196,57 +235,92 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                 {crops.map((crop) => (
                                     <tr key={crop.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 border-r border-gray-200">
-                                            <input
-                                                type="text"
-                                                value={crop.crops_affected}
-                                                onChange={(e) => updateCrop(crop.id, 'crops_affected', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
-                                                placeholder="e.g., RICE, CORN, HVCC"
-                                                disabled={disabled}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={crop.crops_affected}
+                                                    onChange={(e) => updateCrop(crop.id, 'crops_affected', e.target.value)}
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    placeholder="e.g., RICE, CORN, HVCC"
+                                                    disabled={disabled}
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={crop.id} 
+                                                    fieldName="crops_affected" 
+                                                    getFieldHistory={getFieldHistory} 
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={crop.standing_crop_ha}
-                                                onChange={(e) => updateCrop(crop.id, 'standing_crop_ha', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
-                                                placeholder="0.00"
-                                                disabled={disabled}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={crop.standing_crop_ha}
+                                                    onChange={(e) => updateCrop(crop.id, 'standing_crop_ha', e.target.value)}
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    placeholder="0.00"
+                                                    disabled={disabled}
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={crop.id} 
+                                                    fieldName="standing_crop_ha" 
+                                                    getFieldHistory={getFieldHistory} 
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
-                                            <input
-                                                type="text"
-                                                value={crop.stage_of_crop}
-                                                onChange={(e) => updateCrop(crop.id, 'stage_of_crop', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
-                                                placeholder="e.g., Vegetative"
-                                                disabled={disabled}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={crop.stage_of_crop}
+                                                    onChange={(e) => updateCrop(crop.id, 'stage_of_crop', e.target.value)}
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    placeholder="e.g., Vegetative"
+                                                    disabled={disabled}
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={crop.id} 
+                                                    fieldName="stage_of_crop" 
+                                                    getFieldHistory={getFieldHistory} 
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={crop.total_area_affected_ha}
-                                                onChange={(e) => updateCrop(crop.id, 'total_area_affected_ha', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
-                                                placeholder="0.00"
-                                                disabled={disabled}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={crop.total_area_affected_ha}
+                                                    onChange={(e) => updateCrop(crop.id, 'total_area_affected_ha', e.target.value)}
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    placeholder="0.00"
+                                                    disabled={disabled}
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={crop.id} 
+                                                    fieldName="total_area_affected_ha" 
+                                                    getFieldHistory={getFieldHistory} 
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={crop.total_production_loss}
-                                                onChange={(e) => updateCrop(crop.id, 'total_production_loss', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
-                                                placeholder="0.00"
-                                                disabled={disabled}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={crop.total_production_loss}
+                                                    onChange={(e) => updateCrop(crop.id, 'total_production_loss', e.target.value)}
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    placeholder="0.00"
+                                                    disabled={disabled}
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={crop.id} 
+                                                    fieldName="total_production_loss" 
+                                                    getFieldHistory={getFieldHistory} 
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             {crops.length > 1 ? (

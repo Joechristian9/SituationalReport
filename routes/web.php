@@ -168,16 +168,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::post('/bridge-reports', [SituationOverviewController::class, 'storeBridge'])
         ->name('bridge-reports.store');
 
-
-    // Pre-Emptive Reports
-    Route::resource('preemptive-reports', PreEmptiveReportController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/preemptive-reports', [PreEmptiveReportController::class, 'store'])
-        ->name('preemptive-reports.store');
-    Route::get('/preemptive-reports', [PreEmptiveReportController::class, 'index'])
-        ->name('preemptive-reports.index');
     
-    // Pre-Emptive Reports - New API routes for modernized form
+    // Pre-Emptive Reports - API routes for modernized form
     Route::post('/pre-emptive-reports', [PreEmptiveReportController::class, 'saveReports']);
     Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications']);
 
@@ -223,6 +215,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::post('/agriculture-reports', [App\Http\Controllers\AgricultureReportController::class, 'store'])
         ->middleware('permission:access-agriculture-form')
         ->name('agriculture-reports.store');
+    Route::get('/modifications/agriculture', [App\Http\Controllers\AgricultureReportController::class, 'getModifications'])
+        ->name('modifications.agriculture');
 
     // Casualties Dead
     Route::resource('casualties', CasualtyController::class)

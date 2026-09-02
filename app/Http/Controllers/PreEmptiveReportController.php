@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PreEmptiveReport;
+use App\Models\Modification;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,28 +12,6 @@ use Inertia\Inertia;
 class PreEmptiveReportController extends Controller
 {
     use ValidatesDisasterStatus;
-
-    /**
-     * Show list of Pre-Emptive Reports
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $reportsQuery = PreEmptiveReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && !$user->isAdmin()) {
-            $reportsQuery->where('user_id', $user->id);
-        }
-
-        $reports = $reportsQuery->latest()->limit(200)->get();
-
-        return Inertia::render('PreEmptiveReports/Index', [
-            'initialReports' => $reports,
-        ]);
-    }
 
     /**
      * Store Pre-Emptive Reports
@@ -167,19 +146,45 @@ class PreEmptiveReportController extends Controller
                 $report = $reportQuery->first();
 
                 if ($report) {
-                    $report->update([
-                        'barangay' => $reportData['barangay'] ?? null,
-                        'evacuation_center' => $reportData['evacuation_center'] ?? null,
-                        'families' => $reportData['families'] ?? null,
-                        'persons' => $reportData['persons'] ?? null,
-                        'outside_center' => $reportData['outside_center'] ?? null,
-                        'outside_families' => $reportData['outside_families'] ?? null,
-                        'outside_persons' => $reportData['outside_persons'] ?? null,
-                        'total_families' => $reportData['total_families'] ?? null,
-                        'total_persons' => $reportData['total_persons'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
-                        'updated_by' => Auth::id(),
-                    ]);
+                    // Only update fields that have changed
+                    $fieldsToUpdate = [];
+                    
+                    if ($report->barangay !== ($reportData['barangay'] ?? null)) {
+                        $fieldsToUpdate['barangay'] = $reportData['barangay'] ?? null;
+                    }
+                    if ($report->evacuation_center !== ($reportData['evacuation_center'] ?? null)) {
+                        $fieldsToUpdate['evacuation_center'] = $reportData['evacuation_center'] ?? null;
+                    }
+                    if ($report->families != ($reportData['families'] ?? null)) {
+                        $fieldsToUpdate['families'] = $reportData['families'] ?? null;
+                    }
+                    if ($report->persons != ($reportData['persons'] ?? null)) {
+                        $fieldsToUpdate['persons'] = $reportData['persons'] ?? null;
+                    }
+                    if ($report->outside_center !== ($reportData['outside_center'] ?? null)) {
+                        $fieldsToUpdate['outside_center'] = $reportData['outside_center'] ?? null;
+                    }
+                    if ($report->outside_families != ($reportData['outside_families'] ?? null)) {
+                        $fieldsToUpdate['outside_families'] = $reportData['outside_families'] ?? null;
+                    }
+                    if ($report->outside_persons != ($reportData['outside_persons'] ?? null)) {
+                        $fieldsToUpdate['outside_persons'] = $reportData['outside_persons'] ?? null;
+                    }
+                    if ($report->total_families != ($reportData['total_families'] ?? null)) {
+                        $fieldsToUpdate['total_families'] = $reportData['total_families'] ?? null;
+                    }
+                    if ($report->total_persons != ($reportData['total_persons'] ?? null)) {
+                        $fieldsToUpdate['total_persons'] = $reportData['total_persons'] ?? null;
+                    }
+                    
+                    // Always update disaster_id and updated_by
+                    $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
+                    $fieldsToUpdate['updated_by'] = Auth::id();
+                    
+                    // Only call update if there are changes
+                    if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
+                        $report->update($fieldsToUpdate);
+                    }
                     $savedReports[] = $report->fresh();
                 }
             } else {

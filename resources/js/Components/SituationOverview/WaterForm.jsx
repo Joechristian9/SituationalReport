@@ -1,15 +1,18 @@
 // resources/js/Components/SituationOverview/WaterForm.jsx
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 import { usePage } from "@inertiajs/react";
+import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 
 import { Droplet, Loader2, Save, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function WaterForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
+    const queryClient = useQueryClient();
     const { typhoon } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
@@ -23,6 +26,27 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
     
     // Track previous disabled state to detect resume
     const [previousDisabled, setPreviousDisabled] = useState(disabled);
+    
+    // Fetch modification history
+    const {
+        data: modificationData,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["water-service-modifications"],
+        queryFn: async () => {
+            const { data } = await axios.get(`${APP_URL}/modifications/water-service`);
+            return data;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    // Helper function to get field modification history
+    const getFieldHistory = (recordId, fieldName) => {
+        if (!modificationData?.history) return [];
+        const historyKey = `${recordId}_${fieldName}`;
+        return modificationData.history[historyKey] || [];
+    };
     
     // Update current date/time every second for real-time display
     useEffect(() => {
@@ -148,6 +172,9 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                 setOriginalData(JSON.parse(JSON.stringify(formData)));
             }
             
+            // Invalidate modification history
+            await queryClient.invalidateQueries(['water-service-modifications']);
+            
             toast.success("Water service report saved successfully!");
         } catch (err) {
             console.error(err);
@@ -182,15 +209,22 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Source of Water
                     </label>
-                    <input
-                        type="text"
-                        name="source_of_water"
-                        value={formData.source_of_water}
-                        onChange={handleInputChange}
-                        disabled={disabled}
-                        placeholder="e.g., Deep well, Spring, Water district..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name="source_of_water"
+                            value={formData.source_of_water}
+                            onChange={handleInputChange}
+                            disabled={disabled}
+                            placeholder="e.g., Deep well, Spring, Water district..."
+                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        />
+                        <ModificationIndicator 
+                            recordId={data.waterServices?.[0]?.id} 
+                            fieldName="source_of_water"
+                            getFieldHistory={getFieldHistory}
+                        />
+                    </div>
                 </div>
 
                 {/* Barangays Served */}
@@ -198,15 +232,22 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Barangays Served
                     </label>
-                    <textarea
-                        name="barangays_served"
-                        value={formData.barangays_served}
-                        onChange={handleInputChange}
-                        rows="4"
-                        disabled={disabled}
-                        placeholder="List the barangays served by this water source..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                    />
+                    <div className="relative">
+                        <textarea
+                            name="barangays_served"
+                            value={formData.barangays_served}
+                            onChange={handleInputChange}
+                            rows="4"
+                            disabled={disabled}
+                            placeholder="List the barangays served by this water source..."
+                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                        />
+                        <ModificationIndicator 
+                            recordId={data.waterServices?.[0]?.id} 
+                            fieldName="barangays_served"
+                            getFieldHistory={getFieldHistory}
+                        />
+                    </div>
                 </div>
 
                 {/* Status */}
@@ -214,15 +255,22 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Current Status
                     </label>
-                    <textarea
-                        name="status"
-                        value={formData.status}
-                        onChange={handleInputChange}
-                        rows="4"
-                        disabled={disabled}
-                        placeholder="e.g., Fully operational, Intermittent supply, Temporarily unavailable due to maintenance..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                    />
+                    <div className="relative">
+                        <textarea
+                            name="status"
+                            value={formData.status}
+                            onChange={handleInputChange}
+                            rows="4"
+                            disabled={disabled}
+                            placeholder="e.g., Fully operational, Intermittent supply, Temporarily unavailable due to maintenance..."
+                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                        />
+                        <ModificationIndicator 
+                            recordId={data.waterServices?.[0]?.id} 
+                            fieldName="status"
+                            getFieldHistory={getFieldHistory}
+                        />
+                    </div>
                 </div>
 
                 {/* Remarks */}
@@ -230,16 +278,23 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Additional Details
                     </label>
-                    <textarea
-                        name="remarks"
-                        value={formData.remarks}
-                        onChange={handleInputChange}
-                        onFocus={handleRemarksFocus}
-                        rows="5"
-                        disabled={disabled}
-                        placeholder="Click to auto-fill date and time, then add your remarks..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                    />
+                    <div className="relative">
+                        <textarea
+                            name="remarks"
+                            value={formData.remarks}
+                            onChange={handleInputChange}
+                            onFocus={handleRemarksFocus}
+                            rows="5"
+                            disabled={disabled}
+                            placeholder="Click to auto-fill date and time, then add your remarks..."
+                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                        />
+                        <ModificationIndicator 
+                            recordId={data.waterServices?.[0]?.id} 
+                            fieldName="remarks"
+                            getFieldHistory={getFieldHistory}
+                        />
+                    </div>
                 </div>
             </div>
 
