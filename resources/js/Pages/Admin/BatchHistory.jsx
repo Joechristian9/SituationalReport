@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, AlertCircle, Download } from 'lucide-react';
+import { Calendar, FileText, AlertCircle, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import RowsPerPage from '@/Components/ui/RowsPerPage';
 
 export default function BatchHistory({ batches }) {
     const [selectedYear, setSelectedYear] = useState('');
@@ -17,6 +20,9 @@ export default function BatchHistory({ batches }) {
     const [formData, setFormData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [disasters, setDisasters] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Extract available years from batches
     const availableYears = batches.map(batch => batch.year_range);
@@ -53,6 +59,33 @@ export default function BatchHistory({ batches }) {
             fetchFormData();
         }
     }, [selectedYear, selectedForm, disasters]);
+
+    // Reset to page 1 when search or items per page changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, itemsPerPage]);
+
+    // Memoized filtered data based on search query
+    const filteredData = useMemo(() => {
+        if (!searchQuery.trim()) return formData;
+        
+        const query = searchQuery.toLowerCase();
+        return formData.filter(record => 
+            record.typhoon?.name.toLowerCase().includes(query) ||
+            record.user?.name.toLowerCase().includes(query) ||
+            record.submitted_by?.toLowerCase().includes(query)
+        );
+    }, [formData, searchQuery]);
+
+    // Memoized pagination calculations
+    const paginationData = useMemo(() => {
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        return { totalPages, startIndex, endIndex, paginatedData };
+    }, [filteredData, currentPage, itemsPerPage]);
 
     const fetchFormData = async () => {
         setLoading(true);
@@ -207,50 +240,158 @@ export default function BatchHistory({ batches }) {
                                                 {formTypes.find(f => f.value === selectedForm)?.label} Records
                                             </CardTitle>
                                             <Badge variant="outline">
-                                                {formData.length} {formData.length === 1 ? 'Record' : 'Records'}
+                                                {filteredData.length} {filteredData.length === 1 ? 'Record' : 'Records'}
                                             </Badge>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
+                                        {/* Search Bar */}
+                                        <div className="mb-4">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <Input
+                                                    type="text"
+                                                    placeholder="Search by disaster, submitter..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="pl-10"
+                                                />
+                                            </div>
+                                        </div>
+
                                         {loading ? (
                                             <div className="text-center py-12">
                                                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                                 <p className="mt-2 text-sm text-gray-600">Loading records...</p>
                                             </div>
-                                        ) : formData.length > 0 ? (
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-sm">
-                                                    <thead className="border-b">
-                                                        <tr className="text-left">
-                                                            <th className="pb-3 font-medium text-gray-700">Disaster</th>
-                                                            <th className="pb-3 font-medium text-gray-700">Submitted By</th>
-                                                            <th className="pb-3 font-medium text-gray-700">Date</th>
-                                                            <th className="pb-3 font-medium text-gray-700">Details</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y">
-                                                        {formData.map((record, index) => {
-                                                            return (
-                                                                <tr key={index} className="hover:bg-gray-50">
-                                                                    <td className="py-3">
-                                                                        <span className="font-medium">{record.typhoon?.name || 'N/A'}</span>
-                                                                    </td>
-                                                                    <td className="py-3 text-gray-600">
-                                                                        {record.user?.name || record.submitted_by || 'N/A'}
-                                                                    </td>
-                                                                    <td className="py-3 text-gray-600">
-                                                                        {formatDate(record.created_at || record.submission_date)}
-                                                                    </td>
-                                                                    <td className="py-3">
-                                                                        <Badge variant="secondary" className="text-xs">
-                                                                            View Details
-                                                                        </Badge>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                        ) : paginationData.paginatedData.length > 0 ? (
+                                            <>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead className="border-b">
+                                                            <tr className="text-left">
+                                                                <th className="pb-3 font-medium text-gray-700">Disaster</th>
+                                                                <th className="pb-3 font-medium text-gray-700">Submitted By</th>
+                                                                <th className="pb-3 font-medium text-gray-700">Date</th>
+                                                                <th className="pb-3 font-medium text-gray-700">Details</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {paginationData.paginatedData.map((record, index) => {
+                                                                return (
+                                                                    <tr key={index} className="hover:bg-gray-50">
+                                                                        <td className="py-3">
+                                                                            <span className="font-medium">{record.typhoon?.name || 'N/A'}</span>
+                                                                        </td>
+                                                                        <td className="py-3 text-gray-600">
+                                                                            {record.user?.name || record.submitted_by || 'N/A'}
+                                                                        </td>
+                                                                        <td className="py-3 text-gray-600">
+                                                                            {formatDate(record.created_at || record.submission_date)}
+                                                                        </td>
+                                                                        <td className="py-3">
+                                                                            <Badge variant="secondary" className="text-xs">
+                                                                                View Details
+                                                                            </Badge>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                {/* Pagination Controls */}
+                                                {filteredData.length > 0 && (
+                                                    <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                                                        {/* Left: Showing X to Y of Z results */}
+                                                        <div className="text-sm text-gray-600">
+                                                            Showing {paginationData.startIndex + 1} to {Math.min(paginationData.endIndex, filteredData.length)} of {filteredData.length} results
+                                                        </div>
+
+                                                        {/* Center: Page Numbers */}
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                                disabled={currentPage === 1}
+                                                                className="h-8 w-8 p-0"
+                                                            >
+                                                                <ChevronLeft className="w-4 h-4" />
+                                                            </Button>
+
+                                                            {/* Page Numbers */}
+                                                            <div className="flex items-center gap-1">
+                                                                {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
+                                                                    .filter(page => {
+                                                                        // Show first page, last page, current page, and pages around current
+                                                                        return (
+                                                                            page === 1 ||
+                                                                            page === paginationData.totalPages ||
+                                                                            Math.abs(page - currentPage) <= 1
+                                                                        );
+                                                                    })
+                                                                    .map((page, index, array) => {
+                                                                        // Add ellipsis if there's a gap
+                                                                        const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
+                                                                        
+                                                                        return (
+                                                                            <React.Fragment key={page}>
+                                                                                {showEllipsisBefore && (
+                                                                                    <span className="px-2 text-gray-400">...</span>
+                                                                                )}
+                                                                                <Button
+                                                                                    variant={currentPage === page ? "default" : "outline"}
+                                                                                    size="sm"
+                                                                                    onClick={() => setCurrentPage(page)}
+                                                                                    className={`h-8 w-8 p-0 ${
+                                                                                        currentPage === page 
+                                                                                            ? 'bg-blue-600 text-white' 
+                                                                                            : ''
+                                                                                    }`}
+                                                                                >
+                                                                                    {page}
+                                                                                </Button>
+                                                                            </React.Fragment>
+                                                                        );
+                                                                    })}
+                                                            </div>
+
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1))}
+                                                                disabled={currentPage === paginationData.totalPages}
+                                                                className="h-8 w-8 p-0"
+                                                            >
+                                                                <ChevronRight className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+
+                                                        {/* Right: Rows per page */}
+                                                        <RowsPerPage 
+                                                            rowsPerPage={itemsPerPage}
+                                                            setRowsPerPage={setItemsPerPage}
+                                                            totalRows={filteredData.length}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : searchQuery.trim() ? (
+                                            <div className="text-center py-12">
+                                                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                                <p className="text-gray-600">
+                                                    No records found matching "{searchQuery}"
+                                                </p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setSearchQuery('')}
+                                                    className="mt-3"
+                                                >
+                                                    Clear search
+                                                </Button>
                                             </div>
                                         ) : (
                                             <div className="text-center py-12">
