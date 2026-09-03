@@ -423,8 +423,9 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                         <div className="flex items-center gap-2">
                                             {/* Rows per page */}
                                             <RowsPerPage 
-                                                value={itemsPerPage} 
-                                                onChange={setItemsPerPage}
+                                                rowsPerPage={itemsPerPage} 
+                                                setRowsPerPage={setItemsPerPage}
+                                                totalRows={filteredUsers.length}
                                             />
                                             
                                             <div className="flex items-center gap-2">
