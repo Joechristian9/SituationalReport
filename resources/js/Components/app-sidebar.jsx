@@ -226,6 +226,13 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 {
+                    title: "History",
+                    url: route("admin.history"),
+                    roles: ["admin"],
+                    icon: History,
+                    permission: null,
+                },
+                {
                     title: "Form Submission Status",
                     url: route("admin.form-submission-status"),
                     roles: ["admin"],

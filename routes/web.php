@@ -19,6 +19,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Http\Controllers\SuspensionOfWorkController;
 use App\Http\Controllers\DisasterController;
+use App\Http\Controllers\HistoryController;
 use App\Models\SuspensionOfClass;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -382,6 +383,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.form-submission-status');
     Route::get('user-form-data/{userId}', [DisasterController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
+    
+    // Batch History (Admin only)
+    Route::get('history', [HistoryController::class, 'index'])->name('admin.history');
+    Route::get('history/{yearRange}', [HistoryController::class, 'show'])->name('admin.history.show');
     
     // Disaster Management (Admin only)
     Route::prefix('disasters')->group(function () {

@@ -9,6 +9,8 @@ export default defineConfig({
             input: [
                 "resources/js/app.jsx",
                 "resources/js/Pages/Admin/Dashboard.jsx",
+                "resources/js/Pages/Admin/BatchHistory.jsx",
+                "resources/js/Pages/Admin/BatchHistoryDetail.jsx",
                 "resources/js/Pages/SituationReports/Index.jsx"
             ],
             refresh: true,
