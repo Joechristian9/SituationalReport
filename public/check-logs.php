@@ -2,7 +2,7 @@
 // Script to check Laravel logs on Hostinger
 // Upload this to: public_html/public/public/check-logs.php
 
-$logPath = __DIR__ . '/../../storage/logs/laravel.log';
+$logPath = __DIR__ . '/../storage/logs/laravel.log';
 
 echo "<h2>Laravel Log Checker</h2>";
 echo "<p><strong>Log file path:</strong> $logPath</p>";
@@ -27,12 +27,12 @@ if (file_exists($logPath)) {
     echo "<p>Checking directory structure:</p>";
     echo "<pre>";
     echo "Current directory: " . __DIR__ . "\n";
-    echo "Storage path: " . __DIR__ . '/../../storage' . "\n";
-    if (is_dir(__DIR__ . '/../../storage')) {
+    echo "Storage path: " . __DIR__ . '/../storage' . "\n";
+    if (is_dir(__DIR__ . '/../storage')) {
         echo "Storage directory exists\n";
-        if (is_dir(__DIR__ . '/../../storage/logs')) {
+        if (is_dir(__DIR__ . '/../storage/logs')) {
             echo "Logs directory exists\n";
-            $files = scandir(__DIR__ . '/../../storage/logs');
+            $files = scandir(__DIR__ . '/../storage/logs');
             echo "Files in logs directory:\n";
             print_r($files);
         } else {
