@@ -261,7 +261,7 @@ export function AppSidebar({ ...props }) {
                     icon: History,
                     permission: "access-water-service-form",
                 }] : []),
-                ...(!isBarangay && !isAdmin ? [{
+                ...(!isBarangay && !isCDRRMO && !isAdmin ? [{
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                     roles: ["user"],
@@ -282,14 +282,14 @@ export function AppSidebar({ ...props }) {
                     icon: Flame,
                     permission: "access-incident-form",
                 }] : []),
-                ...(!isBarangay && !isAdmin ? [{
+                ...(!isCDRRMO && !isBarangay && !isAdmin ? [{
                     title: "Response Operations",
                     url: route("response-operations.index"),
                     roles: ["user"],
                     icon: Users,
                     permission: "access-response-operations",
                 }] : []),
-                ...(!isBarangay && !isAdmin ? [{
+                ...(!isCDRRMO && !isBarangay && !isAdmin ? [{
                     title: "Assistance Extended",
                     url: route("assistance.index"),
                     roles: ["user"],
