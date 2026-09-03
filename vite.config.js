@@ -8,7 +8,8 @@ export default defineConfig({
         laravel({
             input: [
                 "resources/js/app.jsx",
-                "resources/js/Pages/Admin/Dashboard.jsx"
+                "resources/js/Pages/Admin/Dashboard.jsx",
+                "resources/js/Pages/SituationReports/Index.jsx"
             ],
             refresh: true,
         }),
