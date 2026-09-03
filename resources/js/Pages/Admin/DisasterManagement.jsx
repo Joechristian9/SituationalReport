@@ -278,9 +278,14 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             try {
                 const response = await axios.post(`/disasters/${typhoon.id}/regenerate-pdf`);
                 toast.dismiss();
-                toast.success('PDF generated successfully!');
-                router.reload();
-                // After reload, the download button will be available
+                toast.success('PDF generated successfully! Downloading...');
+                
+                // Automatically download the generated PDF
+                setTimeout(() => {
+                    window.open(`/disasters/${typhoon.id}/download`, '_blank');
+                    router.reload();
+                }, 500);
+                
                 return;
             } catch (error) {
                 toast.dismiss();
