@@ -318,9 +318,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
     // Admin Dashboard - accessible even without active typhoon (for admins only)
     Route::get('admin-dashboard', function () {
+        // Only show data for truly active disasters (not paused)
         $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
         
         if (!$activeTyphoon) {
+            // No active disaster or disaster is paused - return empty data
             return Inertia::render('Admin/Dashboard', [
                 'weatherReports' => [],
                 'waterLevels' => [],

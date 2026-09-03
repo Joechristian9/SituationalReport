@@ -41,7 +41,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn() => $request->session()->get('error'),
             ],
             'typhoon' => [
-                'active' => fn() => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
+                'active' => fn() => Typhoon::with('creator:id,name')->where('status', 'active')->latest()->first(),
                 'hasActive' => fn() => Typhoon::hasActiveTyphoon(),
             ],
         ];
