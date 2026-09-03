@@ -317,9 +317,64 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
     // Admin Dashboard - accessible even without active typhoon (for admins only)
     Route::get('admin-dashboard', function () {
-        // Just redirect to disasters management page for now
-        // until Admin/Dashboard.jsx is properly built into the manifest
-        return redirect()->route('disasters.index');
+        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        
+        if (!$activeTyphoon) {
+            return Inertia::render('Admin/Dashboard', [
+                'weatherReports' => [],
+                'waterLevels' => [],
+                'preEmptiveReports' => [],
+                'casualties' => [],
+                'injured' => [],
+                'missing' => [],
+            ]);
+        }
+        
+        // Fetch only recent data for the active disaster (limit to last 50 records for performance)
+        $weatherReports = \App\Models\WeatherReport::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $waterLevels = \App\Models\WaterLevel::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $preEmptiveReports = \App\Models\PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(100)
+            ->get();
+            
+        $casualties = \App\Models\Casualty::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $injured = \App\Models\Injured::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+            
+        $missing = \App\Models\Missing::where('disaster_id', $activeTyphoon->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(50)
+            ->get();
+        
+        return Inertia::render('Admin/Dashboard', [
+            'weatherReports' => $weatherReports,
+            'waterLevels' => $waterLevels,
+            'preEmptiveReports' => $preEmptiveReports,
+            'casualties' => $casualties,
+            'injured' => $injured,
+            'missing' => $missing,
+        ]);
     })->name('admin.dashboard');
     
     // Form Submission Status (Admin only)
