@@ -13,13 +13,19 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        
+        // Redirect admin users to admin dashboard
+        if ($user && $user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+        
         $activeTyphoon = Typhoon::getActiveTyphoon();
         
         $electricityReport = null;
         $waterReport = null;
 
-        // Only fetch reports if there's an active typhoon and user is not admin
-        if ($activeTyphoon && $user && !$user->isAdmin()) {
+        // Only fetch reports if there's an active typhoon
+        if ($activeTyphoon && $user) {
             // Fetch latest electricity report for ISELCO users
             if ($user->can('access-electricity-form')) {
                 $electricityReport = ElectricityService::where('disaster_id', $activeTyphoon->id)
@@ -37,7 +43,7 @@ class DashboardController extends Controller
             }
         }
 
-        return Inertia::render('Admin/Dashboard', [
+        return Inertia::render('Dashboard', [
             'electricityReport' => $electricityReport,
             'waterReport' => $waterReport,
         ]);
