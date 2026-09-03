@@ -56,18 +56,16 @@ export default function BatchHistory({ batches }) {
 
     const fetchFormData = async () => {
         setLoading(true);
-        const formType = formTypes.find(f => f.value === selectedForm);
         
         try {
-            const response = await axios.get(`/api/${formType.api}`);
+            const response = await axios.get('/api/history/form-data', {
+                params: {
+                    year: selectedYear,
+                    form_type: selectedForm
+                }
+            });
             
-            // Filter data by disasters in selected year range
-            const disasterIds = disasters.map(d => d.id);
-            const filteredData = response.data.filter(item => 
-                disasterIds.includes(item.typhoon_id)
-            );
-            
-            setFormData(filteredData);
+            setFormData(response.data);
         } catch (error) {
             console.error('Error fetching form data:', error);
             setFormData([]);
@@ -232,11 +230,10 @@ export default function BatchHistory({ batches }) {
                                                     </thead>
                                                     <tbody className="divide-y">
                                                         {formData.map((record, index) => {
-                                                            const disaster = disasters.find(d => d.id === record.typhoon_id);
                                                             return (
                                                                 <tr key={index} className="hover:bg-gray-50">
                                                                     <td className="py-3">
-                                                                        <span className="font-medium">{disaster?.name || 'N/A'}</span>
+                                                                        <span className="font-medium">{record.typhoon?.name || 'N/A'}</span>
                                                                     </td>
                                                                     <td className="py-3 text-gray-600">
                                                                         {record.user?.name || record.submitted_by || 'N/A'}

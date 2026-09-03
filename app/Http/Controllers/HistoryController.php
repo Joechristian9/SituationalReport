@@ -95,4 +95,105 @@ class HistoryController extends Controller
             'disasters' => $disasters,
         ]);
     }
+
+    /**
+     * Get form data by year range and form type
+     */
+    public function getFormData(Request $request)
+    {
+        $yearRange = $request->get('year');
+        $formType = $request->get('form_type');
+
+        if (!$yearRange || !$formType) {
+            return response()->json([]);
+        }
+
+        // Parse year range
+        if (strpos($yearRange, '-') !== false) {
+            [$startYear, $endYearShort] = explode('-', $yearRange);
+            $endYear = substr($startYear, 0, 2) . $endYearShort;
+        } else {
+            $startYear = $endYear = $yearRange;
+        }
+
+        // Get disaster IDs for this year range
+        $disasterIds = Typhoon::where('status', 'ended')
+            ->whereYear('started_at', '>=', $startYear)
+            ->whereYear('ended_at', '<=', $endYear)
+            ->pluck('id');
+
+        if ($disasterIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Fetch data based on form type
+        $data = [];
+        
+        switch ($formType) {
+            case 'weather':
+                $data = \App\Models\WeatherReport::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'electricity':
+                $data = \App\Models\ElectricityService::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'water-service':
+                $data = \App\Models\WaterService::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'communication':
+                $data = \App\Models\Communication::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'pre-emptive':
+                $data = \App\Models\PreEmptiveReport::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'agriculture':
+                $data = \App\Models\AgricultureReport::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'incident':
+                $data = \App\Models\IncidentMonitored::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'road':
+                $data = \App\Models\Road::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+            
+            case 'bridge':
+                $data = \App\Models\Bridge::whereIn('disaster_id', $disasterIds)
+                    ->with(['user:id,name', 'typhoon:id,name'])
+                    ->latest()
+                    ->get();
+                break;
+        }
+
+        return response()->json($data);
+    }
 }
