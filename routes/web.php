@@ -316,13 +316,13 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    // Admin Dashboard - accessible even without active typhoon (for admins only)
+    // Admin Dashboard - show data for both active and paused disasters
     Route::get('admin-dashboard', function () {
-        // Only show data for truly active disasters (not paused)
-        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        // Show data for active or paused disasters (graphs should show historical data)
+        $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->first();
         
         if (!$activeTyphoon) {
-            // No active disaster or disaster is paused - return empty data
+            // No disaster at all - return empty data
             return Inertia::render('Admin/Dashboard', [
                 'weatherReports' => [],
                 'waterLevels' => [],
@@ -333,7 +333,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             ]);
         }
         
-        // Fetch only recent data for the active disaster (limit to last 50 records for performance)
+        // Fetch data for the disaster (whether active or paused)
         $weatherReports = \App\Models\WeatherReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()

@@ -5,13 +5,14 @@ import { motion } from 'framer-motion';
 /**
  * NoActiveDisasterBadge Component
  * Shows "No Active Disaster" message in header for admin
+ * Only shows when there's NO disaster at all (not active, not paused, nothing)
  * 
  * @param {Object} typhoon - The typhoon object
  * @param {boolean} hasActive - Whether there's an active typhoon
  */
 export default function NoActiveTyphoonBadge({ typhoon, hasActive }) {
-    // Only show if there's no active disaster
-    if (hasActive && typhoon && typhoon.status === 'active') {
+    // Hide badge if there's any disaster (active OR paused)
+    if (typhoon) {
         return null;
     }
 
