@@ -139,17 +139,10 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-road-form') &&
         !hasPermission('access-bridge-form');
     
-    // Check if user is CDRRMO (weather, communication, pre-emptive, incident)
-    const isCDRRMO = hasPermission('access-weather-form') && 
-        hasPermission('access-communication-form') &&
-        hasPermission('access-pre-emptive-form') &&
-        hasPermission('access-incident-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-road-form') &&
-        !hasPermission('access-bridge-form') &&
-        !hasPermission('access-pre-positioning-form');
+    // Check if user is CDRRMO by email (since CDRRMO has all permissions)
+    const isCDRRMO = auth.user.email === 'cdrrmo@gmail.com' || 
+        auth.user.roles?.some(role => role.name?.toLowerCase() === 'cdrrmo') ||
+        auth.user.name?.toLowerCase().includes('cdrrmo');
     
     // Check if user is BDRRMC (electricity, communication, road, bridge, pre-emptive)
     const isBDRRMC = hasPermission('access-electricity-form') && 
