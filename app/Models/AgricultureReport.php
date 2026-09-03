@@ -31,7 +31,7 @@ class AgricultureReport extends Model
 
     public function typhoon()
     {
-        return $this->belongsTo(Typhoon::class);
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
     }
 
     public function user()

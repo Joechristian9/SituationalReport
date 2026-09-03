@@ -40,6 +40,14 @@ class Bridge extends Model
     }
 
     /**
+     * Relationship to typhoon (disaster)
+     */
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
+    /**
      * Automatically set `user_id` and `updated_by`
      */
     protected static function boot()

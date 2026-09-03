@@ -31,6 +31,11 @@ class WaterService extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
     protected static function boot()
     {
         parent::boot();

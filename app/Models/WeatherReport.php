@@ -43,7 +43,7 @@ class WeatherReport extends Model
      */
     public function typhoon()
     {
-        return $this->belongsTo(Typhoon::class);
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
     }
 
     /**
