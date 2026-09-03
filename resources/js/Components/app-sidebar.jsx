@@ -226,7 +226,7 @@ export function AppSidebar({ ...props }) {
                     permission: null,
                 },
                 {
-                    title: "History",
+                    title: "Reports History",
                     url: route("admin.history"),
                     roles: ["admin"],
                     icon: History,
