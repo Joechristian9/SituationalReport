@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, FileText, Loader2 } from "lucide-react";
+import RowsPerPage from '@/Components/ui/RowsPerPage';
 import {
     Table,
     TableBody,
@@ -33,7 +34,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFormData, setSelectedFormData] = useState(null);
     const [loadingFormData, setLoadingFormData] = useState(false);
-    const itemsPerPage = 10;
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const handleViewDetails = (user) => {
         setSelectedUser(user);
@@ -245,16 +246,20 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         );
     }, [sortedUsers, searchQuery]);
 
-    // Pagination
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+    // Memoized pagination calculations
+    const paginationData = useMemo(() => {
+        const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+        
+        return { totalPages, startIndex, endIndex, paginatedUsers };
+    }, [filteredUsers, currentPage, itemsPerPage]);
 
-    // Reset to page 1 when search query changes
-    React.useEffect(() => {
+    // Reset to page 1 when search query or items per page changes
+    useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [searchQuery, itemsPerPage]);
 
     return (
         <SidebarProvider>
@@ -346,11 +351,11 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {paginatedUsers.length > 0 ? (
-                                                    paginatedUsers.map((user, index) => (
+                                                {paginationData.paginatedUsers.length > 0 ? (
+                                                    paginationData.paginatedUsers.map((user, index) => (
                                                         <TableRow key={user.id} className="hover:bg-blue-50 border-b border-blue-100">
                                                             <TableCell className="font-medium text-gray-500">
-                                                                {startIndex + index + 1}
+                                                                {paginationData.startIndex + index + 1}
                                                             </TableCell>
                                                             <TableCell className="font-medium">
                                                                 {user.name}
@@ -409,43 +414,71 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                 </Card>
 
                                 {/* Pagination */}
-                                {filteredUsers.length > itemsPerPage && (
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-sm text-gray-600">
-                                            Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+                                {filteredUsers.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-2">
+                                        <div className="text-sm text-slate-600">
+                                            Showing {paginationData.startIndex + 1} to {Math.min(paginationData.endIndex, filteredUsers.length)} of {filteredUsers.length} results
                                         </div>
+                                        
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                                disabled={currentPage === 1}
-                                            >
-                                                <ChevronLeft className="w-4 h-4 mr-1" />
-                                                Previous
-                                            </Button>
-                                            <div className="flex items-center gap-1">
-                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                                    <Button
-                                                        key={page}
-                                                        variant={currentPage === page ? "default" : "outline"}
-                                                        size="sm"
-                                                        onClick={() => setCurrentPage(page)}
-                                                        className="w-10"
-                                                    >
-                                                        {page}
-                                                    </Button>
-                                                ))}
+                                            {/* Rows per page */}
+                                            <RowsPerPage 
+                                                value={itemsPerPage} 
+                                                onChange={setItemsPerPage}
+                                            />
+                                            
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={currentPage === 1}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4" />
+                                                </Button>
+                                                
+                                                <div className="flex items-center gap-1">
+                                                    {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
+                                                        .filter(page => {
+                                                            // Show first page, last page, current page, and pages around current
+                                                            return page === 1 || 
+                                                                   page === paginationData.totalPages || 
+                                                                   Math.abs(page - currentPage) <= 1;
+                                                        })
+                                                        .map((page, index, array) => (
+                                                            <React.Fragment key={page}>
+                                                                {/* Show ellipsis if there's a gap */}
+                                                                {index > 0 && array[index - 1] !== page - 1 && (
+                                                                    <span className="px-2 text-slate-400">...</span>
+                                                                )}
+                                                                <Button
+                                                                    variant={currentPage === page ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => setCurrentPage(page)}
+                                                                    className={`h-8 w-8 p-0 ${
+                                                                        currentPage === page 
+                                                                            ? "bg-blue-600 hover:bg-blue-700" 
+                                                                            : ""
+                                                                    }`}
+                                                                >
+                                                                    {page}
+                                                                </Button>
+                                                            </React.Fragment>
+                                                        ))
+                                                    }
+                                                </div>
+
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.min(paginationData.totalPages, prev + 1))}
+                                                    disabled={currentPage === paginationData.totalPages}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </Button>
                                             </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                                disabled={currentPage === totalPages}
-                                            >
-                                                Next
-                                                <ChevronRight className="w-4 h-4 ml-1" />
-                                            </Button>
                                         </div>
                                     </div>
                                 )}
