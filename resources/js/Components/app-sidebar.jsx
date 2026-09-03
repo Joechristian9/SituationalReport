@@ -296,7 +296,7 @@ export function AppSidebar({ ...props }) {
                     icon: HeartHandshake,
                     permission: "access-assistance-extended",
                 }] : []),
-                ...(!isAdmin ? [{
+                ...(!isCDRRMO && !isAdmin ? [{
                     title: "Agriculture",
                     url: route("situation-reports.index"),
                     roles: ["user"],
