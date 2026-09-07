@@ -173,9 +173,9 @@ export function NavMain({ items = [] }) {
                                                     "situation-reports";
                                             else if (
                                                 subItem.title ===
-                                                "Report History"
+                                                "Reports History"
                                             )
-                                                routePattern = "history";
+                                                routePattern = "admin.history";
                                             else if (
                                                 subItem.title ===
                                                 "Weather History"
