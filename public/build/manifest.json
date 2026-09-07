@@ -814,7 +814,7 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-CLlTOsQu.js",
+    "file": "assets/CasualtyGraph-BWo2fG7c.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
@@ -843,7 +843,7 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-D6lw-yN8.js",
+    "file": "assets/EvacuationGraph-jg2bJNZs.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
@@ -872,7 +872,7 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-4H-FcrWr.js",
+    "file": "assets/InjuredGraph-BYZCFalZ.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
@@ -901,7 +901,7 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-D_dN-yad.js",
+    "file": "assets/MissingGraph-cmIQ0uOf.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
@@ -930,7 +930,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-CkBVApuf.js",
+    "file": "assets/WaterLevelGraph-CEtIaVeN.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1148,7 +1148,7 @@
     ]
   },
   "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-CYRk1DzR.js",
+    "file": "assets/WeatherDashboard-DtfA-EtM.js",
     "name": "WeatherDashboard",
     "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
     "isDynamicEntry": true,
@@ -1159,6 +1159,8 @@
       "_wind-DoXV909E.js",
       "_badge-JAXzzm6h.js",
       "_loader-circle--wXy6zNj.js",
+      "_clock-_7mCMNnK.js",
+      "_triangle-alert-B8aLRy6w.js",
       "_eye-DX5qHYEu.js",
       "_droplets-CnaJTq7C.js",
       "_CartesianChart-BFwynoYy.js",
@@ -1167,7 +1169,6 @@
       "_proxy-DvtH6Gk4.js",
       "_index-Bs9yyJIq.js",
       "_circle-alert-CZK56222.js",
-      "_triangle-alert-B8aLRy6w.js",
       "_index-Dn0ZI3Yy.js",
       "_history-Be-Lv7Gm.js",
       "_with-selector-BLNQtDI5.js"
@@ -1219,7 +1220,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-B2DC4nmv.js",
+    "file": "assets/Dashboard-Q9ARLN2M.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1885,7 +1886,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-lNgnM4tQ.js",
+    "file": "assets/app-Bo-ac8W-.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1932,7 +1933,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-FxQic9Qy.css"
+      "assets/app-5rlX7m_2.css"
     ]
   }
 }
