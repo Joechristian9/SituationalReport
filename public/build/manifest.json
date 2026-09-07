@@ -1258,7 +1258,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-CIOre3ZE.js",
+    "file": "assets/DisasterManagement-o5HTaNna.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isDynamicEntry": true,
@@ -1898,7 +1898,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-BkbRVXS2.js",
+    "file": "assets/app-rPGIMxpX.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1945,7 +1945,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-C6apLEHn.css"
+      "assets/app-Cn7MG_yd.css"
     ]
   }
 }
