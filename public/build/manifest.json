@@ -265,6 +265,13 @@
       "_plus-ColiOj16.js"
     ]
   },
+  "_cloud-snow-Bmnb0OK2.js": {
+    "file": "assets/cloud-snow-Bmnb0OK2.js",
+    "name": "cloud-snow",
+    "imports": [
+      "_plus-ColiOj16.js"
+    ]
+  },
   "_download-CQ31Q3-p.js": {
     "file": "assets/download-CQ31Q3-p.js",
     "name": "download",
@@ -814,7 +821,7 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-BWo2fG7c.js",
+    "file": "assets/CasualtyGraph-BwKvpSj5.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
@@ -843,7 +850,7 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-jg2bJNZs.js",
+    "file": "assets/EvacuationGraph-iBtluI9f.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
@@ -872,7 +879,7 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-BYZCFalZ.js",
+    "file": "assets/InjuredGraph-T06CVspV.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
@@ -901,7 +908,7 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-cmIQ0uOf.js",
+    "file": "assets/MissingGraph-BXQMCbF-.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
@@ -930,7 +937,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-CEtIaVeN.js",
+    "file": "assets/WaterLevelGraph-9ddI-W3v.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1148,7 +1155,7 @@
     ]
   },
   "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-DtfA-EtM.js",
+    "file": "assets/WeatherDashboard-Cw-MGvCa.js",
     "name": "WeatherDashboard",
     "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
     "isDynamicEntry": true,
@@ -1156,6 +1163,7 @@
       "_index-IIQgGma6.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
       "_plus-ColiOj16.js",
+      "_cloud-snow-Bmnb0OK2.js",
       "_wind-DoXV909E.js",
       "_badge-JAXzzm6h.js",
       "_loader-circle--wXy6zNj.js",
@@ -1220,7 +1228,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-Q9ARLN2M.js",
+    "file": "assets/Dashboard-AVMohaWE.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1250,7 +1258,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-C-GIYMFx.js",
+    "file": "assets/DisasterManagement-CIOre3ZE.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isDynamicEntry": true,
@@ -1276,6 +1284,10 @@
       "_loader-circle--wXy6zNj.js",
       "_circle-alert-CZK56222.js",
       "_user-BTBIwZME.js",
+      "_wind-DoXV909E.js",
+      "_waves-BVNiwePb.js",
+      "_cloud-snow-Bmnb0OK2.js",
+      "_droplets-CnaJTq7C.js",
       "_index-Dn0ZI3Yy.js",
       "_history-Be-Lv7Gm.js"
     ]
@@ -1886,7 +1898,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-Bo-ac8W-.js",
+    "file": "assets/app-BkbRVXS2.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1933,7 +1945,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-5rlX7m_2.css"
+      "assets/app-C6apLEHn.css"
     ]
   }
 }
