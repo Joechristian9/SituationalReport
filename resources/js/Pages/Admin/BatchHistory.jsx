@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, FileText, AlertCircle, Download, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -176,105 +176,98 @@ export default function BatchHistory({ batches, availableYears }) {
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-6">
                         
-                        {/* Header Description */}
+                        {/* Page Header with Filters */}
                         <motion.div
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3 }}
+                            className="space-y-4"
                         >
-                            <Card className="border-blue-200 bg-blue-50/50">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-blue-600" />
+                            {/* Title and Description */}
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <FileText className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">
                                         Historical Disaster Form Submissions
-                                    </CardTitle>
-                                    <CardDescription>
+                                    </h2>
+                                    <p className="text-sm text-gray-600 mt-1">
                                         Select a year and form type to view historical submission records.
-                                    </CardDescription>
-                                </CardHeader>
-                            </Card>
-                        </motion.div>
+                                    </p>
+                                </div>
+                            </div>
 
-                        {/* Year and Form Selection */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 }}
-                        >
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base">Filter Options</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Year Selection */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium">Year</label>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setIsAddYearModalOpen(true)}
-                                                    className="h-7 px-2 text-xs"
-                                                >
-                                                    <Plus className="w-3 h-3 mr-1" />
-                                                    Add Year
-                                                </Button>
-                                            </div>
-                                            <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select year" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {years.map(year => (
-                                                        <SelectItem key={year.id} value={year.year.toString()}>
-                                                            {year.year}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                            {/* Filters Row */}
+                            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                                {/* Year Selection */}
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                                        Year
+                                    </label>
+                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select year" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {years.map(year => (
+                                                <SelectItem key={year.id} value={year.year.toString()}>
+                                                    {year.year}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                                        {/* Form Type Selection */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Form Type</label>
-                                            <Select 
-                                                value={selectedForm} 
-                                                onValueChange={setSelectedForm}
-                                                disabled={!selectedYear}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select form type" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {formTypes.map(form => (
-                                                        <SelectItem key={form.value} value={form.value}>
-                                                            {form.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                {/* Form Type Selection */}
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                                        Form Type
+                                    </label>
+                                    <Select 
+                                        value={selectedForm} 
+                                        onValueChange={setSelectedForm}
+                                        disabled={!selectedYear}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select form type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {formTypes.map(form => (
+                                                <SelectItem key={form.value} value={form.value}>
+                                                    {form.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Add Year Button */}
+                                <Button
+                                    type="button"
+                                    onClick={() => setIsAddYearModalOpen(true)}
+                                    className="whitespace-nowrap"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Year
+                                </Button>
+                            </div>
+
+                            {/* Selected Year Info */}
+                            {selectedYear && disasters.length > 0 && (
+                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <p className="text-sm font-medium text-blue-900 mb-2">
+                                        Disasters in {selectedYear}:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {disasters.map(disaster => (
+                                            <Badge key={disaster.id} variant="secondary">
+                                                {disaster.name}
+                                            </Badge>
+                                        ))}
                                     </div>
-
-                                    {/* Selected Year Info */}
-                                    {selectedYear && disasters.length > 0 && (
-                                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <p className="text-sm font-medium text-blue-900 mb-2">
-                                                Disasters in {selectedYear}:
-                                            </p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {disasters.map(disaster => (
-                                                    <Badge key={disaster.id} variant="secondary">
-                                                        {disaster.name}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                </div>
+                            )}
                         </motion.div>
 
                         {/* Form Data Display */}
@@ -463,18 +456,15 @@ export default function BatchHistory({ batches, availableYears }) {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.3, delay: 0.2 }}
+                                className="py-16 text-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/50"
                             >
-                                <Card className="border-gray-200">
-                                    <CardContent className="py-16 text-center">
-                                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                            Select a Year
-                                        </h3>
-                                        <p className="text-gray-500 text-sm">
-                                            Choose a year from the dropdown above to view historical form submissions.
-                                        </p>
-                                    </CardContent>
-                                </Card>
+                                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                    Select a Year
+                                </h3>
+                                <p className="text-gray-500 text-sm">
+                                    Choose a year from the dropdown above to view historical form submissions.
+                                </p>
                             </motion.div>
                         )}
 
