@@ -238,6 +238,7 @@ const CasualtyGraph = React.memo(({ casualties = [] }) => {
     
     const isMobile = windowWidth < 640;
     const isTablet = windowWidth >= 640 && windowWidth < 1024;
+    const isSmallMobile = windowWidth < 400;
     const [selectedSex, setSelectedSex] = useState("All");
     const [selectedAgeGroup, setSelectedAgeGroup] = useState("All");
     const [currentView, setCurrentView] = useState("stacked");
@@ -381,93 +382,127 @@ const CasualtyGraph = React.memo(({ casualties = [] }) => {
                 <TrendingUp size={14} />
                 <span>Total: <strong className="text-red-600">{filteredData.length}</strong> casualties</span>
             </div>
-            <ResponsiveContainer width="100%" height={isMobile ? 250 : isTablet ? 280 : 300}>
-                {currentView === "stacked" ? (
-                    stackedData.length > 0 ? (
-                        <BarChart
-                            data={stackedData}
-                            margin={{ 
-                                top: 5, 
-                                right: isMobile ? 10 : 20, 
-                                left: isMobile ? -10 : 10, 
-                                bottom: isMobile ? 50 : 40 
-                            }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis
-                                dataKey="cause"
-                                angle={isMobile ? -60 : -45}
-                                textAnchor="end"
-                                height={isMobile ? 90 : 80}
-                                tick={{ fontSize: isMobile ? 8 : 10 }}
-                            />
-                            <YAxis
-                                allowDecimals={false}
-                                tick={{ fontSize: isMobile ? 10 : 11 }}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend wrapperStyle={{ fontSize: 12 }} />
-                            <Bar
-                                dataKey="Male"
-                                stackId="a"
-                                fill="#3B82F6"
-                                radius={[4, 4, 0, 0]}
-                            />
-                            <Bar
-                                dataKey="Female"
-                                stackId="a"
-                                fill="#EC4899"
-                                radius={[4, 4, 0, 0]}
-                            />
-                        </BarChart>
+            
+            <div className={currentView === "stacked" && stackedData.length > 5 && isMobile ? "overflow-x-auto" : ""}>
+                <ResponsiveContainer 
+                    width="100%" 
+                    height={
+                        isMobile ? 
+                            (stackedData.length > 5 ? 320 : 280) : 
+                        isTablet ? 
+                            340 : 
+                            360
+                    }
+                    minWidth={isMobile && stackedData.length > 5 ? 480 : undefined}
+                >
+                    {currentView === "stacked" ? (
+                        stackedData.length > 0 ? (
+                            <BarChart
+                                data={stackedData}
+                                margin={{ 
+                                    top: 10, 
+                                    right: isMobile ? 10 : 20, 
+                                    left: isMobile ? -15 : 10, 
+                                    bottom: isMobile ? (isSmallMobile ? 70 : 60) : 50 
+                                }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis
+                                    dataKey="cause"
+                                    angle={isMobile ? -65 : isTablet ? -50 : -45}
+                                    textAnchor="end"
+                                    height={isMobile ? (isSmallMobile ? 110 : 100) : 90}
+                                    tick={{ 
+                                        fontSize: isSmallMobile ? 9 : isMobile ? 10 : 11,
+                                        fill: '#4B5563'
+                                    }}
+                                    interval={0}
+                                />
+                                <YAxis
+                                    allowDecimals={false}
+                                    tick={{ 
+                                        fontSize: isMobile ? 11 : 12,
+                                        fill: '#4B5563'
+                                    }}
+                                    width={isMobile ? 35 : 40}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend 
+                                    wrapperStyle={{ 
+                                        fontSize: isMobile ? 11 : 12,
+                                        paddingTop: isMobile ? 15 : 20
+                                    }} 
+                                    iconSize={isMobile ? 10 : 12}
+                                />
+                                <Bar
+                                    dataKey="Male"
+                                    stackId="a"
+                                    fill="#3B82F6"
+                                    radius={[4, 4, 0, 0]}
+                                    barSize={isMobile ? 35 : isTablet ? 40 : 50}
+                                />
+                                <Bar
+                                    dataKey="Female"
+                                    stackId="a"
+                                    fill="#EC4899"
+                                    radius={[4, 4, 0, 0]}
+                                    barSize={isMobile ? 35 : isTablet ? 40 : 50}
+                                />
+                            </BarChart>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                <UserX size={48} className="mb-4 text-gray-400" />
+                                <p className="font-semibold text-sm text-center px-4">
+                                    {casualties.length === 0
+                                        ? "No Casualties Data"
+                                        : "No data for selected filters"}
+                                </p>
+                            </div>
+                        )
+                    ) : sexData.length > 0 ? (
+                        <div className="h-full flex items-center justify-center">
+                            <PieChart width={isMobile ? 260 : isTablet ? 280 : 300} height={isMobile ? 260 : isTablet ? 280 : 300}>
+                                <Pie
+                                    data={sexData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={isMobile ? 60 : 70}
+                                    outerRadius={isMobile ? 90 : isTablet ? 100 : 110}
+                                    paddingAngle={5}
+                                    labelLine={false}
+                                    label={renderCustomizedLabel}
+                                >
+                                    {sexData.map((entry, index) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={SEX_COLORS[index % SEX_COLORS.length]}
+                                        />
+                                    ))}
+                                </Pie>
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend 
+                                    verticalAlign="bottom" 
+                                    height={36}
+                                    wrapperStyle={{ fontSize: isMobile ? 11 : 12 }}
+                                    iconSize={isMobile ? 10 : 12}
+                                />
+                            </PieChart>
+                        </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                            <UserX size={48} className="mb-4 text-gray-400" />
-                            <p className="font-semibold">
-                                {casualties.length === 0
-                                    ? "No Casualties Data"
-                                    : "No data for selected filters"}
+                            <PieChartIcon
+                                size={48}
+                                className="mb-4 text-gray-400"
+                            />
+                            <p className="font-semibold text-sm text-center px-4">
+                                No gender data for this filter
                             </p>
                         </div>
-                    )
-                ) : sexData.length > 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                        <PieChart width={280} height={280}>
-                            <Pie
-                                data={sexData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={70}
-                                outerRadius={110}
-                                paddingAngle={5}
-                                labelLine={false}
-                                label={renderCustomizedLabel}
-                            >
-                                {sexData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={SEX_COLORS[index % SEX_COLORS.length]}
-                                    />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="bottom" height={36} />
-                        </PieChart>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <PieChartIcon
-                            size={48}
-                            className="mb-4 text-gray-400"
-                        />
-                        <p className="font-semibold">
-                            No gender data for this filter
-                        </p>
-                    </div>
-                )}
-            </ResponsiveContainer>
+                    )}
+                </ResponsiveContainer>
+            </div>
         </GraphCard>
     );
 });

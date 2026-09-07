@@ -814,7 +814,7 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-CS_iSW4-.js",
+    "file": "assets/CasualtyGraph-CLlTOsQu.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
@@ -843,7 +843,7 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-B7y44SlV.js",
+    "file": "assets/EvacuationGraph-D6lw-yN8.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
@@ -872,7 +872,7 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-BG_5OlTD.js",
+    "file": "assets/InjuredGraph-4H-FcrWr.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
@@ -901,7 +901,7 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-5x3wq2gs.js",
+    "file": "assets/MissingGraph-D_dN-yad.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
@@ -930,7 +930,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-C-9jw2Ry.js",
+    "file": "assets/WaterLevelGraph-CkBVApuf.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1148,7 +1148,7 @@
     ]
   },
   "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-irkAxvZn.js",
+    "file": "assets/WeatherDashboard-CYRk1DzR.js",
     "name": "WeatherDashboard",
     "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
     "isDynamicEntry": true,
@@ -1219,7 +1219,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-twzB8iV3.js",
+    "file": "assets/Dashboard-B2DC4nmv.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1885,7 +1885,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-sqm8S3nZ.js",
+    "file": "assets/app-lNgnM4tQ.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
