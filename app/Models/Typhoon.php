@@ -30,6 +30,7 @@ class Typhoon extends Model
         'ended_by',
         'paused_by',
         'resumed_by',
+        'year_id',
     ];
 
     protected $casts = [
@@ -69,6 +70,14 @@ class Typhoon extends Model
     public function resumer()
     {
         return $this->belongsTo(User::class, 'resumed_by');
+    }
+
+    /**
+     * Get the year this disaster belongs to
+     */
+    public function year()
+    {
+        return $this->belongsTo(Year::class);
     }
 
     /**

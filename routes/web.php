@@ -388,8 +388,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     
     // Batch History (Admin only)
     Route::get('history', [HistoryController::class, 'index'])->name('admin.history');
-    Route::get('history/{yearRange}', [HistoryController::class, 'show'])->name('admin.history.show');
     Route::get('api/history/form-data', [HistoryController::class, 'getFormData'])->name('admin.history.form-data');
+    
+    // Year Management (Admin only)
+    Route::get('years', [App\Http\Controllers\YearController::class, 'index'])->name('admin.years.index');
+    Route::post('years', [App\Http\Controllers\YearController::class, 'store'])->name('admin.years.store');
+    Route::delete('years/{year}', [App\Http\Controllers\YearController::class, 'destroy'])->name('admin.years.destroy');
     
     // Disaster Management (Admin only)
     Route::prefix('disasters')->group(function () {

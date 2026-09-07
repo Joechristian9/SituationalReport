@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, AlertCircle, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, FileText, AlertCircle, Download, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,8 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RowsPerPage from '@/Components/ui/RowsPerPage';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { toast, Toaster } from 'sonner';
 
-export default function BatchHistory({ batches }) {
+export default function BatchHistory({ batches, availableYears }) {
     const [selectedYear, setSelectedYear] = useState('');
     const [selectedForm, setSelectedForm] = useState('weather');
     const [formData, setFormData] = useState([]);
@@ -23,9 +33,10 @@ export default function BatchHistory({ batches }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-
-    // Extract available years from batches
-    const availableYears = batches.map(batch => batch.year_range);
+    const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
+    const [newYear, setNewYear] = useState('');
+    const [years, setYears] = useState(availableYears || []);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form types available
     const formTypes = [
@@ -40,10 +51,38 @@ export default function BatchHistory({ batches }) {
         { value: 'bridge', label: 'Bridge Status', api: 'bridge-history' },
     ];
 
+    // Handle add year
+    const handleAddYear = async (e) => {
+        e.preventDefault();
+        
+        const yearNumber = parseInt(newYear);
+        if (isNaN(yearNumber) || yearNumber < 1900 || yearNumber > 2100) {
+            toast.error('Please enter a valid year between 1900 and 2100');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const response = await axios.post('/admin/years', { year: yearNumber });
+            toast.success(response.data.message);
+            setYears([...years, response.data.year].sort((a, b) => b.year - a.year));
+            setIsAddYearModalOpen(false);
+            setNewYear('');
+        } catch (error) {
+            if (error.response?.status === 422) {
+                toast.error('This year already exists');
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to add year');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     // Fetch disasters for selected year
     useEffect(() => {
         if (selectedYear) {
-            const batch = batches.find(b => b.year_range === selectedYear);
+            const batch = batches.find(b => b.year === parseInt(selectedYear));
             if (batch) {
                 setDisasters(batch.disasters);
             }
@@ -150,7 +189,7 @@ export default function BatchHistory({ batches }) {
                                         Historical Disaster Form Submissions
                                     </CardTitle>
                                     <CardDescription>
-                                        Select a year range and form type to view historical submission records.
+                                        Select a year and form type to view historical submission records.
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
@@ -170,15 +209,27 @@ export default function BatchHistory({ batches }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Year Selection */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium">Year Range</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-medium">Year</label>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setIsAddYearModalOpen(true)}
+                                                    className="h-7 px-2 text-xs"
+                                                >
+                                                    <Plus className="w-3 h-3 mr-1" />
+                                                    Add Year
+                                                </Button>
+                                            </div>
                                             <Select value={selectedYear} onValueChange={setSelectedYear}>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select year range" />
+                                                    <SelectValue placeholder="Select year" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {availableYears.map(year => (
-                                                        <SelectItem key={year} value={year}>
-                                                            {year}
+                                                    {years.map(year => (
+                                                        <SelectItem key={year.id} value={year.year.toString()}>
+                                                            {year.year}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -417,10 +468,10 @@ export default function BatchHistory({ batches }) {
                                     <CardContent className="py-16 text-center">
                                         <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                                         <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                            Select a Year Range
+                                            Select a Year
                                         </h3>
                                         <p className="text-gray-500 text-sm">
-                                            Choose a year range from the dropdown above to view historical form submissions.
+                                            Choose a year from the dropdown above to view historical form submissions.
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -430,6 +481,57 @@ export default function BatchHistory({ batches }) {
                     </div>
                 </div>
             </SidebarInset>
+
+            {/* Add Year Modal */}
+            <Dialog open={isAddYearModalOpen} onOpenChange={setIsAddYearModalOpen}>
+                <DialogContent>
+                    <form onSubmit={handleAddYear}>
+                        <DialogHeader>
+                            <DialogTitle>Add New Year</DialogTitle>
+                            <DialogDescription>
+                                Enter a calendar year to add to the system. This year will be available for disaster management.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="year">Year</Label>
+                                <Input
+                                    id="year"
+                                    type="number"
+                                    placeholder="e.g., 2025, 2010, 2028"
+                                    value={newYear}
+                                    onChange={(e) => setNewYear(e.target.value)}
+                                    min="1900"
+                                    max="2100"
+                                    required
+                                    className="w-full"
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Enter a year between 1900 and 2100
+                                </p>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setIsAddYearModalOpen(false);
+                                    setNewYear('');
+                                }}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Adding...' : 'Add Year'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Toaster position="top-right" richColors />
         </SidebarProvider>
     );
 }

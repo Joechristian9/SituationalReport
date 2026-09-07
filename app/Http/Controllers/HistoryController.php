@@ -3,123 +3,77 @@
 namespace App\Http\Controllers;
 
 use App\Models\Typhoon;
+use App\Models\Year;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class HistoryController extends Controller
 {
     /**
-     * Display batch history - showing all ended disasters grouped by year range
+     * Display batch history - showing all ended disasters grouped by year
      */
     public function index()
     {
-        // Get all ended typhoons with their year ranges
-        $disasters = Typhoon::where('status', 'ended')
-            ->orderBy('ended_at', 'desc')
-            ->get()
-            ->map(function ($typhoon) {
-                $startYear = $typhoon->started_at ? $typhoon->started_at->format('Y') : null;
-                $endYear = $typhoon->ended_at ? $typhoon->ended_at->format('Y') : null;
-                
-                // Create year range label (e.g., "2026-27" or "2026")
-                if ($startYear && $endYear) {
-                    $yearRange = $startYear === $endYear 
-                        ? $startYear 
-                        : $startYear . '-' . substr($endYear, -2);
-                } else {
-                    $yearRange = $startYear ?? $endYear ?? 'Unknown';
-                }
-                
-                return [
-                    'id' => $typhoon->id,
-                    'name' => $typhoon->name,
-                    'type' => $typhoon->type,
-                    'description' => $typhoon->description,
-                    'started_at' => $typhoon->started_at?->format('M d, Y'),
-                    'ended_at' => $typhoon->ended_at?->format('M d, Y'),
-                    'year_range' => $yearRange,
-                    'start_year' => $startYear,
-                    'end_year' => $endYear,
-                    'pdf_path' => $typhoon->pdf_path,
-                ];
-            })
-            ->groupBy('year_range')
-            ->map(function ($disasters, $yearRange) {
-                return [
-                    'year_range' => $yearRange,
-                    'disasters' => $disasters->values()->toArray(),
-                    'count' => $disasters->count(),
-                ];
-            })
-            ->values()
-            ->toArray();
+        // Get all years with their ended disasters
+        $years = Year::with(['typhoons' => function ($query) {
+            $query->where('status', 'ended')
+                  ->orderBy('ended_at', 'desc');
+        }])
+        ->orderBy('year', 'desc')
+        ->get()
+        ->filter(function ($year) {
+            return $year->typhoons->count() > 0; // Only show years with disasters
+        })
+        ->map(function ($year) {
+            return [
+                'year' => $year->year,
+                'disasters' => $year->typhoons->map(function ($typhoon) {
+                    return [
+                        'id' => $typhoon->id,
+                        'name' => $typhoon->name,
+                        'disaster_type' => $typhoon->disaster_type,
+                        'description' => $typhoon->description,
+                        'started_at' => $typhoon->started_at?->format('M d, Y'),
+                        'ended_at' => $typhoon->ended_at?->format('M d, Y'),
+                        'pdf_path' => $typhoon->pdf_path,
+                    ];
+                })->toArray(),
+                'count' => $year->typhoons->count(),
+            ];
+        })
+        ->values()
+        ->toArray();
+
+        // Get all available years for selection
+        $availableYears = Year::orderBy('year', 'desc')->get();
 
         return Inertia::render('Admin/BatchHistory', [
-            'batches' => $disasters,
+            'batches' => $years,
+            'availableYears' => $availableYears,
         ]);
     }
 
     /**
-     * Display detail view for a specific disaster batch (year range)
-     */
-    public function show($yearRange)
-    {
-        // Parse year range (e.g., "2026-27" or "2026")
-        if (strpos($yearRange, '-') !== false) {
-            [$startYear, $endYearShort] = explode('-', $yearRange);
-            $endYear = substr($startYear, 0, 2) . $endYearShort;
-        } else {
-            $startYear = $endYear = $yearRange;
-        }
-        
-        // Get all disasters within this year range
-        $disasters = Typhoon::where('status', 'ended')
-            ->whereYear('started_at', '>=', $startYear)
-            ->whereYear('ended_at', '<=', $endYear)
-            ->orderBy('ended_at', 'desc')
-            ->get()
-            ->map(function ($typhoon) {
-                return [
-                    'id' => $typhoon->id,
-                    'name' => $typhoon->name,
-                    'type' => $typhoon->type,
-                    'description' => $typhoon->description,
-                    'started_at' => $typhoon->started_at?->format('M d, Y h:i A'),
-                    'ended_at' => $typhoon->ended_at?->format('M d, Y h:i A'),
-                    'pdf_path' => $typhoon->pdf_path,
-                ];
-            });
-
-        return Inertia::render('Admin/BatchHistoryDetail', [
-            'yearRange' => $yearRange,
-            'disasters' => $disasters,
-        ]);
-    }
-
-    /**
-     * Get form data by year range and form type
+     * Get form data by year and form type
      */
     public function getFormData(Request $request)
     {
-        $yearRange = $request->get('year');
+        $yearValue = $request->get('year');
         $formType = $request->get('form_type');
 
-        if (!$yearRange || !$formType) {
+        if (!$yearValue || !$formType) {
             return response()->json([]);
         }
 
-        // Parse year range
-        if (strpos($yearRange, '-') !== false) {
-            [$startYear, $endYearShort] = explode('-', $yearRange);
-            $endYear = substr($startYear, 0, 2) . $endYearShort;
-        } else {
-            $startYear = $endYear = $yearRange;
+        // Get disaster IDs for this year
+        $year = Year::where('year', $yearValue)->first();
+        
+        if (!$year) {
+            return response()->json([]);
         }
 
-        // Get disaster IDs for this year range
-        $disasterIds = Typhoon::where('status', 'ended')
-            ->whereYear('started_at', '>=', $startYear)
-            ->whereYear('ended_at', '<=', $endYear)
+        $disasterIds = $year->typhoons()
+            ->where('status', 'ended')
             ->pluck('id');
 
         if ($disasterIds->isEmpty()) {
