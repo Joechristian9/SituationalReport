@@ -11,6 +11,11 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, FileText, Loader2 } from "lucide-react";
 import RowsPerPage from '@/Components/ui/RowsPerPage';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
     Table,
     TableBody,
     TableCell,
@@ -182,36 +187,59 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         }
 
         const submittedTables = user.submitted_form_types || [];
+        const totalForms = user.permissions.length;
         
         return (
-            <div className="flex flex-wrap gap-1.5">
-                {user.permissions.map((permission, idx) => {
-                    const formName = permission
-                        .replace('access-', '')
-                        .replace('-form', '')
-                        .replace(/-/g, ' ')
-                        .split(' ')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ');
-                    
-                    const tableName = permissionToTable[permission];
-                    const isSubmitted = tableName && submittedTables.includes(tableName);
-                    
-                    return (
-                        <span
-                            key={idx}
-                            className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                                isSubmitted
-                                    ? 'bg-green-100 text-green-700 border border-green-200'
-                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
-                            }`}
-                        >
-                            {isSubmitted && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                            {formName}
-                        </span>
-                    );
-                })}
-            </div>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+                    >
+                        <FileText className="w-4 h-4" />
+                        View Forms ({totalForms})
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[420px]" align="start">
+                    <div className="space-y-3">
+                        <div>
+                            <h4 className="font-semibold text-sm text-gray-900">Assigned Forms</h4>
+                            <p className="text-xs text-gray-500 mt-1">Forms assigned to this organization</p>
+                        </div>
+                        <div className="max-h-[350px] overflow-y-auto">
+                            <div className="flex flex-wrap gap-2">
+                                {user.permissions.map((permission, idx) => {
+                                    const formName = permission
+                                        .replace('access-', '')
+                                        .replace('-form', '')
+                                        .replace(/-/g, ' ')
+                                        .split(' ')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ');
+                                    
+                                    const tableName = permissionToTable[permission];
+                                    const isSubmitted = tableName && submittedTables.includes(tableName);
+                                    
+                                    return (
+                                        <span
+                                            key={idx}
+                                            className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                                isSubmitted
+                                                    ? 'bg-green-100 text-green-700 border border-green-200'
+                                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                            }`}
+                                        >
+                                            {isSubmitted && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                            {formName}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
         );
     };
 
