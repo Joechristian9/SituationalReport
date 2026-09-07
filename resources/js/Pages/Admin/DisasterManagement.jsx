@@ -11,7 +11,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,6 +23,47 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import RowsPerPage from '@/Components/ui/RowsPerPage';
+
+// Helper function to get icon and color for each disaster type
+const getDisasterIcon = (disasterType) => {
+    const type = disasterType?.toLowerCase() || '';
+    
+    if (type.includes('typhoon') || type.includes('cyclone') || type.includes('hurricane')) {
+        return { icon: Wind, color: 'from-purple-600 to-indigo-600', textColor: 'text-purple-600' };
+    }
+    if (type.includes('flood') || type.includes('flash flood')) {
+        return { icon: Waves, color: 'from-blue-600 to-cyan-600', textColor: 'text-blue-600' };
+    }
+    if (type.includes('landslide') || type.includes('mudslide')) {
+        return { icon: Mountain, color: 'from-amber-700 to-orange-700', textColor: 'text-amber-700' };
+    }
+    if (type.includes('earthquake') || type.includes('tremor')) {
+        return { icon: Zap, color: 'from-red-600 to-rose-600', textColor: 'text-red-600' };
+    }
+    if (type.includes('fire') || type.includes('wildfire')) {
+        return { icon: Flame, color: 'from-orange-600 to-red-600', textColor: 'text-orange-600' };
+    }
+    if (type.includes('storm') && type.includes('surge')) {
+        return { icon: Waves, color: 'from-teal-600 to-cyan-700', textColor: 'text-teal-600' };
+    }
+    if (type.includes('tropical') && (type.includes('storm') || type.includes('depression'))) {
+        return { icon: CloudRain, color: 'from-sky-600 to-blue-700', textColor: 'text-sky-600' };
+    }
+    if (type.includes('heavy') && type.includes('rain')) {
+        return { icon: CloudRain, color: 'from-indigo-600 to-blue-600', textColor: 'text-indigo-600' };
+    }
+    if (type.includes('thunderstorm')) {
+        return { icon: CloudLightning, color: 'from-yellow-600 to-orange-600', textColor: 'text-yellow-600' };
+    }
+    if (type.includes('drought')) {
+        return { icon: Droplets, color: 'from-yellow-700 to-orange-700', textColor: 'text-yellow-700' };
+    }
+    if (type.includes('snow') || type.includes('blizzard')) {
+        return { icon: CloudSnow, color: 'from-cyan-400 to-blue-500', textColor: 'text-cyan-500' };
+    }
+    // Default for unspecified or other types
+    return { icon: Cloud, color: 'from-slate-600 to-gray-700', textColor: 'text-slate-600' };
+};
 
 export default function DisasterManagement({ typhoons, activeTyphoon, disasterStats, statusCounts }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -539,9 +580,14 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                                 <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
                                                                     <CardContent className="p-5">
                                                                         <div className="flex items-center justify-between mb-3">
-                                                                            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
-                                                                                <Cloud className="w-5 h-5 text-white" />
-                                                                            </div>
+                                                                            {(() => {
+                                                                                const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
+                                                                                return (
+                                                                                    <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
+                                                                                        <Icon className="w-5 h-5 text-white" />
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
                                                                             <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
                                                                                 {((stat.count / statusCounts.total) * 100).toFixed(1)}%
                                                                             </div>
@@ -648,9 +694,14 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                 <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
                                                     <CardContent className="p-5">
                                                         <div className="flex items-center justify-between mb-3">
-                                                            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
-                                                                <Cloud className="w-5 h-5 text-white" />
-                                                            </div>
+                                                            {(() => {
+                                                                const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
+                                                                return (
+                                                                    <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
+                                                                        <Icon className="w-5 h-5 text-white" />
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                             <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
                                                                 {((stat.count / statusCounts.total) * 100).toFixed(1)}%
                                                             </div>
@@ -685,9 +736,14 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                             <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer">
                                                 <CardContent className="p-5">
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
-                                                            <Cloud className="w-5 h-5 text-white" />
-                                                        </div>
+                                                        {(() => {
+                                                            const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
+                                                            return (
+                                                                <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
+                                                                    <Icon className="w-5 h-5 text-white" />
+                                                                </div>
+                                                            );
+                                                        })()}
                                                         <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
                                                             {((stat.count / statusCounts.total) * 100).toFixed(1)}%
                                                         </div>
