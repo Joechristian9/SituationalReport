@@ -21,12 +21,14 @@ import {
     Calendar,
     AlertTriangle,
     CloudRain,
+    RefreshCw,
 } from "lucide-react";
 import { getWeatherInfo, formatTime } from "./weatherUtils.jsx";
 
 const WeatherDashboard = () => {
     const [weatherData, setWeatherData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [activeTab, setActiveTab] = useState('now'); // 'now', 'hourly', '7day', 'alerts'
     const [windowWidth, setWindowWidth] = useState(
@@ -53,30 +55,34 @@ const WeatherDashboard = () => {
     const isTablet = windowWidth >= 640 && windowWidth < 1024;
     const isSmallMobile = windowWidth < 400;
 
+    // Fetch weather data function
+    const fetchWeather = async (isManualRefresh = false) => {
+        if (isManualRefresh) setRefreshing(true);
+        
+        // --- 1. UPDATE THE COORDINATES HERE ---
+        const lat = 17.15; // Ilagan Latitude
+        const lon = 121.89; // Ilagan Longitude
+        const timezone = "Asia/Manila";
+        const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,visibility,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&timezone=${timezone}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok)
+                throw new Error("Failed to fetch weather data.");
+            const data = await response.json();
+            setWeatherData(data);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error("Weather fetch error:", error);
+        } finally {
+            setLoading(false);
+            if (isManualRefresh) setRefreshing(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchWeather = async () => {
-            // --- 1. UPDATE THE COORDINATES HERE ---
-            const lat = 17.15; // Ilagan Latitude
-            const lon = 121.89; // Ilagan Longitude
-            const timezone = "Asia/Manila";
-            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,visibility,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&timezone=${timezone}`;
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok)
-                    throw new Error("Failed to fetch weather data.");
-                const data = await response.json();
-                setWeatherData(data);
-                setLastUpdated(new Date());
-            } catch (error) {
-                console.error("Weather fetch error:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchWeather();
-        const intervalId = setInterval(fetchWeather, 900000); // Refresh every 15 minutes
+        const intervalId = setInterval(() => fetchWeather(), 900000); // Refresh every 15 minutes
         return () => clearInterval(intervalId); // Cleanup interval on component unmount
     }, []);
 
@@ -110,6 +116,46 @@ const WeatherDashboard = () => {
 
     return (
         <div className="space-y-3 sm:space-y-4 font-sans">
+            {/* Location Header with Refresh Button */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                        <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-800`}>
+                            Ilagan, Cagayan Valley
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
+                                {lastUpdated
+                                    ? `Updated ${formatTime(lastUpdated)}`
+                                    : "..."}
+                            </p>
+                            <span className="text-gray-300">•</span>
+                            <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
+                                Open-Meteo API
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => fetchWeather(true)}
+                        disabled={refreshing}
+                        className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-semibold transition-all ${
+                            refreshing ? 'cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                        title="Refresh weather data"
+                    >
+                        <RefreshCw 
+                            size={isMobile ? 16 : 18} 
+                            className={refreshing ? 'animate-spin' : ''}
+                        />
+                        {!isSmallMobile && (
+                            <span className={`${isMobile ? 'text-sm' : 'text-base'}`}>
+                                {refreshing ? 'Refreshing...' : 'Refresh'}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
             {/* Tab Navigation */}
             <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-2 sm:p-3">
                 <div className="flex gap-1 sm:gap-2">
@@ -228,21 +274,10 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated, isMobile, isSmallMob
 
     return (
         <div>
-            <div className="flex justify-between items-start">
-                <div>
-                    {/* --- 2. UPDATE THE DISPLAYED LOCATION NAME HERE --- */}
-                    <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}>
-                        Ilagan, Cagayan Valley
-                    </h2>
-                    <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
-                        {lastUpdated
-                            ? `Updated at ${formatTime(lastUpdated)}`
-                            : "..."}
-                    </p>
-                </div>
-                <div className={`${isMobile ? 'text-3xl' : 'text-4xl'} text-gray-700`}>{icon}</div>
+            <div className="flex justify-between items-start mb-4">
+                <div className="text-4xl sm:text-5xl text-gray-700">{icon}</div>
             </div>
-            <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-4'} mt-2`}>
+            <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-4'}`}>
                 <p className={`${isSmallMobile ? 'text-5xl' : isMobile ? 'text-6xl' : 'text-7xl'} font-bold text-gray-900`}>
                     {Math.round(current.temperature_2m)}°C
                 </p>
@@ -252,7 +287,7 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated, isMobile, isSmallMob
                     </p>
                     <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
                         H: {Math.round(daily.temperature_2m_max[todayIndex])}°
-                        L: {Math.round(daily.temperature_2m_min[todayIndex])}°
+                        {' '}L: {Math.round(daily.temperature_2m_min[todayIndex])}°
                     </p>
                 </div>
             </div>
@@ -393,51 +428,189 @@ const InfoCard = ({ icon, title, value, description, isMobile }) => (
     </div>
 );
 
-// Hourly Forecast View
+// Hourly Forecast View with Separate Charts
 const HourlyForecastView = ({ hourly, isMobile, isTablet, isSmallMobile }) => {
     const now = new Date();
     const startIndex = hourly.time.findIndex((t) => new Date(t) >= now);
     const next24Hours = hourly.time.slice(startIndex, startIndex + 24);
 
-    return (
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-            <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 mb-4`}>
-                24-Hour Forecast
-            </h3>
-            <div className="overflow-x-auto -mx-2 px-2">
-                <div className="flex gap-3 sm:gap-4 min-w-max pb-2">
-                    {next24Hours.map((time, i) => {
-                        const index = startIndex + i;
-                        const { icon } = getWeatherInfo(hourly.weather_code[index]);
-                        const temp = Math.round(hourly.temperature_2m[index]);
-                        const precip = hourly.precipitation_probability[index];
-                        const windSpeed = Math.round(hourly.wind_speed_10m[index]);
-                        const hour = new Date(time).getHours();
-                        const displayTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+    // Prepare chart data
+    const chartData = next24Hours.map((time, i) => {
+        const index = startIndex + i;
+        const hour = new Date(time).getHours();
+        const displayTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+        
+        return {
+            time: displayTime,
+            shortTime: `${hour}h`,
+            temp: Math.round(hourly.temperature_2m[index]),
+            precip: hourly.precipitation_probability[index],
+            precipitation: hourly.precipitation?.[index] || 0,
+        };
+    });
 
-                        return (
-                            <div
-                                key={time}
-                                className={`flex flex-col items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-white/50 rounded-lg min-w-[80px] sm:min-w-[90px]`}
-                            >
-                                <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} font-semibold text-gray-700`}>
-                                    {displayTime}
-                                </p>
-                                <div className="text-2xl">{icon}</div>
-                                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-900`}>
-                                    {temp}°
-                                </p>
-                                <div className="flex items-center gap-1 text-blue-500">
-                                    <Droplets size={14} />
-                                    <span className="text-xs">{precip}%</span>
+    const chartHeight = isMobile ? 180 : isTablet ? 200 : 220;
+    const fontSize = isSmallMobile ? 10 : isMobile ? 11 : 12;
+    const interval = isMobile ? 3 : isTablet ? 2 : 1;
+
+    return (
+        <div className="space-y-3 sm:space-y-4">
+            {/* Hourly Cards - Scrollable */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+                <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 mb-4`}>
+                    24-Hour Overview
+                </h3>
+                <div className="overflow-x-auto -mx-2 px-2">
+                    <div className="flex gap-3 sm:gap-4 min-w-max pb-2">
+                        {next24Hours.map((time, i) => {
+                            const index = startIndex + i;
+                            const { icon } = getWeatherInfo(hourly.weather_code[index]);
+                            const temp = Math.round(hourly.temperature_2m[index]);
+                            const precip = hourly.precipitation_probability[index];
+                            const windSpeed = Math.round(hourly.wind_speed_10m[index]);
+                            const hour = new Date(time).getHours();
+                            const displayTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+
+                            return (
+                                <div
+                                    key={time}
+                                    className={`flex flex-col items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-white/50 rounded-lg min-w-[80px] sm:min-w-[90px]`}
+                                >
+                                    <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} font-semibold text-gray-700`}>
+                                        {displayTime}
+                                    </p>
+                                    <div className="text-2xl">{icon}</div>
+                                    <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-900`}>
+                                        {temp}°
+                                    </p>
+                                    <div className="flex items-center gap-1 text-blue-500">
+                                        <Droplets size={14} />
+                                        <span className="text-xs">{precip}%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-gray-500">
+                                        <Wind size={14} />
+                                        <span className="text-xs">{windSpeed}</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-gray-500">
-                                    <Wind size={14} />
-                                    <span className="text-xs">{windSpeed}</span>
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Temperature Chart */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-800 mb-3`}>
+                    Temperature (24 Hours)
+                </h3>
+                <div style={{ height: chartHeight }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                            data={chartData}
+                            margin={{ 
+                                top: 10, 
+                                right: isMobile ? 10 : 20, 
+                                left: isMobile ? -15 : -10, 
+                                bottom: 5 
+                            }}
+                        >
+                            <XAxis
+                                dataKey="time"
+                                axisLine={false}
+                                tickLine={false}
+                                fontSize={fontSize}
+                                interval={interval}
+                                tick={{ fill: '#6B7280' }}
+                            />
+                            <YAxis 
+                                domain={["dataMin - 2", "dataMax + 2"]} 
+                                axisLine={false}
+                                tickLine={false}
+                                fontSize={fontSize}
+                                tick={{ fill: '#6B7280' }}
+                                width={35}
+                                label={!isMobile ? { value: '°C', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } } : undefined}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                    border: "1px solid #ccc",
+                                    borderRadius: "10px",
+                                    fontSize: isMobile ? '12px' : '14px',
+                                    padding: isMobile ? '6px 8px' : '8px 12px',
+                                }}
+                                labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                                formatter={(value) => [`${value}°C`, 'Temperature']}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="temp"
+                                stroke="#f97316"
+                                fill="#fed7aa"
+                                strokeWidth={2}
+                                dot={{ fill: '#f97316', strokeWidth: 2, r: 3 }}
+                                activeDot={{ r: 5 }}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Precipitation Chart */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-800 mb-3`}>
+                    Precipitation Chance (24 Hours)
+                </h3>
+                <div style={{ height: chartHeight }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                            data={chartData}
+                            margin={{ 
+                                top: 10, 
+                                right: isMobile ? 10 : 20, 
+                                left: isMobile ? -15 : -10, 
+                                bottom: 5 
+                            }}
+                        >
+                            <XAxis
+                                dataKey="time"
+                                axisLine={false}
+                                tickLine={false}
+                                fontSize={fontSize}
+                                interval={interval}
+                                tick={{ fill: '#6B7280' }}
+                            />
+                            <YAxis 
+                                domain={[0, 100]} 
+                                axisLine={false}
+                                tickLine={false}
+                                fontSize={fontSize}
+                                tick={{ fill: '#6B7280' }}
+                                width={35}
+                                label={!isMobile ? { value: '%', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } } : undefined}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                    border: "1px solid #ccc",
+                                    borderRadius: "10px",
+                                    fontSize: isMobile ? '12px' : '14px',
+                                    padding: isMobile ? '6px 8px' : '8px 12px',
+                                }}
+                                labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                                formatter={(value) => [`${value}%`, 'Rain Chance']}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="precip"
+                                stroke="#3b82f6"
+                                fill="#bfdbfe"
+                                strokeWidth={2}
+                                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
+                                activeDot={{ r: 5 }}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>
