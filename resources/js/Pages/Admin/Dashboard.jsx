@@ -51,7 +51,7 @@ export default function Dashboard({
     missing = [],
 }) {
     const { auth, typhoon } = usePage().props;
-    const [activeTab, setActiveTab] = useState("environment");
+    const [activeTab, setActiveTab] = useState("impact");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
     
@@ -111,16 +111,16 @@ export default function Dashboard({
                 <main className="w-full p-4 sm:p-6 lg:p-8 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
                     <div className="flex p-1.5 bg-gray-100 rounded-full">
                         <Tab
-                            label="Environment Graphs"
-                            icon={<Sun size={16} />}
-                            isActive={activeTab === "environment"}
-                            onClick={() => setActiveTab("environment")}
-                        />
-                        <Tab
                             label="Human Impact"
                             icon={<Users size={16} />}
                             isActive={activeTab === "impact"}
                             onClick={() => setActiveTab("impact")}
+                        />
+                        <Tab
+                            label="Environment Graphs"
+                            icon={<Sun size={16} />}
+                            isActive={activeTab === "environment"}
+                            onClick={() => setActiveTab("environment")}
                         />
                         <Tab
                             label="Weather Forecast"
