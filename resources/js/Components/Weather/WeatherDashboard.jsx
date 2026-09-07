@@ -23,6 +23,29 @@ const WeatherDashboard = () => {
     const [weatherData, setWeatherData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
+    const [windowWidth, setWindowWidth] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
+    );
+
+    // Handle window resize for responsive behavior
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                setWindowWidth(window.innerWidth);
+            }, 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+    
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth >= 640 && windowWidth < 1024;
+    const isSmallMobile = windowWidth < 400;
 
     useEffect(() => {
         const fetchWeather = async () => {
@@ -53,17 +76,17 @@ const WeatherDashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-6 bg-white rounded-lg min-h-[300px]">
-                <Loader2 className="animate-spin mr-2" /> Loading weather
-                dashboard...
+            <div className="flex items-center justify-center p-4 sm:p-6 bg-white rounded-lg min-h-[200px] sm:min-h-[300px]">
+                <Loader2 className="animate-spin mr-2 w-5 h-5 sm:w-6 sm:h-6" /> 
+                <span className="text-sm sm:text-base">Loading weather dashboard...</span>
             </div>
         );
     }
 
     if (!weatherData) {
         return (
-            <div className="p-6 text-center text-red-500 bg-white rounded-lg">
-                Could not load weather data.
+            <div className="p-4 sm:p-6 text-center text-red-500 bg-white rounded-lg">
+                <p className="text-sm sm:text-base">Could not load weather data.</p>
             </div>
         );
     }
@@ -72,48 +95,62 @@ const WeatherDashboard = () => {
     const todayIndex = 0;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 font-sans">
-            <div className="md:col-span-3 lg:col-span-2 p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 font-sans">
+            {/* Main Weather Card */}
+            <div className="p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg flex flex-col justify-between min-h-[320px] sm:min-h-[400px]">
                 <CurrentWeatherBlock
                     current={current}
                     daily={daily}
                     lastUpdated={lastUpdated}
+                    isMobile={isMobile}
+                    isSmallMobile={isSmallMobile}
                 />
-                <HourlyForecastChart hourly={hourly} />
+                <HourlyForecastChart 
+                    hourly={hourly} 
+                    isMobile={isMobile}
+                    isTablet={isTablet}
+                    isSmallMobile={isSmallMobile}
+                />
             </div>
-            <div className="md:col-span-3 lg:col-span-2 grid grid-cols-2 gap-4">
+            
+            {/* Weather Details Grid */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                 <InfoCard
-                    icon={<Eye size={20} />}
+                    icon={<Eye size={isMobile ? 18 : 20} />}
                     title="Visibility"
                     value={`${(current.visibility / 1000).toFixed(1)} km`}
                     description="Excellent"
+                    isMobile={isMobile}
                 />
                 <InfoCard
-                    icon={<Droplets size={20} />}
+                    icon={<Droplets size={isMobile ? 18 : 20} />}
                     title="Humidity"
                     value={`${current.relative_humidity_2m}%`}
                     description="Extremely Humid"
+                    isMobile={isMobile}
                 />
-                <WindCard current={current} />
-                <SunHoursCard daily={daily} index={todayIndex} />
+                <WindCard current={current} isMobile={isMobile} isSmallMobile={isSmallMobile} />
+                <SunHoursCard daily={daily} index={todayIndex} isMobile={isMobile} />
                 <InfoCard
-                    icon={<Gauge size={20} />}
+                    icon={<Gauge size={isMobile ? 18 : 20} />}
                     title="Pressure"
                     value={`${Math.round(current.pressure_msl)} mb`}
                     description="Rising slowly"
+                    isMobile={isMobile}
                 />
                 <InfoCard
-                    icon={<Thermometer size={20} />}
+                    icon={<Thermometer size={isMobile ? 18 : 20} />}
                     title="Feels Like"
                     value={`${Math.round(current.apparent_temperature)}°`}
                     description="Similar to actual"
+                    isMobile={isMobile}
                 />
             </div>
         </div>
     );
 };
 
-const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
+const CurrentWeatherBlock = ({ current, daily, lastUpdated, isMobile, isSmallMobile }) => {
     const { icon, description } = getWeatherInfo(current.weather_code);
     const todayIndex = 0;
 
@@ -122,26 +159,26 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
             <div className="flex justify-between items-start">
                 <div>
                     {/* --- 2. UPDATE THE DISPLAYED LOCATION NAME HERE --- */}
-                    <h2 className="text-xl font-bold text-gray-800">
+                    <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}>
                         Ilagan, Cagayan Valley
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
                         {lastUpdated
                             ? `Updated at ${formatTime(lastUpdated)}`
                             : "..."}
                     </p>
                 </div>
-                <div className="text-4xl text-gray-700">{icon}</div>
+                <div className={`${isMobile ? 'text-3xl' : 'text-4xl'} text-gray-700`}>{icon}</div>
             </div>
-            <div className="flex items-center gap-4 mt-2">
-                <p className="text-7xl font-bold text-gray-900">
+            <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-4'} mt-2`}>
+                <p className={`${isSmallMobile ? 'text-5xl' : isMobile ? 'text-6xl' : 'text-7xl'} font-bold text-gray-900`}>
                     {Math.round(current.temperature_2m)}°C
                 </p>
                 <div>
-                    <p className="text-xl font-semibold text-gray-700">
+                    <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-700`}>
                         {description}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
                         H: {Math.round(daily.temperature_2m_max[todayIndex])}°
                         L: {Math.round(daily.temperature_2m_min[todayIndex])}°
                     </p>
@@ -152,7 +189,7 @@ const CurrentWeatherBlock = ({ current, daily, lastUpdated }) => {
 };
 
 // (The rest of the sub-components are unchanged)
-const HourlyForecastChart = ({ hourly }) => {
+const HourlyForecastChart = ({ hourly, isMobile, isTablet, isSmallMobile }) => {
     const now = new Date();
     const startIndex = hourly.time.findIndex((t) => new Date(t) >= now);
     const chartData = hourly.time
@@ -163,26 +200,43 @@ const HourlyForecastChart = ({ hourly }) => {
             precip: hourly.precipitation_probability[startIndex + i],
         }));
 
+    const chartHeight = isMobile ? 160 : isTablet ? 180 : 200;
+    const fontSize = isSmallMobile ? 10 : isMobile ? 11 : 12;
+    const interval = isMobile ? 3 : 2;
+
     return (
-        <div className="h-40 mt-4">
+        <div className={`${isMobile ? 'h-40' : 'h-48'} mt-4`}>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={chartData}
-                    margin={{ top: 5, right: 20, left: -10, bottom: 0 }}
+                    margin={{ 
+                        top: 5, 
+                        right: isMobile ? 10 : 20, 
+                        left: isMobile ? -15 : -10, 
+                        bottom: 0 
+                    }}
                 >
                     <XAxis
                         dataKey="time"
                         axisLine={false}
                         tickLine={false}
-                        fontSize={12}
-                        interval={2}
+                        fontSize={fontSize}
+                        interval={interval}
                     />
                     <YAxis domain={["dataMin - 2", "dataMax + 2"]} hide />
                     <Tooltip
                         contentStyle={{
-                            backgroundColor: "rgba(255, 255, 255, 0.8)",
+                            backgroundColor: "rgba(255, 255, 255, 0.95)",
                             border: "1px solid #ccc",
                             borderRadius: "10px",
+                            fontSize: isMobile ? '12px' : '14px',
+                            padding: isMobile ? '6px 8px' : '8px 12px',
+                        }}
+                        labelStyle={{ fontWeight: 'bold' }}
+                        formatter={(value, name) => {
+                            if (name === 'temp') return [`${value}°C`, 'Temperature'];
+                            if (name === 'precip') return [`${value}%`, 'Rain Chance'];
+                            return [value, name];
                         }}
                     />
                     <Area
@@ -198,22 +252,22 @@ const HourlyForecastChart = ({ hourly }) => {
         </div>
     );
 };
-const WindCard = ({ current }) => (
-    <div className="p-4 bg-white/70 rounded-2xl shadow-lg">
-        <h3 className="font-semibold text-gray-600 flex items-center gap-2 mb-2">
-            <Wind size={20} /> Wind
+const WindCard = ({ current, isMobile, isSmallMobile }) => (
+    <div className={`${isMobile ? 'p-3' : 'p-4'} bg-white/70 rounded-xl sm:rounded-2xl shadow-lg`}>
+        <h3 className={`font-semibold text-gray-600 flex items-center gap-2 ${isSmallMobile ? 'mb-1 text-sm' : 'mb-2'}`}>
+            <Wind size={isMobile ? 16 : 20} /> Wind
         </h3>
         <div className="flex justify-between items-center">
             <div>
-                <p className="text-2xl font-bold">
+                <p className={`${isSmallMobile ? 'text-xl' : isMobile ? 'text-2xl' : 'text-2xl'} font-bold`}>
                     {Math.round(current.wind_speed_10m)}{" "}
-                    <span className="text-sm font-normal">km/h</span>
+                    <span className={`${isSmallMobile ? 'text-xs' : 'text-sm'} font-normal`}>km/h</span>
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className={`${isSmallMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
                     Gust: {Math.round(current.wind_gusts_10m)} km/h
                 </p>
             </div>
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} bg-blue-100 rounded-full flex items-center justify-center`}>
                 <div
                     style={{
                         transform: `rotate(${
@@ -223,8 +277,8 @@ const WindCard = ({ current }) => (
                     className="transition-transform duration-500"
                 >
                     <svg
-                        width="30"
-                        height="30"
+                        width={isMobile ? "24" : "30"}
+                        height={isMobile ? "24" : "30"}
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
@@ -236,20 +290,20 @@ const WindCard = ({ current }) => (
         </div>
     </div>
 );
-const SunHoursCard = ({ daily, index }) => (
-    <div className="p-4 bg-white/70 rounded-2xl shadow-lg flex flex-col justify-between">
-        <h3 className="font-semibold text-gray-600">Sun Hours</h3>
-        <div className="flex justify-between items-center text-center mt-2">
+const SunHoursCard = ({ daily, index, isMobile }) => (
+    <div className={`${isMobile ? 'p-3' : 'p-4'} bg-white/70 rounded-xl sm:rounded-2xl shadow-lg flex flex-col justify-between`}>
+        <h3 className={`font-semibold text-gray-600 ${isMobile ? 'text-sm mb-1' : 'mb-2'}`}>Sun Hours</h3>
+        <div className={`flex justify-between items-center text-center ${isMobile ? 'mt-1' : 'mt-2'}`}>
             <div>
-                <Sun size={24} className="mx-auto text-amber-500" />
-                <p className="font-bold text-lg">
+                <Sun size={isMobile ? 20 : 24} className="mx-auto text-amber-500" />
+                <p className={`font-bold ${isMobile ? 'text-base' : 'text-lg'} mt-1`}>
                     {formatTime(daily.sunrise[index])}
                 </p>
                 <p className="text-xs text-gray-500">Sunrise</p>
             </div>
             <div>
-                <Sunset size={24} className="mx-auto text-orange-500" />
-                <p className="font-bold text-lg">
+                <Sunset size={isMobile ? 20 : 24} className="mx-auto text-orange-500" />
+                <p className={`font-bold ${isMobile ? 'text-base' : 'text-lg'} mt-1`}>
                     {formatTime(daily.sunset[index])}
                 </p>
                 <p className="text-xs text-gray-500">Sunset</p>
@@ -257,13 +311,13 @@ const SunHoursCard = ({ daily, index }) => (
         </div>
     </div>
 );
-const InfoCard = ({ icon, title, value, description }) => (
-    <div className="p-4 bg-white/70 rounded-2xl shadow-lg">
-        <h3 className="font-semibold text-gray-600 flex items-center gap-2 mb-1">
+const InfoCard = ({ icon, title, value, description, isMobile }) => (
+    <div className={`${isMobile ? 'p-3' : 'p-4'} bg-white/70 rounded-xl sm:rounded-2xl shadow-lg`}>
+        <h3 className={`font-semibold text-gray-600 flex items-center gap-2 ${isMobile ? 'mb-1 text-sm' : 'mb-1'}`}>
             {icon} {title}
         </h3>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{description}</p>
+        <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>{value}</p>
+        <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>{description}</p>
     </div>
 );
 
