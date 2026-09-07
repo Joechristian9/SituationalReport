@@ -1,3 +1,4 @@
+
 # Deployment Guide for pitonmain.com
 
 ## Quick Deployment
@@ -24,24 +25,47 @@ exit
 - Press: **Ctrl + Shift + R** (Windows/Linux) or **Cmd + Shift + R** (Mac)
 
 ---
-
 ## What Was Deployed
 
-### Latest Commit: `7a3f9a6`
-**Message:** "Build: Compile pagination changes for FormSubmissionStatus page"
+### Latest Commit: `e9ee259`
+**Message:** "refactor: Remove cards and enhance Batch History UI with top filters and icon-based design"
 
 ### Changes:
-✅ Unified pagination UI between Disaster Management and Form Submission Status pages
-✅ Added rows per page dropdown (10, 25, 50, 100 options)
-✅ Implemented smart pagination with ellipsis (...) for large page counts
-✅ Added memoized pagination calculations for better performance
-✅ Auto-reset to page 1 when filtering or changing rows per page
-✅ Consistent styling and layout across admin pages
+✅ Removed card-based layout from Batch History page
+✅ Moved filter options to top of page with cleaner horizontal layout
+✅ Enhanced UI with icon-based design (FileText icon in colored badge)
+✅ Simplified Year and Form Type selection into single row
+✅ Improved visual hierarchy and spacing
+✅ Maintained all existing functionality (Add Year, disaster display, pagination)
+✅ Better responsive layout for mobile and desktop
+✅ Cleaner empty state design without cards
+
+### Previous Commit: `331e1c0`
+**Message:** "feat: Refactor year system from academic ranges to individual calendar years with dynamic year management"
+
+### Previous Changes:
+✅ Changed from academic year ranges (2025-26) to individual calendar years (2025, 2026, 2027)
+✅ Created `years` table with `year` (integer) column
+✅ Added `year_id` foreign key to disasters table
+✅ Created YearController with index/store/destroy methods
+✅ Updated HistoryController to use years table
+✅ Created YearSeeder to populate years from existing disasters
+✅ Added "Add Year" button with modal for creating new years
+✅ All data now properly scoped to selected year
+✅ Validation: years between 1900-2100
+✅ Dynamic year management with instant availability
 
 ### Files Modified:
-- `resources/js/Pages/Admin/FormSubmissionStatus.jsx` - Main component with unified pagination
-- `public/build/assets/FormSubmissionStatus-D1BWJFQH.js` - Compiled JavaScript
-- `public/build/assets/app-CANrFMjn.js` - App bundle
+- `resources/js/Pages/Admin/BatchHistory.jsx` - Refactored UI layout
+- `database/migrations/2026_09_07_101301_create_years_table.php` - New years table
+- `database/migrations/2026_09_07_101410_add_year_id_to_typhoons_table.php` - Added year_id FK
+- `app/Models/Year.php` - New Year model
+- `app/Models/Typhoon.php` - Added year relationship
+- `app/Http/Controllers/YearController.php` - Year CRUD operations
+- `app/Http/Controllers/HistoryController.php` - Refactored for years table
+- `database/seeders/YearSeeder.php` - Data migration seeder
+- `routes/web.php` - Added year routes
+- Multiple compiled assets in `public/build/`undle
 - `public/build/manifest.json` - Asset manifest
 
 ---
@@ -67,7 +91,7 @@ exit
 ssh -p 65002 u988863428@156.67.222.18
 cd /home/u988863428/domains/pitonmain.com/public_html
 git log -1 --oneline
-# Should show: 7a3f9a6 Build: Compile pagination changes for FormSubmissionStatus page
+# Should show: e9ee259 refactor: Remove cards and enhance Batch History UI with top filters and icon-based design
 ```
 
 ---
