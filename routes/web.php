@@ -395,6 +395,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('years', [App\Http\Controllers\YearController::class, 'store'])->name('admin.years.store');
     Route::delete('years/{year}', [App\Http\Controllers\YearController::class, 'destroy'])->name('admin.years.destroy');
     
+    // User Management (Admin only)
+    Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('admin.users.index');
+    Route::post('users', [App\Http\Controllers\UserController::class, 'store'])->name('admin.users.store');
+    Route::patch('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('users/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('admin.users.destroy');
+    
     // Disaster Management (Admin only)
     Route::prefix('disasters')->group(function () {
         Route::get('/', [DisasterController::class, 'index'])->name('disasters.index');

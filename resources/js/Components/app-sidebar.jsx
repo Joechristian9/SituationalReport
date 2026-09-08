@@ -28,6 +28,7 @@ import {
     Calendar, // Import a calendar or year icon
     Cloud,
     History,
+    UserCircle,
     Radio,
     Sprout,
     ClipboardCheck,
@@ -237,6 +238,13 @@ export function AppSidebar({ ...props }) {
                     url: route("admin.form-submission-status"),
                     roles: ["admin"],
                     icon: ClipboardCheck,
+                    permission: null,
+                },
+                {
+                    title: "User Management",
+                    url: route("admin.users.index"),
+                    roles: ["admin"],
+                    icon: UserCircle,
                     permission: null,
                 },
                 ...(!isAdmin ? [{
