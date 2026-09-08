@@ -75,29 +75,30 @@ php artisan route:cache
 
 ## 📊 What Data Will Be Created
 
-### Option A (Fresh Installation):
+### Fresh Installation Creates:
 - **9 Users** with permissions (Admin, CDRRMO, IWD, ISELCO2, CEO, PNP, CSWDO, CAO, BDRRMC)
-- **All Barangays** in Ilagan City
+- **All Barangays** in Ilagan City  
 - **50 Disasters** (1 active, 49 ended) spanning 2024-2026
-- **250 Weather Reports**
-- **150 Water Level Reports**
+- **Years 2024-2026** automatically associated with disasters
+
+### Reports Data (Linked to All Disasters):
+- **250 Weather Reports** - varying conditions
+- **150 Water Level Reports** - multiple gauging stations
 - **50 Electricity Service Reports**
 - **150 Water Service Reports**
-- **200 Road Reports**
+- **200 Road Status Reports**
 - **150 Bridge Reports**
 - **200 Pre-emptive Evacuation Reports**
 - **200 Incident Reports**
 - **300 Damaged Houses Reports**
 - **200 Agriculture Reports**
-- **53 Deaths** (3 detailed + 50 factory-generated)
-- **55 Injured** (5 detailed + 50 factory-generated)
-- **52 Missing** (2 detailed + 50 factory-generated)
 
-### Option B (Add to Existing):
-- **Years 2024-2026** (if not exist)
-- **50 Additional Casualties**
-- **50 Additional Injured**
-- **50 Additional Missing**
+### Casualty Data (For Active Disaster Only):
+- **3 Deaths** - detailed with names, ages, causes
+- **5 Injured** - with diagnosis and hospital status
+- **2 Missing** - with last known locations
+
+**Total: 1000+ realistic data entries across all modules!**
 
 ---
 
