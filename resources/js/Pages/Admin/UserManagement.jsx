@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { AlertCircle, Plus, Trash2, Edit, Search, ChevronLeft, ChevronRight, UserPlus, Users, Shield, Key } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Edit, Search, ChevronLeft, ChevronRight, UserPlus, Users, Shield, Key, MoreVertical } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -304,8 +304,8 @@ export default function UserManagement({ users, roles, permissions, auth }) {
                                                             <td className="py-3 text-right">
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
-                                                                        <Button variant="ghost" size="sm">
-                                                                            Actions
+                                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                            <MoreVertical className="w-4 h-4" />
                                                                         </Button>
                                                                     </DropdownMenuTrigger>
                                                                     <DropdownMenuContent align="end">
