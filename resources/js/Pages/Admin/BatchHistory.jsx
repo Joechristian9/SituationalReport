@@ -460,7 +460,7 @@ export default function BatchHistory({ batches, availableYears }) {
                                             <div className="text-center py-12">
                                                 <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                                                 <p className="text-gray-600">
-                                                    No records found for {formTypes.find(f => f.value === selectedForm)?.label} in {selectedYear}
+                                                    No records found for {selectedDisasterType} disasters in {selectedYear}
                                                 </p>
                                             </div>
                                         )}
