@@ -1183,7 +1183,7 @@
     ]
   },
   "resources/js/Pages/Admin/BatchHistory.jsx": {
-    "file": "assets/BatchHistory-CbWh4Qrz.js",
+    "file": "assets/BatchHistory-DNzGmoDd.js",
     "name": "BatchHistory",
     "src": "resources/js/Pages/Admin/BatchHistory.jsx",
     "isEntry": true,
@@ -1898,7 +1898,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-rPGIMxpX.js",
+    "file": "assets/app-DVtVuvfq.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1945,7 +1945,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-Cn7MG_yd.css"
+      "assets/app-DI1cJSPM.css"
     ]
   }
 }

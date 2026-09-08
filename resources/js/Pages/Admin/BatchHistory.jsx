@@ -26,7 +26,7 @@ import { toast, Toaster } from 'sonner';
 
 export default function BatchHistory({ batches, availableYears }) {
     const [selectedYear, setSelectedYear] = useState('');
-    const [selectedForm, setSelectedForm] = useState('weather');
+    const [selectedDisasterType, setSelectedDisasterType] = useState('');
     const [formData, setFormData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [disasters, setDisasters] = useState([]);
@@ -38,17 +38,22 @@ export default function BatchHistory({ batches, availableYears }) {
     const [years, setYears] = useState(availableYears || []);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Form types available
-    const formTypes = [
-        { value: 'weather', label: 'Weather Reports', api: 'weather-history' },
-        { value: 'electricity', label: 'Electricity Service', api: 'electricity-history' },
-        { value: 'water-service', label: 'Water Service', api: 'water-service-history' },
-        { value: 'communication', label: 'Communication', api: 'communication-history' },
-        { value: 'pre-emptive', label: 'Pre-Emptive Reports', api: 'pre-emptive-history' },
-        { value: 'agriculture', label: 'Agriculture', api: 'agriculture-history' },
-        { value: 'incident', label: 'Incidents Monitored', api: 'incident-history' },
-        { value: 'road', label: 'Road Status', api: 'road-history' },
-        { value: 'bridge', label: 'Bridge Status', api: 'bridge-history' },
+    // Disaster types available
+    const disasterTypes = [
+        'Typhoon',
+        'Tropical Storm',
+        'Tropical Depression',
+        'Flood',
+        'Flash Flood',
+        'Earthquake',
+        'Landslide',
+        'Storm Surge',
+        'Drought',
+        'Volcanic Eruption',
+        'Fire',
+        'Tornado',
+        'Heavy Rainfall',
+        'Other'
     ];
 
     // Handle add year
@@ -79,25 +84,33 @@ export default function BatchHistory({ batches, availableYears }) {
         }
     };
 
-    // Fetch disasters for selected year
+    // Fetch disasters for selected year and disaster type
     useEffect(() => {
         if (selectedYear) {
             const batch = batches.find(b => b.year === parseInt(selectedYear));
             if (batch) {
-                setDisasters(batch.disasters);
+                // Filter disasters by disaster type if selected
+                if (selectedDisasterType) {
+                    const filteredDisasters = batch.disasters.filter(
+                        d => d.disaster_type === selectedDisasterType
+                    );
+                    setDisasters(filteredDisasters);
+                } else {
+                    setDisasters(batch.disasters);
+                }
             }
         } else {
             setDisasters([]);
             setFormData([]);
         }
-    }, [selectedYear, batches]);
+    }, [selectedYear, selectedDisasterType, batches]);
 
-    // Fetch form data when year and form are selected
+    // Fetch all data when year and disaster type are selected
     useEffect(() => {
-        if (selectedYear && selectedForm && disasters.length > 0) {
-            fetchFormData();
+        if (selectedYear && selectedDisasterType && disasters.length > 0) {
+            fetchAllData();
         }
-    }, [selectedYear, selectedForm, disasters]);
+    }, [selectedYear, selectedDisasterType, disasters]);
 
     // Reset to page 1 when search or items per page changes
     useEffect(() => {
@@ -126,20 +139,20 @@ export default function BatchHistory({ batches, availableYears }) {
         return { totalPages, startIndex, endIndex, paginatedData };
     }, [filteredData, currentPage, itemsPerPage]);
 
-    const fetchFormData = async () => {
+    const fetchAllData = async () => {
         setLoading(true);
         
         try {
-            const response = await axios.get('/api/history/form-data', {
+            const response = await axios.get('/api/history/all-data', {
                 params: {
                     year: selectedYear,
-                    form_type: selectedForm
+                    disaster_type: selectedDisasterType
                 }
             });
             
             setFormData(response.data);
         } catch (error) {
-            console.error('Error fetching form data:', error);
+            console.error('Error fetching disaster data:', error);
             setFormData([]);
         } finally {
             setLoading(false);
@@ -193,7 +206,7 @@ export default function BatchHistory({ batches, availableYears }) {
                                         Historical Disaster Form Submissions
                                     </h2>
                                     <p className="text-sm text-gray-600 mt-1">
-                                        Select a year and form type to view historical submission records.
+                                        Select a year and disaster type to view all related reports.
                                     </p>
                                 </div>
                             </div>
@@ -219,23 +232,23 @@ export default function BatchHistory({ batches, availableYears }) {
                                     </Select>
                                 </div>
 
-                                {/* Form Type Selection */}
+                                {/* Disaster Type Selection */}
                                 <div className="flex-1 min-w-[200px]">
                                     <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                                        Form Type
+                                        Disaster Type
                                     </label>
                                     <Select 
-                                        value={selectedForm} 
-                                        onValueChange={setSelectedForm}
+                                        value={selectedDisasterType} 
+                                        onValueChange={setSelectedDisasterType}
                                         disabled={!selectedYear}
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select form type" />
+                                            <SelectValue placeholder="Select disaster type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {formTypes.map(form => (
-                                                <SelectItem key={form.value} value={form.value}>
-                                                    {form.label}
+                                            {disasterTypes.map(type => (
+                                                <SelectItem key={type} value={type}>
+                                                    {type}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -271,7 +284,7 @@ export default function BatchHistory({ batches, availableYears }) {
                         </motion.div>
 
                         {/* Form Data Display */}
-                        {selectedYear && selectedForm && (
+                        {selectedYear && selectedDisasterType && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -281,7 +294,7 @@ export default function BatchHistory({ batches, availableYears }) {
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
                                             <CardTitle>
-                                                {formTypes.find(f => f.value === selectedForm)?.label} Records
+                                                {selectedDisasterType} Disaster Records
                                             </CardTitle>
                                             <Badge variant="outline">
                                                 {filteredData.length} {filteredData.length === 1 ? 'Record' : 'Records'}
@@ -315,6 +328,7 @@ export default function BatchHistory({ batches, availableYears }) {
                                                         <thead className="border-b">
                                                             <tr className="text-left">
                                                                 <th className="pb-3 font-medium text-gray-700">Disaster</th>
+                                                                <th className="pb-3 font-medium text-gray-700">Report Type</th>
                                                                 <th className="pb-3 font-medium text-gray-700">Submitted By</th>
                                                                 <th className="pb-3 font-medium text-gray-700">Date</th>
                                                                 <th className="pb-3 font-medium text-gray-700">Details</th>
@@ -326,6 +340,11 @@ export default function BatchHistory({ batches, availableYears }) {
                                                                     <tr key={index} className="hover:bg-gray-50">
                                                                         <td className="py-3">
                                                                             <span className="font-medium">{record.typhoon?.name || 'N/A'}</span>
+                                                                        </td>
+                                                                        <td className="py-3">
+                                                                            <Badge variant="outline" className="text-xs">
+                                                                                {record.report_type || 'N/A'}
+                                                                            </Badge>
                                                                         </td>
                                                                         <td className="py-3 text-gray-600">
                                                                             {record.user?.name || record.submitted_by || 'N/A'}

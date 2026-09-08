@@ -54,18 +54,18 @@ class HistoryController extends Controller
     }
 
     /**
-     * Get form data by year and form type
+     * Get all report data by year and disaster type
      */
-    public function getFormData(Request $request)
+    public function getAllData(Request $request)
     {
         $yearValue = $request->get('year');
-        $formType = $request->get('form_type');
+        $disasterType = $request->get('disaster_type');
 
-        if (!$yearValue || !$formType) {
+        if (!$yearValue || !$disasterType) {
             return response()->json([]);
         }
 
-        // Get disaster IDs for this year
+        // Get disaster IDs for this year and disaster type
         $year = Year::where('year', $yearValue)->first();
         
         if (!$year) {
@@ -74,80 +74,120 @@ class HistoryController extends Controller
 
         $disasterIds = $year->typhoons()
             ->where('status', 'ended')
+            ->where('disaster_type', $disasterType)
             ->pluck('id');
 
         if ($disasterIds->isEmpty()) {
             return response()->json([]);
         }
 
-        // Fetch data based on form type
-        $data = [];
-        
-        switch ($formType) {
-            case 'weather':
-                $data = \App\Models\WeatherReport::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'electricity':
-                $data = \App\Models\ElectricityService::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'water-service':
-                $data = \App\Models\WaterService::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'communication':
-                $data = \App\Models\Communication::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'pre-emptive':
-                $data = \App\Models\PreEmptiveReport::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'agriculture':
-                $data = \App\Models\AgricultureReport::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'incident':
-                $data = \App\Models\IncidentMonitored::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'road':
-                $data = \App\Models\Road::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-            
-            case 'bridge':
-                $data = \App\Models\Bridge::whereIn('disaster_id', $disasterIds)
-                    ->with(['user:id,name', 'typhoon:id,name'])
-                    ->latest()
-                    ->get();
-                break;
-        }
+        // Fetch all report types for these disasters
+        $allData = [];
 
-        return response()->json($data);
+        // Weather Reports
+        $weatherData = \App\Models\WeatherReport::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Weather Report';
+                return $item;
+            });
+        $allData = array_merge($allData, $weatherData->toArray());
+
+        // Electricity Service
+        $electricityData = \App\Models\ElectricityService::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Electricity Service';
+                return $item;
+            });
+        $allData = array_merge($allData, $electricityData->toArray());
+
+        // Water Service
+        $waterData = \App\Models\WaterService::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Water Service';
+                return $item;
+            });
+        $allData = array_merge($allData, $waterData->toArray());
+
+        // Communication
+        $commData = \App\Models\Communication::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Communication';
+                return $item;
+            });
+        $allData = array_merge($allData, $commData->toArray());
+
+        // Pre-Emptive Reports
+        $preEmptiveData = \App\Models\PreEmptiveReport::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Pre-Emptive Report';
+                return $item;
+            });
+        $allData = array_merge($allData, $preEmptiveData->toArray());
+
+        // Agriculture Reports
+        $agricultureData = \App\Models\AgricultureReport::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Agriculture Report';
+                return $item;
+            });
+        $allData = array_merge($allData, $agricultureData->toArray());
+
+        // Incident Monitored
+        $incidentData = \App\Models\IncidentMonitored::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Incident Monitored';
+                return $item;
+            });
+        $allData = array_merge($allData, $incidentData->toArray());
+
+        // Roads
+        $roadData = \App\Models\Road::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Road Status';
+                return $item;
+            });
+        $allData = array_merge($allData, $roadData->toArray());
+
+        // Bridges
+        $bridgeData = \App\Models\Bridge::whereIn('disaster_id', $disasterIds)
+            ->with(['user:id,name', 'typhoon:id,name,disaster_type'])
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->report_type = 'Bridge Status';
+                return $item;
+            });
+        $allData = array_merge($allData, $bridgeData->toArray());
+
+        // Sort by created_at descending
+        usort($allData, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        return response()->json($allData);
     }
 }
