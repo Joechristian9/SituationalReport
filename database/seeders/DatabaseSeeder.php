@@ -134,6 +134,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BarangaySeeder::class,
             DummyDataSeeder::class,
+            YearSeeder::class,
+            CasualtySeeder::class,
+            InjuredSeeder::class,
+            MissingSeeder::class,
         ]);
     }
 }
