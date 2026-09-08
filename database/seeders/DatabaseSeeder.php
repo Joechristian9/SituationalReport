@@ -135,9 +135,9 @@ class DatabaseSeeder extends Seeder
             BarangaySeeder::class,
             DummyDataSeeder::class,
             YearSeeder::class,
-            CasualtySeeder::class,
-            InjuredSeeder::class,
-            MissingSeeder::class,
+            // CasualtySeeder, InjuredSeeder, MissingSeeder are REMOVED
+            // because they truncate tables and create random data
+            // DummyDataSeeder already creates properly linked data
         ]);
     }
 }
