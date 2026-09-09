@@ -159,9 +159,11 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
     };
     
     // Helper function to get field modification history
-    const getFieldHistory = (fieldName) => {
-        if (!currentRecordId || !modificationData?.history) return [];
-        const historyKey = `${currentRecordId}_${fieldName}`;
+    const getFieldHistory = (recordId, fieldName) => {
+        // Use passed recordId or fallback to currentRecordId
+        const useRecordId = recordId || currentRecordId;
+        if (!useRecordId || !modificationData?.history) return [];
+        const historyKey = `${useRecordId}_${fieldName}`;
         return modificationData.history[historyKey] || [];
     };
     
@@ -213,7 +215,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                         className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
-                                        recordId={data.weatherReport?.id}
+                                        recordId={currentRecordId}
                                         fieldName="sky_condition"
                                         getFieldHistory={getFieldHistory}
                                         currentValue={formData.sky_condition}
@@ -238,7 +240,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                         className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
-                                        recordId={data.weatherReport?.id}
+                                        recordId={currentRecordId}
                                         fieldName="wind"
                                         getFieldHistory={getFieldHistory}
                                         currentValue={formData.wind}
@@ -263,7 +265,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                         className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
-                                        recordId={data.weatherReport?.id}
+                                        recordId={currentRecordId}
                                         fieldName="precipitation"
                                         getFieldHistory={getFieldHistory}
                                         currentValue={formData.precipitation}
@@ -288,7 +290,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                         className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
-                                        recordId={data.weatherReport?.id}
+                                        recordId={currentRecordId}
                                         fieldName="sea_condition"
                                         getFieldHistory={getFieldHistory}
                                         currentValue={formData.sea_condition}
