@@ -16,16 +16,6 @@ export default function ModificationIndicator({ recordId, fieldName, getFieldHis
     const buttonRef = useRef(null);
     const [popoverStyle, setPopoverStyle] = useState({});
     
-    // Only show icon if this specific field has been modified
-    if (fieldHistory.length === 0) return null;
-    
-    // Get the latest (current) and previous updates
-    const currentUpdate = fieldHistory[0];
-    const previousUpdate = fieldHistory.length > 1 ? fieldHistory[1] : null;
-    
-    // Check if this field was updated in the most recent submit (within last 5 minutes)
-    const wasJustUpdated = currentUpdate && (new Date() - new Date(currentUpdate.date)) < 5 * 60 * 1000;
-    
     // Calculate popover position when opened
     useEffect(() => {
         if (isOpen && buttonRef.current) {
@@ -54,6 +44,16 @@ export default function ModificationIndicator({ recordId, fieldName, getFieldHis
             });
         }
     }, [isOpen]);
+    
+    // Only show icon if this specific field has been modified
+    if (fieldHistory.length === 0) return null;
+    
+    // Get the latest (current) and previous updates
+    const currentUpdate = fieldHistory[0];
+    const previousUpdate = fieldHistory.length > 1 ? fieldHistory[1] : null;
+    
+    // Check if this field was updated in the most recent submit (within last 5 minutes)
+    const wasJustUpdated = currentUpdate && (new Date() - new Date(currentUpdate.date)) < 5 * 60 * 1000;
     
     const handleMouseEnter = () => {
         setIsOpen(true);
