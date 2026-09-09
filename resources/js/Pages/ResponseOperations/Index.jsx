@@ -361,7 +361,9 @@ export default function Index() {
                                                                         <ModificationIndicator 
                                                                             recordId={row.id} 
                                                                             fieldName={field} 
-                                                                            getFieldHistory={getFieldHistory} 
+                                                                            getFieldHistory={getFieldHistory}
+                                                                            currentValue={row[field]}
+                                                                            showLastModified={false}
                                                                         />
                                                                     </div>
                                                                 </td>

@@ -302,6 +302,8 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                                                                     recordId={row.id} 
                                                                     fieldName="sex"
                                                                     getFieldHistory={getFieldHistory}
+                                                                    currentValue={row.sex}
+                                                                    showLastModified={false}
                                                                 />
                                                             </div>
                                                         ) : (
@@ -330,20 +332,12 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                                                                     recordId={row.id} 
                                                                     fieldName={field}
                                                                     getFieldHistory={getFieldHistory}
+                                                                    currentValue={row[field]}
+                                                                    showLastModified={false}
                                                                 />
                                                             </>
                                                         )}
                                                     </div>
-                                                    {latestChange &&
-                                                        row[field] &&
-                                                        row[field] !== "" && (
-                                                            <p className="text-xs text-slate-500 mt-2">
-                                                                Last modified by{" "}
-                                                                <span className="font-medium text-blue-700">
-                                                                    {latestChange.user?.name}
-                                                                </span>
-                                                            </p>
-                                                        )}
                                                 </td>
                                             );
                                         })}

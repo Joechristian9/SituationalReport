@@ -249,6 +249,8 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                             recordId={row.id} 
                                             fieldName="status"
                                             getFieldHistory={getFieldHistory}
+                                            currentValue={row.status}
+                                            showLastModified={false}
                                         />
                                     </div>
                                 </td>
@@ -266,6 +268,8 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                             recordId={row.id} 
                                             fieldName="barangays_affected"
                                             getFieldHistory={getFieldHistory}
+                                            currentValue={row.barangays_affected}
+                                            showLastModified={false}
                                         />
                                     </div>
                                 </td>
@@ -284,6 +288,8 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                             recordId={row.id} 
                                             fieldName="remarks"
                                             getFieldHistory={getFieldHistory}
+                                            currentValue={row.remarks}
+                                            showLastModified={false}
                                         />
                                     </div>
                                 </td>

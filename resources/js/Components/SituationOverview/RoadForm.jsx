@@ -292,6 +292,8 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                                             recordId={row.id} 
                                                             fieldName={field}
                                                             getFieldHistory={getFieldHistory}
+                                                            currentValue={row[field]}
+                                                            showLastModified={false}
                                                         />
                                                     </div>
                                                 </td>

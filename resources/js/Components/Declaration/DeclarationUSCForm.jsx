@@ -250,7 +250,9 @@ export default function DeclarationUSCForm({ data, setData, errors, disabled = f
                                                         <ModificationIndicator 
                                                             recordId={row.id} 
                                                             fieldName={field} 
-                                                            getFieldHistory={getFieldHistory} 
+                                                            getFieldHistory={getFieldHistory}
+                                                            currentValue={row[field]}
+                                                            showLastModified={false}
                                                         />
                                                     </div>
                                                 </td>

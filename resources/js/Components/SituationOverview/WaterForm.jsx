@@ -223,6 +223,8 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             recordId={data.waterServices?.[0]?.id} 
                             fieldName="source_of_water"
                             getFieldHistory={getFieldHistory}
+                            currentValue={formData.source_of_water}
+                            showLastModified={false}
                         />
                     </div>
                 </div>
@@ -246,6 +248,8 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             recordId={data.waterServices?.[0]?.id} 
                             fieldName="barangays_served"
                             getFieldHistory={getFieldHistory}
+                            currentValue={formData.barangays_served}
+                            showLastModified={false}
                         />
                     </div>
                 </div>
@@ -269,6 +273,8 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             recordId={data.waterServices?.[0]?.id} 
                             fieldName="status"
                             getFieldHistory={getFieldHistory}
+                            currentValue={formData.status}
+                            showLastModified={false}
                         />
                     </div>
                 </div>
@@ -293,6 +299,8 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             recordId={data.waterServices?.[0]?.id} 
                             fieldName="remarks"
                             getFieldHistory={getFieldHistory}
+                            currentValue={formData.remarks}
+                            showLastModified={false}
                         />
                     </div>
                 </div>

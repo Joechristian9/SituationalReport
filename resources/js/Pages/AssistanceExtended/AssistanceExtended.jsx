@@ -341,7 +341,9 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                                                         <ModificationIndicator 
                                                             recordId={row.id} 
                                                             fieldName={field} 
-                                                            getFieldHistory={getFieldHistory} 
+                                                            getFieldHistory={getFieldHistory}
+                                                            currentValue={row[field]}
+                                                            showLastModified={false}
                                                         />
                                                     </div>
                                                 </td>

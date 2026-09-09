@@ -247,7 +247,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 <ModificationIndicator 
                                                     recordId={crop.id} 
                                                     fieldName="crops_affected" 
-                                                    getFieldHistory={getFieldHistory} 
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={crop.crops_affected}
+                                                    showLastModified={false}
                                                 />
                                             </div>
                                         </td>
@@ -265,7 +267,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 <ModificationIndicator 
                                                     recordId={crop.id} 
                                                     fieldName="standing_crop_ha" 
-                                                    getFieldHistory={getFieldHistory} 
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={crop.standing_crop_ha}
+                                                    showLastModified={false}
                                                 />
                                             </div>
                                         </td>
@@ -282,7 +286,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 <ModificationIndicator 
                                                     recordId={crop.id} 
                                                     fieldName="stage_of_crop" 
-                                                    getFieldHistory={getFieldHistory} 
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={crop.stage_of_crop}
+                                                    showLastModified={false}
                                                 />
                                             </div>
                                         </td>
@@ -300,7 +306,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 <ModificationIndicator 
                                                     recordId={crop.id} 
                                                     fieldName="total_area_affected_ha" 
-                                                    getFieldHistory={getFieldHistory} 
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={crop.total_area_affected_ha}
+                                                    showLastModified={false}
                                                 />
                                             </div>
                                         </td>
@@ -318,7 +326,9 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 <ModificationIndicator 
                                                     recordId={crop.id} 
                                                     fieldName="total_production_loss" 
-                                                    getFieldHistory={getFieldHistory} 
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={crop.total_production_loss}
+                                                    showLastModified={false}
                                                 />
                                             </div>
                                         </td>
