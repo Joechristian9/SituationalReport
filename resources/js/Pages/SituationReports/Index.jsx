@@ -63,6 +63,9 @@ const IncidentMonitoredForm = lazy(() =>
 const AgricultureForm = lazy(() =>
     import("@/Components/Agriculture/AgricultureForm")
 );
+const PreEmptiveForm = lazy(() =>
+    import("@/Components/PreEmptiveEvacuation/PreEmptiveForm")
+);
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -80,6 +83,7 @@ export default function Index() {
         communications,
         roads,
         bridges,
+        preEmptiveReports,
         typhoon,
         auth,
     } = usePage().props;
@@ -296,20 +300,23 @@ export default function Index() {
                           sea_condition: "",
                       },
                   ],
-        preEmptiveReports: [
-            {
-                id: null,
-                barangay: "",
-                evacuation_center: "",
-                families: "",
-                persons: "",
-                outside_center: "",
-                outside_families: "",
-                outside_persons: "",
-                total_families: 0,
-                total_persons: 0,
-            },
-        ],
+        preEmptiveReports:
+            preEmptiveReports && preEmptiveReports.length > 0
+                ? preEmptiveReports
+                : [
+                      {
+                          id: null,
+                          barangay: "",
+                          evacuation_center: "",
+                          families: "",
+                          persons: "",
+                          outside_center: "",
+                          outside_families: "",
+                          outside_persons: "",
+                          total_families: 0,
+                          total_persons: 0,
+                      },
+                  ],
         prePositioning: [
             {
                 id: null,
@@ -564,6 +571,15 @@ export default function Index() {
                     <BridgeForm
                         data={data}
                         setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Pre-Emptive Reports":
+                return (
+                    <PreEmptiveForm
+                        data={{ reports: data.preEmptiveReports }}
+                        setData={(key, value) => setData('preEmptiveReports', value)}
                         errors={errors}
                         disabled={formsDisabled}
                     />

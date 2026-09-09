@@ -39,6 +39,7 @@ class SituationOverviewController extends Controller
         $communicationQuery = Communication::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $roadQuery = Road::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $bridgeQuery = Bridge::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $preEmptiveQuery = \App\Models\PreEmptiveReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         
         // If typhoon was resumed, only show data created after the resume
         if ($resumedAt) {
@@ -49,6 +50,7 @@ class SituationOverviewController extends Controller
             $communicationQuery->where('created_at', '>=', $resumedAt);
             $roadQuery->where('created_at', '>=', $resumedAt);
             $bridgeQuery->where('created_at', '>=', $resumedAt);
+            $preEmptiveQuery->where('created_at', '>=', $resumedAt);
         }
 
         if ($user && !$user->isAdmin()) {
@@ -59,6 +61,7 @@ class SituationOverviewController extends Controller
             $communicationQuery->where('user_id', $user->id);
             $roadQuery->where('user_id', $user->id);
             $bridgeQuery->where('user_id', $user->id);
+            $preEmptiveQuery->where('user_id', $user->id);
         }
 
         return Inertia::render('SituationReports/Index', [
@@ -75,6 +78,8 @@ class SituationOverviewController extends Controller
             'roads'          => $roadQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'bridges'        => $bridgeQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'preEmptiveReports' => $preEmptiveQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
         ]);
     }
