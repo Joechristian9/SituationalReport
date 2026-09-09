@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { History } from 'lucide-react';
 
 /**
@@ -10,11 +10,16 @@ import { History } from 'lucide-react';
  * @param {function} getFieldHistory - Function to retrieve field history: (recordId, fieldName) => array
  */
 export default function ModificationIndicator({ recordId, fieldName, getFieldHistory }) {
-    const fieldHistory = getFieldHistory(recordId, fieldName);
     const [isOpen, setIsOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
     const buttonRef = useRef(null);
     const [popoverStyle, setPopoverStyle] = useState({});
+    
+    // Memoize the field history to prevent unnecessary recalculations
+    const fieldHistory = useMemo(() => {
+        if (!getFieldHistory || !recordId || !fieldName) return [];
+        return getFieldHistory(recordId, fieldName);
+    }, [recordId, fieldName, getFieldHistory]);
     
     // Calculate popover position when opened
     useEffect(() => {
@@ -46,14 +51,16 @@ export default function ModificationIndicator({ recordId, fieldName, getFieldHis
     }, [isOpen]);
     
     // Only show icon if this specific field has been modified
-    if (fieldHistory.length === 0) return null;
+    if (!fieldHistory || fieldHistory.length === 0) return null;
     
     // Get the latest (current) and previous updates
     const currentUpdate = fieldHistory[0];
+    if (!currentUpdate) return null;
+    
     const previousUpdate = fieldHistory.length > 1 ? fieldHistory[1] : null;
     
     // Check if this field was updated in the most recent submit (within last 5 minutes)
-    const wasJustUpdated = currentUpdate && (new Date() - new Date(currentUpdate.date)) < 5 * 60 * 1000;
+    const wasJustUpdated = currentUpdate.date && (new Date() - new Date(currentUpdate.date)) < 5 * 60 * 1000;
     
     const handleMouseEnter = () => {
         setIsOpen(true);
