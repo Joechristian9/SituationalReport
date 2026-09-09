@@ -23,7 +23,8 @@ class MissingController extends Controller
         $missingQuery = Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
-            $missingQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $missingList = $missingQuery->latest()->limit(200)->get();
@@ -97,7 +98,8 @@ class MissingController extends Controller
 
                 $user = Auth::user();
                 if ($user && !$user->isAdmin()) {
-                    $missingQuery->where('user_id', $user->id);
+                    $accessibleUserIds = $user->getAccessibleUserIds('write');
+                    $missingQuery->whereIn('user_id', $accessibleUserIds);
                 }
 
                 $missingRecord = $missingQuery->first();

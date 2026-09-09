@@ -25,7 +25,8 @@ class AssistanceExtendedController extends Controller
         $assistancesQuery = AssistanceExtended::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
-            $assistancesQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $assistancesQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $assistances = $assistancesQuery->latest()->limit(100)->get();

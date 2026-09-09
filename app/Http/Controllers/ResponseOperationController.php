@@ -23,7 +23,8 @@ class ResponseOperationController extends Controller
         $operationsQuery = ResponseOperation::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
-            $operationsQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $operationsQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $operations = $operationsQuery->latest()->limit(200)->get();
@@ -65,7 +66,8 @@ class ResponseOperationController extends Controller
 
                 $user = Auth::user();
                 if ($user && !$user->isAdmin()) {
-                    $operationQuery->where('user_id', $user->id);
+                    $accessibleUserIds = $user->getAccessibleUserIds('write');
+                    $operationQuery->whereIn('user_id', $accessibleUserIds);
                 }
 
                 $operation = $operationQuery->first();
@@ -134,7 +136,8 @@ class ResponseOperationController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedOperations = $updatedQuery

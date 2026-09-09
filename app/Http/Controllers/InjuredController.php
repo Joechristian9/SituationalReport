@@ -23,7 +23,8 @@ class InjuredController extends Controller
         $injuredQuery = Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
-            $injuredQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $injuredQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $injuredList = $injuredQuery->latest()->limit(200)->get();
@@ -100,7 +101,8 @@ class InjuredController extends Controller
 
                 $user = Auth::user();
                 if ($user && !$user->isAdmin()) {
-                    $injuredQuery->where('user_id', $user->id);
+                    $accessibleUserIds = $user->getAccessibleUserIds('write');
+                    $injuredQuery->whereIn('user_id', $accessibleUserIds);
                 }
 
                 $injuredRecord = $injuredQuery->first();

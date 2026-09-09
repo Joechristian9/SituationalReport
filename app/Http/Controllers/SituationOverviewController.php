@@ -54,14 +54,17 @@ class SituationOverviewController extends Controller
         }
 
         if ($user && !$user->isAdmin()) {
-            $weatherQuery->where('user_id', $user->id);
-            $waterLevelQuery->where('user_id', $user->id);
-            $electricityQuery->where('user_id', $user->id);
-            $waterServiceQuery->where('user_id', $user->id);
-            $communicationQuery->where('user_id', $user->id);
-            $roadQuery->where('user_id', $user->id);
-            $bridgeQuery->where('user_id', $user->id);
-            $preEmptiveQuery->where('user_id', $user->id);
+            // Get all user IDs whose data this user can access (including their own)
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            
+            $weatherQuery->whereIn('user_id', $accessibleUserIds);
+            $waterLevelQuery->whereIn('user_id', $accessibleUserIds);
+            $electricityQuery->whereIn('user_id', $accessibleUserIds);
+            $waterServiceQuery->whereIn('user_id', $accessibleUserIds);
+            $communicationQuery->whereIn('user_id', $accessibleUserIds);
+            $roadQuery->whereIn('user_id', $accessibleUserIds);
+            $bridgeQuery->whereIn('user_id', $accessibleUserIds);
+            $preEmptiveQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         return Inertia::render('SituationReports/Index', [
@@ -178,7 +181,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedReports = $updatedQuery
@@ -260,7 +264,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedReports = $updatedQuery
@@ -333,7 +338,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedServices = $updatedQuery
@@ -429,7 +435,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedServices = $updatedQuery
@@ -563,7 +570,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedCommunications = $updatedQuery
@@ -647,7 +655,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedRoads = $updatedQuery
@@ -731,7 +740,8 @@ class SituationOverviewController extends Controller
             ->where('disaster_id', $activeTyphoon->id);
 
         if ($user && !$user->isAdmin()) {
-            $updatedQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $updatedBridges = $updatedQuery
@@ -980,8 +990,9 @@ class SituationOverviewController extends Controller
     {
         $user = Auth::user();
         
-        // Get all electricity reports for this user, grouped by typhoon
-        $reports = ElectricityService::where('user_id', $user->id)
+        // Get all electricity reports for accessible users, grouped by typhoon
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = ElectricityService::whereIn('user_id', $accessibleUserIds)
             ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -1017,9 +1028,10 @@ class SituationOverviewController extends Controller
         // Get the typhoon
         $typhoon = Typhoon::findOrFail($typhoonId);
         
-        // Get all electricity reports for this typhoon by this user
+        // Get all electricity reports for this typhoon by accessible users
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = ElectricityService::where('disaster_id', $typhoonId)
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', $accessibleUserIds)
             ->with(['user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -1055,8 +1067,9 @@ class SituationOverviewController extends Controller
     {
         $user = Auth::user();
         
-        // Get all water service reports for this user, grouped by typhoon
-        $reports = WaterService::where('user_id', $user->id)
+        // Get all water service reports for accessible users, grouped by typhoon
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = WaterService::whereIn('user_id', $accessibleUserIds)
             ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -1092,8 +1105,9 @@ class SituationOverviewController extends Controller
         $perPage = $request->input('per_page', 20); // Default 20 items per page
         $page = $request->input('page', 1);
         
-        // Get paginated weather reports for this user
-        $reports = WeatherReport::where('user_id', $user->id)
+        // Get paginated weather reports for accessible users
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = WeatherReport::whereIn('user_id', $accessibleUserIds)
             ->whereNotNull('disaster_id')
             ->whereHas('typhoon') // Only get reports with valid typhoon
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
@@ -1143,8 +1157,9 @@ class SituationOverviewController extends Controller
     {
         $user = Auth::user();
         
-        // Get all communication reports for this user, grouped by typhoon
-        $reports = Communication::where('user_id', $user->id)
+        // Get all communication reports for accessible users, grouped by typhoon
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = Communication::whereIn('user_id', $accessibleUserIds)
             ->whereNotNull('disaster_id')
             ->whereHas('typhoon') // Only get reports with valid typhoon
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name', 'serviceValues.service'])
@@ -1190,8 +1205,9 @@ class SituationOverviewController extends Controller
     {
         $user = Auth::user();
         
-        // Get all road reports for this user, grouped by typhoon
-        $reports = Road::where('user_id', $user->id)
+        // Get all road reports for accessible users, grouped by typhoon
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = Road::whereIn('user_id', $accessibleUserIds)
             ->whereNotNull('disaster_id')
             ->whereHas('typhoon') // Only get reports with valid typhoon
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
@@ -1236,8 +1252,9 @@ class SituationOverviewController extends Controller
     {
         $user = Auth::user();
         
-        // Get all bridge reports for this user, grouped by typhoon
-        $reports = Bridge::where('user_id', $user->id)
+        // Get all bridge reports for accessible users, grouped by typhoon
+        $accessibleUserIds = $user->getAccessibleUserIds('read');
+        $reports = Bridge::whereIn('user_id', $accessibleUserIds)
             ->whereNotNull('disaster_id')
             ->whereHas('typhoon') // Only get reports with valid typhoon
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])

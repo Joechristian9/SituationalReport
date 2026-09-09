@@ -23,7 +23,8 @@ class CasualtyController extends Controller
         $casualtiesQuery = Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
 
         if ($user && !$user->isAdmin()) {
-            $casualtiesQuery->where('user_id', $user->id);
+            $accessibleUserIds = $user->getAccessibleUserIds('read');
+            $casualtiesQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $casualties = $casualtiesQuery->latest()->limit(200)->get();
@@ -94,7 +95,8 @@ class CasualtyController extends Controller
 
                 $user = Auth::user();
                 if ($user && !$user->isAdmin()) {
-                    $casualtyQuery->where('user_id', $user->id);
+                    $accessibleUserIds = $user->getAccessibleUserIds('write');
+                    $casualtyQuery->whereIn('user_id', $accessibleUserIds);
                 }
 
                 $casualtyRecord = $casualtyQuery->first();

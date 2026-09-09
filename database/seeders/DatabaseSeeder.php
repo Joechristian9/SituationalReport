@@ -131,6 +131,24 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole($adminRole);
         $admin->givePermissionTo(Permission::all());
 
+        // Set up data sharing: CDRRMO can read and write ISELCO2's electricity data
+        \DB::table('user_data_sharing')->insert([
+            'user_id' => $iselco2->id,  // ISELCO2 owns the data
+            'shared_with_user_id' => $cdrrmo->id,  // Shared with CDRRMO
+            'permission_type' => 'write',  // CDRRMO can both read and write
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Optionally: ISELCO2 can also see CDRRMO's data (bidirectional sharing)
+        \DB::table('user_data_sharing')->insert([
+            'user_id' => $cdrrmo->id,  // CDRRMO owns the data
+            'shared_with_user_id' => $iselco2->id,  // Shared with ISELCO2
+            'permission_type' => 'read',  // ISELCO2 can read CDRRMO's data
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->call([
             BarangaySeeder::class,
             DummyDataSeeder::class,
