@@ -31,10 +31,10 @@ import {
 
 export default function AuditLogs({ logs, filters, filterOptions }) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
-    const [selectedUser, setSelectedUser] = useState(filters.user_id || '');
-    const [selectedAction, setSelectedAction] = useState(filters.action || '');
-    const [selectedModule, setSelectedModule] = useState(filters.module || '');
-    const [selectedDisaster, setSelectedDisaster] = useState(filters.disaster_id || '');
+    const [selectedUser, setSelectedUser] = useState(filters.user_id || 'all');
+    const [selectedAction, setSelectedAction] = useState(filters.action || 'all');
+    const [selectedModule, setSelectedModule] = useState(filters.module || 'all');
+    const [selectedDisaster, setSelectedDisaster] = useState(filters.disaster_id || 'all');
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [itemsPerPage, setItemsPerPage] = useState(filters.per_page || 25);
@@ -47,10 +47,10 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
     const handleFilterChange = () => {
         router.get('/admin/audit-logs', {
             search: searchQuery,
-            user_id: selectedUser,
-            action: selectedAction,
-            module: selectedModule,
-            disaster_id: selectedDisaster,
+            user_id: selectedUser === 'all' ? '' : selectedUser,
+            action: selectedAction === 'all' ? '' : selectedAction,
+            module: selectedModule === 'all' ? '' : selectedModule,
+            disaster_id: selectedDisaster === 'all' ? '' : selectedDisaster,
             start_date: startDate,
             end_date: endDate,
             per_page: itemsPerPage,
@@ -63,10 +63,10 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
     // Reset filters
     const handleResetFilters = () => {
         setSearchQuery('');
-        setSelectedUser('');
-        setSelectedAction('');
-        setSelectedModule('');
-        setSelectedDisaster('');
+        setSelectedUser('all');
+        setSelectedAction('all');
+        setSelectedModule('all');
+        setSelectedDisaster('all');
         setStartDate('');
         setEndDate('');
         router.get('/admin/audit-logs', { per_page: itemsPerPage });
@@ -95,10 +95,10 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
             toast.info('Preparing export...');
             const response = await axios.post('/admin/audit-logs/export', {
                 search: searchQuery,
-                user_id: selectedUser,
-                action: selectedAction,
-                module: selectedModule,
-                disaster_id: selectedDisaster,
+                user_id: selectedUser === 'all' ? '' : selectedUser,
+                action: selectedAction === 'all' ? '' : selectedAction,
+                module: selectedModule === 'all' ? '' : selectedModule,
+                disaster_id: selectedDisaster === 'all' ? '' : selectedDisaster,
                 start_date: startDate,
                 end_date: endDate,
             }, {
@@ -184,7 +184,7 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                             <SelectValue placeholder="All Users" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">All Users</SelectItem>
+                                            <SelectItem value="all">All Users</SelectItem>
                                             {filterOptions.users.map((user) => (
                                                 <SelectItem key={user.id} value={user.id.toString()}>
                                                     {user.name}
@@ -202,7 +202,7 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                             <SelectValue placeholder="All Actions" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">All Actions</SelectItem>
+                                            <SelectItem value="all">All Actions</SelectItem>
                                             {filterOptions.actions.map((action) => (
                                                 <SelectItem key={action.value} value={action.value}>
                                                     {action.label}
@@ -220,7 +220,7 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                             <SelectValue placeholder="All Modules" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">All Modules</SelectItem>
+                                            <SelectItem value="all">All Modules</SelectItem>
                                             {filterOptions.modules.map((module) => (
                                                 <SelectItem key={module.value} value={module.value}>
                                                     {module.label}
@@ -238,7 +238,7 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                             <SelectValue placeholder="All Disasters" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">All Disasters</SelectItem>
+                                            <SelectItem value="all">All Disasters</SelectItem>
                                             {filterOptions.disasters.map((disaster) => (
                                                 <SelectItem key={disaster.id} value={disaster.id.toString()}>
                                                     {disaster.name}
