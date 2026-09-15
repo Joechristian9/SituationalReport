@@ -225,6 +225,7 @@ export function AppSidebar({ ...props }) {
                     roles: ["admin"],
                     icon: Cloud,
                     permission: null,
+                    badge: true,
                 },
                 {
                     title: "Reports History",
