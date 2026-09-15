@@ -17,6 +17,8 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [currentDateTime, setCurrentDateTime] = useState(new Date());
+    
+    // Separate rows for current user (editable) and other users (read-only display)
     const [rows, setRows] = useState([{
         id: null,
         status: "",
@@ -55,16 +57,16 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     }, []);
     
     useEffect(() => {
-        // Filter electricity services to only show the current user's data
-        const services = data.electricityServices?.filter(service => 
+        // Separate current user's data from other users' data
+        const currentUserServices = data.electricityServices?.filter(service => 
             service.user_id === auth.user.id
         ) ?? [];
         
         // Check if typhoon was recently resumed
         const typhoonResumedAt = typhoon?.resumed_at;
         
-        if (services.length > 0) {
-            const firstService = services[0];
+        if (currentUserServices.length > 0) {
+            const firstService = currentUserServices[0];
             
             // If typhoon was resumed and this record was created BEFORE the resume, don't load it
             if (typhoonResumedAt && firstService.created_at) {
@@ -77,7 +79,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 }
             }
             
-            const loadedRows = services.map(service => ({
+            const loadedRows = currentUserServices.map(service => ({
                 id: service.id,
                 status: service.status || "",
                 barangays_affected: service.barangays_affected || "",
@@ -220,7 +222,11 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 </div>
             </div>
 
+            {/* Current User's Editable Form */}
             <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
+                <div className="bg-blue-100 px-4 py-2 border-b border-blue-200">
+                    <p className="text-sm font-semibold text-blue-900">Your Report (Editable)</p>
+                </div>
                 <table className="w-full">
                     <thead>
                         <tr className="bg-blue-50 border-b border-blue-200">
@@ -332,6 +338,101 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                     )}
                 </button>
             </div>
+
+            {/* Other Users' Data (Read-Only) */}
+            {data.electricityServices?.filter(service => service.user_id !== auth.user.id).length > 0 && (
+                <div className="bg-white rounded-xl shadow-md border-2 border-gray-200 overflow-x-auto mt-6">
+                    <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-900">Other Reports (Read-Only)</p>
+                    </div>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
+                                    SUBMITTED BY
+                                </th>
+                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
+                                    STATUS OF ELECTRICITY SERVICES
+                                </th>
+                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
+                                    BARANGAYS AFFECTED
+                                </th>
+                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
+                                    REMARKS
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.electricityServices
+                                ?.filter(service => service.user_id !== auth.user.id)
+                                .map((service, index) => (
+                                    <tr key={index} className="border-b border-gray-100 last:border-0 bg-gray-50">
+                                        <td className="p-3">
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {service.user?.name || 'Unknown User'}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {new Date(service.updated_at).toLocaleString()}
+                                            </div>
+                                        </td>
+                                        <td className="p-3">
+                                            <div className="relative">
+                                                <textarea
+                                                    value={service.status || ""}
+                                                    readOnly
+                                                    rows="3"
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={service.id} 
+                                                    fieldName="status"
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={service.status}
+                                                    showLastModified={false}
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="p-3">
+                                            <div className="relative">
+                                                <textarea
+                                                    value={service.barangays_affected || ""}
+                                                    readOnly
+                                                    rows="3"
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={service.id} 
+                                                    fieldName="barangays_affected"
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={service.barangays_affected}
+                                                    showLastModified={false}
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="p-3">
+                                            <div className="relative">
+                                                <textarea
+                                                    value={service.remarks || ""}
+                                                    readOnly
+                                                    rows="3"
+                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
+                                                />
+                                                <ModificationIndicator 
+                                                    recordId={service.id} 
+                                                    fieldName="remarks"
+                                                    getFieldHistory={getFieldHistory}
+                                                    currentValue={service.remarks}
+                                                    showLastModified={false}
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
