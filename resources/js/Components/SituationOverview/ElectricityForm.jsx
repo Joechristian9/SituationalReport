@@ -13,7 +13,7 @@ import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 export default function ElectricityForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
-    const { typhoon } = usePage().props;
+    const { typhoon, auth } = usePage().props;
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -55,7 +55,10 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     }, []);
     
     useEffect(() => {
-        const services = data.electricityServices ?? [];
+        // Filter electricity services to only show the current user's data
+        const services = data.electricityServices?.filter(service => 
+            service.user_id === auth.user.id
+        ) ?? [];
         
         // Check if typhoon was recently resumed
         const typhoonResumedAt = typhoon?.resumed_at;
@@ -84,7 +87,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
             setRows(loadedRows);
             setOriginalData(JSON.parse(JSON.stringify(loadedRows)));
         }
-    }, [data.electricityServices, typhoon]);
+    }, [data.electricityServices, typhoon, auth.user.id]);
     
     useEffect(() => {
         if (previousDisabled === true && disabled === false) {
