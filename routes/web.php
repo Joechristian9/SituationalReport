@@ -386,9 +386,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('user-form-data/{userId}', [DisasterController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
     
-    // Batch History (Admin only)
-    Route::get('history', [HistoryController::class, 'index'])->name('admin.history');
-    Route::get('api/history/all-data', [HistoryController::class, 'getAllData'])->name('admin.history.all-data');
+    // Audit Logs (Admin only)
+    Route::get('audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs');
+    Route::get('audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->name('admin.audit-logs.show');
+    Route::post('audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
     
     // Year Management (Admin only)
     Route::get('years', [App\Http\Controllers\YearController::class, 'index'])->name('admin.years.index');

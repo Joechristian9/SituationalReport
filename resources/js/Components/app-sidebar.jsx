@@ -33,6 +33,7 @@ import {
     Sprout,
     ClipboardCheck,
     Zap,
+    Shield,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
 
@@ -228,10 +229,10 @@ export function AppSidebar({ ...props }) {
                     badge: true,
                 },
                 {
-                    title: "Reports History",
-                    url: route("admin.history"),
+                    title: "Audit Logs",
+                    url: route("admin.audit-logs"),
                     roles: ["admin"],
-                    icon: History,
+                    icon: Shield,
                     permission: null,
                 },
                 {

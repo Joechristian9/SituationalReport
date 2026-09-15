@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,9 @@ class AuthenticatedSessionController extends Controller
         
         $request->session()->regenerate();
 
+        // Log successful login
+        AuditLogger::logLogin("User {$user->name} logged in successfully");
+
         if ($user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard', [], false));
         } else {
@@ -49,6 +53,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Log logout before destroying session
+        $user = Auth::user();
+        if ($user) {
+            AuditLogger::logLogout("User {$user->name} logged out");
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
