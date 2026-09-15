@@ -55,7 +55,7 @@ class AuditLog extends Model
      */
     public function disaster(): BelongsTo
     {
-        return $this->belongsTo(Disaster::class);
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
     }
 
     /**
@@ -63,6 +63,10 @@ class AuditLog extends Model
      */
     public function getActionNameAttribute(): string
     {
+        if (!$this->action) {
+            return 'Unknown';
+        }
+
         return match($this->action) {
             'created' => 'Created',
             'updated' => 'Updated',
