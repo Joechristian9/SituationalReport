@@ -298,6 +298,10 @@ export function NavMain({ items = [] }) {
                                                                     }
                                                                 </span>
 
+                                                                {subItem.badge && !isActive && (
+                                                                    <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
+                                                                )}
+
                                                                 {isActive && (
                                                                     <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
                                                                 )}

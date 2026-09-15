@@ -246,6 +246,7 @@ export function AppSidebar({ ...props }) {
                     roles: ["admin"],
                     icon: UserCircle,
                     permission: null,
+                    badge: true, // Add indicator badge
                 },
                 ...(!isAdmin ? [{
                     title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP || isBarangay) ? "Reports" : "Situation Overview",
