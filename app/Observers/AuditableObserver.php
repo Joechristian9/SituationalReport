@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\Model;
 class AuditableObserver
 {
     /**
+     * Store original values in a static property to avoid database conflicts
+     */
+    protected static $originalValues = [];
+
+    /**
      * Handle the Model "created" event.
      */
     public function created(Model $model): void
@@ -28,8 +33,9 @@ class AuditableObserver
      */
     public function updating(Model $model): void
     {
-        // Store original values before the update
-        $model->_auditOriginalValues = $model->getOriginal();
+        // Store original values in a static array using object ID as key
+        // This prevents Eloquent from trying to save it as a database column
+        static::$originalValues[spl_object_id($model)] = $model->getOriginal();
     }
 
     /**
@@ -38,7 +44,11 @@ class AuditableObserver
     public function updated(Model $model): void
     {
         // Get the original values we stored in "updating"
-        $originalValues = $model->_auditOriginalValues ?? $model->getOriginal();
+        $objectId = spl_object_id($model);
+        $originalValues = static::$originalValues[$objectId] ?? $model->getOriginal();
+        
+        // Clean up to prevent memory leaks
+        unset(static::$originalValues[$objectId]);
         
         AuditLogger::logUpdate(
             model: $model,
