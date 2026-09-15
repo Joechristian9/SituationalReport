@@ -17,8 +17,6 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [currentDateTime, setCurrentDateTime] = useState(new Date());
-    
-    // Separate rows for current user (editable) and other users (read-only display)
     const [rows, setRows] = useState([{
         id: null,
         status: "",
@@ -57,16 +55,14 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
     }, []);
     
     useEffect(() => {
-        // Separate current user's data from other users' data
-        const currentUserServices = data.electricityServices?.filter(service => 
-            service.user_id === auth.user.id
-        ) ?? [];
+        // Load ALL electricity services (all users can edit all records)
+        const services = data.electricityServices ?? [];
         
         // Check if typhoon was recently resumed
         const typhoonResumedAt = typhoon?.resumed_at;
         
-        if (currentUserServices.length > 0) {
-            const firstService = currentUserServices[0];
+        if (services.length > 0) {
+            const firstService = services[0];
             
             // If typhoon was resumed and this record was created BEFORE the resume, don't load it
             if (typhoonResumedAt && firstService.created_at) {
@@ -79,17 +75,19 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 }
             }
             
-            const loadedRows = currentUserServices.map(service => ({
+            const loadedRows = services.map(service => ({
                 id: service.id,
+                user_id: service.user_id, // Keep track of who created it
                 status: service.status || "",
                 barangays_affected: service.barangays_affected || "",
-                remarks: service.remarks || ""
+                remarks: service.remarks || "",
+                user: service.user // Keep user info for display
             }));
             
             setRows(loadedRows);
             setOriginalData(JSON.parse(JSON.stringify(loadedRows)));
         }
-    }, [data.electricityServices, typhoon, auth.user.id]);
+    }, [data.electricityServices, typhoon]);
     
     useEffect(() => {
         if (previousDisabled === true && disabled === false) {
@@ -187,8 +185,17 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 row.remarks.trim() !== ''
             );
 
+            // Include user_id to preserve original creator
+            const servicesWithUserId = validRows.map(row => ({
+                id: row.id,
+                user_id: row.user_id || auth.user.id, // Preserve original user_id or use current user
+                status: row.status,
+                barangays_affected: row.barangays_affected,
+                remarks: row.remarks,
+            }));
+
             const response = await axios.post(`${APP_URL}/electricity-reports`, {
-                electricityServices: validRows,
+                electricityServices: servicesWithUserId,
             });
             
             if (response.data && Array.isArray(response.data.electricityServices)) {
@@ -215,28 +222,27 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                     <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Electricity Status Update</h4>
+                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Electricity Status Update (Collaborative)</h4>
                     <p className="text-blue-700 text-sm">
-                        One report per typhoon — update anytime to keep information current.
+                        All users can view and edit all electricity reports — work together to keep information current.
                     </p>
                 </div>
             </div>
 
-            {/* Current User's Editable Form */}
             <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
-                <div className="bg-blue-100 px-4 py-2 border-b border-blue-200">
-                    <p className="text-sm font-semibold text-blue-900">Your Report (Editable)</p>
-                </div>
                 <table className="w-full">
                     <thead>
                         <tr className="bg-blue-50 border-b border-blue-200">
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/3">
+                            <th className="text-left p-4 font-semibold text-blue-900 w-32">
+                                CREATED BY
+                            </th>
+                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
                                 STATUS OF ELECTRICITY SERVICES
                             </th>
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/3">
+                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
                                 BARANGAYS AFFECTED
                             </th>
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/3">
+                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
                                 REMARKS
                             </th>
                         </tr>
@@ -244,6 +250,16 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                     <tbody>
                         {rows.map((row, index) => (
                             <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                                <td className="p-3">
+                                    <div className="text-sm font-medium text-gray-900">
+                                        {row.user?.name || (row.user_id === auth.user.id ? 'You' : 'New Entry')}
+                                    </div>
+                                    {row.user?.name && (
+                                        <div className="text-xs text-gray-500">
+                                            {row.user_id === auth.user.id ? '(You)' : ''}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className="p-3">
                                     <div className="relative">
                                         <textarea
@@ -338,101 +354,6 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                     )}
                 </button>
             </div>
-
-            {/* Other Users' Data (Read-Only) */}
-            {data.electricityServices?.filter(service => service.user_id !== auth.user.id).length > 0 && (
-                <div className="bg-white rounded-xl shadow-md border-2 border-gray-200 overflow-x-auto mt-6">
-                    <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-900">Other Reports (Read-Only)</p>
-                    </div>
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
-                                    SUBMITTED BY
-                                </th>
-                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
-                                    STATUS OF ELECTRICITY SERVICES
-                                </th>
-                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
-                                    BARANGAYS AFFECTED
-                                </th>
-                                <th className="text-left p-4 font-semibold text-gray-900 w-1/4">
-                                    REMARKS
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.electricityServices
-                                ?.filter(service => service.user_id !== auth.user.id)
-                                .map((service, index) => (
-                                    <tr key={index} className="border-b border-gray-100 last:border-0 bg-gray-50">
-                                        <td className="p-3">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {service.user?.name || 'Unknown User'}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                {new Date(service.updated_at).toLocaleString()}
-                                            </div>
-                                        </td>
-                                        <td className="p-3">
-                                            <div className="relative">
-                                                <textarea
-                                                    value={service.status || ""}
-                                                    readOnly
-                                                    rows="3"
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
-                                                />
-                                                <ModificationIndicator 
-                                                    recordId={service.id} 
-                                                    fieldName="status"
-                                                    getFieldHistory={getFieldHistory}
-                                                    currentValue={service.status}
-                                                    showLastModified={false}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td className="p-3">
-                                            <div className="relative">
-                                                <textarea
-                                                    value={service.barangays_affected || ""}
-                                                    readOnly
-                                                    rows="3"
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
-                                                />
-                                                <ModificationIndicator 
-                                                    recordId={service.id} 
-                                                    fieldName="barangays_affected"
-                                                    getFieldHistory={getFieldHistory}
-                                                    currentValue={service.barangays_affected}
-                                                    showLastModified={false}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td className="p-3">
-                                            <div className="relative">
-                                                <textarea
-                                                    value={service.remarks || ""}
-                                                    readOnly
-                                                    rows="3"
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded bg-gray-100 cursor-not-allowed resize-none text-sm"
-                                                />
-                                                <ModificationIndicator 
-                                                    recordId={service.id} 
-                                                    fieldName="remarks"
-                                                    getFieldHistory={getFieldHistory}
-                                                    currentValue={service.remarks}
-                                                    showLastModified={false}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            )}
         </div>
     );
 }

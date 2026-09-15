@@ -298,6 +298,7 @@ class SituationOverviewController extends Controller
         $validated = $request->validate([
             'electricityServices' => 'required|array',
             'electricityServices.*.id' => ['nullable', 'integer'],
+            'electricityServices.*.user_id' => ['nullable', 'integer'], // Allow user_id to be passed
             'electricityServices.*.status' => 'nullable|string',
             'electricityServices.*.barangays_affected' => 'nullable|string',
             'electricityServices.*.remarks' => 'nullable|string',
@@ -305,9 +306,8 @@ class SituationOverviewController extends Controller
 
         $user = Auth::user();
         
-        // Get existing record IDs for this user and typhoon
+        // Get ALL existing record IDs for this typhoon (not just current user's)
         $existingIds = ElectricityService::where('disaster_id', $activeTyphoon->id)
-            ->where('user_id', $user->id)
             ->pluck('id')
             ->toArray();
 
@@ -324,23 +324,26 @@ class SituationOverviewController extends Controller
             }
 
             if (!empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
-                // Update existing record
+                // Update existing record (anyone can update any record)
                 $service = ElectricityService::find($serviceData['id']);
-                if ($service && $service->user_id === $user->id) {
+                if ($service) {
                     $service->update([
                         'status' => $serviceData['status'] ?? null,
                         'barangays_affected' => $serviceData['barangays_affected'] ?? null,
                         'remarks' => $serviceData['remarks'] ?? null,
-                        'updated_by' => Auth::id(),
+                        'updated_by' => Auth::id(), // Track who made the update
                     ]);
                     $processedIds[] = $service->id;
                     $savedServices[] = $service;
                 }
             } else {
                 // Create new record
+                // If user_id is provided (from existing record), keep it; otherwise use current user
+                $recordUserId = $serviceData['user_id'] ?? $user->id;
+                
                 $service = ElectricityService::create([
                     'disaster_id' => $activeTyphoon->id,
-                    'user_id' => $user->id,
+                    'user_id' => $recordUserId, // Preserve original creator
                     'status' => $serviceData['status'] ?? null,
                     'barangays_affected' => $serviceData['barangays_affected'] ?? null,
                     'remarks' => $serviceData['remarks'] ?? null,
@@ -354,9 +357,7 @@ class SituationOverviewController extends Controller
         // Delete records that were not included in the submission (user removed rows)
         $idsToDelete = array_diff($existingIds, $processedIds);
         if (!empty($idsToDelete)) {
-            ElectricityService::whereIn('id', $idsToDelete)
-                ->where('user_id', $user->id)
-                ->delete();
+            ElectricityService::whereIn('id', $idsToDelete)->delete();
         }
 
         // Return all reports for this typhoon
