@@ -298,13 +298,13 @@ export function NavMain({ items = [] }) {
                                                                     }
                                                                 </span>
 
-                                                                {subItem.badge && !isActive && (
+                                                                {subItem.badge && isActive && (
                                                                     <div className="flex items-center justify-center w-4 h-4 bg-white rounded-full flex-shrink-0">
                                                                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                                                     </div>
                                                                 )}
 
-                                                                {isActive && (
+                                                                {!subItem.badge && isActive && (
                                                                     <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
                                                                 )}
                                                             </a>
