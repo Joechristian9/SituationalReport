@@ -276,6 +276,10 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                         className="hover:bg-gray-50"
                                     >
                                         {fields.map((field) => {
+                                            // Get field history for "Last modified by" display
+                                            const fieldHistory = getFieldHistory(row.id, field);
+                                            const latestChange = fieldHistory[0];
+                                            
                                             return (
                                                 <td
                                                     key={field}
@@ -303,9 +307,17 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                                             fieldName={field}
                                                             getFieldHistory={getFieldHistory}
                                                             currentValue={row[field]}
-                                                            showLastModified={false}
+                                                            showLastModified={true}
                                                         />
                                                     </div>
+                                                    {latestChange && row[field] && row[field] !== '' && (
+                                                        <p className="text-xs text-slate-500 mt-2">
+                                                            Last modified by{" "}
+                                                            <span className="font-medium text-blue-700">
+                                                                {latestChange.user?.name}
+                                                            </span>
+                                                        </p>
+                                                    )}
                                                 </td>
                                             );
                                         })}
