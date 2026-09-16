@@ -111,8 +111,18 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
         const errors = [];
         
         roads.forEach((road, index) => {
-            if (!road.name_of_road || road.name_of_road.trim() === '') {
-                errors.push(`Row ${index + 1}: Road name is required`);
+            // Check if at least one field has a value (OR logic)
+            const hasAnyValue = 
+                (road.road_classification && road.road_classification.trim() !== '') ||
+                (road.name_of_road && road.name_of_road.trim() !== '') ||
+                (road.status && road.status.trim() !== '') ||
+                (road.areas_affected && road.areas_affected.trim() !== '') ||
+                (road.re_routing && road.re_routing.trim() !== '') ||
+                (road.remarks && road.remarks.trim() !== '');
+            
+            // If no fields are filled, that's an error
+            if (!hasAnyValue) {
+                errors.push(`Row ${index + 1}: At least one field must be filled`);
             }
         });
         
