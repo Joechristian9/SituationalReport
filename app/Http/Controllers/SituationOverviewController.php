@@ -696,31 +696,32 @@ class SituationOverviewController extends Controller
 
     public function storeBridge(Request $request)
     {
-        // Check permission
-        if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to bridge form');
-        }
+        try {
+            // Check permission
+            if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
+                abort(403, 'Unauthorized access to bridge form');
+            }
 
-        // Validate typhoon status
-        if ($error = $this->validateActiveTyphoon()) {
-            return $error;
-        }
+            // Validate typhoon status
+            if ($error = $this->validateActiveTyphoon()) {
+                return $error;
+            }
 
-        // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+            // Get active typhoon
+            $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
 
-        $validated = $request->validate([
-            'bridges' => 'required|array',
-            'bridges.*.id' => ['nullable', 'integer'],
-            'bridges.*.road_classification' => 'nullable|string|max:255',
-            'bridges.*.name_of_bridge'     => 'nullable|string|max:255',
-            'bridges.*.status'             => 'nullable|string|max:255',
-            'bridges.*.areas_affected'     => 'nullable|string|max:500',
-            'bridges.*.re_routing'         => 'nullable|string|max:500',
-            'bridges.*.remarks'            => 'nullable|string|max:500',
-        ]);
+            $validated = $request->validate([
+                'bridges' => 'required|array',
+                'bridges.*.id' => ['nullable', 'integer'],
+                'bridges.*.road_classification' => 'nullable|string|max:255',
+                'bridges.*.name_of_bridge'     => 'nullable|string|max:255',
+                'bridges.*.status'             => 'nullable|string|max:255',
+                'bridges.*.areas_affected'     => 'nullable|string|max:500',
+                'bridges.*.re_routing'         => 'nullable|string|max:500',
+                'bridges.*.remarks'            => 'nullable|string|max:500',
+            ]);
 
-        foreach ($validated['bridges'] as $bridgeData) {
+            foreach ($validated['bridges'] as $bridgeData) {
             // Skip empty rows
             if (empty(array_filter($bridgeData))) {
                 continue;
@@ -773,10 +774,24 @@ class SituationOverviewController extends Controller
             ->limit(100)
             ->get();
         
-        return response()->json([
-            'message' => 'Bridge reports saved successfully',
-            'bridges' => $updatedBridges
-        ]);
+            return response()->json([
+                'message' => 'Bridge reports saved successfully',
+                'bridges' => $updatedBridges
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Bridge form submission error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'error' => 'An error occurred while saving bridge reports',
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     /* ------------------- MODIFICATIONS ------------------- */
