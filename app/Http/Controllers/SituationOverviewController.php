@@ -60,7 +60,8 @@ class SituationOverviewController extends Controller
             $weatherQuery->whereIn('user_id', $accessibleUserIds);
             $waterLevelQuery->whereIn('user_id', $accessibleUserIds);
             $electricityQuery->whereIn('user_id', $accessibleUserIds);
-            $waterServiceQuery->whereIn('user_id', $accessibleUserIds);
+            // Water services: load ALL records (collaborative editing between IWD and CDRRMO)
+            // $waterServiceQuery->whereIn('user_id', $accessibleUserIds); // Removed filtering
             $communicationQuery->whereIn('user_id', $accessibleUserIds);
             $roadQuery->whereIn('user_id', $accessibleUserIds);
             $bridgeQuery->whereIn('user_id', $accessibleUserIds);
@@ -75,6 +76,7 @@ class SituationOverviewController extends Controller
             'electricity'    => $electricityQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'waterServices'  => $waterServiceQuery
+                ->with('user:id,name') // Load user relationship
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'communications' => $communicationQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
@@ -401,6 +403,7 @@ class SituationOverviewController extends Controller
             'waterServices.*.barangays_served' => 'nullable|string|max:500',
             'waterServices.*.status'           => 'nullable|string|max:255',
             'waterServices.*.remarks'          => 'nullable|string|max:500',
+            'waterServices.*.user_id'          => 'nullable|integer|exists:users,id', // Validate user_id
         ]);
 
         $user = Auth::user();
@@ -425,13 +428,14 @@ class SituationOverviewController extends Controller
                 }
                 
                 if (!$shouldCreateNew && $existingService) {
-                    // Update existing record
+                    // Update existing record - allow ANY user to update ANY record
                     $existingService->update([
                         'source_of_water'  => $waterData['source_of_water'] ?? null,
                         'barangays_served' => $waterData['barangays_served'] ?? null,
                         'status'           => $waterData['status'] ?? null,
                         'remarks'          => $waterData['remarks'] ?? null,
                         'disaster_id'       => $activeTyphoon->id,
+                        'user_id'          => $waterData['user_id'] ?? $existingService->user_id, // Preserve original creator
                         'updated_by'       => Auth::id(),
                     ]);
                 } else {
@@ -450,23 +454,16 @@ class SituationOverviewController extends Controller
                     'barangays_served' => $waterData['barangays_served'] ?? null,
                     'status'           => $waterData['status'] ?? null,
                     'remarks'          => $waterData['remarks'] ?? null,
-                    'user_id'          => $user->id,
+                    'user_id'          => $waterData['user_id'] ?? $user->id, // Use provided user_id or current user
                     'updated_by'       => Auth::id(),
                     'disaster_id'       => $activeTyphoon->id,
                 ]);
             }
         }
 
-        // Return fresh data after save (limit to recent 100 records)
-        $updatedQuery = WaterService::with('user:id,name')
-            ->where('disaster_id', $activeTyphoon->id);
-
-        if ($user && !$user->isAdmin()) {
-            $accessibleUserIds = $user->getAccessibleUserIds('read');
-            $updatedQuery->whereIn('user_id', $accessibleUserIds);
-        }
-
-        $updatedServices = $updatedQuery
+        // Return fresh data after save - LOAD ALL RECORDS (not filtered by user)
+        $updatedServices = WaterService::with('user:id,name')
+            ->where('disaster_id', $activeTyphoon->id)
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();

@@ -13,7 +13,7 @@ import { Droplet, Loader2, Save, AlertCircle, CheckCircle2 } from "lucide-react"
 export default function WaterForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
     const queryClient = useQueryClient();
-    const { typhoon } = usePage().props;
+    const { typhoon, auth } = usePage().props; // Added auth
     const [isSaving, setIsSaving] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -155,10 +155,12 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
         
         try {
             const serviceData = {
+                id: data.waterServices?.[0]?.id, // Include ID if updating
                 source_of_water: formData.source_of_water,
                 barangays_served: formData.barangays_served,
                 status: formData.status,
-                remarks: formData.remarks
+                remarks: formData.remarks,
+                user_id: data.waterServices?.[0]?.user_id || auth.user.id, // Preserve original creator
             };
 
             const response = await axios.post(`${APP_URL}/water-service-reports`, {
@@ -201,6 +203,18 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                     </p>
                 </div>
             </div>
+
+            {/* Created By Info - Show if record exists */}
+            {data.waterServices?.[0]?.user && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-gray-700">Created By:</span>
+                        <span className="text-gray-900 font-semibold">{data.waterServices[0].user.name}</span>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-600">Both IWD and CDRRMO can edit this record</span>
+                    </div>
+                </div>
+            )}
 
             {/* Form Fields */}
             <div className="space-y-5">
