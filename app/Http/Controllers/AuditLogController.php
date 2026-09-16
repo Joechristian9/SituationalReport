@@ -151,69 +151,79 @@ class AuditLogController extends Controller
      */
     public function show($id)
     {
-        $log = AuditLog::with(['user:id,name,email', 'disaster:id,name', 'auditable'])
-            ->findOrFail($id);
+        try {
+            $log = AuditLog::with(['user:id,name,email', 'disaster:id,name', 'auditable'])
+                ->findOrFail($id);
 
-        $changes = [];
+            $changes = [];
 
-        // Format changes for display
-        if ($log->action === 'updated' && $log->old_values && $log->new_values) {
-            foreach ($log->new_values as $field => $newValue) {
-                $oldValue = $log->old_values[$field] ?? null;
-                
-                // Only show if values actually changed
-                if ($oldValue != $newValue) {
+            // Format changes for display
+            if ($log->action === 'updated' && $log->old_values && $log->new_values) {
+                foreach ($log->new_values as $field => $newValue) {
+                    $oldValue = $log->old_values[$field] ?? null;
+                    
+                    // Only show if values actually changed
+                    if ($oldValue != $newValue) {
+                        $changes[] = [
+                            'field' => AuditLogger::getFieldLabel($field),
+                            'field_key' => $field,
+                            'old_value' => AuditLogger::formatValue($oldValue),
+                            'new_value' => AuditLogger::formatValue($newValue),
+                        ];
+                    }
+                }
+            } elseif ($log->action === 'created' && $log->new_values) {
+                foreach ($log->new_values as $field => $value) {
                     $changes[] = [
                         'field' => AuditLogger::getFieldLabel($field),
                         'field_key' => $field,
-                        'old_value' => AuditLogger::formatValue($oldValue),
-                        'new_value' => AuditLogger::formatValue($newValue),
+                        'value' => AuditLogger::formatValue($value),
+                    ];
+                }
+            } elseif ($log->action === 'deleted' && $log->old_values) {
+                foreach ($log->old_values as $field => $value) {
+                    $changes[] = [
+                        'field' => AuditLogger::getFieldLabel($field),
+                        'field_key' => $field,
+                        'value' => AuditLogger::formatValue($value),
                     ];
                 }
             }
-        } elseif ($log->action === 'created' && $log->new_values) {
-            foreach ($log->new_values as $field => $value) {
-                $changes[] = [
-                    'field' => AuditLogger::getFieldLabel($field),
-                    'field_key' => $field,
-                    'value' => AuditLogger::formatValue($value),
-                ];
-            }
-        } elseif ($log->action === 'deleted' && $log->old_values) {
-            foreach ($log->old_values as $field => $value) {
-                $changes[] = [
-                    'field' => AuditLogger::getFieldLabel($field),
-                    'field_key' => $field,
-                    'value' => AuditLogger::formatValue($value),
-                ];
-            }
-        }
 
-        return response()->json([
-            'log' => [
-                'id' => $log->id,
-                'user' => [
-                    'id' => $log->user?->id,
-                    'name' => $log->user?->name ?? 'System',
-                    'email' => $log->user?->email ?? 'system@system.local',
+            return response()->json([
+                'log' => [
+                    'id' => $log->id,
+                    'user' => [
+                        'id' => $log->user?->id,
+                        'name' => $log->user?->name ?? 'System',
+                        'email' => $log->user?->email ?? 'system@system.local',
+                    ],
+                    'action' => $log->action,
+                    'action_name' => $log->action_name,
+                    'module' => $log->model_name,
+                    'auditable_type' => $log->auditable_type,
+                    'auditable_id' => $log->auditable_id,
+                    'disaster' => $log->disaster ? [
+                        'id' => $log->disaster->id,
+                        'name' => $log->disaster->name,
+                    ] : null,
+                    'ip_address' => $log->ip_address,
+                    'user_agent' => $log->user_agent,
+                    'description' => $log->description,
+                    'created_at' => $log->created_at->format('F d, Y, h:i:s A'),
+                    'created_at_human' => $log->created_at->diffForHumans(),
                 ],
-                'action' => $log->action,
-                'action_name' => $log->action_name,
-                'module' => $log->model_name,
-                'auditable_type' => $log->auditable_type,
-                'auditable_id' => $log->auditable_id,
-                'disaster' => [
-                    'id' => $log->disaster?->id,
-                    'name' => $log->disaster?->name,
-                ],
-                'ip_address' => $log->ip_address,
-                'user_agent' => $log->user_agent,
-                'description' => $log->description,
-                'created_at' => $log->created_at->format('F d, Y, h:i:s A'),
-                'created_at_human' => $log->created_at->diffForHumans(),
-            ],
-            'changes' => $changes,
-        ]);
+                'changes' => $changes,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading audit log details: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'error' => 'Failed to load audit log details',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
