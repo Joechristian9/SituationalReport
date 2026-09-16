@@ -38,9 +38,9 @@ import {
 const WeatherForm = lazy(() =>
     import("@/Components/SituationOverview/WeatherForm")
 );
-const WaterLevelForm = lazy(() =>
-    import("@/Components/SituationOverview/WaterLevelForm")
-);
+// const WaterLevelForm = lazy(() =>
+//     import("@/Components/SituationOverview/WaterLevelForm")
+// );
 const ElectricityForm = lazy(() =>
     import("@/Components/SituationOverview/ElectricityForm")
 );
@@ -225,11 +225,11 @@ export default function Index() {
             icon: <Cloud size={18} />,
             permission: "access-weather-form",
         },
-        {
-            label: "Water Level",
-            icon: <Waves size={18} />,
-            permission: "access-water-level-form",
-        },
+        // {
+        //     label: "Water Level",
+        //     icon: <Waves size={18} />,
+        //     permission: "access-water-level-form",
+        // },
         {
             label: "Electricity",
             icon: <Zap size={18} />,
@@ -521,15 +521,15 @@ export default function Index() {
                         disabled={formsDisabled}
                     />
                 );
-            case "Water Level":
-                return (
-                    <WaterLevelForm
-                        data={data}
-                        setData={setData}
-                        errors={errors}
-                        disabled={formsDisabled}
-                    />
-                );
+            // case "Water Level":
+            //     return (
+            //         <WaterLevelForm
+            //             data={data}
+            //             setData={setData}
+            //             errors={errors}
+            //             disabled={formsDisabled}
+            //         />
+            //     );
             case "Electricity":
                 return (
                     <ElectricityForm
@@ -749,8 +749,8 @@ export default function Index() {
                                     const descriptions = {
                                         Weather:
                                             "Submit weather conditions and forecasts",
-                                        "Water Level":
-                                            "Report water level readings from gauging stations",
+                                        // "Water Level":
+                                        //     "Report water level readings from gauging stations",
                                         Electricity:
                                             "Report electricity service status and outages",
                                         "Water Services":

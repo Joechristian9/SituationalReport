@@ -1009,7 +1009,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/BridgeForm.jsx": {
-    "file": "assets/BridgeForm-DT2iUApL.js",
+    "file": "assets/BridgeForm-D7PYp_da.js",
     "name": "BridgeForm",
     "src": "resources/js/Components/SituationOverview/BridgeForm.jsx",
     "isDynamicEntry": true,
@@ -1038,7 +1038,6 @@
       "_Breadcrumbs-BC6oFE-1.js",
       "_circle-check-ce4Ju1Vq.js",
       "_arrow-left-87DzD_5H.js",
-      "_waves-BVNiwePb.js",
       "_droplet-BldU_REo.js"
     ]
   },
@@ -1083,7 +1082,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/RoadForm.jsx": {
-    "file": "assets/RoadForm-D2qTRs4M.js",
+    "file": "assets/RoadForm-CRXCfhTb.js",
     "name": "RoadForm",
     "src": "resources/js/Components/SituationOverview/RoadForm.jsx",
     "isDynamicEntry": true,
@@ -1113,7 +1112,6 @@
       "_Breadcrumbs-BC6oFE-1.js",
       "_circle-check-ce4Ju1Vq.js",
       "_arrow-left-87DzD_5H.js",
-      "_waves-BVNiwePb.js",
       "_droplet-BldU_REo.js"
     ]
   },
@@ -1134,30 +1132,6 @@
       "_save-BEyFyY87.js",
       "_circle-check-ce4Ju1Vq.js",
       "_tooltip-DzX7KMcd.js",
-      "_plus-ColiOj16.js",
-      "_index-Dn0ZI3Yy.js"
-    ]
-  },
-  "resources/js/Components/SituationOverview/WaterLevelForm.jsx": {
-    "file": "assets/WaterLevelForm-CiaF-7JP.js",
-    "name": "WaterLevelForm",
-    "src": "resources/js/Components/SituationOverview/WaterLevelForm.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_index-IIQgGma6.js",
-      "_useAppUrl-BoquxkkA.js",
-      "_QueryClientProvider-C-dWpnxs.js",
-      "_index-DO3ItDOM.js",
-      "_useTableFilter-CepNK4iF.js",
-      "_DownloadExcelButton-nXR-0q72.js",
-      "_RowsPerPage-CSurqGwU.js",
-      "_AddRowButton-DdvOKzi2.js",
-      "_tooltip-DzX7KMcd.js",
-      "_droplets-CnaJTq7C.js",
-      "_circle-plus-DNhfC8FL.js",
-      "_loader-circle--wXy6zNj.js",
-      "_save-BEyFyY87.js",
-      "_download-CQ31Q3-p.js",
       "_plus-ColiOj16.js",
       "_index-Dn0ZI3Yy.js"
     ]
@@ -1874,7 +1848,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-CyTqIZwt.js",
+    "file": "assets/Index-BMyEDG6L.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -1890,7 +1864,6 @@
       "_Breadcrumbs-BC6oFE-1.js",
       "_circle-check-ce4Ju1Vq.js",
       "_arrow-left-87DzD_5H.js",
-      "_waves-BVNiwePb.js",
       "_droplet-BldU_REo.js",
       "_plus-ColiOj16.js",
       "_loader-circle--wXy6zNj.js",
@@ -1903,7 +1876,6 @@
     ],
     "dynamicImports": [
       "resources/js/Components/SituationOverview/WeatherForm.jsx",
-      "resources/js/Components/SituationOverview/WaterLevelForm.jsx",
       "resources/js/Components/SituationOverview/ElectricityForm.jsx",
       "resources/js/Components/SituationOverview/WaterForm.jsx",
       "resources/js/Components/SituationOverview/CommunicationForm.jsx",
@@ -1973,7 +1945,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-C1pInE1J.js",
+    "file": "assets/app-BdxhNzdK.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
