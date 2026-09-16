@@ -118,8 +118,18 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
         const errors = [];
         
         bridges.forEach((bridge, index) => {
-            if (!bridge.name_of_bridge || bridge.name_of_bridge.trim() === '') {
-                errors.push(`Row ${index + 1}: Bridge name is required`);
+            // Check if at least one field has a value (OR logic)
+            const hasAnyValue = 
+                (bridge.road_classification && bridge.road_classification.trim() !== '') ||
+                (bridge.name_of_bridge && bridge.name_of_bridge.trim() !== '') ||
+                (bridge.status && bridge.status.trim() !== '') ||
+                (bridge.areas_affected && bridge.areas_affected.trim() !== '') ||
+                (bridge.re_routing && bridge.re_routing.trim() !== '') ||
+                (bridge.remarks && bridge.remarks.trim() !== '');
+            
+            // If no fields are filled, that's an error
+            if (!hasAnyValue) {
+                errors.push(`Row ${index + 1}: At least one field must be filled`);
             }
         });
         
