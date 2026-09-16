@@ -82,8 +82,12 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
             const response = await axios.get(`/admin/audit-logs/${log.id}`);
             setLogDetails(response.data);
         } catch (error) {
-            toast.error('Failed to load audit log details');
-            console.error(error);
+            const errorMessage = error.response?.data?.message 
+                || error.response?.data?.error 
+                || 'Failed to load audit log details';
+            toast.error(errorMessage);
+            console.error('Audit log detail error:', error.response?.data || error);
+            setDetailModalOpen(false);
         } finally {
             setLoadingDetails(false);
         }
