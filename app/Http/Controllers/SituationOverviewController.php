@@ -83,6 +83,27 @@ class SituationOverviewController extends Controller
             'roads'          => $roadQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'bridges'        => $bridgeQuery
+                ->where(function($query) {
+                    // Filter out completely empty rows
+                    $query->where(function($q) {
+                        $q->whereNotNull('road_classification')->where('road_classification', '!=', '');
+                    })
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
+                    })
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('status')->where('status', '!=', '');
+                    })
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
+                    })
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
+                    })
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('remarks')->where('remarks', '!=', '');
+                    });
+                })
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'preEmptiveReports' => $preEmptiveQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
@@ -767,7 +788,28 @@ class SituationOverviewController extends Controller
         $user = Auth::user();
 
         $updatedQuery = Bridge::with('user:id,name')
-            ->where('disaster_id', $activeTyphoon->id);
+            ->where('disaster_id', $activeTyphoon->id)
+            ->where(function($query) {
+                // Filter out completely empty rows
+                $query->where(function($q) {
+                    $q->whereNotNull('road_classification')->where('road_classification', '!=', '');
+                })
+                ->orWhere(function($q) {
+                    $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
+                })
+                ->orWhere(function($q) {
+                    $q->whereNotNull('status')->where('status', '!=', '');
+                })
+                ->orWhere(function($q) {
+                    $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
+                })
+                ->orWhere(function($q) {
+                    $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
+                })
+                ->orWhere(function($q) {
+                    $q->whereNotNull('remarks')->where('remarks', '!=', '');
+                });
+            });
 
         if ($user && !$user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
