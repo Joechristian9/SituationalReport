@@ -423,6 +423,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
     Route::get('/api/electricity-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewElectricityPdf'])->name('api.electricity-history.pdf');
     Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
+    Route::get('/api/water-service-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewWaterServicePdf'])->name('api.water-service-history.pdf');
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
     Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');

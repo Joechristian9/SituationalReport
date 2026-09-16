@@ -1086,6 +1086,46 @@ class SituationOverviewController extends Controller
         return $pdf->stream('Electricity_Report_' . str_replace(' ', '_', $typhoon->name) . '.pdf');
     }
 
+    /* ------------------- VIEW/DOWNLOAD WATER SERVICE PDF ------------------- */
+    public function viewWaterServicePdf($typhoonId)
+    {
+        $user = Auth::user();
+        
+        // Get the typhoon
+        $typhoon = Typhoon::findOrFail($typhoonId);
+        
+        // Get all water service reports for this typhoon (no user filtering due to collaborative editing)
+        $reports = WaterService::where('disaster_id', $typhoonId)
+            ->with(['user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        if ($reports->isEmpty()) {
+            abort(404, 'No water service reports found for this disaster.');
+        }
+        
+        // Prepare data for PDF
+        $data = [
+            'typhoon' => $typhoon,
+            'reports' => $reports,
+            'user' => $user,
+            'generatedAt' => now()->format('F d, Y h:i A'),
+        ];
+        
+        // Generate PDF
+        $pdf = \PDF::loadView('reports.water_service', $data);
+        $pdf->setPaper('a4', 'portrait');
+        
+        // Check if download is requested
+        if (request()->has('download')) {
+            $filename = 'Water_Service_Report_' . str_replace(' ', '_', $typhoon->name) . '_' . now()->format('Y-m-d') . '.pdf';
+            return $pdf->download($filename);
+        }
+        
+        // Otherwise, stream for viewing
+        return $pdf->stream('Water_Service_Report_' . str_replace(' ', '_', $typhoon->name) . '.pdf');
+    }
+
     /* ------------------- GET WATER SERVICE HISTORY ------------------- */
     public function getWaterServiceHistory()
     {
