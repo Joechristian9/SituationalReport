@@ -95,7 +95,7 @@ export default function WaterServiceHistoryIndex() {
 
     return (
         <ServiceHistoryPage
-            serviceType="water"
+            serviceType="water-service"
             title="Water Service Report History"
             icon={Droplets}
             apiEndpoint="/api/water-service-history"
