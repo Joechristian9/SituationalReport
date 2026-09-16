@@ -280,6 +280,18 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                             const fieldHistory = getFieldHistory(row.id, field);
                                             const latestChange = fieldHistory[0];
                                             
+                                            // Debug logging
+                                            console.log('Road Field Debug:', {
+                                                rowId: row.id,
+                                                field,
+                                                fieldValue: row[field],
+                                                fieldHistory,
+                                                latestChange,
+                                                hasHistory: fieldHistory.length > 0,
+                                                hasValue: !!(row[field] && row[field] !== ''),
+                                                shouldShow: !!(latestChange && row[field] && row[field] !== '')
+                                            });
+                                            
                                             return (
                                                 <td
                                                     key={field}
