@@ -722,8 +722,13 @@ class SituationOverviewController extends Controller
             ]);
 
             foreach ($validated['bridges'] as $bridgeData) {
-            // Skip empty rows
-            if (empty(array_filter($bridgeData))) {
+            // Skip empty rows - check all fields except 'id'
+            $fieldsToCheck = array_diff_key($bridgeData, ['id' => '']);
+            $hasData = !empty(array_filter($fieldsToCheck, function($value) {
+                return $value !== null && $value !== '';
+            }));
+            
+            if (!$hasData) {
                 continue;
             }
 
