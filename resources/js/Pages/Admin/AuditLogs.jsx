@@ -500,7 +500,7 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                     </CardContent>
                                 </Card>
 
-                                {/* Changes Section */}
+                                {/* Changes Section - Table Format */}
                                 {logDetails.changes && logDetails.changes.length > 0 && (
                                     <div>
                                         <div className="flex items-center gap-2 mb-4">
@@ -515,60 +515,65 @@ export default function AuditLogs({ logs, filters, filterOptions }) {
                                             </Badge>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            {logDetails.changes.map((change, index) => (
-                                                <motion.div
-                                                    key={index}
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                >
-                                                    <Card className="border-l-4 border-l-blue-500">
-                                                        <CardContent className="pt-4">
-                                                            <p className="font-semibold text-sm mb-3 text-gray-700 flex items-center gap-2">
-                                                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                                                {change.field}
-                                                            </p>
-                                                            
-                                                            {change.old_value !== undefined ? (
-                                                                /* Updated field - show before/after */
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                                                                        <p className="text-xs font-semibold text-red-700 uppercase mb-2 flex items-center gap-1">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                                                            Before
-                                                                        </p>
-                                                                        <p className="text-sm text-red-900 font-mono break-words">
-                                                                            {change.old_value || <span className="text-gray-400 italic">(empty)</span>}
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                                                                        <p className="text-xs font-semibold text-green-700 uppercase mb-2 flex items-center gap-1">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                                            After
-                                                                        </p>
-                                                                        <p className="text-sm text-green-900 font-mono break-words">
-                                                                            {change.new_value || <span className="text-gray-400 italic">(empty)</span>}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                /* Created or deleted field - show single value */
-                                                                <div className={`${logDetails.log.action === 'created' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-md p-3`}>
-                                                                    <p className={`text-xs font-semibold uppercase mb-2 flex items-center gap-1 ${logDetails.log.action === 'created' ? 'text-green-700' : 'text-red-700'}`}>
-                                                                        <span className={`w-1.5 h-1.5 rounded-full ${logDetails.log.action === 'created' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                                        {logDetails.log.action === 'created' ? 'Created Value' : 'Deleted Value'}
-                                                                    </p>
-                                                                    <p className={`text-sm font-mono break-words ${logDetails.log.action === 'created' ? 'text-green-900' : 'text-red-900'}`}>
-                                                                        {change.value || <span className="text-gray-400 italic">(empty)</span>}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                </motion.div>
-                                            ))}
-                                        </div>
+                                        <Card>
+                                            <CardContent className="p-0">
+                                                <div className="overflow-x-auto">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead className="w-[30%]">Field Name</TableHead>
+                                                                {logDetails.log.action === 'updated' ? (
+                                                                    <>
+                                                                        <TableHead className="w-[35%]">Old Value</TableHead>
+                                                                        <TableHead className="w-[35%]">New Value</TableHead>
+                                                                    </>
+                                                                ) : (
+                                                                    <TableHead className="w-[70%]">Value</TableHead>
+                                                                )}
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {logDetails.changes.map((change, index) => (
+                                                                <TableRow key={index}>
+                                                                    <TableCell className="font-medium">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                                            {change.field}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    {change.old_value !== undefined ? (
+                                                                        <>
+                                                                            <TableCell>
+                                                                                <div className="bg-red-50 border border-red-200 rounded px-3 py-2">
+                                                                                    <p className="text-sm text-red-900 font-mono break-words">
+                                                                                        {change.old_value || <span className="text-gray-400 italic">(empty)</span>}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <div className="bg-green-50 border border-green-200 rounded px-3 py-2">
+                                                                                    <p className="text-sm text-green-900 font-mono break-words">
+                                                                                        {change.new_value || <span className="text-gray-400 italic">(empty)</span>}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </TableCell>
+                                                                        </>
+                                                                    ) : (
+                                                                        <TableCell>
+                                                                            <div className={`${logDetails.log.action === 'created' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded px-3 py-2`}>
+                                                                                <p className={`text-sm font-mono break-words ${logDetails.log.action === 'created' ? 'text-green-900' : 'text-red-900'}`}>
+                                                                                    {change.value || <span className="text-gray-400 italic">(empty)</span>}
+                                                                                </p>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    )}
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     </div>
                                 )}
 

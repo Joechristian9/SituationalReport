@@ -1211,7 +1211,7 @@
     ]
   },
   "resources/js/Pages/Admin/AuditLogs.jsx": {
-    "file": "assets/AuditLogs-CGEgaDVR.js",
+    "file": "assets/AuditLogs-DL_9zL1S.js",
     "name": "AuditLogs",
     "src": "resources/js/Pages/Admin/AuditLogs.jsx",
     "isDynamicEntry": true,
@@ -1228,7 +1228,6 @@
       "_download-CQ31Q3-p.js",
       "_eye-DX5qHYEu.js",
       "_user-BTBIwZME.js",
-      "_proxy-DvtH6Gk4.js",
       "_tooltip-DzX7KMcd.js",
       "_index-Dn0ZI3Yy.js"
     ]
@@ -1974,7 +1973,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-yGJNRTpc.js",
+    "file": "assets/app-C1pInE1J.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2023,7 +2022,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-Cv7wUDxB.css"
+      "assets/app-CFyIwu_V.css"
     ]
   }
 }
