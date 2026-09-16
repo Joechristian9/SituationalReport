@@ -283,7 +283,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                                         fieldName={field}
                                                         getFieldHistory={getFieldHistory}
                                                         currentValue={row[field]}
-                                                        showLastModified={false}
+                                                        showLastModified={true}
                                                     />
                                                 </div>
                                             </td>
