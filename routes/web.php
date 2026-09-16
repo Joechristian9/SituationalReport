@@ -315,7 +315,7 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     }); // End of typhoon.active middleware group
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Admin Dashboard - show data for both active and paused disasters
     Route::get('admin-dashboard', function () {
         // Show data for active or paused disasters (graphs should show historical data)
