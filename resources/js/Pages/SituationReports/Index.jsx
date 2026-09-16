@@ -401,31 +401,11 @@ export default function Index() {
         roads:
             roads && roads.length > 0
                 ? roads
-                : [
-                      {
-                          id: null,
-                          road_classification: "",
-                          name_of_road: "",
-                          status: "",
-                          areas_affected: "",
-                          re_routing: "",
-                          remarks: "",
-                      },
-                  ],
+                : [],
         bridges:
             bridges && bridges.length > 0
                 ? bridges
-                : [
-                      {
-                          id: null,
-                          road_classification: "",
-                          name_of_bridge: "",
-                          status: "",
-                          areas_affected: "",
-                          re_routing: "",
-                          remarks: "",
-                      },
-                  ],
+                : [],
     });
 
     useEffect(() => {
