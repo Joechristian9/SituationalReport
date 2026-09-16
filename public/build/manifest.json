@@ -1009,7 +1009,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/BridgeForm.jsx": {
-    "file": "assets/BridgeForm-uR1SF0dK.js",
+    "file": "assets/BridgeForm-CUMQ1ge-.js",
     "name": "BridgeForm",
     "src": "resources/js/Components/SituationOverview/BridgeForm.jsx",
     "isDynamicEntry": true,
@@ -1042,7 +1042,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/CommunicationForm.jsx": {
-    "file": "assets/CommunicationForm-DkowsYCA.js",
+    "file": "assets/CommunicationForm-BdnPrAd1.js",
     "name": "CommunicationForm",
     "src": "resources/js/Components/SituationOverview/CommunicationForm.jsx",
     "isDynamicEntry": true,
@@ -1051,6 +1051,7 @@
       "_index-DO3ItDOM.js",
       "_useAppUrl-BoquxkkA.js",
       "_QueryClientProvider-C-dWpnxs.js",
+      "_ModificationIndicator-pOGvDehS.js",
       "_badge-BzoxX4hZ.js",
       "_plus-ColiOj16.js",
       "_loader-circle--wXy6zNj.js",
@@ -1082,7 +1083,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/RoadForm.jsx": {
-    "file": "assets/RoadForm-D54HUNJU.js",
+    "file": "assets/RoadForm-DCvQUxHq.js",
     "name": "RoadForm",
     "src": "resources/js/Components/SituationOverview/RoadForm.jsx",
     "isDynamicEntry": true,
@@ -1848,7 +1849,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-DBVV6cP5.js",
+    "file": "assets/Index-BeEXRB5a.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -1945,7 +1946,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-Dd_29a52.js",
+    "file": "assets/app-CdabsQLG.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
