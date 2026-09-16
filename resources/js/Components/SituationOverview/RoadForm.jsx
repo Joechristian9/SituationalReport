@@ -276,22 +276,6 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                         className="hover:bg-gray-50"
                                     >
                                         {fields.map((field) => {
-                                            // Get field history for "Last modified by" display
-                                            const fieldHistory = getFieldHistory(row.id, field);
-                                            const latestChange = fieldHistory[0];
-                                            
-                                            // Debug logging
-                                            console.log('Road Field Debug:', {
-                                                rowId: row.id,
-                                                field,
-                                                fieldValue: row[field],
-                                                fieldHistory,
-                                                latestChange,
-                                                hasHistory: fieldHistory.length > 0,
-                                                hasValue: !!(row[field] && row[field] !== ''),
-                                                shouldShow: !!(latestChange && row[field] && row[field] !== '')
-                                            });
-                                            
                                             return (
                                                 <td
                                                     key={field}
@@ -322,14 +306,6 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                                             showLastModified={true}
                                                         />
                                                     </div>
-                                                    {latestChange && row[field] && row[field] !== '' && (
-                                                        <p className="text-xs text-slate-500 mt-2">
-                                                            Last modified by{" "}
-                                                            <span className="font-medium text-blue-700">
-                                                                {latestChange.user?.name}
-                                                            </span>
-                                                        </p>
-                                                    )}
                                                 </td>
                                             );
                                         })}
