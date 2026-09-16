@@ -225,7 +225,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Ending disaster report and generating PDF...');
 
         try {
-            const response = await axios.post(`/disasters/${selectedTyphoon.id}/end`);
+            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/end`);
             toast.success(response.data.message, { id: loadingToast });
             setIsEndModalOpen(false);
             setSelectedTyphoon(null);
@@ -244,7 +244,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Pausing disaster report...');
 
         try {
-            const response = await axios.post(`/disasters/${selectedTyphoon.id}/pause`);
+            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/pause`);
             setIsPauseModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ 
@@ -267,7 +267,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Resuming disaster report...');
 
         try {
-            const response = await axios.post(`/disasters/${selectedTyphoon.id}/resume`);
+            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/resume`);
             setIsResumeModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ 
@@ -284,7 +284,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
     }, [selectedTyphoon]);
 
     const handleDownloadSnapshot = async (typhoon) => {
-        window.open(`/disasters/${typhoon.id}/snapshot`, '_blank');
+        window.open(`/admin/disasters/${typhoon.id}/snapshot`, '_blank');
     };
 
     const openDeleteModal = useCallback((typhoon) => {
@@ -299,7 +299,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Deleting disaster report...');
 
         try {
-            const response = await axios.delete(`/disasters/${selectedTyphoon.id}`);
+            const response = await axios.delete(`/admin/disasters/${selectedTyphoon.id}`);
             toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
@@ -317,13 +317,13 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             setIsSubmitting(true);
             toast.loading('Generating PDF report...');
             try {
-                const response = await axios.post(`/disasters/${typhoon.id}/regenerate-pdf`);
+                const response = await axios.post(`/admin/disasters/${typhoon.id}/regenerate-pdf`);
                 toast.dismiss();
                 toast.success('PDF generated successfully! Downloading...');
                 
                 // Automatically download the generated PDF
                 setTimeout(() => {
-                    window.open(`/disasters/${typhoon.id}/download`, '_blank');
+                    window.open(`/admin/disasters/${typhoon.id}/download`, '_blank');
                     router.reload();
                 }, 500);
                 
@@ -338,7 +338,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
 
         // PDF exists, download it
         try {
-            window.open(`/disasters/${typhoon.id}/download`, '_blank');
+            window.open(`/admin/disasters/${typhoon.id}/download`, '_blank');
         } catch (error) {
             toast.error('Failed to download PDF');
         }
