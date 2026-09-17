@@ -46,6 +46,11 @@ class CasualtyController extends Controller
 
         // Get active typhoon
         $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        
+        \Log::info('CasualtyController store - Active Typhoon', [
+            'typhoon' => $activeTyphoon ? $activeTyphoon->toArray() : 'NULL',
+            'typhoon_id' => $activeTyphoon ? $activeTyphoon->id : 'NULL',
+        ]);
 
         $validated = $request->validate([
             'casualties' => 'required|array',
@@ -108,6 +113,13 @@ class CasualtyController extends Controller
                 // Create new record
                 $data['user_id'] = Auth::id();
                 $data['disaster_id'] = $activeTyphoon->id;
+                
+                \Log::info('Creating new casualty', [
+                    'user_id' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
+                    'data' => $data,
+                ]);
+                
                 $savedCasualties[] = Casualty::create($data);
             }
         }
