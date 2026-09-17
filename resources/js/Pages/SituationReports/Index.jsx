@@ -32,6 +32,9 @@ import {
     ArrowLeft,
     Flame,
     Sprout,
+    UserX,
+    UserRound,
+    UserSearch,
 } from "lucide-react";
 
 // Lazy load form components for better performance
@@ -66,6 +69,15 @@ const AgricultureForm = lazy(() =>
 const PreEmptiveForm = lazy(() =>
     import("@/Components/PreEmptiveEvacuation/PreEmptiveForm")
 );
+const CasualtyForm = lazy(() =>
+    import("@/Components/Effects/CasualtyForm")
+);
+const InjuredForm = lazy(() =>
+    import("@/Components/Effects/InjuredForm")
+);
+const MissingForm = lazy(() =>
+    import("@/Components/Effects/MissingForm")
+);
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
@@ -84,6 +96,9 @@ export default function Index() {
         roads,
         bridges,
         preEmptiveReports,
+        casualties,
+        injured,
+        missing,
         typhoon,
         auth,
     } = usePage().props;
@@ -275,6 +290,21 @@ export default function Index() {
             icon: <Sprout size={18} />,
             permission: "access-agriculture-form",
         },
+        {
+            label: "Casualties - Dead",
+            icon: <UserX size={18} />,
+            permission: "access-casualty-form",
+        },
+        {
+            label: "Casualties - Injured",
+            icon: <UserRound size={18} />,
+            permission: "access-injured-form",
+        },
+        {
+            label: "Casualties - Missing",
+            icon: <UserSearch size={18} />,
+            permission: "access-missing-form",
+        },
     ];
 
     // Filter steps based on user permissions
@@ -348,6 +378,49 @@ export default function Index() {
                 total_production_loss: "",
             },
         ],
+        casualties:
+            casualties && casualties.length > 0
+                ? casualties
+                : [
+                      {
+                          id: null,
+                          name: "",
+                          age: "",
+                          sex: "",
+                          address: "",
+                          cause_of_death: "",
+                          date_died: "",
+                          place_of_incident: "",
+                      },
+                  ],
+        injured:
+            injured && injured.length > 0
+                ? injured
+                : [
+                      {
+                          id: null,
+                          name: "",
+                          age: "",
+                          sex: "",
+                          address: "",
+                          cause: "",
+                          remarks: "",
+                      },
+                  ],
+        missing:
+            missing && missing.length > 0
+                ? missing
+                : [
+                      {
+                          id: null,
+                          name: "",
+                          age: "",
+                          sex: "",
+                          address: "",
+                          cause: "",
+                          remarks: "",
+                      },
+                  ],
         waterLevels:
             waterLevels && waterLevels.length > 0
                 ? waterLevels
@@ -591,6 +664,33 @@ export default function Index() {
                         disabled={formsDisabled}
                     />
                 );
+            case "Casualties - Dead":
+                return (
+                    <CasualtyForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Casualties - Injured":
+                return (
+                    <InjuredForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Casualties - Missing":
+                return (
+                    <MissingForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
             default:
                 return null;
         }
@@ -748,6 +848,12 @@ export default function Index() {
                                             "Record details of incidents being monitored",
                                         Agriculture:
                                             "Report agricultural damage and crop losses",
+                                        "Casualties - Dead":
+                                            "Record the details for each deceased individual",
+                                        "Casualties - Injured":
+                                            "Record the details for each injured person",
+                                        "Casualties - Missing":
+                                            "Record the details for each missing individual",
                                     };
 
                                     return (

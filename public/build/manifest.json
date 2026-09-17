@@ -68,8 +68,8 @@
       "_index-IIQgGma6.js"
     ]
   },
-  "_Index-DBMhD8Ua.js": {
-    "file": "assets/Index-DBMhD8Ua.js",
+  "_Index-6Uf1MLPd.js": {
+    "file": "assets/Index-6Uf1MLPd.js",
     "name": "Index",
     "isDynamicEntry": true,
     "imports": [
@@ -148,8 +148,8 @@
       "_circle-alert-CZK56222.js"
     ]
   },
-  "_PieChart-D5KtUu7t.js": {
-    "file": "assets/PieChart-D5KtUu7t.js",
+  "_PieChart-C2EDWKCx.js": {
+    "file": "assets/PieChart-C2EDWKCx.js",
     "name": "PieChart",
     "imports": [
       "_plus-ColiOj16.js",
@@ -489,6 +489,13 @@
       "_plus-ColiOj16.js"
     ]
   },
+  "_user-round-Csh4ajY-.js": {
+    "file": "assets/user-round-Csh4ajY-.js",
+    "name": "user-round",
+    "imports": [
+      "_plus-ColiOj16.js"
+    ]
+  },
   "_user-search-B3f6NbCM.js": {
     "file": "assets/user-search-B3f6NbCM.js",
     "name": "user-search",
@@ -596,7 +603,7 @@
     ]
   },
   "resources/js/Components/Effects/AffectedTouristsForm.jsx": {
-    "file": "assets/AffectedTouristsForm-DxqLY2YG.js",
+    "file": "assets/AffectedTouristsForm-Ck0btXlT.js",
     "name": "AffectedTouristsForm",
     "src": "resources/js/Components/Effects/AffectedTouristsForm.jsx",
     "isDynamicEntry": true,
@@ -610,7 +617,7 @@
       "_index-DO3ItDOM.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
-      "_Index-DBMhD8Ua.js",
+      "_Index-6Uf1MLPd.js",
       "_circle-plus-DNhfC8FL.js",
       "_loader-circle--wXy6zNj.js",
       "_save-BEyFyY87.js",
@@ -632,7 +639,7 @@
     ]
   },
   "resources/js/Components/Effects/CasualtyForm.jsx": {
-    "file": "assets/CasualtyForm-BHdo5X6w.js",
+    "file": "assets/CasualtyForm-oWGXEpJe.js",
     "name": "CasualtyForm",
     "src": "resources/js/Components/Effects/CasualtyForm.jsx",
     "isDynamicEntry": true,
@@ -657,7 +664,7 @@
     ]
   },
   "resources/js/Components/Effects/DamagedHousesForm.jsx": {
-    "file": "assets/DamagedHousesForm-DRe0L5P2.js",
+    "file": "assets/DamagedHousesForm-BRuqPFjn.js",
     "name": "DamagedHousesForm",
     "src": "resources/js/Components/Effects/DamagedHousesForm.jsx",
     "isDynamicEntry": true,
@@ -669,7 +676,7 @@
       "_useAppUrl-BoquxkkA.js",
       "_QueryClientProvider-C-dWpnxs.js",
       "_index-DO3ItDOM.js",
-      "_Index-DBMhD8Ua.js",
+      "_Index-6Uf1MLPd.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
       "_house-BUxhGa2V.js",
@@ -716,7 +723,7 @@
     ]
   },
   "resources/js/Components/Effects/InjuredForm.jsx": {
-    "file": "assets/InjuredForm-gNiOCXHL.js",
+    "file": "assets/InjuredForm-BgoNs2Kx.js",
     "name": "InjuredForm",
     "src": "resources/js/Components/Effects/InjuredForm.jsx",
     "isDynamicEntry": true,
@@ -740,7 +747,7 @@
     ]
   },
   "resources/js/Components/Effects/MissingForm.jsx": {
-    "file": "assets/MissingForm-Bu2YiRD3.js",
+    "file": "assets/MissingForm-CtaG39RP.js",
     "name": "MissingForm",
     "src": "resources/js/Components/Effects/MissingForm.jsx",
     "isDynamicEntry": true,
@@ -765,7 +772,7 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfClassesForm.jsx": {
-    "file": "assets/SuspensionOfClassesForm-DA0fAQIl.js",
+    "file": "assets/SuspensionOfClassesForm-Svwn0_gu.js",
     "name": "SuspensionOfClassesForm",
     "src": "resources/js/Components/Effects/SuspensionOfClassesForm.jsx",
     "isDynamicEntry": true,
@@ -779,7 +786,7 @@
       "_index-DO3ItDOM.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
-      "_Index-DBMhD8Ua.js",
+      "_Index-6Uf1MLPd.js",
       "_circle-plus-DNhfC8FL.js",
       "_loader-circle--wXy6zNj.js",
       "_save-BEyFyY87.js",
@@ -824,7 +831,7 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-DButGGwf.js",
+    "file": "assets/CasualtyGraph-C0s_GeP4.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
@@ -836,9 +843,10 @@
       "_BarChart-BbkfNx6n.js",
       "_Legend-B2tTIca4.js",
       "_user-x-CEQto0t6.js",
-      "_PieChart-D5KtUu7t.js",
+      "_PieChart-C2EDWKCx.js",
       "_badge-BzoxX4hZ.js",
       "_user-BTBIwZME.js",
+      "_user-round-Csh4ajY-.js",
       "_tooltip-DzX7KMcd.js",
       "_preload-helper-I4rgV-VL.js",
       "_ActiveDisasterHeader-CbYFeNN1.js",
@@ -853,7 +861,7 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-DcHVMI4w.js",
+    "file": "assets/EvacuationGraph-xJZu4yew.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
@@ -882,7 +890,7 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-DeRtBCq0.js",
+    "file": "assets/InjuredGraph-DtbX79Hf.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
@@ -894,9 +902,10 @@
       "_BarChart-BbkfNx6n.js",
       "_Legend-B2tTIca4.js",
       "_user-plus-CE-SyJrP.js",
-      "_PieChart-D5KtUu7t.js",
+      "_PieChart-C2EDWKCx.js",
       "_badge-BzoxX4hZ.js",
       "_user-BTBIwZME.js",
+      "_user-round-Csh4ajY-.js",
       "_tooltip-DzX7KMcd.js",
       "_preload-helper-I4rgV-VL.js",
       "_ActiveDisasterHeader-CbYFeNN1.js",
@@ -911,7 +920,7 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-Cfg9fYvW.js",
+    "file": "assets/MissingGraph-4Ymbdyeu.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
@@ -923,9 +932,10 @@
       "_BarChart-BbkfNx6n.js",
       "_Legend-B2tTIca4.js",
       "_user-search-B3f6NbCM.js",
-      "_PieChart-D5KtUu7t.js",
+      "_PieChart-C2EDWKCx.js",
       "_badge-BzoxX4hZ.js",
       "_user-BTBIwZME.js",
+      "_user-round-Csh4ajY-.js",
       "_tooltip-DzX7KMcd.js",
       "_preload-helper-I4rgV-VL.js",
       "_ActiveDisasterHeader-CbYFeNN1.js",
@@ -940,7 +950,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-Cj3C3QBu.js",
+    "file": "assets/WaterLevelGraph-DMzkBmWT.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1010,7 +1020,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/BridgeForm.jsx": {
-    "file": "assets/BridgeForm-DPK1lWii.js",
+    "file": "assets/BridgeForm-DEJWgIv4.js",
     "name": "BridgeForm",
     "src": "resources/js/Components/SituationOverview/BridgeForm.jsx",
     "isDynamicEntry": true,
@@ -1039,7 +1049,10 @@
       "_Breadcrumbs-BC6oFE-1.js",
       "_circle-check-ce4Ju1Vq.js",
       "_arrow-left-87DzD_5H.js",
-      "_droplet-BldU_REo.js"
+      "_droplet-BldU_REo.js",
+      "_user-x-CEQto0t6.js",
+      "_user-round-Csh4ajY-.js",
+      "_user-search-B3f6NbCM.js"
     ]
   },
   "resources/js/Components/SituationOverview/CommunicationForm.jsx": {
@@ -1084,7 +1097,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/RoadForm.jsx": {
-    "file": "assets/RoadForm-mFUxLhC7.js",
+    "file": "assets/RoadForm-Cin692sD.js",
     "name": "RoadForm",
     "src": "resources/js/Components/SituationOverview/RoadForm.jsx",
     "isDynamicEntry": true,
@@ -1114,7 +1127,10 @@
       "_Breadcrumbs-BC6oFE-1.js",
       "_circle-check-ce4Ju1Vq.js",
       "_arrow-left-87DzD_5H.js",
-      "_droplet-BldU_REo.js"
+      "_droplet-BldU_REo.js",
+      "_user-x-CEQto0t6.js",
+      "_user-round-Csh4ajY-.js",
+      "_user-search-B3f6NbCM.js"
     ]
   },
   "resources/js/Components/SituationOverview/WaterForm.jsx": {
@@ -1159,7 +1175,7 @@
     ]
   },
   "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-BixF4Erw.js",
+    "file": "assets/WeatherDashboard-Dr70qC15.js",
     "name": "WeatherDashboard",
     "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
     "isDynamicEntry": true,
@@ -1254,7 +1270,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-D_MCqjj2.js",
+    "file": "assets/Dashboard-C_EVpAN1.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1850,7 +1866,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-Cc2od0Vg.js",
+    "file": "assets/Index-B4X0toD4.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -1868,6 +1884,9 @@
       "_arrow-left-87DzD_5H.js",
       "_droplet-BldU_REo.js",
       "_plus-ColiOj16.js",
+      "_user-x-CEQto0t6.js",
+      "_user-round-Csh4ajY-.js",
+      "_user-search-B3f6NbCM.js",
       "_loader-circle--wXy6zNj.js",
       "_tooltip-DzX7KMcd.js",
       "_index-Dn0ZI3Yy.js",
@@ -1886,7 +1905,10 @@
       "resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx",
       "resources/js/Components/Effects/IncidentMonitoredForm.jsx",
       "resources/js/Components/Agriculture/AgricultureForm.jsx",
-      "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx"
+      "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx",
+      "resources/js/Components/Effects/CasualtyForm.jsx",
+      "resources/js/Components/Effects/InjuredForm.jsx",
+      "resources/js/Components/Effects/MissingForm.jsx"
     ]
   },
   "resources/js/Pages/WaterServiceHistory/Index.jsx": {
@@ -1947,7 +1969,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CRh6f1Ae.js",
+    "file": "assets/app-DrFCyp3A.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1981,7 +2003,7 @@
       "resources/js/Pages/DeploymentOfResponse/Index.jsx",
       "resources/js/Pages/ElectricityHistory/Index.jsx",
       "resources/js/Pages/IncidentHistory/Index.jsx",
-      "_Index-DBMhD8Ua.js",
+      "_Index-6Uf1MLPd.js",
       "resources/js/Pages/PreEmptiveHistory/Index.jsx",
       "resources/js/Pages/Profile/Edit.jsx",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.jsx",

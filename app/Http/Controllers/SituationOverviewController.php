@@ -9,6 +9,9 @@ use App\Models\WaterService;
 use App\Models\Communication;
 use App\Models\Road;
 use App\Models\Bridge;
+use App\Models\Casualty;
+use App\Models\Injured;
+use App\Models\Missing;
 use App\Models\Modification;
 use App\Models\Typhoon;
 use App\Events\UserTyping;
@@ -40,6 +43,9 @@ class SituationOverviewController extends Controller
         $roadQuery = Road::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $bridgeQuery = Bridge::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $preEmptiveQuery = \App\Models\PreEmptiveReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $casualtyQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         
         // If typhoon was resumed, only show data created after the resume
         if ($resumedAt) {
@@ -51,6 +57,9 @@ class SituationOverviewController extends Controller
             $roadQuery->where('created_at', '>=', $resumedAt);
             $bridgeQuery->where('created_at', '>=', $resumedAt);
             $preEmptiveQuery->where('created_at', '>=', $resumedAt);
+            $casualtyQuery->where('created_at', '>=', $resumedAt);
+            $injuredQuery->where('created_at', '>=', $resumedAt);
+            $missingQuery->where('created_at', '>=', $resumedAt);
         }
 
         if ($user && !$user->isAdmin()) {
@@ -66,6 +75,9 @@ class SituationOverviewController extends Controller
             $roadQuery->whereIn('user_id', $accessibleUserIds);
             $bridgeQuery->whereIn('user_id', $accessibleUserIds);
             $preEmptiveQuery->whereIn('user_id', $accessibleUserIds);
+            $casualtyQuery->whereIn('user_id', $accessibleUserIds);
+            $injuredQuery->whereIn('user_id', $accessibleUserIds);
+            $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         return Inertia::render('SituationReports/Index', [
@@ -106,6 +118,12 @@ class SituationOverviewController extends Controller
                 })
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'preEmptiveReports' => $preEmptiveQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'casualties' => $casualtyQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'injured' => $injuredQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'missing' => $missingQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
         ]);
     }
