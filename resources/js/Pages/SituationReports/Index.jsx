@@ -102,6 +102,16 @@ export default function Index() {
         typhoon,
         auth,
     } = usePage().props;
+    
+    // Debug: Log casualties/injured/missing props on page load
+    console.log('Props received on page load:', {
+        casualties: casualties,
+        injured: injured,
+        missing: missing,
+        casualtiesCount: casualties?.length,
+        injuredCount: injured?.length,
+        missingCount: missing?.length
+    });
 
     // Check if forms should be disabled (no active disaster, ended, or paused)
     const formsDisabled =
