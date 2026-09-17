@@ -80,6 +80,21 @@ class SituationOverviewController extends Controller
             $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
 
+        // Debug logging
+        $casualtiesData = $casualtyQuery->orderBy('updated_at', 'desc')->limit(100)->get();
+        $injuredData = $injuredQuery->orderBy('updated_at', 'desc')->limit(100)->get();
+        $missingData = $missingQuery->orderBy('updated_at', 'desc')->limit(100)->get();
+        
+        \Log::info('SituationOverview casualties debug', [
+            'user_id' => Auth::id(),
+            'typhoon_id' => $typhoonId,
+            'accessible_user_ids' => $accessibleUserIds ?? 'no filter',
+            'casualties_count' => $casualtiesData->count(),
+            'casualties_data' => $casualtiesData->toArray(),
+            'injured_count' => $injuredData->count(),
+            'missing_count' => $missingData->count(),
+        ]);
+
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
@@ -119,12 +134,9 @@ class SituationOverviewController extends Controller
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'preEmptiveReports' => $preEmptiveQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'casualties' => $casualtyQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'injured' => $injuredQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'missing' => $missingQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'casualties' => $casualtiesData,
+            'injured' => $injuredData,
+            'missing' => $missingData,
         ]);
     }
 
