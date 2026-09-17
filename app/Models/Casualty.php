@@ -19,6 +19,7 @@ class Casualty extends Model
         'cause_of_death',
         'date_died',
         'place_of_incident',
+        'disaster_id',
         'user_id',
         'updated_by',
     ];

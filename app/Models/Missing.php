@@ -30,6 +30,7 @@ class Missing extends Model
         'address',
         'cause', // Changed from diagnosis/etc.
         'remarks',
+        'disaster_id',
         'user_id',
         'updated_by',
     ];

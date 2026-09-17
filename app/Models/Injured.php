@@ -32,6 +32,7 @@ class Injured extends Model
         'date_admitted',
         'place_of_incident',
         'remarks',
+        'disaster_id',
         'user_id',
         'updated_by',
     ];
