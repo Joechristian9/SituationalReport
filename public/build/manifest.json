@@ -68,8 +68,8 @@
       "_index-IIQgGma6.js"
     ]
   },
-  "_Index-BGp4wX6m.js": {
-    "file": "assets/Index-BGp4wX6m.js",
+  "_Index-DBMhD8Ua.js": {
+    "file": "assets/Index-DBMhD8Ua.js",
     "name": "Index",
     "isDynamicEntry": true,
     "imports": [
@@ -596,7 +596,7 @@
     ]
   },
   "resources/js/Components/Effects/AffectedTouristsForm.jsx": {
-    "file": "assets/AffectedTouristsForm-BLyVI4xL.js",
+    "file": "assets/AffectedTouristsForm-DxqLY2YG.js",
     "name": "AffectedTouristsForm",
     "src": "resources/js/Components/Effects/AffectedTouristsForm.jsx",
     "isDynamicEntry": true,
@@ -610,7 +610,7 @@
       "_index-DO3ItDOM.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
-      "_Index-BGp4wX6m.js",
+      "_Index-DBMhD8Ua.js",
       "_circle-plus-DNhfC8FL.js",
       "_loader-circle--wXy6zNj.js",
       "_save-BEyFyY87.js",
@@ -632,7 +632,7 @@
     ]
   },
   "resources/js/Components/Effects/CasualtyForm.jsx": {
-    "file": "assets/CasualtyForm-CSBT5Mw3.js",
+    "file": "assets/CasualtyForm-BHdo5X6w.js",
     "name": "CasualtyForm",
     "src": "resources/js/Components/Effects/CasualtyForm.jsx",
     "isDynamicEntry": true,
@@ -657,7 +657,7 @@
     ]
   },
   "resources/js/Components/Effects/DamagedHousesForm.jsx": {
-    "file": "assets/DamagedHousesForm-B3Yve4mO.js",
+    "file": "assets/DamagedHousesForm-DRe0L5P2.js",
     "name": "DamagedHousesForm",
     "src": "resources/js/Components/Effects/DamagedHousesForm.jsx",
     "isDynamicEntry": true,
@@ -669,7 +669,7 @@
       "_useAppUrl-BoquxkkA.js",
       "_QueryClientProvider-C-dWpnxs.js",
       "_index-DO3ItDOM.js",
-      "_Index-BGp4wX6m.js",
+      "_Index-DBMhD8Ua.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
       "_house-BUxhGa2V.js",
@@ -740,7 +740,7 @@
     ]
   },
   "resources/js/Components/Effects/MissingForm.jsx": {
-    "file": "assets/MissingForm-B1a4T9xY.js",
+    "file": "assets/MissingForm-Bu2YiRD3.js",
     "name": "MissingForm",
     "src": "resources/js/Components/Effects/MissingForm.jsx",
     "isDynamicEntry": true,
@@ -750,21 +750,22 @@
       "_RowsPerPage-CSurqGwU.js",
       "_useTableFilter-CepNK4iF.js",
       "_AddRowButton-DdvOKzi2.js",
+      "_ModificationIndicator-pOGvDehS.js",
       "_useAppUrl-BoquxkkA.js",
       "_QueryClientProvider-C-dWpnxs.js",
       "_index-DO3ItDOM.js",
-      "_tooltip-DzX7KMcd.js",
       "_user-search-B3f6NbCM.js",
       "_circle-plus-DNhfC8FL.js",
       "_loader-circle--wXy6zNj.js",
       "_save-BEyFyY87.js",
       "_download-CQ31Q3-p.js",
       "_plus-ColiOj16.js",
+      "_tooltip-DzX7KMcd.js",
       "_index-Dn0ZI3Yy.js"
     ]
   },
   "resources/js/Components/Effects/SuspensionOfClassesForm.jsx": {
-    "file": "assets/SuspensionOfClassesForm-C4CHPWjl.js",
+    "file": "assets/SuspensionOfClassesForm-DA0fAQIl.js",
     "name": "SuspensionOfClassesForm",
     "src": "resources/js/Components/Effects/SuspensionOfClassesForm.jsx",
     "isDynamicEntry": true,
@@ -778,7 +779,7 @@
       "_index-DO3ItDOM.js",
       "_AddRowButton-DdvOKzi2.js",
       "_tooltip-DzX7KMcd.js",
-      "_Index-BGp4wX6m.js",
+      "_Index-DBMhD8Ua.js",
       "_circle-plus-DNhfC8FL.js",
       "_loader-circle--wXy6zNj.js",
       "_save-BEyFyY87.js",
@@ -1946,7 +1947,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-BmT1i_cq.js",
+    "file": "assets/app-CRh6f1Ae.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -1980,7 +1981,7 @@
       "resources/js/Pages/DeploymentOfResponse/Index.jsx",
       "resources/js/Pages/ElectricityHistory/Index.jsx",
       "resources/js/Pages/IncidentHistory/Index.jsx",
-      "_Index-BGp4wX6m.js",
+      "_Index-DBMhD8Ua.js",
       "resources/js/Pages/PreEmptiveHistory/Index.jsx",
       "resources/js/Pages/Profile/Edit.jsx",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.jsx",
@@ -1995,7 +1996,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-CFyIwu_V.css"
+      "assets/app-s68seT0K.css"
     ]
   }
 }

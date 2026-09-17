@@ -303,7 +303,7 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                                                                     fieldName="sex"
                                                                     getFieldHistory={getFieldHistory}
                                                                     currentValue={row.sex}
-                                                                    showLastModified={false}
+                                                                    showLastModified={true}
                                                                 />
                                                             </div>
                                                         ) : (
@@ -333,7 +333,7 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                                                                     fieldName={field}
                                                                     getFieldHistory={getFieldHistory}
                                                                     currentValue={row[field]}
-                                                                    showLastModified={false}
+                                                                    showLastModified={true}
                                                                 />
                                                             </>
                                                         )}
