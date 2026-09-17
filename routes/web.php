@@ -39,6 +39,35 @@ Route::get('/', function () {
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Temporary fix route - update casualties with null disaster_id
+    Route::get('/fix-casualties-disaster-id', function() {
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        if (!$activeTyphoon) {
+            return response()->json(['error' => 'No active typhoon found']);
+        }
+        
+        $updated = \DB::table('casualties')
+            ->whereNull('disaster_id')
+            ->update(['disaster_id' => $activeTyphoon->id]);
+            
+        $updatedInjured = \DB::table('injured')
+            ->whereNull('disaster_id')
+            ->update(['disaster_id' => $activeTyphoon->id]);
+            
+        $updatedMissing = \DB::table('missing')
+            ->whereNull('disaster_id')
+            ->update(['disaster_id' => $activeTyphoon->id]);
+        
+        return response()->json([
+            'success' => true,
+            'typhoon_id' => $activeTyphoon->id,
+            'typhoon_name' => $activeTyphoon->name,
+            'casualties_updated' => $updated,
+            'injured_updated' => $updatedInjured,
+            'missing_updated' => $updatedMissing,
+        ]);
+    });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
