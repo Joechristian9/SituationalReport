@@ -109,11 +109,15 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                 id: typeof casualty.id === 'string' ? null : casualty.id
             }));
             
+            console.log('Submitting casualties:', cleanedCasualties);
+            
             const response = await axios.post(
                 `${APP_URL}/casualties`, 
                 { casualties: cleanedCasualties },
                 { headers: { 'Accept': 'application/json' } }
             );
+            
+            console.log('Casualties response:', response.data);
             
             // Update local state with server response if available
             if (response.data && response.data.casualties) {

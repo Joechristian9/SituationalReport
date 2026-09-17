@@ -108,11 +108,15 @@ export default function MissingForm({ data, setData, errors, disabled = false })
                 id: typeof missing.id === 'string' ? null : missing.id
             }));
             
+            console.log('Submitting missing:', cleanedMissing);
+            
             const response = await axios.post(
                 `${APP_URL}/missing`, 
                 { missing: cleanedMissing },
                 { headers: { 'Accept': 'application/json' } }
             );
+            
+            console.log('Missing response:', response.data);
             
             // Update local state with server response if available
             if (response.data && response.data.missing) {
