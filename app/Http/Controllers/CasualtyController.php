@@ -126,6 +126,11 @@ class CasualtyController extends Controller
 
         // Return JSON response with saved records
         if ($request->expectsJson()) {
+            \Log::info('Returning saved casualties', [
+                'count' => count($savedCasualties),
+                'casualties' => $savedCasualties,
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Casualties report saved successfully.',
