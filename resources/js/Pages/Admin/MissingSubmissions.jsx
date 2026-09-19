@@ -15,14 +15,14 @@ import { format } from 'date-fns';
 
 export default function MissingSubmissions({ missing, users, filters, auth }) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
-    const [selectedUser, setSelectedUser] = useState(filters.user_id || '');
+    const [selectedUser, setSelectedUser] = useState(filters.user_id || 'all');
     const [dateFrom, setDateFrom] = useState(filters.date_from || '');
     const [dateTo, setDateTo] = useState(filters.date_to || '');
 
     const handleFilter = () => {
         router.get(route('admin.missing.submissions'), {
             search: searchQuery,
-            user_id: selectedUser,
+            user_id: selectedUser === 'all' ? '' : selectedUser,
             date_from: dateFrom,
             date_to: dateTo,
         }, {
@@ -33,7 +33,7 @@ export default function MissingSubmissions({ missing, users, filters, auth }) {
 
     const handleReset = () => {
         setSearchQuery('');
-        setSelectedUser('');
+        setSelectedUser('all');
         setDateFrom('');
         setDateTo('');
         router.get(route('admin.missing.submissions'));
@@ -112,7 +112,7 @@ export default function MissingSubmissions({ missing, users, filters, auth }) {
                                                 <SelectValue placeholder="All users" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All users</SelectItem>
+                                                <SelectItem value="all">All users</SelectItem>
                                                 {users.map(user => (
                                                     <SelectItem key={user.id} value={user.id.toString()}>
                                                         {user.name}
