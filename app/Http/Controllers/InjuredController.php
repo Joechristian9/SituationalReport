@@ -203,7 +203,7 @@ class InjuredController extends Controller
      */
     public function submissions(Request $request)
     {
-        $query = Injured::with(['user:id,name,office', 'updater:id,name,office']);
+        $query = Injured::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active typhoon if exists
         $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
@@ -236,7 +236,7 @@ class InjuredController extends Controller
         $injured = $query->latest('created_at')->paginate(20)->withQueryString();
 
         // Get all users for filter dropdown
-        $users = \App\Models\User::select('id', 'name', 'office')->orderBy('name')->get();
+        $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/InjuredSubmissions', [
             'injured' => $injured,

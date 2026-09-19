@@ -1299,7 +1299,7 @@
     ]
   },
   "resources/js/Pages/Admin/CasualtySubmissions.jsx": {
-    "file": "assets/CasualtySubmissions-CsrQJIm7.js",
+    "file": "assets/CasualtySubmissions-DlY4JbXI.js",
     "name": "CasualtySubmissions",
     "src": "resources/js/Pages/Admin/CasualtySubmissions.jsx",
     "isDynamicEntry": true,
@@ -1415,7 +1415,7 @@
     ]
   },
   "resources/js/Pages/Admin/InjuredSubmissions.jsx": {
-    "file": "assets/InjuredSubmissions-CzbQtRWU.js",
+    "file": "assets/InjuredSubmissions-0SNxuea7.js",
     "name": "InjuredSubmissions",
     "src": "resources/js/Pages/Admin/InjuredSubmissions.jsx",
     "isDynamicEntry": true,
@@ -1436,7 +1436,7 @@
     ]
   },
   "resources/js/Pages/Admin/MissingSubmissions.jsx": {
-    "file": "assets/MissingSubmissions-jlMNTtbL.js",
+    "file": "assets/MissingSubmissions-D4VHpIHR.js",
     "name": "MissingSubmissions",
     "src": "resources/js/Pages/Admin/MissingSubmissions.jsx",
     "isDynamicEntry": true,
@@ -2083,7 +2083,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-DcjsZQ9M.js",
+    "file": "assets/app-CZJ0Qjhe.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,

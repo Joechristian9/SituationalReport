@@ -115,7 +115,7 @@ export default function InjuredSubmissions({ injured, users, filters, auth }) {
                                                 <SelectItem value="">All users</SelectItem>
                                                 {users.map(user => (
                                                     <SelectItem key={user.id} value={user.id.toString()}>
-                                                        {user.name} {user.office && `(${user.office})`}
+                                                        {user.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -205,15 +205,8 @@ export default function InjuredSubmissions({ injured, users, filters, auth }) {
                                                             <td className="py-3">
                                                                 <div className="flex items-center gap-2">
                                                                     <User className="w-4 h-4 text-gray-400" />
-                                                                    <div>
-                                                                        <div className="font-medium text-gray-900">
-                                                                            {person.user?.name || 'Unknown'}
-                                                                        </div>
-                                                                        {person.user?.office && (
-                                                                            <div className="text-xs text-gray-500">
-                                                                                {person.user.office}
-                                                                            </div>
-                                                                        )}
+                                                                    <div className="font-medium text-gray-900">
+                                                                        {person.user?.name || 'Unknown'}
                                                                     </div>
                                                                 </div>
                                                             </td>

@@ -206,7 +206,7 @@ class MissingController extends Controller
      */
     public function submissions(Request $request)
     {
-        $query = Missing::with(['user:id,name,office', 'updater:id,name,office']);
+        $query = Missing::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active typhoon if exists
         $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
@@ -239,7 +239,7 @@ class MissingController extends Controller
         $missing = $query->latest('created_at')->paginate(20)->withQueryString();
 
         // Get all users for filter dropdown
-        $users = \App\Models\User::select('id', 'name', 'office')->orderBy('name')->get();
+        $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/MissingSubmissions', [
             'missing' => $missing,
