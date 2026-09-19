@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Casualty;
+use App\Models\Disaster;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

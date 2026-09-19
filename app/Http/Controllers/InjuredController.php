@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Disaster;
 use App\Models\Injured;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
