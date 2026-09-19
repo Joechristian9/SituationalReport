@@ -1457,7 +1457,7 @@
     ]
   },
   "resources/js/Pages/Admin/UserManagement.jsx": {
-    "file": "assets/UserManagement-C88tna-H.js",
+    "file": "assets/UserManagement-CacuGTuX.js",
     "name": "UserManagement",
     "src": "resources/js/Pages/Admin/UserManagement.jsx",
     "isDynamicEntry": true,
@@ -2083,7 +2083,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-B5B-jf9y.js",
+    "file": "assets/app-BGj3erFx.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2135,7 +2135,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-Dif5tu4x.css"
+      "assets/app-Dk9KWCHG.css"
     ]
   }
 }
