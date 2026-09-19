@@ -208,10 +208,10 @@ class MissingController extends Controller
     {
         $query = Missing::with(['user:id,name', 'updater:id,name']);
 
-        // Filter by active typhoon if exists
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
-        if ($activeTyphoon) {
-            $query->where('disaster_id', $activeTyphoon->id);
+        // Filter by active disaster if exists
+        $activeDisaster = \App\Models\Disaster::where('status', 'active')->first();
+        if ($activeDisaster) {
+            $query->where('disaster_id', $activeDisaster->id);
         }
 
         // Search filter
