@@ -161,12 +161,19 @@ export default function UserManagement({ users, roles, permissions, auth }) {
     };
 
     const handlePermissionToggle = (permissionName) => {
-        setFormData(prev => ({
-            ...prev,
-            permissions: prev.permissions.includes(permissionName)
+        setFormData(prev => {
+            const isCurrentlyChecked = prev.permissions.includes(permissionName);
+            const newPermissions = isCurrentlyChecked
                 ? prev.permissions.filter(p => p !== permissionName)
-                : [...prev.permissions, permissionName]
-        }));
+                : [...prev.permissions, permissionName];
+            
+            console.log('Permission toggle:', { permissionName, isCurrentlyChecked, newPermissions });
+            
+            return {
+                ...prev,
+                permissions: newPermissions
+            };
+        });
     };
 
     return (
