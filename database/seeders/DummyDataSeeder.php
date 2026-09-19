@@ -443,11 +443,16 @@ class DummyDataSeeder extends Seeder
         $this->command->info('- Weather reports for Ilagan with varying conditions (250 reports)');
         $this->command->info('- Water levels, electricity, water services for all disasters');
         
-        // Casualties (Dead)
+        // Casualties (Dead) - More realistic data with varied barangays
         $casualtiesData = [
-            ['name' => 'Juan Dela Cruz', 'age' => 45, 'sex' => 'male', 'address' => 'Barangay San Vicente, Ilagan City', 'cause_of_death' => 'Drowning due to flash flood', 'place_of_incident' => 'Cagayan River'],
-            ['name' => 'Maria Santos', 'age' => 32, 'sex' => 'female', 'address' => 'Barangay Alibagu, Ilagan City', 'cause_of_death' => 'Landslide', 'place_of_incident' => 'Mountain area, Barangay Alibagu'],
-            ['name' => 'Pedro Reyes', 'age' => 58, 'sex' => 'male', 'address' => 'Barangay Marana, Ilagan City', 'cause_of_death' => 'Fallen tree', 'place_of_incident' => 'Maharlika Highway'],
+            ['name' => 'Juan Dela Cruz', 'age' => 45, 'sex' => 'Male', 'address' => 'Purok 3, Barangay San Vicente, Ilagan City', 'cause_of_death' => 'Drowning due to flash flood', 'place_of_incident' => 'Cagayan River near San Vicente Bridge'],
+            ['name' => 'Maria Santos', 'age' => 32, 'sex' => 'Female', 'address' => 'Sitio Malaya, Barangay Alibagu, Ilagan City', 'cause_of_death' => 'Landslide buried residence', 'place_of_incident' => 'Mountain slope, Barangay Alibagu'],
+            ['name' => 'Pedro Reyes', 'age' => 58, 'sex' => 'Male', 'address' => 'Purok 5, Barangay Marana, Ilagan City', 'cause_of_death' => 'Crushed by fallen tree', 'place_of_incident' => 'Maharlika Highway Km 424'],
+            ['name' => 'Rosa Villanueva', 'age' => 67, 'sex' => 'Female', 'address' => 'Purok 2, Barangay Calamagui 1st, Ilagan City', 'cause_of_death' => 'Heart attack during evacuation', 'place_of_incident' => 'Calamagui Evacuation Center'],
+            ['name' => 'Antonio Pascual', 'age' => 41, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Naguilian, Ilagan City', 'cause_of_death' => 'Electrocution from downed power line', 'place_of_incident' => 'Barangay Naguilian Road'],
+            ['name' => 'Carmen Lopez', 'age' => 29, 'sex' => 'Female', 'address' => 'Purok 7, Barangay Fugu, Ilagan City', 'cause_of_death' => 'Swept away by strong current', 'place_of_incident' => 'Pinacanauan River crossing'],
+            ['name' => 'Ricardo Tan', 'age' => 52, 'sex' => 'Male', 'address' => 'Purok 4, Barangay Bagong Bayan, Ilagan City', 'cause_of_death' => 'Collapsed house roof', 'place_of_incident' => 'Residential area, Bagong Bayan'],
+            ['name' => 'Luz Fernandez', 'age' => 38, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Malalam, Ilagan City', 'cause_of_death' => 'Hypothermia and drowning', 'place_of_incident' => 'Flooded rice fields'],
         ];
 
         // Get the FIRST disaster (which is the active one)
@@ -470,13 +475,23 @@ class DummyDataSeeder extends Seeder
             ]);
         }
 
-        // Injured Persons
+        // Injured Persons - More realistic data with varied barangays and conditions
         $injuredData = [
-            ['name' => 'Ana Garcia', 'age' => 28, 'sex' => 'female', 'address' => 'Barangay San Felipe, Ilagan City', 'diagnosis' => 'Fractured left leg, minor lacerations', 'place_of_incident' => 'Collapsed house roof', 'remarks' => 'Stable condition, admitted to Ilagan City Hospital'],
-            ['name' => 'Roberto Cruz', 'age' => 41, 'sex' => 'male', 'address' => 'Barangay Bagong Bayan, Ilagan City', 'diagnosis' => 'Head trauma, multiple contusions', 'place_of_incident' => 'Hit by flying debris', 'remarks' => 'Under observation, recovering well'],
-            ['name' => 'Elena Mendoza', 'age' => 35, 'sex' => 'female', 'address' => 'Barangay Centro, Ilagan City', 'diagnosis' => 'Sprained ankle, minor cuts', 'place_of_incident' => 'Slipped on flooded street', 'remarks' => 'Treated and released'],
-            ['name' => 'Carlos Ramos', 'age' => 52, 'sex' => 'male', 'address' => 'Barangay Naguilian, Ilagan City', 'diagnosis' => 'Broken arm, chest injuries', 'place_of_incident' => 'Fallen tree branch', 'remarks' => 'Surgery performed, stable'],
-            ['name' => 'Luz Fernandez', 'age' => 19, 'sex' => 'female', 'address' => 'Barangay San Juan, Ilagan City', 'diagnosis' => 'Hypothermia, exhaustion', 'place_of_incident' => 'Rescued from flooded area', 'remarks' => 'Recovering, expected discharge soon'],
+            ['name' => 'Ana Garcia', 'age' => 28, 'sex' => 'Female', 'address' => 'Purok 6, Barangay San Felipe, Ilagan City', 'diagnosis' => 'Fractured left leg, minor lacerations', 'place_of_incident' => 'Collapsed house roof', 'remarks' => 'Stable condition, admitted to Ilagan City Hospital'],
+            ['name' => 'Roberto Cruz', 'age' => 41, 'sex' => 'Male', 'address' => 'Purok 3, Barangay Bagong Bayan, Ilagan City', 'diagnosis' => 'Head trauma, multiple contusions', 'place_of_incident' => 'Hit by flying debris', 'remarks' => 'Under observation, recovering well'],
+            ['name' => 'Elena Mendoza', 'age' => 35, 'sex' => 'Female', 'address' => 'Purok 2, Barangay Centro (Poblacion), Ilagan City', 'diagnosis' => 'Sprained ankle, minor cuts', 'place_of_incident' => 'Slipped on flooded street', 'remarks' => 'Treated and released'],
+            ['name' => 'Carlos Ramos', 'age' => 52, 'sex' => 'Male', 'address' => 'Sitio Proper, Barangay Naguilian, Ilagan City', 'diagnosis' => 'Broken right arm, chest injuries', 'place_of_incident' => 'Fallen tree branch', 'remarks' => 'Surgery performed, stable'],
+            ['name' => 'Luz Bernardo', 'age' => 19, 'sex' => 'Female', 'address' => 'Purok 4, Barangay San Juan, Ilagan City', 'diagnosis' => 'Hypothermia, exhaustion', 'place_of_incident' => 'Rescued from flooded area', 'remarks' => 'Recovering, expected discharge soon'],
+            ['name' => 'Ferdinand Aquino', 'age' => 33, 'sex' => 'Male', 'address' => 'Purok 5, Barangay Marana, Ilagan City', 'diagnosis' => 'Deep lacerations on both legs, severe bruising', 'place_of_incident' => 'Trapped under collapsed fence', 'remarks' => 'Stitches applied, stable condition'],
+            ['name' => 'Marissa Dela Torre', 'age' => 44, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Alibagu, Ilagan City', 'diagnosis' => 'Fractured ribs, internal bruising', 'place_of_incident' => 'Fell during evacuation', 'remarks' => 'Admitted for observation'],
+            ['name' => 'Benjamin Santos', 'age' => 26, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Calamagui 2nd, Ilagan City', 'diagnosis' => 'Dislocated shoulder, multiple abrasions', 'place_of_incident' => 'Swept by flood current', 'remarks' => 'Shoulder relocated, recovering'],
+            ['name' => 'Grace Navarro', 'age' => 31, 'sex' => 'Female', 'address' => 'Purok 8, Barangay Fugu, Ilagan City', 'diagnosis' => 'Broken wrist, facial lacerations', 'place_of_incident' => 'Vehicle accident due to flooding', 'remarks' => 'Cast applied, stable'],
+            ['name' => 'Daniel Morales', 'age' => 48, 'sex' => 'Male', 'address' => 'Purok 2, Barangay San Vicente, Ilagan City', 'diagnosis' => 'Severe cuts on hands and arms, shock', 'place_of_incident' => 'Broken glass from windows', 'remarks' => 'Treated for shock, wounds sutured'],
+            ['name' => 'Teresa Gonzales', 'age' => 55, 'sex' => 'Female', 'address' => 'Purok 7, Barangay Malalam, Ilagan City', 'diagnosis' => 'Ankle fracture, back injuries', 'place_of_incident' => 'Fell from elevated area during storm', 'remarks' => 'X-ray done, admitted'],
+            ['name' => 'Jose Valdez', 'age' => 39, 'sex' => 'Male', 'address' => 'Sitio Malaya, Barangay Alibagu, Ilagan City', 'diagnosis' => 'Crushed foot, multiple fractures', 'place_of_incident' => 'Debris from landslide', 'remarks' => 'Surgery required, critical but stable'],
+            ['name' => 'Patricia Reyes', 'age' => 22, 'sex' => 'Female', 'address' => 'Purok 3, Barangay San Juan, Ilagan City', 'diagnosis' => 'Mild concussion, neck strain', 'place_of_incident' => 'Hit by falling branch', 'remarks' => 'Under observation, neck brace applied'],
+            ['name' => 'Ramon Cortez', 'age' => 61, 'sex' => 'Male', 'address' => 'Purok 6, Barangay Calamagui 1st, Ilagan City', 'diagnosis' => 'Leg lacerations, dehydration', 'place_of_incident' => 'Trapped in flooded house', 'remarks' => 'Rehydrated, wounds cleaned'],
+            ['name' => 'Angela Cruz', 'age' => 17, 'sex' => 'Female', 'address' => 'Purok 4, Barangay Centro, Ilagan City', 'diagnosis' => 'Minor burns, smoke inhalation', 'place_of_incident' => 'House fire during storm', 'remarks' => 'Treated, condition improving'],
         ];
 
         // Add injured persons for active typhoon only
@@ -497,10 +512,14 @@ class DummyDataSeeder extends Seeder
             ]);
         }
 
-        // Missing Persons
+        // Missing Persons - More realistic data with varied circumstances
         $missingData = [
-            ['name' => 'Miguel Torres', 'age' => 34, 'sex' => 'male', 'address' => 'Barangay Calamagui, Ilagan City', 'cause' => 'Swept away by strong current while crossing flooded river', 'remarks' => 'Search and rescue operations ongoing'],
-            ['name' => 'Sofia Villanueva', 'age' => 22, 'sex' => 'female', 'address' => 'Barangay Malalam, Ilagan City', 'cause' => 'Last seen evacuating from landslide area', 'remarks' => 'Family reported missing, search teams deployed'],
+            ['name' => 'Miguel Torres', 'age' => 34, 'sex' => 'Male', 'address' => 'Purok 2, Barangay Calamagui 1st, Ilagan City', 'cause' => 'Swept away by strong current while crossing flooded Cagayan River', 'remarks' => 'Search and rescue operations ongoing, last seen 2 days ago'],
+            ['name' => 'Sofia Villanueva', 'age' => 22, 'sex' => 'Female', 'address' => 'Sitio Malaya, Barangay Malalam, Ilagan City', 'cause' => 'Last seen evacuating from landslide-prone area', 'remarks' => 'Family reported missing, search teams deployed to mountain areas'],
+            ['name' => 'Eduardo Santos', 'age' => 16, 'sex' => 'Male', 'address' => 'Purok 5, Barangay San Felipe, Ilagan City', 'cause' => 'Separated from family during flash flood evacuation', 'remarks' => 'Possibly took shelter in nearby barangay, search ongoing'],
+            ['name' => 'Angelina Reyes', 'age' => 58, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Fugu, Ilagan City', 'cause' => 'Did not reach evacuation center, last seen in flooded area', 'remarks' => 'Rescue teams checking neighboring barangays and relatives'],
+            ['name' => 'Christopher Mendoza', 'age' => 42, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Naguilian, Ilagan City', 'cause' => 'Went to check on livestock during height of storm, did not return', 'remarks' => 'Search party deployed, checking rice fields and animal shelters'],
+            ['name' => 'Diana Cruz', 'age' => 27, 'sex' => 'Female', 'address' => 'Purok 4, Barangay Alibagu, Ilagan City', 'cause' => 'Lost contact during landslide incident', 'remarks' => 'Possible buried under debris, rescue equipment deployed'],
         ];
 
         // Add missing persons for active typhoon only
@@ -519,7 +538,7 @@ class DummyDataSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('- Casualties: 3 dead, 5 injured, 2 missing (for active disaster)');
+        $this->command->info('- Casualties: 8 dead, 15 injured, 6 missing (for active disaster)');
         $this->command->info('- Roads and bridges status for all disasters');
         $this->command->info('- Pre-emptive evacuations with varied numbers');
         $this->command->info('- Incidents monitored for all disasters');
