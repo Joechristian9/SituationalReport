@@ -499,7 +499,7 @@ export default function UserManagement({ users, roles, permissions, auth }) {
                                             <Checkbox
                                                 id={`permission-${permission.id}`}
                                                 checked={formData.permissions.includes(permission.name)}
-                                                onCheckedChange={() => handlePermissionToggle(permission.name)}
+                                                onCheckedChange={(checked) => handlePermissionToggle(permission.name)}
                                             />
                                             <label
                                                 htmlFor={`permission-${permission.id}`}
@@ -604,7 +604,7 @@ export default function UserManagement({ users, roles, permissions, auth }) {
                                             <Checkbox
                                                 id={`edit-permission-${permission.id}`}
                                                 checked={formData.permissions.includes(permission.name)}
-                                                onCheckedChange={() => handlePermissionToggle(permission.name)}
+                                                onCheckedChange={(checked) => handlePermissionToggle(permission.name)}
                                             />
                                             <label
                                                 htmlFor={`edit-permission-${permission.id}`}
