@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Casualty;
-use App\Models\Disaster;
+use App\Models\Typhoon;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -206,9 +206,9 @@ class CasualtyController extends Controller
         $query = Casualty::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists
-        $activeDisaster = \App\Models\Disaster::where('status', 'active')->first();
-        if ($activeDisaster) {
-            $query->where('disaster_id', $activeDisaster->id);
+        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        if ($activeTyphoon) {
+            $query->where('disaster_id', $activeTyphoon->id);
         }
 
         // Search filter
