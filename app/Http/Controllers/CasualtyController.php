@@ -196,4 +196,56 @@ class CasualtyController extends Controller
 
         return response()->json(['history' => $history]);
     }
+
+    /**
+     * Show casualties submissions page (Admin only)
+     */
+    public function submissions(Request $request)
+    {
+        $query = Casualty::with(['user:id,name,office', 'updater:id,name,office']);
+
+        // Filter by active typhoon if exists
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        if ($activeTyphoon) {
+            $query->where('disaster_id', $activeTyphoon->id);
+        }
+
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('cause_of_death', 'like', "%{$search}%");
+            });
+        }
+
+        // User filter
+        if ($userId = $request->input('user_id')) {
+            $query->where('user_id', $userId);
+        }
+
+        // Date range filter
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $casualties = $query->latest('created_at')->paginate(20)->withQueryString();
+
+        // Get all users for filter dropdown
+        $users = \App\Models\User::select('id', 'name', 'office')->orderBy('name')->get();
+
+        return Inertia::render('Admin/CasualtySubmissions', [
+            'casualties' => $casualties,
+            'users' => $users,
+            'filters' => [
+                'search' => $request->input('search'),
+                'user_id' => $request->input('user_id'),
+                'date_from' => $request->input('date_from'),
+                'date_to' => $request->input('date_to'),
+            ],
+        ]);
+    }
 }

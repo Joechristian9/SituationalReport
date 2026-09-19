@@ -5,7 +5,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, usePage, Link } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
@@ -169,56 +169,62 @@ export default function Dashboard({
                                     <div className="space-y-6">
                                         {/* Summary Stats Cards */}
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.1 }}
-                                                className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-xs font-medium text-red-600 mb-1">Casualties</p>
-                                                        <p className="text-2xl font-bold text-red-700">{impactStats.totalCasualties}</p>
+                                            <Link href={route('admin.casualties.submissions')}>
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.1 }}
+                                                    className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-xs font-medium text-red-600 mb-1">Casualties</p>
+                                                            <p className="text-2xl font-bold text-red-700">{impactStats.totalCasualties}</p>
+                                                        </div>
+                                                        <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
+                                                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                                                        </div>
                                                     </div>
-                                                    <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
-                                                        <AlertTriangle className="w-6 h-6 text-red-600" />
-                                                    </div>
-                                                </div>
-                                            </motion.div>
+                                                </motion.div>
+                                            </Link>
                                             
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.2 }}
-                                                className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 shadow-sm"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-xs font-medium text-amber-600 mb-1">Injured</p>
-                                                        <p className="text-2xl font-bold text-amber-700">{impactStats.totalInjured}</p>
+                                            <Link href={route('admin.injured.submissions')}>
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.2 }}
+                                                    className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-xs font-medium text-amber-600 mb-1">Injured</p>
+                                                            <p className="text-2xl font-bold text-amber-700">{impactStats.totalInjured}</p>
+                                                        </div>
+                                                        <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
+                                                            <Users className="w-6 h-6 text-amber-600" />
+                                                        </div>
                                                     </div>
-                                                    <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
-                                                        <Users className="w-6 h-6 text-amber-600" />
-                                                    </div>
-                                                </div>
-                                            </motion.div>
+                                                </motion.div>
+                                            </Link>
                                             
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.3 }}
-                                                className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-xs font-medium text-orange-600 mb-1">Missing</p>
-                                                        <p className="text-2xl font-bold text-orange-700">{impactStats.totalMissing}</p>
+                                            <Link href={route('admin.missing.submissions')}>
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.3 }}
+                                                    className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-xs font-medium text-orange-600 mb-1">Missing</p>
+                                                            <p className="text-2xl font-bold text-orange-700">{impactStats.totalMissing}</p>
+                                                        </div>
+                                                        <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
+                                                            <Users className="w-6 h-6 text-orange-600" />
+                                                        </div>
                                                     </div>
-                                                    <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
-                                                        <Users className="w-6 h-6 text-orange-600" />
-                                                    </div>
-                                                </div>
-                                            </motion.div>
+                                                </motion.div>
+                                            </Link>
                                             
                                             <motion.div 
                                                 initial={{ opacity: 0, y: 20 }}

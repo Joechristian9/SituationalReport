@@ -431,6 +431,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::patch('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
     Route::delete('users/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('admin.users.destroy');
     
+    // Submission Activity Pages (Admin only)
+    Route::get('casualties/submissions', [CasualtyController::class, 'submissions'])->name('admin.casualties.submissions');
+    Route::get('injured/submissions', [InjuredController::class, 'submissions'])->name('admin.injured.submissions');
+    Route::get('missing/submissions', [MissingController::class, 'submissions'])->name('admin.missing.submissions');
+    
     // Disaster Management (Admin only)
     Route::prefix('disasters')->group(function () {
         Route::get('/', [DisasterController::class, 'index'])->name('disasters.index');

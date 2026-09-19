@@ -200,4 +200,56 @@ class MissingController extends Controller
 
         return response()->json(['history' => $history]);
     }
+
+    /**
+     * Show missing persons submissions page (Admin only)
+     */
+    public function submissions(Request $request)
+    {
+        $query = Missing::with(['user:id,name,office', 'updater:id,name,office']);
+
+        // Filter by active typhoon if exists
+        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        if ($activeTyphoon) {
+            $query->where('disaster_id', $activeTyphoon->id);
+        }
+
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('cause', 'like', "%{$search}%");
+            });
+        }
+
+        // User filter
+        if ($userId = $request->input('user_id')) {
+            $query->where('user_id', $userId);
+        }
+
+        // Date range filter
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $missing = $query->latest('created_at')->paginate(20)->withQueryString();
+
+        // Get all users for filter dropdown
+        $users = \App\Models\User::select('id', 'name', 'office')->orderBy('name')->get();
+
+        return Inertia::render('Admin/MissingSubmissions', [
+            'missing' => $missing,
+            'users' => $users,
+            'filters' => [
+                'search' => $request->input('search'),
+                'user_id' => $request->input('user_id'),
+                'date_from' => $request->input('date_from'),
+                'date_to' => $request->input('date_to'),
+            ],
+        ]);
+    }
 }
