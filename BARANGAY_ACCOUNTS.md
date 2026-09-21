@@ -1,131 +1,131 @@
-# Barangay User Accounts
+# Ilagan City Barangay Accounts
 
-All 91 barangays in Ilagan City have user accounts with the following credentials:
+## Total: 109 Barangays
 
-**Default Password for all barangays:** `admin123`  
-**Role:** `user`
+All barangay accounts have:
+- **Password**: `wardead123`
+- **Email Format**: `[barangayname]@barangay.local` (lowercase, no spaces or special characters)
+- **Role**: user
+- **Permissions**: 
+  - Weather Form
+  - Communication Form
+  - Road Form
+  - Bridge Form
+  - Pre-Emptive Form
+  - Incident Form
 
-## Complete List of Barangay Accounts
+## Account List
 
-| Barangay Name | Email | Password |
-|--------------|-------|----------|
-| Aggassian | aggassian@barangay.local | admin123 |
-| Alibagu | alibagu@barangay.local | admin123 |
-| Allinguigan 1st | allinguigan.1st@barangay.local | admin123 |
-| Allinguigan 2nd | allinguigan.2nd@barangay.local | admin123 |
-| Allinguigan 3rd | allinguigan.3rd@barangay.local | admin123 |
-| Arusip | arusip@barangay.local | admin123 |
-| Baculod | baculod@barangay.local | admin123 |
-| Bagong Silang | bagong.silang@barangay.local | admin123 |
-| Bagumbayan | bagumbayan@barangay.local | admin123 |
-| Balmadrid | balmadrid@barangay.local | admin123 |
-| Barangay I (Poblacion) | barangay.i@barangay.local | admin123 |
-| Barangay II (Poblacion) | barangay.ii@barangay.local | admin123 |
-| Barangay III (Poblacion) | barangay.iii@barangay.local | admin123 |
-| Barangay IV (Poblacion) | barangay.iv@barangay.local | admin123 |
-| Batong-Labang | batonglabang@barangay.local | admin123 |
-| Bigao | bigao@barangay.local | admin123 |
-| Bintawan | bintawan@barangay.local | admin123 |
-| Buenavista | buenavista@barangay.local | admin123 |
-| Buyasan | buyasan@barangay.local | admin123 |
-| Cadu | cadu@barangay.local | admin123 |
-| Calamagui 1st | calamagui.1st@barangay.local | admin123 |
-| Calamagui 2nd | calamagui.2nd@barangay.local | admin123 |
-| Camunatan | camunatan@barangay.local | admin123 |
-| Capellan | capellan@barangay.local | admin123 |
-| Capo | capo@barangay.local | admin123 |
-| Carikkikan Norte | carikkikan.norte@barangay.local | admin123 |
-| Carikkikan Sur | carikkikan.sur@barangay.local | admin123 |
-| Centro San Antonio | centro.san.antonio@barangay.local | admin123 |
-| Cinaratan | cinaratan@barangay.local | admin123 |
-| Dalibubon | dalibubon@barangay.local | admin123 |
-| Defensor | defensor@barangay.local | admin123 |
-| Dibuluan | dibuluan@barangay.local | admin123 |
-| District I (Poblacion) | district.i@barangay.local | admin123 |
-| District II (Poblacion) | district.ii@barangay.local | admin123 |
-| District III (Poblacion) | district.iii@barangay.local | admin123 |
-| District IV (Poblacion) | district.iv@barangay.local | admin123 |
-| Fugu | fugu@barangay.local | admin123 |
-| Guinatan | guinatan@barangay.local | admin123 |
-| Lullutan | lullutan@barangay.local | admin123 |
-| Mabasa | mabasa@barangay.local | admin123 |
-| Mabuno | mabuno@barangay.local | admin123 |
-| Magsaysay | magsaysay@barangay.local | admin123 |
-| Maksulop | maksulop@barangay.local | admin123 |
-| Malalam | malalam@barangay.local | admin123 |
-| Manasse | manasse@barangay.local | admin123 |
-| Minabang | minabang@barangay.local | admin123 |
-| Minallo | minallo@barangay.local | admin123 |
-| Namnama | namnama@barangay.local | admin123 |
-| Nanaguan | nanaguan@barangay.local | admin123 |
-| Ngarag | ngarag@barangay.local | admin123 |
-| Osmeña | osmena@barangay.local | admin123 |
-| Palacian | palacian@barangay.local | admin123 |
-| Pilar | pilar@barangay.local | admin123 |
-| Pisang | pisang@barangay.local | admin123 |
-| Quezon | quezon@barangay.local | admin123 |
-| Rang-ayan | rangayan@barangay.local | admin123 |
-| Rizal | rizal@barangay.local | admin123 |
-| Raniag | raniag@barangay.local | admin123 |
-| Rugao | rugao@barangay.local | admin123 |
-| Salindingan | salindingan@barangay.local | admin123 |
-| Salvador | salvador@barangay.local | admin123 |
-| San Agustin | san.agustin@barangay.local | admin123 |
-| San Felipe | san.felipe@barangay.local | admin123 |
-| San Isidro | san.isidro@barangay.local | admin123 |
-| San Juan | san.juan@barangay.local | admin123 |
-| San Pablo | san.pablo@barangay.local | admin123 |
-| San Vicente | san.vicente@barangay.local | admin123 |
-| Santa Barbara | santa.barbara@barangay.local | admin123 |
-| Santa Catalina | santa.catalina@barangay.local | admin123 |
-| Santa Isabel (Sab-it) | santa.isabel@barangay.local | admin123 |
-| Santa Monica | santa.monica@barangay.local | admin123 |
-| Santa Rosa | santa.rosa@barangay.local | admin123 |
-| Santa Victoria | santa.victoria@barangay.local | admin123 |
-| Santo Tomas | santo.tomas@barangay.local | admin123 |
-| Siffu | siffu@barangay.local | admin123 |
-| Sindon Bayabo | sindon.bayabo@barangay.local | admin123 |
-| Sindon Maride | sindon.maride@barangay.local | admin123 |
-| Sipay | sipay@barangay.local | admin123 |
-| San Antonio (Tangcul) | san.antonio@barangay.local | admin123 |
-| Tangcul (San Antonio) | tangcul@barangay.local | admin123 |
-| Tupax | tupax@barangay.local | admin123 |
-| Villa Alicia | villa.alicia@barangay.local | admin123 |
-| Villa Imelda (Maplas) | villa.imelda@barangay.local | admin123 |
-| Villa Marcos | villa.marcos@barangay.local | admin123 |
-| Villa Rey | villa.rey@barangay.local | admin123 |
-| Villafuerte | villafuerte@barangay.local | admin123 |
-| Villaluz | villaluz@barangay.local | admin123 |
-| Villanueva | villanueva@barangay.local | admin123 |
-| Union | union@barangay.local | admin123 |
-| Catabayungan | catabayungan@barangay.local | admin123 |
-| Baligatan | baligatan@barangay.local | admin123 |
-| Annafunan East | annafunan.east@barangay.local | admin123 |
+| # | Barangay Name | Email |
+|---|---------------|-------|
+| 1 | Aggasian | aggasian@barangay.local |
+| 2 | Alibagu | alibagu@barangay.local |
+| 3 | Alinguigan 1st | alinguigan1st@barangay.local |
+| 4 | Alinguigan 2nd | alinguigan2nd@barangay.local |
+| 5 | Alinguigan 3rd | alinguigan3rd@barangay.local |
+| 6 | Arusip | arusip@barangay.local |
+| 7 | Baculud | baculud@barangay.local |
+| 8 | Bagong Silang | bagongsilang@barangay.local |
+| 9 | Bagumbayan | bagumbayan@barangay.local |
+| 10 | Baligatan | baligatan@barangay.local |
+| 11 | Ballacong | ballacong@barangay.local |
+| 12 | Bangag | bangag@barangay.local |
+| 13 | Batong-Labang | batonglabang@barangay.local |
+| 14 | Bigao | bigao@barangay.local |
+| 15 | Cabannungan 1st | cabannungan1st@barangay.local |
+| 16 | Cabannungan 2nd | cabannungan2nd@barangay.local |
+| 17 | Cabeseria 2 (Dappat) | cabeseria2dappat@barangay.local |
+| 18 | Cabeseria 3 (San Fernando) | cabeseria3sfernando@barangay.local |
+| 19 | Cabeseria 4 (San Manuel) | cabeseria4smanuel@barangay.local |
+| 20 | Cabeseria 5 (Baribad) | cabeseria5baribad@barangay.local |
+| 21 | Cabeseria 6 and 24 (Villa Marcos) | cabeseria624villamarcos@barangay.local |
+| 22 | Cabeseria 7 (Nangalisan) | cabeseria7ngalisan@barangay.local |
+| 23 | Cabeseria 9 and 11 (Capogotan) | cabeseria911capogotan@barangay.local |
+| 24 | Cabeseria 10 (Lupigui) | cabeseria10lupigui@barangay.local |
+| 25 | Cabeseria 14 and 16 (Casilagan) | cabeseria1416casilagan@barangay.local |
+| 26 | Cabeseria 17 and 21 (San Rafael) | cabeseria1721srafael@barangay.local |
+| 27 | Cabeseria 19 (Villa Suerte) | cabeseria19villasuerte@barangay.local |
+| 28 | Cabeseria 22 (Sablang) | cabeseria22sablang@barangay.local |
+| 29 | Cabeseria 23 (San Francisco) | cabeseria23sfrancisco@barangay.local |
+| 30 | Cabeseria 25 (Santa Lucia) | cabeseria25stalucia@barangay.local |
+| 31 | Cabeseria 27 (Abuan) | cabeseria27abuan@barangay.local |
+| 32 | Cadu | cadu@barangay.local |
+| 33 | Calamagui 1st | calamagui1st@barangay.local |
+| 34 | Calamagui 2nd | calamagui2nd@barangay.local |
+| 35 | Camunatan | camunatan@barangay.local |
+| 36 | Capellan | capellan@barangay.local |
+| 37 | Capo | capo@barangay.local |
+| 38 | Carikkikan Norte | carikkikannorte@barangay.local |
+| 39 | Carikkikan Sur | carikkikansur@barangay.local |
+| 40 | Centro – San Antonio | centrosantonio@barangay.local |
+| 41 | Centro Poblacion | centropoblacion@barangay.local |
+| 42 | Fugu | fugu@barangay.local |
+| 43 | Fuyo | fuyo@barangay.local |
+| 44 | Gayong-Gayong Norte | gayonggayongnorte@barangay.local |
+| 45 | Gayong-Gayong Sur | gayonggayongsur@barangay.local |
+| 46 | Guinatan | guinatan@barangay.local |
+| 47 | Imelda Bliss Village | imeldablissvillage@barangay.local |
+| 48 | Lullutan | lullutan@barangay.local |
+| 49 | Malalam | malalam@barangay.local |
+| 50 | Malasin (Angeles) | malasinangeles@barangay.local |
+| 51 | Manaring | manaring@barangay.local |
+| 52 | Mangcuram | mangcuram@barangay.local |
+| 53 | Marana I | maranai@barangay.local |
+| 54 | Marana II | maranaii@barangay.local |
+| 55 | Marana III | maranaiii@barangay.local |
+| 56 | Minabang | minabang@barangay.local |
+| 57 | Morado | morado@barangay.local |
+| 58 | Naguilian Norte | naguilianorte@barangay.local |
+| 59 | Naguilian Sur | naguiliansur@barangay.local |
+| 60 | Namnama | namnama@barangay.local |
+| 61 | Nanaguan | nanaguan@barangay.local |
+| 62 | Osmeña (Sinippil) | osmeasinippil@barangay.local |
+| 63 | Paliueg | paliueg@barangay.local |
+| 64 | Pasa | pasa@barangay.local |
+| 65 | Pilar | pilar@barangay.local |
+| 66 | Quimalabasa | quimalabasa@barangay.local |
+| 67 | Rang-ayan (Bintacan) | rangayanbintacan@barangay.local |
+| 68 | Rugao | rugao@barangay.local |
+| 69 | Salindingan | salindingan@barangay.local |
+| 70 | San Andres (Angarilla) | sandresangarilla@barangay.local |
+| 71 | San Felipe | sfelipe@barangay.local |
+| 72 | San Ignacio (Canapi) | signaciocanapi@barangay.local |
+| 73 | San Isidro | sisidro@barangay.local |
+| 74 | San Juan | sjuan@barangay.local |
+| 75 | San Lorenzo | slorenzo@barangay.local |
+| 76 | San Pablo | spablo@barangay.local |
+| 77 | San Rodrigo | srodrigo@barangay.local |
+| 78 | San Vicente (Poblacion) | svicentepoblacion@barangay.local |
+| 79 | Santa Barbara (Poblacion) | stabarbarapoblacion@barangay.local |
+| 80 | Santa Catalina | stacatalina@barangay.local |
+| 81 | Santa Isabel Norte | staisabelnorte@barangay.local |
+| 82 | Santa Isabel Sur | staisabelsur@barangay.local |
+| 83 | Santa Maria (Cabeseria 8) | stamariacabeseria8@barangay.local |
+| 84 | Santa Victoria | stavictoria@barangay.local |
+| 85 | Santo Tomas | stotomas@barangay.local |
+| 86 | Siffu | siffu@barangay.local |
+| 87 | Sindon Bayabo | sindonbayabo@barangay.local |
+| 88 | Sindon Maride | sindonmaride@barangay.local |
+| 89 | Sipay | sipay@barangay.local |
+| 90 | Tangcul | tangcul@barangay.local |
+| 91 | Villa Imelda (Maplas) | villaimeldamaplas@barangay.local |
 
-## Other User Accounts
+## Usage
 
-| Name | Email | Password | Role |
-|------|-------|----------|------|
-| Test User | test@example.com | wardead123 | user |
-| Joe | joe@example.com | wardead123 | user |
-| Kevin | kev@example.com | wardead123 | user |
-| Cdrrmo | cdrrmo@example.com | wardead123 | user |
-| Admin | admin@example.com | admin123 | admin |
+To create/update all barangay accounts, run:
 
-## Email Generation Rules
-
-The email addresses are generated from barangay names using these rules:
-1. Convert to lowercase
-2. Remove content in parentheses
-3. Remove special characters (except spaces and numbers)
-4. Replace spaces with dots (.)
-5. Add `@barangay.local` domain
-
-## Running the Seeder
-
-To seed these accounts:
 ```bash
-php artisan migrate:fresh --seed
+php artisan db:seed --class=BarangayAccountsSeeder
 ```
 
-This will create all 91 barangay accounts plus the 5 other user accounts (4 regular users + 1 admin).
+This will:
+- Create new barangay accounts if they don't exist
+- Update existing accounts with the new password
+- Assign the 'user' role
+- Grant barangay-specific permissions (6 forms)
+
+## Notes
+
+- All accounts are automatically verified (`email_verified_at` is set)
+- Email domain is `@barangay.local` instead of `@barangay.com` to avoid conflicts with real email addresses
+- The seeder is idempotent - you can run it multiple times safely
