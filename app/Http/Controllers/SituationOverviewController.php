@@ -66,6 +66,13 @@ class SituationOverviewController extends Controller
             // Get all user IDs whose data this user can access (including their own)
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             
+            \Log::info('SituationOverview user access debug', [
+                'current_user_id' => $user->id,
+                'current_user_name' => $user->name,
+                'accessible_user_ids' => $accessibleUserIds,
+                'typhoon_id' => $typhoonId,
+            ]);
+            
             $weatherQuery->whereIn('user_id', $accessibleUserIds);
             $waterLevelQuery->whereIn('user_id', $accessibleUserIds);
             $electricityQuery->whereIn('user_id', $accessibleUserIds);
@@ -74,7 +81,8 @@ class SituationOverviewController extends Controller
             $communicationQuery->whereIn('user_id', $accessibleUserIds);
             $roadQuery->whereIn('user_id', $accessibleUserIds);
             $bridgeQuery->whereIn('user_id', $accessibleUserIds);
-            $preEmptiveQuery->whereIn('user_id', $accessibleUserIds);
+            // Pre-emptive reports: load ALL records (centralized disaster response data)
+            // $preEmptiveQuery->whereIn('user_id', $accessibleUserIds); // Removed filtering
             $casualtyQuery->whereIn('user_id', $accessibleUserIds);
             $injuredQuery->whereIn('user_id', $accessibleUserIds);
             $missingQuery->whereIn('user_id', $accessibleUserIds);
