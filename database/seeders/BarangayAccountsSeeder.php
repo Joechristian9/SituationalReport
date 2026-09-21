@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
 
 class BarangayAccountsSeeder extends Seeder
 {
@@ -14,6 +14,12 @@ class BarangayAccountsSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('Starting Barangay Accounts Seeder...');
+        
+        // Get or create the user role
+        $userRole = Role::firstOrCreate(['name' => 'user']);
+
+        // All 92 barangays in Ilagan City
         $barangays = [
             'Aggasian',
             'Alibagu',
@@ -108,9 +114,6 @@ class BarangayAccountsSeeder extends Seeder
             'Villa Imelda (Maplas)',
         ];
 
-        // Get the 'user' role
-        $userRole = Role::where('name', 'user')->first();
-
         // Barangay-specific permissions (only 6 forms)
         $barangayPermissions = [
             'access-weather-form',
@@ -121,51 +124,81 @@ class BarangayAccountsSeeder extends Seeder
             'access-incident-form',
         ];
 
-        $createdCount = 0;
-        $updatedCount = 0;
+        $created = 0;
+        $updated = 0;
 
+        // Create or update user for each barangay
         foreach ($barangays as $barangay) {
-            // Create email from barangay name
-            // Remove special characters and spaces, convert to lowercase
-            $emailName = strtolower(str_replace([' ', '–', '-', '(', ')', 'and'], '', $barangay));
-            $email = $emailName . '@barangay.local';
-
-            // Check if user already exists
-            $user = User::where('email', $email)->first();
-
-            if ($user) {
-                // Update existing user
-                $user->update([
-                    'name' => $barangay,
+            // Generate email from barangay name
+            $email = $this->generateEmail($barangay);
+            
+            // Check if user already exists with this name
+            $existingUser = User::where('name', $barangay)->first();
+            
+            if ($existingUser) {
+                // Update the existing user
+                $existingUser->update([
+                    'email' => $email,
                     'password' => Hash::make('wardead123'),
                 ]);
-                $updatedCount++;
+                
+                // Ensure role and permissions are correct
+                if (!$existingUser->hasRole($userRole)) {
+                    $existingUser->assignRole($userRole);
+                }
+                $existingUser->syncPermissions($barangayPermissions);
+                
                 $this->command->info("Updated: {$barangay} ({$email})");
+                $updated++;
             } else {
                 // Create new user
                 $user = User::create([
                     'name' => $barangay,
                     'email' => $email,
                     'password' => Hash::make('wardead123'),
-                    'email_verified_at' => now(),
                 ]);
-                $createdCount++;
-                $this->command->info("Created: {$barangay} ({$email})");
-            }
-
-            // Assign role
-            if (!$user->hasRole('user')) {
+                
                 $user->assignRole($userRole);
+                $user->givePermissionTo($barangayPermissions);
+                
+                $this->command->info("Created: {$barangay} ({$email})");
+                $created++;
             }
-
-            // Sync permissions
-            $user->syncPermissions($barangayPermissions);
         }
 
-        $this->command->info("\n=== Barangay Accounts Summary ===");
-        $this->command->info("Total Barangays: " . count($barangays));
-        $this->command->info("Created: {$createdCount}");
-        $this->command->info("Updated: {$updatedCount}");
-        $this->command->info("\nAll accounts use password: wardead123");
+        $this->command->info("\n=== Summary ===");
+        $this->command->info("Created: {$created} accounts");
+        $this->command->info("Updated: {$updated} accounts");
+        $this->command->info("Total: " . ($created + $updated) . " barangay accounts");
+    }
+
+    /**
+     * Generate email from barangay name
+     * Rules:
+     * 1. Convert to lowercase
+     * 2. Remove content in parentheses
+     * 3. Remove special characters (except spaces and numbers)
+     * 4. Replace spaces with dots (.)
+     * 5. Add @barangay.local domain
+     */
+    private function generateEmail(string $barangayName): string
+    {
+        // Convert to lowercase
+        $email = strtolower($barangayName);
+        
+        // Remove content in parentheses
+        $email = preg_replace('/\s*\([^)]*\)/', '', $email);
+        
+        // Remove special characters except spaces and numbers
+        $email = preg_replace('/[^a-z0-9\s]/', '', $email);
+        
+        // Replace spaces with dots
+        $email = str_replace(' ', '.', $email);
+        
+        // Trim any extra dots
+        $email = trim($email, '.');
+        
+        // Add domain
+        return $email . '@barangay.local';
     }
 }
