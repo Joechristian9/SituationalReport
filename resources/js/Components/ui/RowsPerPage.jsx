@@ -24,21 +24,8 @@ export default function RowsPerPage({
     }, []);
 
     const generateRowsPerPageOptions = () => {
-        const defaultOptions = [5, 10, 20];
-        const dynamicOptions = new Set(defaultOptions); // Use a Set to avoid duplicates
-
-        if (totalRows > 20) {
-            for (let i = 25; i <= totalRows; i += 5) {
-                dynamicOptions.add(i);
-            }
-        }
-
-        // Add the totalRows as an option if it's not already included
-        if (totalRows > 0) {
-            dynamicOptions.add(totalRows);
-        }
-
-        return Array.from(dynamicOptions).sort((a, b) => a - b);
+        // Fixed options: 5, 10, 20, 50
+        return [5, 10, 20, 50];
     };
 
     const rowsPerPageOptions = generateRowsPerPageOptions();
@@ -88,11 +75,6 @@ export default function RowsPerPage({
                                         }`}>
                                             {num}
                                         </span>
-                                        {num === totalRows && (
-                                            <span className="text-xs text-slate-500 font-normal">
-                                                (All)
-                                            </span>
-                                        )}
                                     </span>
                                     {rowsPerPage === num && (
                                         <Check className="w-4 h-4 text-blue-600 animate-in zoom-in duration-200" />
