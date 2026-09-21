@@ -132,12 +132,15 @@ class BarangayAccountsSeeder extends Seeder
             // Generate email from barangay name
             $email = $this->generateEmail($barangay);
             
-            // Check if user already exists with this name
-            $existingUser = User::where('name', $barangay)->first();
+            // Check if user already exists with this name OR email
+            $existingUser = User::where('name', $barangay)
+                ->orWhere('email', $email)
+                ->first();
             
             if ($existingUser) {
                 // Update the existing user
                 $existingUser->update([
+                    'name' => $barangay,
                     'email' => $email,
                     'password' => Hash::make('wardead123'),
                 ]);
