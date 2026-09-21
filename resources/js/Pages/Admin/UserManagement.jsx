@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { AlertCircle, Plus, Trash2, Edit, Search, ChevronLeft, ChevronRight, UserPlus, Users, Shield, Key, MoreVertical } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Edit, Search, ChevronLeft, ChevronRight, UserPlus, Users, Shield, Key, MoreVertical, ArrowUpDown } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,6 +32,7 @@ export default function UserManagement({ users, roles, permissions, auth }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -41,17 +42,34 @@ export default function UserManagement({ users, roles, permissions, auth }) {
         permissions: [],
     });
 
-    // Filter users based on search
+    // Filter and sort users
     const filteredUsers = useMemo(() => {
-        if (!searchQuery.trim()) return users;
+        let result = users;
         
-        const query = searchQuery.toLowerCase();
-        return users.filter(user =>
-            user.name.toLowerCase().includes(query) ||
-            user.email.toLowerCase().includes(query) ||
-            user.roles.some(role => role.toLowerCase().includes(query))
-        );
-    }, [users, searchQuery]);
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(user =>
+                user.name.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query) ||
+                user.roles.some(role => role.toLowerCase().includes(query))
+            );
+        }
+        
+        // Sort by name
+        result = [...result].sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            
+            if (sortOrder === 'asc') {
+                return nameA.localeCompare(nameB);
+            } else {
+                return nameB.localeCompare(nameA);
+            }
+        });
+        
+        return result;
+    }, [users, searchQuery, sortOrder]);
 
     // Pagination
     const paginationData = useMemo(() => {
@@ -276,7 +294,15 @@ export default function UserManagement({ users, roles, permissions, auth }) {
                                             <table className="w-full text-sm">
                                                 <thead className="border-b">
                                                     <tr className="text-left">
-                                                        <th className="pb-3 font-medium text-gray-700">Name</th>
+                                                        <th className="pb-3 font-medium text-gray-700">
+                                                            <button
+                                                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                                                className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                                                            >
+                                                                Name
+                                                                <ArrowUpDown className="w-4 h-4" />
+                                                            </button>
+                                                        </th>
                                                         <th className="pb-3 font-medium text-gray-700">Email</th>
                                                         <th className="pb-3 font-medium text-gray-700">Role</th>
                                                         <th className="pb-3 font-medium text-gray-700">Permissions</th>
