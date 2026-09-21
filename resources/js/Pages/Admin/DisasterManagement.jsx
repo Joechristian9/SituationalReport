@@ -206,7 +206,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Creating disaster report...');
 
         try {
-            const response = await axios.post('/disasters', formData);
+            const response = await axios.post('/admin/disasters', formData);
             toast.success(response.data.message, { id: loadingToast });
             setIsCreateModalOpen(false);
             setFormData({ name: '', disaster_type: '', description: '' });
