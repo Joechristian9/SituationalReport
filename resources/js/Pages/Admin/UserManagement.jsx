@@ -428,8 +428,9 @@ export default function UserManagement({ users, roles, permissions, auth }) {
                                                 </div>
 
                                                 <RowsPerPage 
-                                                    value={itemsPerPage}
-                                                    onChange={setItemsPerPage}
+                                                    rowsPerPage={itemsPerPage}
+                                                    setRowsPerPage={setItemsPerPage}
+                                                    totalRows={filteredUsers.length}
                                                 />
                                             </div>
                                         )}
