@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Casualty;
 use App\Models\Typhoon;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,7 @@ use Inertia\Inertia;
 
 class CasualtyController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use BuildsSubmissionList, ValidatesDisasterStatus;
     /**
      * Show list of casualties
      * Optimized: Limit records for better performance
@@ -236,7 +237,10 @@ class CasualtyController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $casualties = $query->latest('created_at')->paginate(20)->withQueryString();
+        $perPage = $this->submissionPerPage($request);
+        $stats = $this->submissionStats($query);
+
+        $casualties = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
         $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
@@ -244,11 +248,14 @@ class CasualtyController extends Controller
         return Inertia::render('Admin/CasualtySubmissions', [
             'casualties' => $casualties,
             'users' => $users,
+            'stats' => $stats,
+            'disaster' => $activeTyphoon?->only(['id', 'name', 'status']),
             'filters' => [
                 'search' => $request->input('search'),
                 'user_id' => $request->input('user_id'),
                 'date_from' => $request->input('date_from'),
                 'date_to' => $request->input('date_to'),
+                'per_page' => $perPage,
             ],
         ]);
     }

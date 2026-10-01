@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Injured;
 use App\Models\Typhoon;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,7 @@ use Inertia\Inertia;
 
 class InjuredController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use BuildsSubmissionList, ValidatesDisasterStatus;
     /**
      * Display a listing of the injured records.
      * Optimized: Limit records for better performance
@@ -237,7 +238,10 @@ class InjuredController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $injured = $query->latest('created_at')->paginate(20)->withQueryString();
+        $perPage = $this->submissionPerPage($request);
+        $stats = $this->submissionStats($query);
+
+        $injured = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
         $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
@@ -245,11 +249,14 @@ class InjuredController extends Controller
         return Inertia::render('Admin/InjuredSubmissions', [
             'injured' => $injured,
             'users' => $users,
+            'stats' => $stats,
+            'disaster' => $activeTyphoon?->only(['id', 'name', 'status']),
             'filters' => [
                 'search' => $request->input('search'),
                 'user_id' => $request->input('user_id'),
                 'date_from' => $request->input('date_from'),
                 'date_to' => $request->input('date_to'),
+                'per_page' => $perPage,
             ],
         ]);
     }

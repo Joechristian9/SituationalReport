@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Missing; // 1. Use the Missing model
 use App\Models\Typhoon;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,7 @@ use Inertia\Inertia;
 
 class MissingController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use BuildsSubmissionList, ValidatesDisasterStatus;
     /**
      * Display a listing of the missing person records.
      * Optimized: Limit records for better performance
@@ -240,7 +241,10 @@ class MissingController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $missing = $query->latest('created_at')->paginate(20)->withQueryString();
+        $perPage = $this->submissionPerPage($request);
+        $stats = $this->submissionStats($query);
+
+        $missing = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
         $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
@@ -248,11 +252,14 @@ class MissingController extends Controller
         return Inertia::render('Admin/MissingSubmissions', [
             'missing' => $missing,
             'users' => $users,
+            'stats' => $stats,
+            'disaster' => $activeTyphoon?->only(['id', 'name', 'status']),
             'filters' => [
                 'search' => $request->input('search'),
                 'user_id' => $request->input('user_id'),
                 'date_from' => $request->input('date_from'),
                 'date_to' => $request->input('date_to'),
+                'per_page' => $perPage,
             ],
         ]);
     }
