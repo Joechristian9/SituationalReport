@@ -119,7 +119,7 @@ function Avatar({ user }) {
           : 'bg-blue-100 text-blue-700';
     return (
         <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${tone}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${tone}`}
             aria-hidden="true"
         >
             {initials(user.name)}
@@ -130,14 +130,14 @@ function Avatar({ user }) {
 function RoleBadge({ user }) {
     if (isAdmin(user)) {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-sm font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
                 <ShieldCheck className="h-3 w-3" />
                 Admin
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-200">
             {isBarangay(user) ? <Home className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
             {isBarangay(user) ? 'Barangay' : 'Office'}
         </span>
@@ -146,11 +146,11 @@ function RoleBadge({ user }) {
 
 function AccessSummary({ user, max = 3 }) {
     if (isAdmin(user)) {
-        return <span className="text-xs font-medium text-violet-700">All forms</span>;
+        return <span className="text-sm font-medium text-violet-700">All forms</span>;
     }
     if (user.permissions.length === 0) {
         return (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-700">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 No forms assigned
             </span>
@@ -161,12 +161,12 @@ function AccessSummary({ user, max = 3 }) {
     return (
         <div className="flex flex-wrap gap-1" title={user.permissions.map(permissionLabel).join(', ')}>
             {shown.map((p) => (
-                <span key={p} className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-800">
+                <span key={p} className="rounded bg-blue-50 px-1.5 py-0.5 text-sm text-blue-800">
                     {permissionLabel(p)}
                 </span>
             ))}
             {rest > 0 && (
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">+{rest} more</span>
+                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-sm font-medium text-gray-600">+{rest} more</span>
             )}
         </div>
     );
@@ -174,7 +174,7 @@ function AccessSummary({ user, max = 3 }) {
 
 function FieldError({ message }) {
     if (!message) return null;
-    return <p className="mt-1 text-xs text-red-600">{message}</p>;
+    return <p className="mt-1 text-sm text-red-600">{message}</p>;
 }
 
 function PasswordInput({ id, value, onChange, placeholder, required, autoComplete }) {
@@ -228,7 +228,7 @@ function PermissionPicker({ permissions, selected, onChange }) {
                     return (
                         <fieldset key={group.title} className="rounded-lg border">
                             <div className="flex items-center justify-between gap-2 border-b bg-gray-50 px-3 py-2">
-                                <legend className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                                <legend className="text-sm font-semibold uppercase tracking-wide text-gray-600">
                                     {group.title}
                                     <span className="ml-2 font-normal normal-case tracking-normal text-gray-400">
                                         {count}/{group.names.length}
@@ -237,7 +237,7 @@ function PermissionPicker({ permissions, selected, onChange }) {
                                 <button
                                     type="button"
                                     onClick={() => setGroup(group.names, !allOn)}
-                                    className="text-xs font-medium text-blue-700 hover:underline"
+                                    className="text-sm font-medium text-blue-700 hover:underline"
                                 >
                                     {allOn ? 'Clear' : 'Select all'}
                                 </button>
@@ -247,7 +247,7 @@ function PermissionPicker({ permissions, selected, onChange }) {
                                     <label
                                         key={name}
                                         htmlFor={`perm-${name}`}
-                                        className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
+                                        className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-base text-gray-800 hover:bg-gray-50"
                                     >
                                         <input
                                             id={`perm-${name}`}
@@ -410,26 +410,22 @@ export default function UserManagement({ users, roles, permissions }) {
     };
 
     const RowActions = ({ user }) => (
-        <div className="flex items-center justify-end gap-1">
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-700" onClick={() => openEdit(user)}>
-                <Edit className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">Edit</span>
-            </Button>
+        <div className="flex items-center justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={`More actions for ${user.name}`}>
-                        <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0" aria-label={`Actions for ${user.name}`}>
+                        <MoreVertical className="h-5 w-5" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(user)}>
+                <DropdownMenuContent align="end" className="min-w-[13rem]">
+                    <DropdownMenuItem onClick={() => openEdit(user)} className="text-base">
                         <Edit className="mr-2 h-4 w-4" />
                         Edit details and access
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onClick={() => setDeleteTarget(user)}
-                        className="text-red-600 focus:text-red-700"
+                        className="text-base text-red-600 focus:text-red-700"
                         disabled={user.id === currentUserId}
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -442,7 +438,7 @@ export default function UserManagement({ users, roles, permissions }) {
 
     const YouTag = ({ user }) =>
         user.id === currentUserId ? (
-            <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">You</span>
+            <span className="rounded bg-blue-600 px-1.5 py-0.5 text-xs font-semibold uppercase text-white">You</span>
         ) : null;
 
     return (
@@ -464,8 +460,8 @@ export default function UserManagement({ users, roles, permissions }) {
                         {/* Title */}
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Accounts</h2>
-                                <p className="mt-1 text-sm text-gray-600">
+                                <h2 className="text-3xl font-bold text-gray-900">Accounts</h2>
+                                <p className="mt-1 text-base text-gray-600">
                                     Create accounts for offices and barangays and choose which report forms each one can fill in.
                                 </p>
                             </div>
@@ -488,15 +484,15 @@ export default function UserManagement({ users, roles, permissions }) {
                                         <Icon className="h-5 w-5" />
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="truncate text-xs font-medium text-gray-500">{label}</p>
-                                        <p className="text-2xl font-bold tabular-nums text-gray-900">{value}</p>
+                                        <p className="truncate text-sm font-medium text-gray-500">{label}</p>
+                                        <p className="text-3xl font-bold tabular-nums text-gray-900">{value}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
                         {noAccessCount > 0 && (
-                            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-base text-amber-800">
                                 <p className="flex items-start gap-2">
                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                                     {noAccessCount} account{noAccessCount === 1 ? ' has' : 's have'} no forms assigned and
@@ -518,7 +514,7 @@ export default function UserManagement({ users, roles, permissions }) {
                         )}
 
                         {noAccessOnly && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-base text-gray-600">
                                 Showing only accounts with no forms assigned.
                                 <button
                                     type="button"
@@ -541,7 +537,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                             type="button"
                                             onClick={() => setTab(t.key)}
                                             aria-pressed={tab === t.key}
-                                            className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                                            className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-base font-medium transition-colors ${
                                                 tab === t.key
                                                     ? 'bg-white text-gray-900 shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900'
@@ -549,7 +545,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                         >
                                             {t.label}
                                             <span
-                                                className={`rounded-full px-1.5 text-xs tabular-nums ${
+                                                className={`rounded-full px-1.5 text-sm tabular-nums ${
                                                     tab === t.key ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
                                                 }`}
                                             >
@@ -587,8 +583,8 @@ export default function UserManagement({ users, roles, permissions }) {
                                 <>
                                     {/* Table: md and up */}
                                     <div className="hidden overflow-x-auto md:block">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                                        <table className="w-full text-base">
+                                            <thead className="bg-gray-50 text-left text-sm uppercase tracking-wide text-gray-500">
                                                 <tr>
                                                     <th className="px-4 py-2.5 font-medium">User</th>
                                                     <th className="px-4 py-2.5 font-medium">Type</th>
@@ -610,7 +606,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                                                         <span className="truncate">{user.name}</span>
                                                                         <YouTag user={user} />
                                                                     </p>
-                                                                    <p className="truncate text-xs text-gray-500">{user.email}</p>
+                                                                    <p className="truncate text-sm text-gray-500">{user.email}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -644,13 +640,13 @@ export default function UserManagement({ users, roles, permissions }) {
                                                                 <span className="truncate">{user.name}</span>
                                                                 <YouTag user={user} />
                                                             </p>
-                                                            <p className="truncate text-xs text-gray-500">{user.email}</p>
+                                                            <p className="truncate text-sm text-gray-500">{user.email}</p>
                                                         </div>
                                                         <RowActions user={user} />
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <RoleBadge user={user} />
-                                                        <span className="text-xs text-gray-400">Created {user.created_at}</span>
+                                                        <span className="text-sm text-gray-400">Created {user.created_at}</span>
                                                     </div>
                                                     <AccessSummary user={user} max={2} />
                                                 </div>
@@ -660,7 +656,7 @@ export default function UserManagement({ users, roles, permissions }) {
 
                                     {/* Footer */}
                                     <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-sm tabular-nums text-gray-600">
+                                        <p className="text-base tabular-nums text-gray-600">
                                             Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredUsers.length)} of{' '}
                                             {filteredUsers.length}
                                         </p>
@@ -684,7 +680,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                                     </Button>
                                                     {pageNumbers.map((p) =>
                                                         typeof p === 'string' ? (
-                                                            <span key={p} className="px-1.5 text-sm text-gray-400">
+                                                            <span key={p} className="px-1.5 text-base text-gray-400">
                                                                 …
                                                             </span>
                                                         ) : (
@@ -719,7 +715,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                 <div className="flex flex-col items-center px-4 py-14 text-center">
                                     <SearchX className="mb-3 h-10 w-10 text-gray-300" />
                                     <p className="font-medium text-gray-900">No accounts match</p>
-                                    <p className="mt-1 text-sm text-gray-500">Try another search or switch to the All tab.</p>
+                                    <p className="mt-1 text-base text-gray-500">Try another search or switch to the All tab.</p>
                                     {(searchQuery || tab !== 'all' || noAccessOnly) && (
                                         <Button
                                             variant="outline"
@@ -757,10 +753,10 @@ export default function UserManagement({ users, roles, permissions }) {
                         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
                             {/* Account */}
                             <section className="space-y-3">
-                                <h3 className="text-sm font-semibold text-gray-900">Account</h3>
+                                <h3 className="text-base font-semibold text-gray-900">Account</h3>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="form-name">Name</Label>
+                                        <Label className="text-base" htmlFor="form-name">Name</Label>
                                         <Input
                                             id="form-name"
                                             value={formData.name}
@@ -772,7 +768,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                         <FieldError message={errors.name} />
                                     </div>
                                     <div>
-                                        <Label htmlFor="form-email">Email</Label>
+                                        <Label className="text-base" htmlFor="form-email">Email</Label>
                                         <Input
                                             id="form-email"
                                             type="email"
@@ -786,7 +782,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                         <FieldError message={errors.email} />
                                     </div>
                                     <div>
-                                        <Label htmlFor="form-password">
+                                        <Label className="text-base" htmlFor="form-password">
                                             {formMode === 'create' ? 'Password' : 'New password'}
                                         </Label>
                                         <PasswordInput
@@ -800,7 +796,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                         <FieldError message={errors.password} />
                                     </div>
                                     <div>
-                                        <Label htmlFor="form-password-confirm">Confirm password</Label>
+                                        <Label className="text-base" htmlFor="form-password-confirm">Confirm password</Label>
                                         <PasswordInput
                                             id="form-password-confirm"
                                             value={formData.password_confirmation}
@@ -821,7 +817,7 @@ export default function UserManagement({ users, roles, permissions }) {
 
                             {/* Role */}
                             <section className="space-y-3">
-                                <h3 className="text-sm font-semibold text-gray-900">Role</h3>
+                                <h3 className="text-base font-semibold text-gray-900">Role</h3>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Role">
                                     {roles.map((role) => {
                                         const active = formData.role === role.name;
@@ -842,11 +838,11 @@ export default function UserManagement({ users, roles, permissions }) {
                                                     className="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 />
                                                 <span>
-                                                    <span className="flex items-center gap-1.5 text-sm font-medium capitalize text-gray-900">
+                                                    <span className="flex items-center gap-1.5 text-base font-medium capitalize text-gray-900">
                                                         {admin ? <ShieldCheck className="h-4 w-4 text-violet-600" /> : <UserIcon className="h-4 w-4 text-gray-500" />}
                                                         {role.name}
                                                     </span>
-                                                    <span className="mt-0.5 block text-xs text-gray-500">
+                                                    <span className="mt-0.5 block text-sm text-gray-500">
                                                         {admin
                                                             ? 'Opens every form and manages disasters, users and logs.'
                                                             : 'Fills in only the forms checked below.'}
@@ -862,13 +858,13 @@ export default function UserManagement({ users, roles, permissions }) {
                             {/* Form access */}
                             <section className="space-y-3">
                                 <div className="flex items-baseline justify-between gap-2">
-                                    <h3 className="text-sm font-semibold text-gray-900">Form access</h3>
-                                    <span className="text-xs tabular-nums text-gray-500">
+                                    <h3 className="text-base font-semibold text-gray-900">Form access</h3>
+                                    <span className="text-sm tabular-nums text-gray-500">
                                         {formData.permissions.length} of {permissions.length} selected
                                     </span>
                                 </div>
                                 {formData.role === 'admin' ? (
-                                    <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-violet-800">
+                                    <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-base text-violet-800">
                                         Admins can open every form, so no individual form access is needed.
                                     </p>
                                 ) : (
@@ -907,7 +903,7 @@ export default function UserManagement({ users, roles, permissions }) {
                         <DialogTitle>Delete {deleteTarget?.name}?</DialogTitle>
                         <DialogDescription>{deleteTarget?.email} will no longer be able to sign in.</DialogDescription>
                     </DialogHeader>
-                    <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800">
+                    <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-base text-red-800">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                         <p>
                             Every report this account submitted (weather, evacuation, incidents, casualties and the rest) is
