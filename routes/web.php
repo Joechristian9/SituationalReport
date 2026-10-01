@@ -419,8 +419,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     
     // Audit Logs (Admin only)
     Route::get('audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs');
-    Route::get('audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->name('admin.audit-logs.show');
-    Route::post('audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+    Route::get('audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+    Route::get('audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->whereNumber('id')->name('admin.audit-logs.show');
     
     // Year Management (Admin only)
     Route::get('years', [App\Http\Controllers\YearController::class, 'index'])->name('admin.years.index');

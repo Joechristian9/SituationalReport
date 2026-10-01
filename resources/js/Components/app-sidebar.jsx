@@ -229,13 +229,6 @@ export function AppSidebar({ ...props }) {
                     badge: true,
                 },
                 {
-                    title: "Audit Logs",
-                    url: route("admin.audit-logs"),
-                    roles: ["admin"],
-                    icon: Shield,
-                    permission: null,
-                },
-                {
                     title: "Form Submission Status",
                     url: route("admin.form-submission-status"),
                     roles: ["admin"],
@@ -249,6 +242,13 @@ export function AppSidebar({ ...props }) {
                     icon: UserCircle,
                     permission: null,
                     badge: true, // Add indicator badge
+                },
+                {
+                    title: "Audit Logs",
+                    url: route("admin.audit-logs"),
+                    roles: ["admin"],
+                    icon: Shield,
+                    permission: null,
                 },
                 ...(!isAdmin ? [{
                     title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP || isBarangay) ? "Reports" : "Situation Overview",
