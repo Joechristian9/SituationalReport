@@ -18,9 +18,11 @@ export default function ModernSelect({
     placeholder = 'Select an option',
     icon = null,
     className = '',
+    ariaLabel,
 }) {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const triggerRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -32,13 +34,27 @@ export default function ModernSelect({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Escape closes the list and returns focus to the trigger.
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape' && showDropdown) {
+            e.stopPropagation();
+            setShowDropdown(false);
+            triggerRef.current?.focus();
+        }
+    };
+
     const selectedOption = options.find(opt => opt.value === value);
     const displayText = selectedOption ? selectedOption.label : placeholder;
 
     return (
-        <div className={`relative ${className}`} ref={dropdownRef}>
+        <div className={`relative ${className}`} ref={dropdownRef} onKeyDown={handleKeyDown}>
             <button
+                ref={triggerRef}
+                type="button"
                 onClick={() => setShowDropdown(!showDropdown)}
+                aria-haspopup="true"
+                aria-expanded={showDropdown}
+                aria-label={ariaLabel ? `${ariaLabel}: ${displayText}` : undefined}
                 className={`
                     flex items-center justify-between gap-2
                     ${icon ? 'pl-10' : 'pl-4'} pr-3 py-2
@@ -47,7 +63,7 @@ export default function ModernSelect({
                     border border-slate-300 rounded-lg
                     shadow-sm
                     hover:bg-slate-50 hover:shadow-md
-                    focus:outline-none focus:ring-2 focus:ring-blue-200
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                     transition-all duration-200
                     cursor-pointer
                     w-full
@@ -59,8 +75,9 @@ export default function ModernSelect({
                     </div>
                 )}
                 <span className="flex-1 text-left">{displayText}</span>
-                <ChevronDown 
-                    size={16} 
+                <ChevronDown
+                    size={16}
+                    aria-hidden="true"
                     className={`text-slate-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
                 />
             </button>
@@ -70,15 +87,19 @@ export default function ModernSelect({
                     {options.map((option) => (
                         <button
                             key={option.value}
+                            type="button"
+                            aria-pressed={value === option.value}
                             onClick={() => {
                                 onChange(option.value);
                                 setShowDropdown(false);
+                                triggerRef.current?.focus();
                             }}
                             className={`
-                                w-full text-left px-4 py-2 text-sm 
-                                flex items-center justify-between 
+                                w-full text-left px-4 py-2 text-sm
+                                flex items-center justify-between
                                 hover:bg-blue-50 transition-colors
-                                ${value === option.value 
+                                focus:outline-none focus-visible:bg-blue-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500
+                                ${value === option.value
                                     ? 'text-blue-600 font-medium bg-blue-50' 
                                     : 'text-slate-700'
                                 }
@@ -86,7 +107,7 @@ export default function ModernSelect({
                         >
                             <span>{option.label}</span>
                             {value === option.value && (
-                                <Check size={16} className="text-blue-500" />
+                                <Check size={16} className="text-blue-500" aria-hidden="true" />
                             )}
                         </button>
                     ))}

@@ -130,7 +130,7 @@ function FilterChip({ label, onRemove }) {
             <button
                 type="button"
                 onClick={onRemove}
-                className="rounded-full p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label={`Remove filter: ${label}`}
             >
                 <X className="h-3.5 w-3.5" />
@@ -189,7 +189,7 @@ function Pagination({ logs }) {
                         </Link>
                     </Button>
                 ) : (
-                    <span key={`gap-${i}`} className="px-1.5 text-gray-400">…</span>
+                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-gray-500">…</span>
                 )
             )}
             <Nav url={logs.next_page_url} label="Next page"><ChevronRight className="h-4 w-4" /></Nav>
@@ -198,7 +198,7 @@ function Pagination({ logs }) {
 }
 
 function EmptyValue() {
-    return <span className="italic text-gray-400">empty</span>;
+    return <span className="italic text-gray-500">empty</span>;
 }
 
 function LogDetail({ details }) {
@@ -250,7 +250,7 @@ function LogDetail({ details }) {
                                         <span className="min-w-0 break-words rounded bg-red-50 px-2 py-1 text-red-800 line-through decoration-red-300">
                                             {change.old_value || <EmptyValue />}
                                         </span>
-                                        <ArrowRight className="mt-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
+                                        <ArrowRight className="mt-1.5 h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" /><span className="sr-only">changed to</span>
                                         <span className="min-w-0 break-words rounded bg-emerald-50 px-2 py-1 text-emerald-800">
                                             {change.new_value || <EmptyValue />}
                                         </span>
@@ -566,7 +566,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                                         <span className="hidden font-mono text-sm text-gray-500 md:block md:w-32 md:text-right">
                                                             {log.ip_address}
                                                         </span>
-                                                        <ChevronRight className="h-4 w-4 self-center text-gray-300 md:hidden" />
+                                                        <ChevronRight className="h-4 w-4 self-center text-gray-400 md:hidden" aria-hidden="true" />
                                                     </button>
                                                 </li>
                                             ))}

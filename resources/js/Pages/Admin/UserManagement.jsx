@@ -156,28 +156,61 @@ function AccessSummary({ user, max = 3 }) {
             </span>
         );
     }
-    const shown = user.permissions.slice(0, max);
-    const rest = user.permissions.length - shown.length;
+    return <AccessChips permissions={user.permissions} max={max} />;
+}
+
+// Shows the first few forms; "+N more" expands the rest (works with keyboard, not only hover).
+function AccessChips({ permissions, max }) {
+    const [expanded, setExpanded] = useState(false);
+    const shown = expanded ? permissions : permissions.slice(0, max);
+    const rest = permissions.length - max;
     return (
-        <div className="flex flex-wrap gap-1" title={user.permissions.map(permissionLabel).join(', ')}>
+        <div className="flex flex-wrap gap-1">
             {shown.map((p) => (
                 <span key={p} className="rounded bg-blue-50 px-1.5 py-0.5 text-sm text-blue-800">
                     {permissionLabel(p)}
                 </span>
             ))}
             {rest > 0 && (
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-sm font-medium text-gray-600">+{rest} more</span>
+                <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    aria-expanded={expanded}
+                    className="rounded bg-gray-100 px-1.5 py-0.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                    {expanded ? 'Show less' : `+${rest} more`}
+                </button>
             )}
         </div>
     );
 }
 
-function FieldError({ message }) {
+function FieldError({ id, message }) {
     if (!message) return null;
-    return <p className="mt-1 text-sm text-red-600">{message}</p>;
+    return (
+        <p id={id} role="alert" className="mt-1 text-sm text-red-600">
+            {message}
+        </p>
+    );
 }
 
-function PasswordInput({ id, value, onChange, placeholder, required, autoComplete }) {
+function RequiredMark() {
+    return (
+        <span className="ml-0.5 text-red-600" aria-hidden="true">
+            *
+        </span>
+    );
+}
+
+// Field order in the form, used to focus the first field with an error.
+const FIELD_IDS = {
+    name: 'form-name',
+    email: 'form-email',
+    password: 'form-password',
+    password_confirmation: 'form-password-confirm',
+};
+
+function PasswordInput({ id, value, onChange, placeholder, required, autoComplete, error }) {
     const [visible, setVisible] = useState(false);
     return (
         <div className="relative mt-1">
@@ -189,13 +222,16 @@ function PasswordInput({ id, value, onChange, placeholder, required, autoComplet
                 placeholder={placeholder}
                 required={required}
                 autoComplete={autoComplete}
-                className="pr-10"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? `${id}-error` : undefined}
+                className={`pr-11 ${error ? 'border-red-500' : ''}`}
             />
             <button
                 type="button"
                 onClick={() => setVisible((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded text-gray-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label={visible ? 'Hide password' : 'Show password'}
+                aria-pressed={visible}
             >
                 {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -230,7 +266,7 @@ function PermissionPicker({ permissions, selected, onChange }) {
                             <div className="flex items-center justify-between gap-2 border-b bg-gray-50 px-3 py-2">
                                 <legend className="text-sm font-semibold uppercase tracking-wide text-gray-600">
                                     {group.title}
-                                    <span className="ml-2 font-normal normal-case tracking-normal text-gray-400">
+                                    <span className="ml-2 font-normal normal-case tracking-normal text-gray-500">
                                         {count}/{group.names.length}
                                     </span>
                                 </legend>
@@ -369,6 +405,7 @@ export default function UserManagement({ users, roles, permissions }) {
         e.preventDefault();
         if (formData.password !== formData.password_confirmation) {
             setErrors((prev) => ({ ...prev, password_confirmation: 'Passwords do not match.' }));
+            document.getElementById(FIELD_IDS.password_confirmation)?.focus();
             return;
         }
 
@@ -382,6 +419,9 @@ export default function UserManagement({ users, roles, permissions }) {
             onError: (errs) => {
                 setErrors(errs);
                 toast.error('Please fix the highlighted fields');
+                // Move focus to the first field that needs fixing.
+                const first = Object.keys(FIELD_IDS).find((key) => errs[key]);
+                if (first) requestAnimationFrame(() => document.getElementById(FIELD_IDS[first])?.focus());
             },
             onFinish: () => setIsSubmitting(false),
         };
@@ -646,7 +686,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <RoleBadge user={user} />
-                                                        <span className="text-sm text-gray-400">Created {user.created_at}</span>
+                                                        <span className="text-sm text-gray-500">Created {user.created_at}</span>
                                                     </div>
                                                     <AccessSummary user={user} max={2} />
                                                 </div>
@@ -680,7 +720,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                                     </Button>
                                                     {pageNumbers.map((p) =>
                                                         typeof p === 'string' ? (
-                                                            <span key={p} className="px-1.5 text-base text-gray-400">
+                                                            <span key={p} aria-hidden="true" className="px-1.5 text-base text-gray-500">
                                                                 …
                                                             </span>
                                                         ) : (
@@ -753,22 +793,36 @@ export default function UserManagement({ users, roles, permissions }) {
                         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
                             {/* Account */}
                             <section className="space-y-3">
-                                <h3 className="text-base font-semibold text-gray-900">Account</h3>
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <h3 className="text-base font-semibold text-gray-900">Account</h3>
+                                    <p className="text-sm text-gray-500">
+                                        <span className="text-red-600" aria-hidden="true">*</span> Required
+                                    </p>
+                                </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
-                                        <Label className="text-base" htmlFor="form-name">Name</Label>
+                                        <Label className="text-base" htmlFor="form-name">
+                                            Name
+                                            <RequiredMark />
+                                        </Label>
                                         <Input
                                             id="form-name"
                                             value={formData.name}
                                             onChange={(e) => setField('name', e.target.value)}
                                             placeholder="e.g. CSWDO or Barangay Alibagu"
                                             required
-                                            className="mt-1"
+                                            autoComplete="off"
+                                            aria-invalid={errors.name ? true : undefined}
+                                            aria-describedby={errors.name ? 'form-name-error' : undefined}
+                                            className={`mt-1 ${errors.name ? 'border-red-500' : ''}`}
                                         />
-                                        <FieldError message={errors.name} />
+                                        <FieldError id="form-name-error" message={errors.name} />
                                     </div>
                                     <div>
-                                        <Label className="text-base" htmlFor="form-email">Email</Label>
+                                        <Label className="text-base" htmlFor="form-email">
+                                            Email
+                                            <RequiredMark />
+                                        </Label>
                                         <Input
                                             id="form-email"
                                             type="email"
@@ -777,13 +831,16 @@ export default function UserManagement({ users, roles, permissions }) {
                                             placeholder="name@barangay.local"
                                             required
                                             autoComplete="off"
-                                            className="mt-1"
+                                            aria-invalid={errors.email ? true : undefined}
+                                            aria-describedby={errors.email ? 'form-email-error' : undefined}
+                                            className={`mt-1 ${errors.email ? 'border-red-500' : ''}`}
                                         />
-                                        <FieldError message={errors.email} />
+                                        <FieldError id="form-email-error" message={errors.email} />
                                     </div>
                                     <div>
                                         <Label className="text-base" htmlFor="form-password">
                                             {formMode === 'create' ? 'Password' : 'New password'}
+                                            {formMode === 'create' && <RequiredMark />}
                                         </Label>
                                         <PasswordInput
                                             id="form-password"
@@ -792,11 +849,15 @@ export default function UserManagement({ users, roles, permissions }) {
                                             placeholder={formMode === 'create' ? '' : 'Leave blank to keep'}
                                             required={formMode === 'create'}
                                             autoComplete="new-password"
+                                            error={errors.password}
                                         />
-                                        <FieldError message={errors.password} />
+                                        <FieldError id="form-password-error" message={errors.password} />
                                     </div>
                                     <div>
-                                        <Label className="text-base" htmlFor="form-password-confirm">Confirm password</Label>
+                                        <Label className="text-base" htmlFor="form-password-confirm">
+                                            Confirm password
+                                            {formMode === 'create' && <RequiredMark />}
+                                        </Label>
                                         <PasswordInput
                                             id="form-password-confirm"
                                             value={formData.password_confirmation}
@@ -804,8 +865,10 @@ export default function UserManagement({ users, roles, permissions }) {
                                             placeholder={formMode === 'create' ? '' : 'Leave blank to keep'}
                                             required={formMode === 'create' || formData.password !== ''}
                                             autoComplete="new-password"
+                                            error={errors.password_confirmation || (passwordMismatch ? 'mismatch' : null)}
                                         />
                                         <FieldError
+                                            id="form-password-confirm-error"
                                             message={
                                                 errors.password_confirmation ||
                                                 (passwordMismatch ? 'Passwords do not match.' : null)

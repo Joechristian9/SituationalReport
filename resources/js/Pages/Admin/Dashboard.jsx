@@ -7,7 +7,7 @@ import {
 } from "@/Components/ui/sidebar";
 import { Head, usePage, usePoll, Link } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
@@ -31,11 +31,14 @@ const LoadingSpinner = () => (
 // Memoized Tab component to prevent unnecessary re-renders
 const Tab = React.memo(({ label, icon, isActive, onClick }) => (
     <button
+        type="button"
         onClick={onClick}
-        className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
+        aria-label={label}
+        aria-pressed={isActive}
+        className={`flex min-h-[40px] items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
             isActive
                 ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-200"
+                : "text-gray-700 hover:bg-gray-200"
         }`}
     >
         {icon} <span className="hidden sm:inline">{label}</span>
@@ -55,7 +58,7 @@ const NotificationBadge = ({ count }) => (
                 title={`${count} new report${count === 1 ? "" : "s"}`}
             >
                 {count > 99 ? "99+" : count}
-                <span className="absolute inset-0 -z-10 rounded-full bg-red-500 animate-ping opacity-60" />
+                <span className="absolute inset-0 -z-10 rounded-full bg-red-500 motion-safe:animate-ping opacity-60" />
             </motion.span>
         )}
     </AnimatePresence>
@@ -105,6 +108,7 @@ export default function Dashboard({
     };
 
     return (
+        <MotionConfig reducedMotion="user">
         <SidebarProvider>
             <AppSidebar />
             <Head title="Dashboard" />
@@ -291,5 +295,6 @@ export default function Dashboard({
                 </main>
             </SidebarInset>
         </SidebarProvider>
+        </MotionConfig>
     );
 }

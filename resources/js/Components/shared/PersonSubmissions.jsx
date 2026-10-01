@@ -135,7 +135,7 @@ const wasEdited = (record) =>
     record.updater && record.updated_at && record.created_at && record.updated_at !== record.created_at;
 
 function Empty({ children }) {
-    return <span className="text-gray-400">{children}</span>;
+    return <span className="text-gray-500">{children}</span>;
 }
 
 function StatTile({ label, children, hint }) {
@@ -180,7 +180,7 @@ function FilterChip({ label, onRemove }) {
             <button
                 type="button"
                 onClick={onRemove}
-                className="rounded-full p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label={`Remove filter: ${label}`}
             >
                 <X className="h-3 w-3" />
@@ -226,7 +226,7 @@ function Pagination({ records }) {
                         </Link>
                     </Button>
                 ) : (
-                    <span key={`gap-${i}`} className="px-1.5 text-sm text-gray-400">
+                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-sm text-gray-500">
                         …
                     </span>
                 ),
@@ -519,15 +519,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                 {records.data.map((record) => (
                                                     <tr
                                                         key={record.id}
-                                                        tabIndex={0}
                                                         onClick={() => setSelected(record)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                                e.preventDefault();
-                                                                setSelected(record);
-                                                            }
-                                                        }}
-                                                        className="cursor-pointer align-top hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-300"
+                                                        className="cursor-pointer align-top hover:bg-gray-50 focus-within:bg-gray-50"
                                                     >
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-3">
@@ -538,7 +531,17 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                                     {initials(record.name)}
                                                                 </span>
                                                                 <div className="min-w-0">
-                                                                    <p className="font-medium text-gray-900">{record.name || <Empty>No name</Empty>}</p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelected(record);
+                                                                        }}
+                                                                        className="rounded text-left font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                                        aria-label={`View details for ${record.name || 'unnamed record'}`}
+                                                                    >
+                                                                        {record.name || <Empty>No name</Empty>}
+                                                                    </button>
                                                                     <p className="text-xs text-gray-500">{ageSex(record)}</p>
                                                                 </div>
                                                             </div>
@@ -565,7 +568,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                             <p className="text-gray-900">{formatDay(record.created_at) || '—'}</p>
                                                             <p className="text-xs text-gray-500">
                                                                 {formatTime(record.created_at)}
-                                                                {wasEdited(record) && <span className="ml-1.5 text-gray-400">· edited</span>}
+                                                                {wasEdited(record) && <span className="ml-1.5 text-gray-500">· edited</span>}
                                                             </p>
                                                         </td>
                                                     </tr>

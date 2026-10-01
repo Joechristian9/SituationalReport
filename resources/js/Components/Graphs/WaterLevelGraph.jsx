@@ -11,7 +11,7 @@ import {
     ReferenceLine,
     Cell,
 } from "recharts";
-import { Filter, Droplet, TrendingUp, TrendingDown, Minus, AlertTriangle, Clock, ArrowUpDown } from "lucide-react";
+import { Filter, Droplet, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2, Clock, ArrowUpDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import GraphCard from "@/Components/ui/GraphCard";
 import ModernSelect from "@/Components/ui/ModernSelect";
@@ -33,14 +33,17 @@ const CustomTooltip = ({ active, payload, label }) => {
         const criticalLevel = parseFloat(payload.find(p => p.dataKey === 'critical_level')?.value) || 0;
         
         // Determine status
-        let status = '🟢 SAFE';
-        let statusColor = 'text-green-600';
+        let status = 'SAFE';
+        let statusColor = 'text-green-700';
+        let StatusIcon = CheckCircle2;
         if (currentLevel >= criticalLevel) {
-            status = '🔴 CRITICAL';
-            statusColor = 'text-red-600';
+            status = 'CRITICAL';
+            statusColor = 'text-red-700';
+            StatusIcon = AlertTriangle;
         } else if (currentLevel >= alarmLevel) {
-            status = '🟡 WARNING';
-            statusColor = 'text-amber-600';
+            status = 'WARNING';
+            statusColor = 'text-amber-700';
+            StatusIcon = AlertTriangle;
         }
         
         const updated = timeAgo(payload[0]?.payload?.updated_at);
@@ -48,7 +51,8 @@ const CustomTooltip = ({ active, payload, label }) => {
         return (
             <div className="bg-white/95 backdrop-blur-sm p-4 rounded-lg shadow-xl border-2 border-gray-200">
                 <p className="font-bold text-gray-800 mb-2">{label}</p>
-                <div className={`font-bold text-sm mb-2 ${statusColor}`}>
+                <div className={`flex items-center gap-1.5 font-bold text-sm mb-2 ${statusColor}`}>
+                    <StatusIcon size={14} aria-hidden="true" />
                     {status}
                 </div>
                 <div className="space-y-1.5 text-sm">
@@ -216,10 +220,11 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
                 onChange={setFilterStatus}
                 options={[
                     { value: 'all', label: 'All Status' },
-                    { value: 'critical', label: '🔴 Critical' },
-                    { value: 'warning', label: '🟡 Warning' },
-                    { value: 'safe', label: '🟢 Safe' }
+                    { value: 'critical', label: 'Critical' },
+                    { value: 'warning', label: 'Warning' },
+                    { value: 'safe', label: 'Safe' }
                 ]}
+                ariaLabel="Water level status"
                 className="flex-1 min-w-[8rem] sm:flex-none sm:w-36"
             />
             <button
@@ -235,6 +240,7 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
                 value={selectedStation}
                 onChange={setSelectedStation}
                 options={stations.map((s) => ({ value: s, label: s }))}
+                ariaLabel="Gauging station"
                 className="flex-1 min-w-[8rem] sm:flex-none sm:w-44"
             />
         </div>
