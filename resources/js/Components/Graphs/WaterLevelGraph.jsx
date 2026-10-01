@@ -12,8 +12,18 @@ import {
     Cell,
 } from "recharts";
 import { Filter, Droplet, TrendingUp, TrendingDown, Minus, AlertTriangle, Clock, ArrowUpDown } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import GraphCard from "@/Components/ui/GraphCard";
 import ModernSelect from "@/Components/ui/ModernSelect";
+
+const timeAgo = (value) => {
+    if (!value) return null;
+    try {
+        return formatDistanceToNow(new Date(value), { addSuffix: true });
+    } catch {
+        return null;
+    }
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -33,9 +43,8 @@ const CustomTooltip = ({ active, payload, label }) => {
             statusColor = 'text-amber-600';
         }
         
-        // Calculate time ago (mock - you can make this dynamic)
-        const timeAgo = '5 mins ago';
-        
+        const updated = timeAgo(payload[0]?.payload?.updated_at);
+
         return (
             <div className="bg-white/95 backdrop-blur-sm p-4 rounded-lg shadow-xl border-2 border-gray-200">
                 <p className="font-bold text-gray-800 mb-2">{label}</p>
@@ -61,10 +70,12 @@ const CustomTooltip = ({ active, payload, label }) => {
                         </div>
                     ))}
                 </div>
-                <div className="mt-3 pt-2 border-t border-gray-200 flex items-center text-xs text-gray-500">
-                    <Clock size={12} className="mr-1" />
-                    Updated: {timeAgo}
-                </div>
+                {updated && (
+                    <div className="mt-3 pt-2 border-t border-gray-200 flex items-center text-xs text-gray-500">
+                        <Clock size={12} className="mr-1" />
+                        Updated {updated}
+                    </div>
+                )}
             </div>
         );
     }
@@ -137,11 +148,15 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
         });
         
         const total = waterLevels.length;
+        const latestUpdate = waterLevels.reduce(
+            (latest, item) => (item.updated_at && (!latest || new Date(item.updated_at) > new Date(latest)) ? item.updated_at : latest),
+            null
+        );
         const avgLevel = validCount > 0 ? (totalLevel / validCount).toFixed(2) : '0.00';
         const criticalPercent = total > 0 ? Math.round((critical / total) * 100) : 0;
         const warningPercent = total > 0 ? Math.round((warning / total) * 100) : 0;
         
-        return { critical, warning, safe, total, highestStation, avgLevel, criticalPercent, warningPercent };
+        return { critical, warning, safe, total, highestStation, avgLevel, criticalPercent, warningPercent, latestUpdate };
     }, [waterLevels]);
 
     const displayData = useMemo(() => {
@@ -195,7 +210,7 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
     const stations = useMemo(() => stationOptions, [stationOptions]);
 
     const stationFilter = (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <ModernSelect
                 value={filterStatus}
                 onChange={setFilterStatus}
@@ -205,12 +220,14 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
                     { value: 'warning', label: '🟡 Warning' },
                     { value: 'safe', label: '🟢 Safe' }
                 ]}
-                className="w-36"
+                className="flex-1 min-w-[8rem] sm:flex-none sm:w-36"
             />
             <button
+                type="button"
                 onClick={() => setSortBy(sortBy === "highest" ? "lowest" : "highest")}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="Sort by level"
+                className="shrink-0 p-2 rounded-lg border border-slate-300 bg-white hover:bg-gray-100 transition-colors"
+                title={sortBy === "highest" ? "Showing highest first" : "Showing lowest first"}
+                aria-label="Toggle sort order"
             >
                 <ArrowUpDown size={18} className="text-gray-600" />
             </button>
@@ -218,7 +235,7 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
                 value={selectedStation}
                 onChange={setSelectedStation}
                 options={stations.map((s) => ({ value: s, label: s }))}
-                className="w-44"
+                className="flex-1 min-w-[8rem] sm:flex-none sm:w-44"
             />
         </div>
     );
@@ -232,63 +249,67 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
             {/* Enhanced Status Dashboard */}
             <div className="mb-4 space-y-3">
                 {/* Top Row: Status Badges and Quick Stats */}
-                <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                        <div 
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="grid grid-cols-2 min-[480px]:flex min-[480px]:flex-wrap items-center gap-2 w-full min-[480px]:w-auto">
+                        <button
+                            type="button"
                             onClick={() => setFilterStatus('critical')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 cursor-pointer hover:bg-red-100 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-colors whitespace-nowrap"
                         >
                             <span className="text-red-600 font-bold text-sm">{stats.critical}</span>
                             <span className="text-red-700 text-xs font-medium">Critical</span>
                             <span className="text-red-500 text-[10px]">({stats.criticalPercent}%)</span>
-                        </div>
-                        <div 
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setFilterStatus('warning')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors whitespace-nowrap"
                         >
                             <span className="text-amber-600 font-bold text-sm">{stats.warning}</span>
                             <span className="text-amber-700 text-xs font-medium">Warning</span>
                             <span className="text-amber-500 text-[10px]">({stats.warningPercent}%)</span>
-                        </div>
-                        <div 
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setFilterStatus('safe')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 cursor-pointer hover:bg-green-100 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap"
                         >
                             <span className="text-green-600 font-bold text-sm">{stats.safe}</span>
                             <span className="text-green-700 text-xs font-medium">Safe</span>
-                        </div>
-                        <div className="h-8 w-px bg-gray-300" />
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200">
+                        </button>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 whitespace-nowrap">
                             <span className="text-blue-600 font-bold text-sm">{stats.total}</span>
-                            <span className="text-blue-700 text-xs font-medium">Total Stations</span>
+                            <span className="text-blue-700 text-xs font-medium">Stations</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="text-right">
-                            <div className="text-[10px] text-gray-500 uppercase">Avg Level</div>
+                    <div className="flex items-center gap-4 whitespace-nowrap">
+                        <div>
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg Level</div>
                             <div className="text-sm font-bold text-gray-700">{stats.avgLevel}m</div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                            <Clock size={14} />
-                            <span>Updated 5 mins ago</span>
-                        </div>
+                        {stats.latestUpdate && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500" title={new Date(stats.latestUpdate).toLocaleString()}>
+                                <Clock size={14} />
+                                <span>Updated {timeAgo(stats.latestUpdate)}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Highest Station Alert */}
                 {stats.highestStation && stats.highestStation.current_level >= stats.highestStation.alarm_level && (
-                    <div className="mx-2 p-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-orange-100 rounded-full">
+                    <div className="p-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 bg-orange-100 rounded-full shrink-0">
                                     <TrendingUp size={18} className="text-orange-600" />
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-x-2">
                                         <span className="text-xs font-medium text-gray-600">Highest Station:</span>
                                         <span className="text-sm font-bold text-gray-800">{stats.highestStation.gauging_station}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 mt-0.5">
+                                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
                                         <span className="text-xs text-gray-600">Current Level:</span>
                                         <span className="text-sm font-bold text-orange-600">{stats.highestStation.current_level}m</span>
                                         {stats.highestStation.current_level >= stats.highestStation.critical_level ? (
@@ -311,10 +332,10 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
 
                 {/* Critical Alert Banner */}
                 {stats.critical > 0 && (
-                    <div className="mx-2 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <AlertTriangle size={18} className="text-red-600" />
+                    <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <AlertTriangle size={18} className="text-red-600 shrink-0" />
                                 <div>
                                     <span className="text-sm font-semibold text-red-800">ATTENTION NEEDED</span>
                                     <p className="text-xs text-red-700 mt-0.5">
@@ -340,7 +361,7 @@ const WaterLevelGraph = React.memo(({ waterLevels = [] }) => {
             )}
             {!displayData || displayData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                    <Droplet size={48} className="mb-4 text-gray-400" />
+                    <Droplet size={48} className="mb-4 mt-8 text-gray-400" />
                     <p className="font-semibold">No Water Level Data</p>
                 </div>
             ) : (

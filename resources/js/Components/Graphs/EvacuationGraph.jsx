@@ -146,14 +146,14 @@ const EvacuationGraph = ({
 
     // ✅ ENHANCED: A single, responsive flex container for controls.
     const graphActions = (
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col min-[400px]:flex-row min-[400px]:items-center gap-2 w-full sm:w-auto">
             <ModernSelect
                 value={evacuationType}
                 onChange={onEvacuationTypeChange}
                 options={filterOptions}
-                className="w-36"
+                className="w-full min-[400px]:w-32 shrink-0"
             />
-            <div className="relative flex-grow">
+            <div className="relative flex-grow sm:w-52">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
                 <input
                     type="text"
@@ -173,7 +173,7 @@ const EvacuationGraph = ({
             actions={graphActions}
         >
             {filteredGraphData.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <div className="flex flex-col items-center justify-center h-full py-12 text-gray-500">
                     <Users size={48} className="mb-4 text-gray-400" />
                     <p className="font-semibold">
                         {aggregatedData.length > 0
@@ -185,7 +185,7 @@ const EvacuationGraph = ({
                 <>
                     {/* Statistics Summary Cards */}
                     {stats && (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                             <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                     <Users size={12} className="text-blue-600" />
@@ -219,15 +219,15 @@ const EvacuationGraph = ({
                             </div>
                         </div>
                     )}
-                    <ResponsiveContainer width="100%" height={240}>
+                    <ResponsiveContainer width="100%" height={300}>
                     <BarChart
                         data={filteredGraphData}
-                        margin={{ top: 5, right: 10, left: -15, bottom: 50 }}
+                        margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
                             dataKey="barangay"
-                            angle={-45}
+                            angle={-40}
                             textAnchor="end"
                             height={70}
                             interval={0}
@@ -235,17 +235,20 @@ const EvacuationGraph = ({
                         />
                         <YAxis
                             allowDecimals={false}
-                            label={{
-                                value: "Count",
-                                angle: -90,
-                                position: "insideLeft",
-                            }}
+                            width={44}
+                            tick={{ fontSize: 11 }}
                         />
                         <Tooltip
                             content={<CustomTooltip />}
                             cursor={{ fill: "rgba(239, 246, 255, 0.6)" }}
                         />
-                        <Legend wrapperStyle={{ paddingTop: "40px" }} />
+                        <Legend
+                            verticalAlign="top"
+                            align="right"
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: 12, paddingBottom: 8 }}
+                        />
                         <Bar
                             dataKey={familiesDataKey}
                             name={familiesBarName}

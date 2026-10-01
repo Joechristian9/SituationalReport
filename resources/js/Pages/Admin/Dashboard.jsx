@@ -174,20 +174,21 @@ export default function Dashboard({
                                 )}
 
                                 {activeTab === "environment" && (
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+                                        {/* Weather + Evacuation side by side on wide screens; Water Level spans the full width */}
                                         <WeatherGraph
                                             weatherReports={weatherReports}
                                         />
-                                        <div className="flex flex-col gap-4 md:gap-6">
-                                            <EvacuationGraph
-                                                preEmptiveReports={preEmptiveReports}
-                                                evacuationType={evacuationType}
-                                                onEvacuationTypeChange={
-                                                    setEvacuationType
-                                                }
-                                                searchQuery={searchQuery}
-                                                onSearchChange={setSearchQuery}
-                                            />
+                                        <EvacuationGraph
+                                            preEmptiveReports={preEmptiveReports}
+                                            evacuationType={evacuationType}
+                                            onEvacuationTypeChange={
+                                                setEvacuationType
+                                            }
+                                            searchQuery={searchQuery}
+                                            onSearchChange={setSearchQuery}
+                                        />
+                                        <div className="xl:col-span-2 min-w-0">
                                             <WaterLevelGraph waterLevels={waterLevels} />
                                         </div>
                                     </div>

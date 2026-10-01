@@ -1,53 +1,22 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import dayjs from "dayjs";
 import { Cloud, Wind, CloudRain, Waves, CloudOff, MapPin } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
-import ModernSelect from "@/Components/ui/ModernSelect";
 
 const WeatherGraph = ({ weatherReports = [] }) => {
-    const [selectedMunicipality, setSelectedMunicipality] = useState("All");
-
-    // Get unique municipalities
-    const municipalities = useMemo(() => {
-        if (!weatherReports || weatherReports.length === 0) return ["All"];
-        
-        const uniqueMunicipalities = [...new Set(
-            weatherReports
-                .filter(r => r.municipality && r.municipality.trim())
-                .map(r => r.municipality)
-        )].sort();
-        
-        return ["All", ...uniqueMunicipalities];
-    }, [weatherReports]);
-
-    // Filter reports by municipality
+    // Newest first (copy so the shared prop array isn't re-ordered)
     const filteredReports = useMemo(() => {
         if (!weatherReports || weatherReports.length === 0) return [];
-        
-        const reports = selectedMunicipality === "All"
-            ? weatherReports
-            : weatherReports.filter(r => r.municipality === selectedMunicipality);
-        
-        return reports.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-    }, [weatherReports, selectedMunicipality]);
+        return [...weatherReports].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    }, [weatherReports]);
 
     // Get latest report
     const latestReport = filteredReports[0];
-
-    const filterControl = (
-        <ModernSelect
-            value={selectedMunicipality}
-            onChange={setSelectedMunicipality}
-            options={municipalities.map(m => ({ value: m, label: m }))}
-            className="w-44"
-        />
-    );
 
     return (
         <GraphCard
             title="Weather Conditions"
             icon={<Cloud size={24} />}
-            actions={filterControl}
         >
             {!filteredReports || filteredReports.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 py-12">
@@ -59,10 +28,10 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                     {/* Latest Weather Card */}
                     {latestReport && (
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="h-5 w-5 text-blue-600" />
-                                    <h4 className="font-bold text-gray-900 text-lg">
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <MapPin className="h-5 w-5 shrink-0 text-blue-600" />
+                                    <h4 className="font-bold text-gray-900 text-lg truncate">
                                         {latestReport.municipality}
                                     </h4>
                                 </div>
@@ -140,7 +109,7 @@ const WeatherGraph = ({ weatherReports = [] }) => {
                                             </span>
                                         </div>
                                         
-                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                                             <div>
                                                 <span className="text-gray-500">Sky:</span>
                                                 <span className="ml-1 text-gray-700 font-medium">
