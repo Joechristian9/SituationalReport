@@ -359,6 +359,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'casualties' => [],
                 'injured' => [],
                 'missing' => [],
+                'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
             ]);
         }
         
@@ -406,6 +407,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,
+            'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');
     

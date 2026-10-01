@@ -204,6 +204,9 @@ class InjuredController extends Controller
      */
     public function submissions(Request $request)
     {
+        // Clear the "new reports" badge for this admin
+        \App\Models\ReportView::markSeen('injured');
+
         $query = Injured::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists

@@ -203,6 +203,9 @@ class CasualtyController extends Controller
      */
     public function submissions(Request $request)
     {
+        // Clear the "new reports" badge for this admin
+        \App\Models\ReportView::markSeen('casualties');
+
         $query = Casualty::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists

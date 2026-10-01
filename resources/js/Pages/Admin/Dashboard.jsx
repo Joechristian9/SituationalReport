@@ -5,7 +5,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { Head, usePage, Link } from "@inertiajs/react";
+import { Head, usePage, usePoll, Link } from "@inertiajs/react";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, TrendingUp, AlertTriangle, Filter } from "lucide-react";
@@ -42,6 +42,25 @@ const Tab = React.memo(({ label, icon, isActive, onClick }) => (
     </button>
 ));
 
+// App-style notification badge showing how many new reports came in
+const NotificationBadge = ({ count }) => (
+    <AnimatePresence>
+        {count > 0 && (
+            <motion.span
+                key="badge"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="absolute -top-2 -right-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white shadow-md ring-2 ring-white"
+                title={`${count} new report${count === 1 ? "" : "s"}`}
+            >
+                {count > 99 ? "99+" : count}
+                <span className="absolute inset-0 -z-10 rounded-full bg-red-500 animate-ping opacity-60" />
+            </motion.span>
+        )}
+    </AnimatePresence>
+);
+
 export default function Dashboard({
     weatherReports = [],
     waterLevels = [],
@@ -49,8 +68,17 @@ export default function Dashboard({
     casualties = [],
     injured = [],
     missing = [],
+    newReportCounts = { casualties: 0, injured: 0, missing: 0 },
 }) {
     const { auth, typhoon } = usePage().props;
+
+    // Refresh human impact data and new-report badges every 30 seconds
+    usePoll(30000, {
+        only: ["casualties", "injured", "missing", "newReportCounts"],
+    });
+
+    const totalNewReports =
+        newReportCounts.casualties + newReportCounts.injured + newReportCounts.missing;
     const [activeTab, setActiveTab] = useState("impact");
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
@@ -174,8 +202,9 @@ export default function Dashboard({
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.1 }}
-                                                    className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                    className="relative bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                                                 >
+                                                    <NotificationBadge count={newReportCounts.casualties} />
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="text-xs font-medium text-red-600 mb-1">Casualties</p>
@@ -193,8 +222,9 @@ export default function Dashboard({
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.2 }}
-                                                    className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                    className="relative bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                                                 >
+                                                    <NotificationBadge count={newReportCounts.injured} />
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="text-xs font-medium text-amber-600 mb-1">Injured</p>
@@ -212,8 +242,9 @@ export default function Dashboard({
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.3 }}
-                                                    className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                                                    className="relative bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                                                 >
+                                                    <NotificationBadge count={newReportCounts.missing} />
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="text-xs font-medium text-orange-600 mb-1">Missing</p>
@@ -230,8 +261,9 @@ export default function Dashboard({
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.4 }}
-                                                className="bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm"
+                                                className="relative bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm"
                                             >
+                                                <NotificationBadge count={totalNewReports} />
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <p className="text-xs font-medium text-slate-600 mb-1">Total Impact</p>
