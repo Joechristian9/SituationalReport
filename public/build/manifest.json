@@ -149,6 +149,25 @@
       "_circle-alert-Byuf0-DD.js"
     ]
   },
+  "_PersonSubmissions-C6RgrTgE.js": {
+    "file": "assets/PersonSubmissions-C6RgrTgE.js",
+    "name": "PersonSubmissions",
+    "imports": [
+      "_index-d-9UipKu.js",
+      "_app-sidebar-9ZB2IXMh.js",
+      "_select-BPtM8ZiX.js",
+      "_RowsPerPage-BVYgwvls.js",
+      "_triangle-alert-B-9NMgwH.js",
+      "_plus-C0juZbPC.js",
+      "_user-search-BLq0pnwY.js",
+      "_arrow-left-DblSG0kb.js",
+      "_building-2-D390ORSs.js",
+      "_clock-yAUAPJ8i.js",
+      "_search-rH7nrbqn.js",
+      "_format-CWlEcPkd.js",
+      "_chevron-left--XfC6nCK.js"
+    ]
+  },
   "_PieChart-BMf4Z8Xw.js": {
     "file": "assets/PieChart-BMf4Z8Xw.js",
     "name": "PieChart",
@@ -238,6 +257,13 @@
       "_index-d-9UipKu.js",
       "_app-sidebar-9ZB2IXMh.js",
       "_tooltip-DPMVzSOJ.js"
+    ]
+  },
+  "_building-2-D390ORSs.js": {
+    "file": "assets/building-2-D390ORSs.js",
+    "name": "building-2",
+    "imports": [
+      "_plus-C0juZbPC.js"
     ]
   },
   "_card-C4tSJZ6-.js": {
@@ -332,8 +358,8 @@
       "_plus-C0juZbPC.js"
     ]
   },
-  "_format-CSQe5d3I.js": {
-    "file": "assets/format-CSQe5d3I.js",
+  "_format-CWlEcPkd.js": {
+    "file": "assets/format-CWlEcPkd.js",
     "name": "format"
   },
   "_house-BtX-iejY.js": {
@@ -1307,25 +1333,27 @@
     ]
   },
   "resources/js/Pages/Admin/CasualtySubmissions.jsx": {
-    "file": "assets/CasualtySubmissions-C34vg1_8.js",
+    "file": "assets/CasualtySubmissions-RcrKQWpk.js",
     "name": "CasualtySubmissions",
     "src": "resources/js/Pages/Admin/CasualtySubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
+      "_PersonSubmissions-C6RgrTgE.js",
       "_app-sidebar-9ZB2IXMh.js",
-      "_card-C4tSJZ6-.js",
-      "_select-BPtM8ZiX.js",
-      "_triangle-alert-B-9NMgwH.js",
-      "_arrow-left-DblSG0kb.js",
-      "_search-rH7nrbqn.js",
-      "_proxy-B1RRKmtt.js",
-      "_user-G-wrbeL8.js",
-      "_chevron-left--XfC6nCK.js",
-      "_format-CSQe5d3I.js",
       "_tooltip-DPMVzSOJ.js",
       "_plus-C0juZbPC.js",
-      "_index-6ft4nDGQ.js"
+      "_index-6ft4nDGQ.js",
+      "_select-BPtM8ZiX.js",
+      "_RowsPerPage-BVYgwvls.js",
+      "_triangle-alert-B-9NMgwH.js",
+      "_user-search-BLq0pnwY.js",
+      "_arrow-left-DblSG0kb.js",
+      "_building-2-D390ORSs.js",
+      "_clock-yAUAPJ8i.js",
+      "_search-rH7nrbqn.js",
+      "_format-CWlEcPkd.js",
+      "_chevron-left--XfC6nCK.js"
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
@@ -1360,7 +1388,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-DzY5tl35.js",
+    "file": "assets/DisasterManagement-DIry6Y1g.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isDynamicEntry": true,
@@ -1392,7 +1420,7 @@
       "_waves-DTavdyp7.js",
       "_cloud-snow-Bu75obCt.js",
       "_droplets-rf_cou9z.js",
-      "_format-CSQe5d3I.js",
+      "_format-CWlEcPkd.js",
       "_index-6ft4nDGQ.js"
     ]
   },
@@ -1423,45 +1451,51 @@
     ]
   },
   "resources/js/Pages/Admin/InjuredSubmissions.jsx": {
-    "file": "assets/InjuredSubmissions-D7IYgDqT.js",
+    "file": "assets/InjuredSubmissions-DW2NU5B4.js",
     "name": "InjuredSubmissions",
     "src": "resources/js/Pages/Admin/InjuredSubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
+      "_PersonSubmissions-C6RgrTgE.js",
       "_app-sidebar-9ZB2IXMh.js",
-      "_card-C4tSJZ6-.js",
-      "_select-BPtM8ZiX.js",
-      "_arrow-left-DblSG0kb.js",
-      "_search-rH7nrbqn.js",
-      "_proxy-B1RRKmtt.js",
-      "_user-G-wrbeL8.js",
-      "_chevron-left--XfC6nCK.js",
-      "_format-CSQe5d3I.js",
       "_tooltip-DPMVzSOJ.js",
       "_plus-C0juZbPC.js",
-      "_index-6ft4nDGQ.js"
+      "_index-6ft4nDGQ.js",
+      "_select-BPtM8ZiX.js",
+      "_RowsPerPage-BVYgwvls.js",
+      "_triangle-alert-B-9NMgwH.js",
+      "_user-search-BLq0pnwY.js",
+      "_arrow-left-DblSG0kb.js",
+      "_building-2-D390ORSs.js",
+      "_clock-yAUAPJ8i.js",
+      "_search-rH7nrbqn.js",
+      "_format-CWlEcPkd.js",
+      "_chevron-left--XfC6nCK.js"
     ]
   },
   "resources/js/Pages/Admin/MissingSubmissions.jsx": {
-    "file": "assets/MissingSubmissions-DnSH0APZ.js",
+    "file": "assets/MissingSubmissions-TCWHr0Rq.js",
     "name": "MissingSubmissions",
     "src": "resources/js/Pages/Admin/MissingSubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
+      "_PersonSubmissions-C6RgrTgE.js",
       "_app-sidebar-9ZB2IXMh.js",
-      "_card-C4tSJZ6-.js",
-      "_select-BPtM8ZiX.js",
-      "_arrow-left-DblSG0kb.js",
-      "_search-rH7nrbqn.js",
-      "_proxy-B1RRKmtt.js",
-      "_user-G-wrbeL8.js",
-      "_chevron-left--XfC6nCK.js",
-      "_format-CSQe5d3I.js",
       "_tooltip-DPMVzSOJ.js",
       "_plus-C0juZbPC.js",
-      "_index-6ft4nDGQ.js"
+      "_index-6ft4nDGQ.js",
+      "_select-BPtM8ZiX.js",
+      "_RowsPerPage-BVYgwvls.js",
+      "_triangle-alert-B-9NMgwH.js",
+      "_user-search-BLq0pnwY.js",
+      "_arrow-left-DblSG0kb.js",
+      "_building-2-D390ORSs.js",
+      "_clock-yAUAPJ8i.js",
+      "_search-rH7nrbqn.js",
+      "_format-CWlEcPkd.js",
+      "_chevron-left--XfC6nCK.js"
     ]
   },
   "resources/js/Pages/Admin/UserManagement.jsx": {
@@ -1538,7 +1572,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx": {
-    "file": "assets/AssistanceIndex-DG7jNSgV.js",
+    "file": "assets/AssistanceIndex-AHXzOA5Y.js",
     "name": "AssistanceIndex",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx",
     "isDynamicEntry": true,
@@ -1564,7 +1598,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceProvidedLgu.jsx": {
-    "file": "assets/AssistanceProvidedLgu-CUPbJfu3.js",
+    "file": "assets/AssistanceProvidedLgu-DytbGsEV.js",
     "name": "AssistanceProvidedLgu",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceProvidedLgu.jsx",
     "isDynamicEntry": true,
@@ -1572,9 +1606,10 @@
       "_index-d-9UipKu.js",
       "_index-C2nJmEEr.js",
       "_AddRowButton-D1O9gItY.js",
-      "_plus-C0juZbPC.js",
+      "_building-2-D390ORSs.js",
       "_circle-plus-C7cth0YQ.js",
-      "_loader-circle-CLKlZmhJ.js"
+      "_loader-circle-CLKlZmhJ.js",
+      "_plus-C0juZbPC.js"
     ]
   },
   "resources/js/Pages/Auth/ConfirmPassword.jsx": {
@@ -2092,7 +2127,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CiTOrCXI.js",
+    "file": "assets/app-BLuRoajo.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2144,7 +2179,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-BQ_d7krt.css"
+      "assets/app-Cmo7kffH.css"
     ]
   }
 }
