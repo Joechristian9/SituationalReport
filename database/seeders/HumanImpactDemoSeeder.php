@@ -64,8 +64,10 @@ class HumanImpactDemoSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->isProduction()) {
-            $this->command->error('HumanImpactDemoSeeder is for local/demo use only. Aborting.');
+        // Opt-in for a production-mode demo server whose data is not real:
+        //   ALLOW_DEMO_SEED=1 php artisan db:seed --class=HumanImpactDemoSeeder --force
+        if (app()->isProduction() && ! env('ALLOW_DEMO_SEED')) {
+            $this->command->error('HumanImpactDemoSeeder is for local/demo use only. Set ALLOW_DEMO_SEED=1 if this server holds no real data.');
 
             return;
         }
@@ -79,10 +81,11 @@ class HumanImpactDemoSeeder extends Seeder
 
         $barangays = User::where('email', 'like', '%@barangay.local')->orderBy('name')->get(['id', 'name']);
         if ($barangays->isEmpty()) {
-            $this->command->error('No barangay accounts. Run BarangaySeeder first.');
+            $this->command->error('No barangay accounts (emails ending in @barangay.local). Run BarangaySeeder first.');
 
             return;
         }
+        $this->command->info("Using {$barangays->count()} barangay accounts and disaster \"{$disaster->name}\".");
 
         $tables = ['casualties', (new Injured)->getTable(), 'missing'];
         $existing = collect($tables)->sum(fn ($t) => DB::table($t)->where('disaster_id', $disaster->id)->whereIn('user_id', $barangays->pluck('id'))->count());
