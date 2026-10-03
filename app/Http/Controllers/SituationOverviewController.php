@@ -31,10 +31,6 @@ class SituationOverviewController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
         
-        // Get the active typhoon to check if it was resumed
-        $activeTyphoon = \App\Models\Typhoon::find($typhoonId);
-        $resumedAt = $activeTyphoon?->resumed_at;
-
         $weatherQuery = WeatherReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $waterLevelQuery = WaterLevel::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $electricityQuery = ElectricityService::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
@@ -47,21 +43,8 @@ class SituationOverviewController extends Controller
         $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
         
-        // If typhoon was resumed, only show data created after the resume
-        if ($resumedAt) {
-            $weatherQuery->where('created_at', '>=', $resumedAt);
-            $waterLevelQuery->where('created_at', '>=', $resumedAt);
-            $electricityQuery->where('created_at', '>=', $resumedAt);
-            $waterServiceQuery->where('created_at', '>=', $resumedAt);
-            $communicationQuery->where('created_at', '>=', $resumedAt);
-            $roadQuery->where('created_at', '>=', $resumedAt);
-            $bridgeQuery->where('created_at', '>=', $resumedAt);
-            $preEmptiveQuery->where('created_at', '>=', $resumedAt);
-            $casualtyQuery->where('created_at', '>=', $resumedAt);
-            $injuredQuery->where('created_at', '>=', $resumedAt);
-            $missingQuery->where('created_at', '>=', $resumedAt);
-        }
-
+        // Pausing/resuming a disaster only blocks submissions; it never hides records.
+        // Forms always show everything for the active disaster, matching the admin views.
         if ($user && !$user->isAdmin()) {
             // Get all user IDs whose data this user can access (including their own)
             $accessibleUserIds = $user->getAccessibleUserIds('read');
@@ -473,20 +456,13 @@ class SituationOverviewController extends Controller
                 continue;
             }
 
-            // Determine if we should create a new record or update existing
+            // Update the existing record when it has one; otherwise create a new record
             $shouldCreateNew = false;
-            
-            // If ID exists and is numeric, check if we should update or create new
+
             if (!empty($waterData['id']) && is_numeric($waterData['id'])) {
                 $existingService = WaterService::find($waterData['id']);
-                
-                if ($existingService && $activeTyphoon->resumed_at) {
-                    // If typhoon was resumed, check if existing record was created BEFORE the resume
-                    // If so, create a new record to preserve history
-                    $shouldCreateNew = $existingService->created_at < $activeTyphoon->resumed_at;
-                }
-                
-                if (!$shouldCreateNew && $existingService) {
+
+                if ($existingService) {
                     // Update existing record - allow ANY user to update ANY record
                     $existingService->update([
                         'source_of_water'  => $waterData['source_of_water'] ?? null,
@@ -498,7 +474,7 @@ class SituationOverviewController extends Controller
                         'updated_by'       => Auth::id(),
                     ]);
                 } else {
-                    // Create new record (preserves history after resume)
+                    // No existing record with that ID: create it
                     $shouldCreateNew = true;
                 }
             } else {
@@ -1282,13 +1258,6 @@ class SituationOverviewController extends Controller
         $groupedByTyphoon = $reports->getCollection()->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
             
-            // If typhoon was resumed, only include reports created after resume
-            if ($typhoon && $typhoon->resumed_at) {
-                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
-                    return $report->created_at >= $typhoon->resumed_at;
-                });
-            }
-            
             return [
                 'typhoon' => $typhoon,
                 'reports' => $typhoonReports->map(function($report) {
@@ -1334,13 +1303,6 @@ class SituationOverviewController extends Controller
         $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
             
-            // If typhoon was resumed, only include reports created after resume
-            if ($typhoon && $typhoon->resumed_at) {
-                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
-                    return $report->created_at >= $typhoon->resumed_at;
-                });
-            }
-            
             return [
                 'typhoon' => $typhoon,
                 'reports' => $typhoonReports->map(function($report) {
@@ -1382,13 +1344,6 @@ class SituationOverviewController extends Controller
         $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
             
-            // If typhoon was resumed, only include reports created after resume
-            if ($typhoon && $typhoon->resumed_at) {
-                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
-                    return $report->created_at >= $typhoon->resumed_at;
-                });
-            }
-            
             return [
                 'typhoon' => $typhoon,
                 'reports' => $typhoonReports->map(function($report) {
@@ -1428,13 +1383,6 @@ class SituationOverviewController extends Controller
         // Group reports by typhoon
         $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
-            // If typhoon was resumed, only include reports created after resume
-            if ($typhoon && $typhoon->resumed_at) {
-                $typhoonReports = $typhoonReports->filter(function($report) use ($typhoon) {
-                    return $report->created_at >= $typhoon->resumed_at;
-                });
-            }
             
             return [
                 'typhoon' => $typhoon,
