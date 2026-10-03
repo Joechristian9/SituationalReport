@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import InstallAppButton from '@/Components/InstallAppButton';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 
@@ -128,6 +129,10 @@ export default function Login({ status, canResetPassword }) {
                         </button>
                     </div>
                 </form>
+
+                <div className="mt-6">
+                    <InstallAppButton />
+                </div>
 
                 {/* Additional Info */}
                 <div className="mt-8 pt-6 border-t border-gray-200">

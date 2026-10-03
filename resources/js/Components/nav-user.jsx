@@ -18,6 +18,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@inertiajs/react";
+import { clearOfflinePages } from "@/lib/offline/install";
 
 export function NavUser({ user }) {
     const { isMobile } = useSidebar();
@@ -93,9 +94,11 @@ export function NavUser({ user }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuSeparator />
-                        <Link 
-                            method="post" 
+                        <Link
+                            method="post"
                             href={route("logout")}
+                            // Cached pages hold this user's data; queued reports stay for their next login.
+                            onClick={() => clearOfflinePages()}
                             onSuccess={() => {
                                 // Force full page reload to clear CSRF token
                                 window.location.href = '/';

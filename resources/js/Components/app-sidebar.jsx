@@ -7,6 +7,7 @@ import { RiMenuFold2Fill } from "react-icons/ri";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
+import InstallAppButton from "@/Components/InstallAppButton";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
     Sidebar,
@@ -597,6 +598,7 @@ export function AppSidebar({ ...props }) {
             </SidebarContent>
 
             <SidebarFooter className="bg-blue-600 text-white border-t border-blue-500">
+                <InstallAppButton variant="sidebar" />
                 <NavUser user={data.user} />
             </SidebarFooter>
             <SidebarRail />

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <title>Offline - Situational Report</title>
+    <!-- Static fallback served by the service worker; the app's CSS may not be cached, so styles are inline. -->
+    <style>
+        :root { color-scheme: light dark; --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #475569; --border: #e2e8f0; --primary: #2563eb; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #0b1120; --card: #111827; --text: #f8fafc; --muted: #cbd5e1; --border: #1f2937; --primary: #60a5fa; } }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+        main { width: 100%; max-width: 28rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+        h1 { margin: 0 0 8px; font-size: 1.25rem; }
+        p { margin: 0 0 12px; color: var(--muted); }
+        button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--primary); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+        button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>You're offline</h1>
+        <p>This page hasn't been saved on this device yet, so it can't open without internet.</p>
+        <p>Pages you have opened before while online (like Situation Reports) still work offline. Reports you save offline are kept on this device and sent automatically when you're back online.</p>
+        <button type="button" onclick="history.length > 1 ? history.back() : location.reload()">Go back</button>
+    </main>
+</body>
+</html>

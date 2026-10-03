@@ -117,7 +117,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     });
 
     // ============= FORM ROUTES (Requires Active Typhoon) =============
-    Route::middleware(['typhoon.active'])->group(function () {
+    // offline.sync only acts on saves sent later from a device's offline queue.
+    Route::middleware(['typhoon.active', 'offline.sync'])->group(function () {
 
         /* ---------------- Weather Reports (new API routes) ---------------- */
         Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])

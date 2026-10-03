@@ -27,7 +27,8 @@ document.addEventListener('visibilitychange', () => {
 axios.interceptors.response.use(
     response => response,
     error => {
-        if (error.response?.status === 419) {
+        // Background sends of offline saves must not reload the page the user is working in.
+        if (error.response?.status === 419 && !error.config?.offlineSync) {
             // CSRF token expired, reload the page
             window.location.reload();
         }
