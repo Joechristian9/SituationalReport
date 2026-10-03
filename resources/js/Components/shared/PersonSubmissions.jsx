@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { AppSidebar } from '@/Components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/Components/ui/sidebar';
@@ -16,6 +16,8 @@ import {
     Building2,
     ChevronLeft,
     ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
     Clock,
     HeartPulse,
     MapPin,
@@ -68,6 +70,14 @@ const CATEGORIES = [
     { key: 'injured', label: 'Injured', routeName: 'admin.injured.submissions', icon: HeartPulse, accent: 'warning' },
     { key: 'missing', label: 'Missing', routeName: 'admin.missing.submissions', icon: UserSearch, accent: 'info' },
 ];
+
+// Text size choices for the records list (saved per browser).
+const TEXT_SIZES = {
+    sm: { label: 'Small', name: 'text-sm', meta: 'text-xs', chip: 'text-xs' },
+    md: { label: 'Medium', name: 'text-base', meta: 'text-sm', chip: 'text-sm' },
+    lg: { label: 'Large', name: 'text-lg', meta: 'text-base', chip: 'text-base' },
+};
+const TEXT_SIZE_KEY = 'submissions.textSize';
 
 const EMPTY_STATS = { total: 0, male: 0, female: 0, submitters: 0, latest_at: null };
 
@@ -179,52 +189,104 @@ function FilterChip({ label, onRemove }) {
     );
 }
 
+function PageNav({ url, label, className = '', children }) {
+    const classes = `h-10 w-10 p-0 md:h-9 md:w-9 ${className}`;
+    return url ? (
+        <Button asChild variant="outline" className={classes}>
+            <Link href={url} preserveScroll preserveState aria-label={label}>
+                {children}
+            </Link>
+        </Button>
+    ) : (
+        <Button variant="outline" className={classes} disabled aria-label={label}>
+            {children}
+        </Button>
+    );
+}
+
 function Pagination({ records }) {
     if (records.last_page <= 1) return null;
 
     const pages = (records.links || []).slice(1, -1);
-
-    const NavButton = ({ url, label, children }) =>
-        url ? (
-            <Button asChild variant="outline" size="sm" className="h-10 w-10 p-0 md:h-8 md:w-8">
-                <Link href={url} preserveScroll preserveState aria-label={label}>
-                    {children}
-                </Link>
-            </Button>
-        ) : (
-            <Button variant="outline" size="sm" className="h-10 w-10 p-0 md:h-8 md:w-8" disabled aria-label={label}>
-                {children}
-            </Button>
-        );
+    const onFirst = records.current_page === 1;
+    const onLast = records.current_page === records.last_page;
 
     return (
         <nav className="flex items-center gap-1" aria-label="Pagination">
-            <NavButton url={records.prev_page_url} label="Previous page">
-                <ChevronLeft className="h-4 w-4" />
-            </NavButton>
-            {pages.map((link, i) =>
-                link.url ? (
-                    <Button
-                        key={`${link.label}-${i}`}
-                        asChild
-                        size="sm"
-                        variant={link.active ? 'default' : 'outline'}
-                        className="h-10 min-w-10 px-2 tabular-nums md:h-8 md:min-w-8"
-                    >
-                        <Link href={link.url} preserveScroll preserveState aria-current={link.active ? 'page' : undefined}>
-                            {link.label}
-                        </Link>
-                    </Button>
-                ) : (
-                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-sm text-muted-foreground">
-                        …
-                    </span>
-                ),
-            )}
-            <NavButton url={records.next_page_url} label="Next page">
-                <ChevronRight className="h-4 w-4" />
-            </NavButton>
+            <PageNav url={onFirst ? null : records.first_page_url} label="First page" className="hidden sm:inline-flex">
+                <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
+            </PageNav>
+            <PageNav url={records.prev_page_url} label="Previous page">
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </PageNav>
+
+            {/* Phones: page summary instead of numbered buttons */}
+            <span className="min-w-24 px-2 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
+                Page {records.current_page} of {records.last_page}
+            </span>
+
+            <ul className="hidden items-center gap-1 sm:flex">
+                {pages.map((link, i) => (
+                    <li key={`${link.label}-${i}`}>
+                        {link.url ? (
+                            <Button
+                                asChild
+                                variant={link.active ? 'default' : 'ghost'}
+                                className="h-9 min-w-9 px-2 tabular-nums"
+                            >
+                                <Link
+                                    href={link.url}
+                                    preserveScroll
+                                    preserveState
+                                    aria-current={link.active ? 'page' : undefined}
+                                    aria-label={`Page ${link.label}`}
+                                >
+                                    {link.label}
+                                </Link>
+                            </Button>
+                        ) : (
+                            <span aria-hidden="true" className="px-1.5 text-sm text-muted-foreground">
+                                …
+                            </span>
+                        )}
+                    </li>
+                ))}
+            </ul>
+
+            <PageNav url={records.next_page_url} label="Next page">
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </PageNav>
+            <PageNav url={onLast ? null : records.last_page_url} label="Last page" className="hidden sm:inline-flex">
+                <ChevronsRight className="h-4 w-4" aria-hidden="true" />
+            </PageNav>
         </nav>
+    );
+}
+
+function TextSizeControl({ value, onChange }) {
+    const glyph = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' };
+    return (
+        <div role="radiogroup" aria-label="Text size" className="inline-flex rounded-md border bg-card p-0.5">
+            {Object.entries(TEXT_SIZES).map(([key, size]) => {
+                const active = key === value;
+                return (
+                    <button
+                        key={key}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        aria-label={`${size.label} text`}
+                        title={`${size.label} text`}
+                        onClick={() => onChange(key)}
+                        className={`flex h-9 w-9 items-center justify-center rounded font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-7 md:w-7 ${glyph[key]} ${
+                            active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                    >
+                        A
+                    </button>
+                );
+            })}
+        </div>
     );
 }
 
@@ -250,6 +312,23 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const [textSize, setTextSize] = useState(() => {
+        try {
+            const saved = window.localStorage.getItem(TEXT_SIZE_KEY);
+            return TEXT_SIZES[saved] ? saved : 'md';
+        } catch {
+            return 'md';
+        }
+    });
+    const sz = TEXT_SIZES[textSize];
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(TEXT_SIZE_KEY, textSize);
+        } catch {
+            // storage unavailable (private mode); the choice just won't persist
+        }
+    }, [textSize]);
     const perPage = Number(filters.per_page) || 20;
 
     const advancedCount = [filters.user_id, filters.date_from, filters.date_to].filter(Boolean).length;
@@ -550,7 +629,10 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     </span>
                                 </h2>
                                 {records.data.length > 0 && (
-                                    <p className="hidden text-xs text-muted-foreground sm:block">Select a record to see the full details</p>
+                                    <div className="flex items-center gap-3">
+                                        <p className="hidden text-xs text-muted-foreground lg:block">Select a record to see the full details</p>
+                                        <TextSizeControl value={textSize} onChange={setTextSize} />
+                                    </div>
                                 )}
                             </div>
 
@@ -573,11 +655,11 @@ export default function PersonSubmissions({ config, records, users = [], filters
 
                                                     <span className="min-w-0 flex-1">
                                                         <span className="flex flex-wrap items-baseline gap-x-2">
-                                                            <span className="font-medium text-foreground">{record.name || 'No name'}</span>
-                                                            <span className="text-xs text-muted-foreground">{ageSex(record)}</span>
+                                                            <span className={`font-medium text-foreground ${sz.name}`}>{record.name || 'No name'}</span>
+                                                            <span className={`text-muted-foreground ${sz.meta}`}>{ageSex(record)}</span>
                                                         </span>
                                                         {record.address && (
-                                                            <span className="mt-0.5 flex items-start gap-1 text-sm text-muted-foreground">
+                                                            <span className={`mt-0.5 flex items-start gap-1 text-muted-foreground ${sz.meta}`}>
                                                                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                                                 <span className="line-clamp-1">{record.address}</span>
                                                             </span>
@@ -590,7 +672,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                                     <span
                                                                         key={col.key}
                                                                         title={`${col.label}: ${value}`}
-                                                                        className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs"
+                                                                        className={`inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 ${sz.chip}`}
                                                                     >
                                                                         <span className="shrink-0 text-muted-foreground">{col.label}:</span>
                                                                         <span className="max-w-[16rem] truncate font-medium text-foreground">{value}</span>
@@ -598,13 +680,13 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                                 );
                                                             })}
                                                         </span>
-                                                        <span className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground sm:hidden">
+                                                        <span className={`mt-2 flex items-center gap-1.5 text-muted-foreground sm:hidden ${sz.meta}`}>
                                                             <Users className="h-3.5 w-3.5" aria-hidden="true" />
                                                             {record.user?.name || 'Unknown'} · {formatDay(record.created_at) || '—'}
                                                         </span>
                                                     </span>
 
-                                                    <span className="hidden shrink-0 text-right text-xs tabular-nums sm:block">
+                                                    <span className={`hidden shrink-0 text-right tabular-nums sm:block ${sz.meta}`}>
                                                         <span className="flex items-center justify-end gap-1.5 font-medium text-foreground">
                                                             <Users className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                                                             {record.user?.name || 'Unknown'}
@@ -621,11 +703,12 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                         ))}
                                     </ul>
 
-                                    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-sm tabular-nums text-muted-foreground">
-                                            Showing {records.from}–{records.to} of {records.total}
+                                    <div className="flex flex-col gap-3 border-t bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                                        <p className="text-sm tabular-nums text-muted-foreground" aria-live="polite">
+                                            Showing <span className="font-medium text-foreground">{records.from}–{records.to}</span> of{' '}
+                                            <span className="font-medium text-foreground">{records.total}</span>
                                         </p>
-                                        <div className="flex flex-wrap items-center gap-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
                                             <RowsPerPage
                                                 rowsPerPage={perPage}
                                                 setRowsPerPage={(n) => visit({ per_page: n === 20 ? '' : n, page: '' })}
