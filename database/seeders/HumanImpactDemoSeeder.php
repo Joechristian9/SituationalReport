@@ -30,7 +30,7 @@ class HumanImpactDemoSeeder extends Seeder
 
     private const SURNAMES = ['Dela Cruz', 'Bautista', 'Garcia', 'Reyes', 'Santos', 'Ramos', 'Mendoza', 'Aquino', 'Agustin', 'Pascual', 'Domingo', 'Castillo', 'Tumaliuan', 'Taguinod', 'Baquiran', 'Binag', 'Guzman', 'Mallillin', 'Cabildo', 'Pagulayan', 'Aggabao', 'Furigay', 'Tamayo', 'Respicio', 'Andres', 'Ventura', 'Soriano', 'Villanueva', 'Galang', 'Abad', 'Lappay', 'Talosig', 'Sibal', 'Maddela', 'Ancheta', 'Dumlao', 'Caranguian', 'Battung', 'Cauilan', 'Gumabay'];
 
-    private const HOTSPOTS = ['Alibagu', 'Baligatan', 'Bagumbayan', 'San Felipe', 'Santa Barbara', 'Minabang', 'Fugu', 'Bigao', 'Calamagui 1st', 'Camunatan', 'Rugao', 'Sindon Bayabo'];
+    private const HOTSPOTS = ['Alibagu', 'Baligatan', 'Bagumbayan', 'San Felipe', 'Santa Barbara (Poblacion)', 'Minabang', 'Fugu', 'Bigao', 'Calamagui 1st', 'Camunatan', 'Rugao', 'Sindon Bayabo'];
 
     private const CAUSES_OF_DEATH = [
         'Drowning due to flash flood', 'Drowning while crossing the Ilagan River', 'Swept away by strong current',

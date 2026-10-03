@@ -59,11 +59,8 @@ git pull origin main
 # 4. Install Faker
 composer require fakerphp/faker --dev
 
-# 5. Run ONLY the new seeders (doesn't delete existing data)
+# 5. Run ONLY the year seeder (doesn't delete existing data)
 php artisan db:seed --class=YearSeeder
-php artisan db:seed --class=CasualtySeeder
-php artisan db:seed --class=InjuredSeeder
-php artisan db:seed --class=MissingSeeder
 
 # 6. Clear caches
 php artisan optimize:clear

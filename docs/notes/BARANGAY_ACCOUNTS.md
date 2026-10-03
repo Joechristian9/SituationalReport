@@ -112,15 +112,15 @@ All barangay accounts have:
 
 ## Usage
 
-To create/update all barangay accounts, run:
+To create any missing barangay accounts, run:
 
 ```bash
-php artisan db:seed --class=BarangayAccountsSeeder
+php artisan db:seed --class=BarangaySeeder
 ```
 
 This will:
 - Create new barangay accounts if they don't exist
-- Update existing accounts with the new password
+- Leave existing accounts (and their passwords) untouched
 - Assign the 'user' role
 - Grant barangay-specific permissions (6 forms)
 

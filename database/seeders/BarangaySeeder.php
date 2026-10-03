@@ -4,169 +4,151 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 
+/**
+ * One login per barangay of Ilagan City (email: barangay name, lowercase, no spaces,
+ * ending in @barangay.local). Existing accounts are left untouched, so re-running it
+ * only adds missing barangays and never resets a password.
+ */
 class BarangaySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+    private const BARANGAYS = [
+        'Aggasian',
+        'Alibagu',
+        'Alinguigan 1st',
+        'Alinguigan 2nd',
+        'Alinguigan 3rd',
+        'Arusip',
+        'Baculud',
+        'Bagong Silang',
+        'Bagumbayan',
+        'Baligatan',
+        'Ballacong',
+        'Bangag',
+        'Batong-Labang',
+        'Bigao',
+        'Cabannungan 1st',
+        'Cabannungan 2nd',
+        'Cabeseria 2 (Dappat)',
+        'Cabeseria 3 (San Fernando)',
+        'Cabeseria 4 (San Manuel)',
+        'Cabeseria 5 (Baribad)',
+        'Cabeseria 6 and 24 (Villa Marcos)',
+        'Cabeseria 7 (Nangalisan)',
+        'Cabeseria 9 and 11 (Capogotan)',
+        'Cabeseria 10 (Lupigui)',
+        'Cabeseria 14 and 16 (Casilagan)',
+        'Cabeseria 17 and 21 (San Rafael)',
+        'Cabeseria 19 (Villa Suerte)',
+        'Cabeseria 22 (Sablang)',
+        'Cabeseria 23 (San Francisco)',
+        'Cabeseria 25 (Santa Lucia)',
+        'Cabeseria 27 (Abuan)',
+        'Cadu',
+        'Calamagui 1st',
+        'Calamagui 2nd',
+        'Camunatan',
+        'Capellan',
+        'Capo',
+        'Carikkikan Norte',
+        'Carikkikan Sur',
+        'Centro – San Antonio',
+        'Centro Poblacion',
+        'Fugu',
+        'Fuyo',
+        'Gayong-Gayong Norte',
+        'Gayong-Gayong Sur',
+        'Guinatan',
+        'Imelda Bliss Village',
+        'Lullutan',
+        'Malalam',
+        'Malasin (Angeles)',
+        'Manaring',
+        'Mangcuram',
+        'Marana I',
+        'Marana II',
+        'Marana III',
+        'Minabang',
+        'Morado',
+        'Naguilian Norte',
+        'Naguilian Sur',
+        'Namnama',
+        'Nanaguan',
+        'Osmeña (Sinippil)',
+        'Paliueg',
+        'Pasa',
+        'Pilar',
+        'Quimalabasa',
+        'Rang-ayan (Bintacan)',
+        'Rugao',
+        'Salindingan',
+        'San Andres (Angarilla)',
+        'San Felipe',
+        'San Ignacio (Canapi)',
+        'San Isidro',
+        'San Juan',
+        'San Lorenzo',
+        'San Pablo',
+        'San Rodrigo',
+        'San Vicente (Poblacion)',
+        'Santa Barbara (Poblacion)',
+        'Santa Catalina',
+        'Santa Isabel Norte',
+        'Santa Isabel Sur',
+        'Santa Maria (Cabeseria 8)',
+        'Santa Victoria',
+        'Santo Tomas',
+        'Siffu',
+        'Sindon Bayabo',
+        'Sindon Maride',
+        'Sipay',
+        'Tangcul',
+        'Villa Imelda (Maplas)',
+    ];
+
+    // Barangays submit only these forms (no electricity or water service).
+    private const PERMISSIONS = [
+        'access-weather-form',
+        'access-communication-form',
+        'access-road-form',
+        'access-bridge-form',
+        'access-pre-emptive-form',
+        'access-incident-form',
+    ];
+
     public function run(): void
     {
-        // Get or create the user role
-        $userRole = Role::firstOrCreate(['name' => 'user']);
+        $role = Role::firstOrCreate(['name' => 'user']);
+        $created = 0;
 
-        // All 91 barangays in Ilagan City
-        $barangays = [
-            'Aggassian',
-            'Alibagu',
-            'Allinguigan 1st',
-            'Allinguigan 2nd',
-            'Allinguigan 3rd',
-            'Arusip',
-            'Baculod',
-            'Bagong Silang',
-            'Bagumbayan',
-            'Balmadrid',
-            'Barangay I (Poblacion)',
-            'Barangay II (Poblacion)',
-            'Barangay III (Poblacion)',
-            'Barangay IV (Poblacion)',
-            'Batong-Labang',
-            'Bigao',
-            'Bintawan',
-            'Buenavista',
-            'Buyasan',
-            'Cadu',
-            'Calamagui 1st',
-            'Calamagui 2nd',
-            'Camunatan',
-            'Capellan',
-            'Capo',
-            'Carikkikan Norte',
-            'Carikkikan Sur',
-            'Centro San Antonio',
-            'Cinaratan',
-            'Dalibubon',
-            'Defensor',
-            'Dibuluan',
-            'District I (Poblacion)',
-            'District II (Poblacion)',
-            'District III (Poblacion)',
-            'District IV (Poblacion)',
-            'Fugu',
-            'Guinatan',
-            'Lullutan',
-            'Mabasa',
-            'Mabuno',
-            'Magsaysay',
-            'Maksulop',
-            'Malalam',
-            'Manasse',
-            'Minabang',
-            'Minallo',
-            'Namnama',
-            'Nanaguan',
-            'Ngarag',
-            'Osmeña',
-            'Palacian',
-            'Pilar',
-            'Pisang',
-            'Quezon',
-            'Rang-ayan',
-            'Rizal',
-            'Raniag',
-            'Rugao',
-            'Salindingan',
-            'Salvador',
-            'San Agustin',
-            'San Felipe',
-            'San Isidro',
-            'San Juan',
-            'San Pablo',
-            'San Vicente',
-            'Santa Barbara',
-            'Santa Catalina',
-            'Santa Isabel (Sab-it)',
-            'Santa Monica',
-            'Santa Rosa',
-            'Santa Victoria',
-            'Santo Tomas',
-            'Siffu',
-            'Sindon Bayabo',
-            'Sindon Maride',
-            'Sipay',
-            'San Antonio (Tangcul)',
-            'Tangcul (San Antonio)',
-            'Tupax',
-            'Villa Alicia',
-            'Villa Imelda (Maplas)',
-            'Villa Marcos',
-            'Villa Rey',
-            'Villafuerte',
-            'Villaluz',
-            'Villanueva',
-            'Union',
-            'Catabayungan',
-            'Baligatan',
-            'Annafunan East'
-        ];
+        foreach (self::BARANGAYS as $barangay) {
+            $user = User::firstOrNew(['email' => $this->email($barangay)]);
+            if ($user->exists) {
+                continue;
+            }
 
-        // Barangay-specific permissions (only 6 forms)
-        $barangayPermissions = [
-            'access-weather-form',
-            'access-communication-form',
-            'access-road-form',
-            'access-bridge-form',
-            'access-pre-emptive-form',
-            'access-incident-form',
-        ];
-
-        // Create user for each barangay
-        foreach ($barangays as $barangay) {
-            // Generate email from barangay name
-            $email = $this->generateEmail($barangay);
-            
-            $user = User::factory()->create([
+            $user->forceFill([
                 'name' => $barangay,
-                'email' => $email,
-                'password' => bcrypt('wardead123'),
-            ]);
-            
-            $user->assignRole($userRole);
-            // Give barangay users specific permissions (excluding electricity and water service)
-            $user->givePermissionTo($barangayPermissions);
+                'password' => Hash::make('wardead123'),
+                'email_verified_at' => now(),
+            ])->save();
+            $user->assignRole($role);
+            $user->givePermissionTo(self::PERMISSIONS);
+            $created++;
         }
+
+        $this->command->info("Barangay accounts: {$created} created, ".(count(self::BARANGAYS) - $created).' already existed.');
     }
 
-    /**
-     * Generate email from barangay name
-     * Rules:
-     * 1. Convert to lowercase
-     * 2. Remove content in parentheses
-     * 3. Remove special characters (except spaces and numbers)
-     * 4. Replace spaces with dots (.)
-     * 5. Add @barangay.local domain
-     */
-    private function generateEmail(string $barangayName): string
+    /** "Cabeseria 2 (Dappat)" → "cabeseria2@barangay.local" */
+    private function email(string $barangay): string
     {
-        // Convert to lowercase
-        $email = strtolower($barangayName);
-        
-        // Remove content in parentheses
+        $email = strtolower($barangay);
         $email = preg_replace('/\s*\([^)]*\)/', '', $email);
-        
-        // Remove special characters except spaces and numbers
-        $email = preg_replace('/[^a-z0-9\s]/', '', $email);
-        
-        // Replace spaces with dots
-        $email = str_replace(' ', '.', $email);
-        
-        // Trim any extra dots
-        $email = trim($email, '.');
-        
-        // Add domain
-        return $email . '@barangay.local';
+        $email = preg_replace('/[^a-z0-9]/', '', $email);
+
+        return $email.'@barangay.local';
     }
 }

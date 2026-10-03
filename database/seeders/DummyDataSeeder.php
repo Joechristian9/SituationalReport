@@ -3,16 +3,16 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class DummyDataSeeder extends Seeder
 {
     public function run(): void
     {
         $adminUser = User::where('email', 'admin@gmail.com')->first();
-        
+
         // Disaster names with types
         $disastersData = [
             ['name' => 'Tropical Storm Aghon', 'type' => 'Tropical Storm'],
@@ -64,7 +64,7 @@ class DummyDataSeeder extends Seeder
             ['name' => 'Typhoon Gener', 'type' => 'Typhoon'],
             ['name' => 'Regional Disaster', 'type' => 'Other'],
             ['name' => 'Heavy Rainfall Alert', 'type' => 'Heavy Rainfall'],
-            ['name' => 'Severe Storm Event', 'type' => 'Other']
+            ['name' => 'Severe Storm Event', 'type' => 'Other'],
         ];
 
         $descriptions = [
@@ -77,17 +77,17 @@ class DummyDataSeeder extends Seeder
             'Intense weather disturbance with heavy precipitation',
             'Emergency situation requiring evacuation and rescue operations',
             'Critical weather event with significant infrastructure damage',
-            'Multi-hazard disaster affecting agricultural and residential areas'
+            'Multi-hazard disaster affecting agricultural and residential areas',
         ];
 
         $disasterIds = [];
-        
+
         // Create 50 disasters with varied statuses and dates
         for ($i = 0; $i < 50; $i++) {
             // Most recent disaster (active) starts 3 days ago, others go back in time
             $daysAgo = $i === 0 ? 3 : (30 + ($i * 7));
             $startDate = Carbon::now()->subDays($daysAgo);
-            
+
             // Determine status: most recent is active, rest are ended
             if ($i === 0) {
                 $status = 'active';
@@ -98,7 +98,7 @@ class DummyDataSeeder extends Seeder
                 $endDate = $startDate->copy()->addDays(rand(3, 10));
                 $endedBy = $adminUser->id;
             }
-            
+
             $disasterIds[] = DB::table('disasters')->insertGetId([
                 'name' => $disastersData[$i]['name'],
                 'disaster_type' => $disastersData[$i]['type'],
@@ -193,7 +193,7 @@ class DummyDataSeeder extends Seeder
                 }
             }
         }
-        
+
         $this->command->info('Created weather reports for all disasters...');
 
         // Water Levels
@@ -337,7 +337,7 @@ class DummyDataSeeder extends Seeder
                 $persons = $families * 4;
                 $outsideFamilies = max(0, $data['outside_families'] + rand(-5, 10));
                 $outsidePersons = $outsideFamilies * 4;
-                
+
                 DB::table('pre_emptive_reports')->insert([
                     'disaster_id' => $disasterId,
                     'user_id' => $cswdoUser->id,
@@ -442,103 +442,6 @@ class DummyDataSeeder extends Seeder
         $this->command->info('- 50 Disasters created with comprehensive history (various disaster types)');
         $this->command->info('- Weather reports for Ilagan with varying conditions (250 reports)');
         $this->command->info('- Water levels, electricity, water services for all disasters');
-        
-        // Casualties (Dead) - More realistic data with varied barangays
-        $casualtiesData = [
-            ['name' => 'Juan Dela Cruz', 'age' => 45, 'sex' => 'Male', 'address' => 'Purok 3, Barangay San Vicente, Ilagan City', 'cause_of_death' => 'Drowning due to flash flood', 'place_of_incident' => 'Cagayan River near San Vicente Bridge'],
-            ['name' => 'Maria Santos', 'age' => 32, 'sex' => 'Female', 'address' => 'Sitio Malaya, Barangay Alibagu, Ilagan City', 'cause_of_death' => 'Landslide buried residence', 'place_of_incident' => 'Mountain slope, Barangay Alibagu'],
-            ['name' => 'Pedro Reyes', 'age' => 58, 'sex' => 'Male', 'address' => 'Purok 5, Barangay Marana, Ilagan City', 'cause_of_death' => 'Crushed by fallen tree', 'place_of_incident' => 'Maharlika Highway Km 424'],
-            ['name' => 'Rosa Villanueva', 'age' => 67, 'sex' => 'Female', 'address' => 'Purok 2, Barangay Calamagui 1st, Ilagan City', 'cause_of_death' => 'Heart attack during evacuation', 'place_of_incident' => 'Calamagui Evacuation Center'],
-            ['name' => 'Antonio Pascual', 'age' => 41, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Naguilian, Ilagan City', 'cause_of_death' => 'Electrocution from downed power line', 'place_of_incident' => 'Barangay Naguilian Road'],
-            ['name' => 'Carmen Lopez', 'age' => 29, 'sex' => 'Female', 'address' => 'Purok 7, Barangay Fugu, Ilagan City', 'cause_of_death' => 'Swept away by strong current', 'place_of_incident' => 'Pinacanauan River crossing'],
-            ['name' => 'Ricardo Tan', 'age' => 52, 'sex' => 'Male', 'address' => 'Purok 4, Barangay Bagong Bayan, Ilagan City', 'cause_of_death' => 'Collapsed house roof', 'place_of_incident' => 'Residential area, Bagong Bayan'],
-            ['name' => 'Luz Fernandez', 'age' => 38, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Malalam, Ilagan City', 'cause_of_death' => 'Hypothermia and drowning', 'place_of_incident' => 'Flooded rice fields'],
-        ];
-
-        // Get the FIRST disaster (which is the active one)
-        $activeDisasterId = DB::table('disasters')->where('status', 'active')->value('id');
-        
-        // Add casualties for active disaster only
-        foreach ($casualtiesData as $data) {
-            DB::table('casualties')->insert([
-                'disaster_id' => $activeDisasterId,
-                'user_id' => $cdrrmoUser->id,
-                'name' => $data['name'],
-                'age' => $data['age'],
-                'sex' => $data['sex'],
-                'address' => $data['address'],
-                'cause_of_death' => $data['cause_of_death'],
-                'date_died' => Carbon::now()->subDays(rand(1, 3)),
-                'place_of_incident' => $data['place_of_incident'],
-                'created_at' => Carbon::now()->subDays(2),
-                'updated_at' => Carbon::now()->subDays(2),
-            ]);
-        }
-
-        // Injured Persons - More realistic data with varied barangays and conditions
-        $injuredData = [
-            ['name' => 'Ana Garcia', 'age' => 28, 'sex' => 'Female', 'address' => 'Purok 6, Barangay San Felipe, Ilagan City', 'diagnosis' => 'Fractured left leg, minor lacerations', 'place_of_incident' => 'Collapsed house roof', 'remarks' => 'Stable condition, admitted to Ilagan City Hospital'],
-            ['name' => 'Roberto Cruz', 'age' => 41, 'sex' => 'Male', 'address' => 'Purok 3, Barangay Bagong Bayan, Ilagan City', 'diagnosis' => 'Head trauma, multiple contusions', 'place_of_incident' => 'Hit by flying debris', 'remarks' => 'Under observation, recovering well'],
-            ['name' => 'Elena Mendoza', 'age' => 35, 'sex' => 'Female', 'address' => 'Purok 2, Barangay Centro (Poblacion), Ilagan City', 'diagnosis' => 'Sprained ankle, minor cuts', 'place_of_incident' => 'Slipped on flooded street', 'remarks' => 'Treated and released'],
-            ['name' => 'Carlos Ramos', 'age' => 52, 'sex' => 'Male', 'address' => 'Sitio Proper, Barangay Naguilian, Ilagan City', 'diagnosis' => 'Broken right arm, chest injuries', 'place_of_incident' => 'Fallen tree branch', 'remarks' => 'Surgery performed, stable'],
-            ['name' => 'Luz Bernardo', 'age' => 19, 'sex' => 'Female', 'address' => 'Purok 4, Barangay San Juan, Ilagan City', 'diagnosis' => 'Hypothermia, exhaustion', 'place_of_incident' => 'Rescued from flooded area', 'remarks' => 'Recovering, expected discharge soon'],
-            ['name' => 'Ferdinand Aquino', 'age' => 33, 'sex' => 'Male', 'address' => 'Purok 5, Barangay Marana, Ilagan City', 'diagnosis' => 'Deep lacerations on both legs, severe bruising', 'place_of_incident' => 'Trapped under collapsed fence', 'remarks' => 'Stitches applied, stable condition'],
-            ['name' => 'Marissa Dela Torre', 'age' => 44, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Alibagu, Ilagan City', 'diagnosis' => 'Fractured ribs, internal bruising', 'place_of_incident' => 'Fell during evacuation', 'remarks' => 'Admitted for observation'],
-            ['name' => 'Benjamin Santos', 'age' => 26, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Calamagui 2nd, Ilagan City', 'diagnosis' => 'Dislocated shoulder, multiple abrasions', 'place_of_incident' => 'Swept by flood current', 'remarks' => 'Shoulder relocated, recovering'],
-            ['name' => 'Grace Navarro', 'age' => 31, 'sex' => 'Female', 'address' => 'Purok 8, Barangay Fugu, Ilagan City', 'diagnosis' => 'Broken wrist, facial lacerations', 'place_of_incident' => 'Vehicle accident due to flooding', 'remarks' => 'Cast applied, stable'],
-            ['name' => 'Daniel Morales', 'age' => 48, 'sex' => 'Male', 'address' => 'Purok 2, Barangay San Vicente, Ilagan City', 'diagnosis' => 'Severe cuts on hands and arms, shock', 'place_of_incident' => 'Broken glass from windows', 'remarks' => 'Treated for shock, wounds sutured'],
-            ['name' => 'Teresa Gonzales', 'age' => 55, 'sex' => 'Female', 'address' => 'Purok 7, Barangay Malalam, Ilagan City', 'diagnosis' => 'Ankle fracture, back injuries', 'place_of_incident' => 'Fell from elevated area during storm', 'remarks' => 'X-ray done, admitted'],
-            ['name' => 'Jose Valdez', 'age' => 39, 'sex' => 'Male', 'address' => 'Sitio Malaya, Barangay Alibagu, Ilagan City', 'diagnosis' => 'Crushed foot, multiple fractures', 'place_of_incident' => 'Debris from landslide', 'remarks' => 'Surgery required, critical but stable'],
-            ['name' => 'Patricia Reyes', 'age' => 22, 'sex' => 'Female', 'address' => 'Purok 3, Barangay San Juan, Ilagan City', 'diagnosis' => 'Mild concussion, neck strain', 'place_of_incident' => 'Hit by falling branch', 'remarks' => 'Under observation, neck brace applied'],
-            ['name' => 'Ramon Cortez', 'age' => 61, 'sex' => 'Male', 'address' => 'Purok 6, Barangay Calamagui 1st, Ilagan City', 'diagnosis' => 'Leg lacerations, dehydration', 'place_of_incident' => 'Trapped in flooded house', 'remarks' => 'Rehydrated, wounds cleaned'],
-            ['name' => 'Angela Cruz', 'age' => 17, 'sex' => 'Female', 'address' => 'Purok 4, Barangay Centro, Ilagan City', 'diagnosis' => 'Minor burns, smoke inhalation', 'place_of_incident' => 'House fire during storm', 'remarks' => 'Treated, condition improving'],
-        ];
-
-        // Add injured persons for active typhoon only
-        foreach ($injuredData as $data) {
-            DB::table('injureds')->insert([
-                'disaster_id' => $activeDisasterId,
-                'user_id' => $cdrrmoUser->id,
-                'name' => $data['name'],
-                'age' => $data['age'],
-                'sex' => $data['sex'],
-                'address' => $data['address'],
-                'diagnosis' => $data['diagnosis'],
-                'date_admitted' => Carbon::now()->subDays(rand(1, 3)),
-                'place_of_incident' => $data['place_of_incident'],
-                'remarks' => $data['remarks'],
-                'created_at' => Carbon::now()->subDays(2),
-                'updated_at' => Carbon::now()->subDays(2),
-            ]);
-        }
-
-        // Missing Persons - More realistic data with varied circumstances
-        $missingData = [
-            ['name' => 'Miguel Torres', 'age' => 34, 'sex' => 'Male', 'address' => 'Purok 2, Barangay Calamagui 1st, Ilagan City', 'cause' => 'Swept away by strong current while crossing flooded Cagayan River', 'remarks' => 'Search and rescue operations ongoing, last seen 2 days ago'],
-            ['name' => 'Sofia Villanueva', 'age' => 22, 'sex' => 'Female', 'address' => 'Sitio Malaya, Barangay Malalam, Ilagan City', 'cause' => 'Last seen evacuating from landslide-prone area', 'remarks' => 'Family reported missing, search teams deployed to mountain areas'],
-            ['name' => 'Eduardo Santos', 'age' => 16, 'sex' => 'Male', 'address' => 'Purok 5, Barangay San Felipe, Ilagan City', 'cause' => 'Separated from family during flash flood evacuation', 'remarks' => 'Possibly took shelter in nearby barangay, search ongoing'],
-            ['name' => 'Angelina Reyes', 'age' => 58, 'sex' => 'Female', 'address' => 'Purok 1, Barangay Fugu, Ilagan City', 'cause' => 'Did not reach evacuation center, last seen in flooded area', 'remarks' => 'Rescue teams checking neighboring barangays and relatives'],
-            ['name' => 'Christopher Mendoza', 'age' => 42, 'sex' => 'Male', 'address' => 'Sitio Riverside, Barangay Naguilian, Ilagan City', 'cause' => 'Went to check on livestock during height of storm, did not return', 'remarks' => 'Search party deployed, checking rice fields and animal shelters'],
-            ['name' => 'Diana Cruz', 'age' => 27, 'sex' => 'Female', 'address' => 'Purok 4, Barangay Alibagu, Ilagan City', 'cause' => 'Lost contact during landslide incident', 'remarks' => 'Possible buried under debris, rescue equipment deployed'],
-        ];
-
-        // Add missing persons for active typhoon only
-        foreach ($missingData as $data) {
-            DB::table('missing')->insert([
-                'disaster_id' => $activeDisasterId,
-                'user_id' => $cdrrmoUser->id,
-                'name' => $data['name'],
-                'age' => $data['age'],
-                'sex' => $data['sex'],
-                'address' => $data['address'],
-                'cause' => $data['cause'],
-                'remarks' => $data['remarks'],
-                'created_at' => Carbon::now()->subDays(2),
-                'updated_at' => Carbon::now()->subDays(2),
-            ]);
-        }
-
-        $this->command->info('- Casualties: 8 dead, 15 injured, 6 missing (for active disaster)');
         $this->command->info('- Roads and bridges status for all disasters');
         $this->command->info('- Pre-emptive evacuations with varied numbers');
         $this->command->info('- Incidents monitored for all disasters');

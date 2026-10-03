@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
 
         $iselco2 = User::factory()->create([
             'name' => 'Iselco II',
-            'email' => 'iselco2@gmail.com',                
+            'email' => 'iselco2@gmail.com',
             'password' => bcrypt('wardead123'),
         ]);
         $iselco2->assignRole($role);
@@ -152,10 +152,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BarangaySeeder::class,
             DummyDataSeeder::class,
+            // Needs the barangay accounts and the active disaster created above.
+            HumanImpactDemoSeeder::class,
             YearSeeder::class,
-            // CasualtySeeder, InjuredSeeder, MissingSeeder are REMOVED
-            // because they truncate tables and create random data
-            // DummyDataSeeder already creates properly linked data
         ]);
     }
 }

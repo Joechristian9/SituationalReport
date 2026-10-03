@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * database (no row limits), for the admin dashboard visualizations.
  *
  * "Barangay" is the submitting account: every barangay has its own user account
- * named after it, with an email ending in @barangay.local (see BarangayAccountsSeeder).
+ * named after it, with an email ending in @barangay.local (see BarangaySeeder).
  * Any other account (e.g. CDRRMO) is flagged as an office so it is not mistaken for a barangay.
  */
 class HumanImpactStats
