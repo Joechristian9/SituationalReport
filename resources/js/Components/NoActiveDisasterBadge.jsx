@@ -21,10 +21,12 @@ export default function NoActiveTyphoonBadge({ typhoon, hasActive }) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-full shadow-md"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-600 px-2.5 py-1.5 text-white shadow-md sm:gap-2 sm:px-4 sm:py-2"
         >
-            <AlertCircle className="w-5 h-5" />
-            <span className="text-sm font-semibold">No Active Disaster</span>
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+            <span className="whitespace-nowrap text-xs font-semibold sm:text-sm">
+                No <span className="hidden sm:inline">Active </span>Disaster
+            </span>
         </motion.div>
     );
 }

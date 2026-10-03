@@ -28,7 +28,7 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
     }
 
     return (
-        <div className="relative flex items-center gap-3">
+        <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
             {/* Notification Bell Icon (only show when paused) */}
             {isPaused && (
                 <motion.button
@@ -48,20 +48,22 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md ${
-                    isPaused 
-                        ? 'bg-amber-500 text-white' 
+                className={`flex min-w-0 max-w-[11rem] items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-md sm:max-w-xs sm:gap-2 sm:px-3 ${
+                    isPaused
+                        ? 'bg-amber-500 text-white'
                         : 'bg-blue-500 text-white'
                 }`}
+                title={`${typhoon.name} · ${isPaused ? 'Paused' : 'Active'}`}
             >
-                <Cloud className="w-4 h-4" />
-                <span className="text-sm font-semibold">{typhoon.name}</span>
+                <Cloud className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="truncate text-xs font-semibold sm:text-sm">{typhoon.name}</span>
                 {isActive && (
-                    <Badge className="bg-white text-blue-600 hover:bg-white/90 text-xs px-2 py-0.5">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Active
+                    <Badge className="shrink-0 bg-white px-1.5 py-0.5 text-xs text-blue-600 hover:bg-white/90 sm:px-2">
+                        <CheckCircle className="h-3 w-3 sm:mr-1" aria-hidden="true" />
+                        <span className="sr-only sm:not-sr-only">Active</span>
                     </Badge>
                 )}
+                {isPaused && <span className="sr-only">Paused</span>}
             </motion.div>
 
             {/* Notification Popup */}
@@ -72,7 +74,7 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-amber-200 z-50"
+                        className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] bg-white rounded-xl shadow-2xl border border-amber-200 z-50"
                     >
                         <div className="p-4">
                             <div className="flex items-start justify-between mb-3">

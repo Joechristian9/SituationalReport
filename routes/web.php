@@ -318,8 +318,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Admin Dashboard - show data for both active and paused disasters
     Route::get('dashboard', function () {
-        // Show data for active or paused disasters (graphs should show historical data)
-        $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->first();
+        // Show data for active or paused disasters (graphs should show historical data).
+        // latest() matches the shared `typhoon.active` prop, so the header and the data agree.
+        $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
         
         if (!$activeTyphoon) {
             // No disaster at all - return empty data

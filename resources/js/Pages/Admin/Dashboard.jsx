@@ -13,6 +13,7 @@ import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
 import ImpactFilters from "@/Components/Graphs/ImpactFilters";
 import ImpactStatCards from "@/Components/Graphs/ImpactStatCards";
+import DisasterContextBar from "@/Components/DisasterContextBar";
 
 // Lazy load heavy components - only load when needed
 const WeatherDashboard = lazy(() => import("@/Components/Weather/WeatherDashboard"));
@@ -108,17 +109,17 @@ export default function Dashboard({
             <Head title="Dashboard" />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
+                    <div className="flex min-w-0 items-center gap-2">
+                        <SidebarTrigger className="-ml-2 shrink-0" />
                         <Separator
                             orientation="vertical"
-                            className="h-6 mx-2"
+                            className="mx-1 h-6 shrink-0 sm:mx-2"
                         />
-                        <div>
-                            <h1 className="text-lg sm:text-xl font-semibold text-blue-700">
+                        <div className="min-w-0">
+                            <h1 className="truncate text-base font-semibold text-blue-700 sm:text-xl">
                                 Welcome, {auth.user.name}!
                             </h1>
-                            <p className="text-xs text-gray-500">
+                            <p className="hidden truncate text-xs text-gray-500 sm:block">
                                 Glad to have you back! Here’s what’s happening
                                 right now.
                             </p>
@@ -134,7 +135,8 @@ export default function Dashboard({
                     />
                 </header>
 
-                <main className="w-full p-4 sm:p-6 lg:p-8 space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
+                <main className="w-full p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
+                    <DisasterContextBar disaster={typhoon?.active} updatedAt={impactSummary?.generatedAt} />
                     <div className="flex p-1.5 bg-gray-100 rounded-full">
                         <Tab
                             label="Human Impact"
