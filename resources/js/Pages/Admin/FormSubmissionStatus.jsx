@@ -31,8 +31,12 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import axios from 'axios';
+import useLiveRefresh from '@/hooks/useLiveRefresh';
+import LiveIndicator from '@/Components/LiveIndicator';
 
 export default function FormSubmissionStatus({ users, activeTyphoon }) {
+    // Slower than the other pages: this page runs about 20 grouped queries per refresh.
+    const live = useLiveRefresh({ only: ['users', 'activeTyphoon'], interval: 30000 });
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -298,7 +302,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
             </Head>
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
                         <Separator orientation="vertical" className="h-6 mx-2" />
                         <Breadcrumbs
@@ -308,6 +312,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                             ]}
                         />
                     </div>
+                    <LiveIndicator live={live} className="ml-auto" />
                 </header>
 
                 <main className="w-full p-6 bg-gray-50">

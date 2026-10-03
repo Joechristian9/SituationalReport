@@ -1,14 +1,19 @@
-import React, { useState, lazy, Suspense } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { AppSidebar } from "@/Components/app-sidebar";
 import {
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { Head, usePage, usePoll } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
+import useLiveRefresh from "@/hooks/useLiveRefresh";
+import LiveIndicator from "@/Components/LiveIndicator";
+import LiveImpactFeed from "@/Components/LiveImpactFeed";
+import useNewImpactReports from "@/hooks/useNewImpactReports";
+import { Toaster } from "sonner";
 import { Separator } from "@/Components/ui/separator";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { Users, Sun, CloudSun, Loader2 } from "lucide-react";
+import { Users, Sun, CloudSun, Loader2, Radio } from "lucide-react";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
 import ImpactFilters from "@/Components/Graphs/ImpactFilters";
@@ -25,6 +30,7 @@ const InjuredGraph = lazy(() => import("@/Components/Graphs/InjuredGraph"));
 const MissingGraph = lazy(() => import("@/Components/Graphs/MissingGraph"));
 const ImpactTrendChart = lazy(() => import("@/Components/Graphs/ImpactTrendChart"));
 const BarangayImpactChart = lazy(() => import("@/Components/Graphs/BarangayImpactChart"));
+const ImpactHourlyChart = lazy(() => import("@/Components/Graphs/ImpactHourlyChart"));
 
 // Loading fallback component
 const LoadingSpinner = () => (
@@ -34,11 +40,11 @@ const LoadingSpinner = () => (
 );
 
 // Memoized Tab component to prevent unnecessary re-renders
-const Tab = React.memo(({ label, icon, isActive, onClick }) => (
+const Tab = React.memo(({ label, icon, isActive, onClick, count = 0 }) => (
     <button
         type="button"
         onClick={onClick}
-        aria-label={label}
+        aria-label={count > 0 ? `${label}, ${count} new` : label}
         aria-pressed={isActive}
         className={`flex min-h-[40px] items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
             isActive
@@ -47,6 +53,11 @@ const Tab = React.memo(({ label, icon, isActive, onClick }) => (
         }`}
     >
         {icon} <span className="hidden sm:inline">{label}</span>
+        {count > 0 && (
+            <span className="rounded-full bg-destructive px-1.5 text-xs font-bold tabular-nums text-destructive-foreground" aria-hidden="true">
+                {count > 99 ? "99+" : count}
+            </span>
+        )}
     </button>
 ));
 
@@ -77,18 +88,25 @@ export default function Dashboard({
     injured = [],
     missing = [],
     impactSummary = null,
+    recentImpact = [],
     newReportCounts = { casualties: 0, injured: 0, missing: 0 },
 }) {
     const { auth, typhoon } = usePage().props;
 
-    // Refresh human impact data and new-report badges every 30 seconds
-    usePoll(30000, {
-        only: ["casualties", "injured", "missing", "impactSummary", "newReportCounts"],
+    const live = useLiveRefresh({
+        only: ["casualties", "injured", "missing", "impactSummary", "recentImpact", "newReportCounts"],
     });
+    const freshReports = useNewImpactReports(recentImpact);
+    // New reports stay tagged in the feed; the tab badge only counts ones not yet looked at.
+    const [viewedReports, setViewedReports] = useState(() => new Set());
+    const unseenReports = [...freshReports].filter((key) => !viewedReports.has(key)).length;
 
     const totalNewReports =
         newReportCounts.casualties + newReportCounts.injured + newReportCounts.missing;
     const [activeTab, setActiveTab] = useState("impact");
+    useEffect(() => {
+        if (activeTab === "live") setViewedReports(new Set(freshReports));
+    }, [activeTab, freshReports]);
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
     
@@ -108,6 +126,7 @@ export default function Dashboard({
             <AppSidebar />
             <Head title="Dashboard" />
             <SidebarInset>
+                <Toaster position="top-right" richColors />
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <div className="flex min-w-0 items-center gap-2">
                         <SidebarTrigger className="-ml-2 shrink-0" />
@@ -125,14 +144,18 @@ export default function Dashboard({
                             </p>
                         </div>
                     </div>
-                    <ActiveTyphoonHeader
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                    <NoActiveTyphoonBadge
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
+                    {/* Status on the right, together; the title truncates first on narrow screens. */}
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        <ActiveTyphoonHeader
+                            typhoon={typhoon?.active}
+                            hasActive={typhoon?.hasActive}
+                        />
+                        <NoActiveTyphoonBadge
+                            typhoon={typhoon?.active}
+                            hasActive={typhoon?.hasActive}
+                        />
+                        <LiveIndicator live={live} />
+                    </div>
                 </header>
 
                 <main className="w-full p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
@@ -143,6 +166,13 @@ export default function Dashboard({
                             icon={<Users size={16} />}
                             isActive={activeTab === "impact"}
                             onClick={() => setActiveTab("impact")}
+                        />
+                        <Tab
+                            label="Live Feed"
+                            icon={<Radio size={16} />}
+                            isActive={activeTab === "live"}
+                            onClick={() => setActiveTab("live")}
+                            count={unseenReports}
                         />
                         <Tab
                             label="Environment Graphs"
@@ -170,6 +200,22 @@ export default function Dashboard({
                                 {activeTab === "weather" && (
                                     <div>
                                         <WeatherDashboard />
+                                    </div>
+                                )}
+
+                                {activeTab === "live" && (
+                                    <div className="space-y-6">
+                                        <ImpactHourlyChart
+                                            hourly={impactSummary?.hourly || []}
+                                            byBarangay={impactSummary?.barangays24h}
+                                        />
+                                        <LiveImpactFeed
+                                            items={recentImpact}
+                                            totals={impactSummary?.totals}
+                                            fresh={freshReports}
+                                            paused={live.paused}
+                                            disaster={typhoon?.active}
+                                        />
                                     </div>
                                 )}
 

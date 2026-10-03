@@ -35,6 +35,10 @@
     --viz-dead: #e34948;
     --viz-injured: #eda100;
     --viz-missing: #4a3aa7;
+    /* Highlighted barangay lines: only 3 slots pass the all-pairs check; the rest draw in --viz-unknown */
+    --viz-place-1: #2a78d6;
+    --viz-place-2: #eb6834;
+    --viz-place-3: #1baf7a;
     --border: 214 32% 91%;
     --input: 215 20% 65%;
     --ring: 221 83% 53%;
@@ -84,6 +88,9 @@
     --viz-dead: #b52f2f;
     --viz-injured: #b98c00;
     --viz-missing: #9085e9;
+    --viz-place-1: #3987e5;
+    --viz-place-2: #d95926;
+    --viz-place-3: #199e70;
     --border: 217 33% 22%;
     --input: 215 20% 45%;
     --ring: 217 91% 60%;

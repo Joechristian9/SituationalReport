@@ -3,15 +3,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const OPTIONS = [5, 10, 20, 50];
 
-export default function RowsPerPage({ rowsPerPage, setRowsPerPage }) {
+export default function RowsPerPage({ rowsPerPage, setRowsPerPage, choices = OPTIONS, label = "Rows per page" }) {
     const id = useId();
     const current = Number(rowsPerPage);
-    const options = OPTIONS.includes(current) ? OPTIONS : [...OPTIONS, current].sort((a, b) => a - b);
+    const options = choices.includes(current) ? choices : [...choices, current].sort((a, b) => a - b);
 
     return (
         <div className="flex items-center gap-2 text-sm">
             <label htmlFor={id} className="whitespace-nowrap text-muted-foreground">
-                Rows per page
+                {label}
             </label>
             <Select value={String(current)} onValueChange={(value) => setRowsPerPage(Number(value))}>
                 <SelectTrigger id={id} className="h-10 w-[4.5rem] bg-card tabular-nums md:h-9">

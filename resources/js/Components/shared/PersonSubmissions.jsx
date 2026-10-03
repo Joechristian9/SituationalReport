@@ -26,6 +26,8 @@ import {
     X,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import useLiveRefresh from '@/hooks/useLiveRefresh';
+import LiveIndicator from '@/Components/LiveIndicator';
 
 /**
  * Shared layout for the admin Dead / Injured / Missing submission pages.
@@ -195,6 +197,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const accent = ACCENTS[category.accent];
     const Icon = category.icon;
     const summary = { ...EMPTY_STATS, ...(stats || {}) };
+    // The records prop is named after the category (casualties / injured / missing).
+    const live = useLiveRefresh({ only: [config.category, 'stats', 'disaster'] });
 
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [selectedUser, setSelectedUser] = useState(filters.user_id ? String(filters.user_id) : 'all');
@@ -275,6 +279,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                     <span className="text-sm text-muted-foreground">Admin</span>
                     <span className="text-muted-foreground" aria-hidden="true">/</span>
                     <span className="truncate text-sm font-semibold text-foreground">{config.title}</span>
+                    <LiveIndicator live={live} className="ml-auto" />
                 </header>
 
                 <div className="flex-1 overflow-auto bg-muted/40 p-4 sm:p-6">

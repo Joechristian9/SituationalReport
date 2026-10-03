@@ -324,6 +324,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'injured' => [],
                 'missing' => [],
                 'impactSummary' => \App\Services\HumanImpactStats::forDisaster(null),
+                'recentImpact' => [],
                 'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
             ]);
         }
@@ -368,6 +369,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'injured' => $injured,
             'missing' => $missing,
             'impactSummary' => \App\Services\HumanImpactStats::forDisaster($activeTyphoon),
+            'recentImpact' => \App\Services\HumanImpactStats::recent($activeTyphoon, 50),
             'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');

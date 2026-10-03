@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
 import TablePagination, { laravelPagination } from '@/Components/ui/TablePagination';
 import { toast, Toaster } from 'sonner';
+import useLiveRefresh from '@/hooks/useLiveRefresh';
+import LiveIndicator from '@/Components/LiveIndicator';
 import {
     Activity,
     ArrowRight,
@@ -236,6 +238,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const perPage = Number(filters.per_page) || 20;
     const stats = summary || { events: 0, changes: 0, active_users: 0, failed_logins: 0 };
+    const live = useLiveRefresh({ only: ['logs', 'summary'] });
 
     const currentParams = () => ({
         search: filters.search || '',
@@ -333,6 +336,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                     <Separator orientation="vertical" className="mx-2 h-6" />
                     <Shield className="h-5 w-5 text-blue-600" />
                     <h1 className="text-lg font-semibold text-blue-700 sm:text-xl">Audit Logs</h1>
+                    <LiveIndicator live={live} className="ml-auto" />
                 </header>
 
                 <div className="flex-1 overflow-auto bg-gray-50/60 p-4 sm:p-6">
