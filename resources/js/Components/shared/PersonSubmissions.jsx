@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/Components/ui/sheet';
 import RowsPerPage from '@/Components/ui/RowsPerPage';
 import {
@@ -20,6 +21,7 @@ import {
     MapPin,
     Search,
     SearchX,
+    SlidersHorizontal,
     UserSearch,
     Users,
     X,
@@ -32,41 +34,39 @@ import { format, formatDistanceToNow } from 'date-fns';
  * describing its columns and detail fields.
  */
 
-// Full class strings so Tailwind keeps them in the build.
+// Semantic accents (design-system tokens). Full class strings so Tailwind keeps them.
+// Dead = destructive, Injured = warning, Missing = info. Each tab also has its own icon + label.
 const ACCENTS = {
-    red: {
-        icon: 'text-red-600',
-        title: 'text-red-700',
-        avatar: 'bg-red-100 text-red-700',
-        tabActive: 'bg-white text-red-700 shadow-sm ring-1 ring-red-200',
-        tabCount: 'bg-red-100 text-red-700',
-        bar: 'bg-red-500',
-        stripe: 'border-t-red-500',
+    destructive: {
+        icon: 'text-destructive',
+        avatar: 'bg-destructive/10 text-destructive',
+        tabActive: 'bg-card text-destructive shadow-sm ring-1 ring-destructive/30',
+        tabCount: 'bg-destructive/10 text-destructive',
+        bar: 'bg-destructive',
+        stripe: 'border-t-destructive',
     },
-    amber: {
-        icon: 'text-amber-600',
-        title: 'text-amber-700',
-        avatar: 'bg-amber-100 text-amber-800',
-        tabActive: 'bg-white text-amber-700 shadow-sm ring-1 ring-amber-200',
-        tabCount: 'bg-amber-100 text-amber-800',
-        bar: 'bg-amber-500',
-        stripe: 'border-t-amber-500',
+    warning: {
+        icon: 'text-warning',
+        avatar: 'bg-warning/10 text-warning',
+        tabActive: 'bg-card text-warning shadow-sm ring-1 ring-warning/30',
+        tabCount: 'bg-warning/10 text-warning',
+        bar: 'bg-warning',
+        stripe: 'border-t-warning',
     },
-    orange: {
-        icon: 'text-orange-600',
-        title: 'text-orange-700',
-        avatar: 'bg-orange-100 text-orange-800',
-        tabActive: 'bg-white text-orange-700 shadow-sm ring-1 ring-orange-200',
-        tabCount: 'bg-orange-100 text-orange-800',
-        bar: 'bg-orange-500',
-        stripe: 'border-t-orange-500',
+    info: {
+        icon: 'text-info',
+        avatar: 'bg-info/10 text-info',
+        tabActive: 'bg-card text-info shadow-sm ring-1 ring-info/30',
+        tabCount: 'bg-info/10 text-info',
+        bar: 'bg-info',
+        stripe: 'border-t-info',
     },
 };
 
 const CATEGORIES = [
-    { key: 'casualties', label: 'Dead', routeName: 'admin.casualties.submissions', icon: AlertTriangle, accent: 'red' },
-    { key: 'injured', label: 'Injured', routeName: 'admin.injured.submissions', icon: HeartPulse, accent: 'amber' },
-    { key: 'missing', label: 'Missing', routeName: 'admin.missing.submissions', icon: UserSearch, accent: 'orange' },
+    { key: 'casualties', label: 'Dead', routeName: 'admin.casualties.submissions', icon: AlertTriangle, accent: 'destructive' },
+    { key: 'injured', label: 'Injured', routeName: 'admin.injured.submissions', icon: HeartPulse, accent: 'warning' },
+    { key: 'missing', label: 'Missing', routeName: 'admin.missing.submissions', icon: UserSearch, accent: 'info' },
 ];
 
 const EMPTY_STATS = { total: 0, male: 0, female: 0, submitters: 0, latest_at: null };
@@ -135,17 +135,7 @@ const wasEdited = (record) =>
     record.updater && record.updated_at && record.created_at && record.updated_at !== record.created_at;
 
 function Empty({ children }) {
-    return <span className="text-gray-500">{children}</span>;
-}
-
-function StatTile({ label, children, hint }) {
-    return (
-        <div className="rounded-lg border bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-            <div className="mt-2">{children}</div>
-            {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
-        </div>
-    );
+    return <span className="text-muted-foreground">{children}</span>;
 }
 
 function SexSplit({ stats, accent }) {
@@ -154,33 +144,33 @@ function SexSplit({ stats, accent }) {
 
     return (
         <>
-            <div className="flex items-baseline gap-4 tabular-nums">
-                <span className="text-2xl font-bold text-gray-900">
+            <p className="flex items-baseline gap-3 text-2xl font-semibold tabular-nums text-foreground">
+                <span>
                     {stats.male}
-                    <span className="ml-1 text-xs font-medium text-gray-500">male</span>
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">male</span>
                 </span>
-                <span className="text-2xl font-bold text-gray-900">
+                <span>
                     {stats.female}
-                    <span className="ml-1 text-xs font-medium text-gray-500">female</span>
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">female</span>
                 </span>
-            </div>
-            <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+            </p>
+            <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
                 <div className={accent.bar} style={{ width: `${pct(stats.male)}%` }} />
-                <div className="bg-gray-400" style={{ width: `${pct(stats.female)}%` }} />
+                <div className="bg-muted-foreground/50" style={{ width: `${pct(stats.female)}%` }} />
             </div>
-            {other > 0 && <p className="mt-1 text-xs text-gray-500">{other} not specified</p>}
+            {other > 0 && <p className="mt-1 text-xs text-muted-foreground">{other} not specified</p>}
         </>
     );
 }
 
 function FilterChip({ label, onRemove }) {
     return (
-        <span className="inline-flex items-center gap-1 rounded-full border bg-gray-50 py-0.5 pl-2.5 pr-1 text-xs text-gray-700">
+        <span className="inline-flex items-center gap-1 rounded-full border bg-muted/50 py-0.5 pl-2.5 pr-1 text-xs text-foreground">
             {label}
             <button
                 type="button"
                 onClick={onRemove}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex h-8 w-8 items-center justify-center rounded-full md:h-6 md:w-6 text-muted-foreground hover:bg-secondary hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={`Remove filter: ${label}`}
             >
                 <X className="h-3 w-3" />
@@ -196,13 +186,13 @@ function Pagination({ records }) {
 
     const NavButton = ({ url, label, children }) =>
         url ? (
-            <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
+            <Button asChild variant="outline" size="sm" className="h-10 w-10 p-0 md:h-8 md:w-8">
                 <Link href={url} preserveScroll preserveState aria-label={label}>
                     {children}
                 </Link>
             </Button>
         ) : (
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled aria-label={label}>
+            <Button variant="outline" size="sm" className="h-10 w-10 p-0 md:h-8 md:w-8" disabled aria-label={label}>
                 {children}
             </Button>
         );
@@ -219,14 +209,14 @@ function Pagination({ records }) {
                         asChild
                         size="sm"
                         variant={link.active ? 'default' : 'outline'}
-                        className="h-8 min-w-8 px-2 tabular-nums"
+                        className="h-10 min-w-10 px-2 tabular-nums md:h-8 md:min-w-8"
                     >
                         <Link href={link.url} preserveScroll preserveState aria-current={link.active ? 'page' : undefined}>
                             {link.label}
                         </Link>
                     </Button>
                 ) : (
-                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-sm text-gray-500">
+                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-sm text-muted-foreground">
                         …
                     </span>
                 ),
@@ -241,8 +231,8 @@ function Pagination({ records }) {
 function DetailRow({ label, children }) {
     return (
         <div className="grid grid-cols-[8.5rem_1fr] gap-3 py-2.5 text-sm">
-            <dt className="text-gray-500">{label}</dt>
-            <dd className="min-w-0 break-words text-gray-900">{children}</dd>
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="min-w-0 break-words text-foreground">{children}</dd>
         </div>
     );
 }
@@ -258,8 +248,11 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const [dateFrom, setDateFrom] = useState(filters.date_from || '');
     const [dateTo, setDateTo] = useState(filters.date_to || '');
     const [selected, setSelected] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const perPage = Number(filters.per_page) || 20;
 
+    const advancedCount = [filters.user_id, filters.date_from, filters.date_to].filter(Boolean).length;
     const hasFilters = Boolean(filters.search || filters.user_id || filters.date_from || filters.date_to);
 
     const visit = (overrides = {}) => {
@@ -274,7 +267,13 @@ export default function PersonSubmissions({ config, records, users = [], filters
         Object.keys(params).forEach((key) => {
             if (params[key] === '' || params[key] === null || params[key] === undefined) delete params[key];
         });
-        router.get(route(category.routeName), params, { preserveState: true, preserveScroll: true, replace: true });
+        router.get(route(category.routeName), params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setLoading(true),
+            onFinish: () => setLoading(false),
+        });
     };
 
     const handleReset = () => {
@@ -316,36 +315,38 @@ export default function PersonSubmissions({ config, records, users = [], filters
             <AppSidebar />
             <Head title={config.title} />
             <SidebarInset>
-                <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-white/80 px-4 backdrop-blur-sm sm:px-6">
+                <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 sm:px-6">
                     <SidebarTrigger className="-ml-2" />
                     <Separator orientation="vertical" className="mx-2 h-6" />
-                    <Icon className={`h-5 w-5 ${accent.icon}`} />
-                    <h1 className={`text-lg font-semibold sm:text-xl ${accent.title}`}>{config.title}</h1>
+                    <Icon className={`h-5 w-5 ${accent.icon}`} aria-hidden="true" />
+                    <span className="text-sm text-muted-foreground">Admin</span>
+                    <span className="text-muted-foreground" aria-hidden="true">/</span>
+                    <span className="truncate text-sm font-semibold text-foreground">{config.title}</span>
                 </header>
 
-                <div className="flex-1 overflow-auto bg-gray-50/60 p-4 sm:p-6">
+                <div className="flex-1 overflow-auto bg-muted/40 p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-5">
                         {/* Title row */}
                         <div className="space-y-3">
                             <Link
                                 href={route('admin.dashboard')}
-                                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+                                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Dashboard
                             </Link>
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                                 <div className="min-w-0">
-                                    <h2 className="text-2xl font-bold text-gray-900">{config.title}</h2>
-                                    <p className="mt-1 text-sm text-gray-600">{config.description}</p>
-                                    <p className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                                    <h1 className="text-2xl font-semibold text-foreground">{config.title}</h1>
+                                    <p className="mt-1 text-sm text-muted-foreground">{config.description}</p>
+                                    <p className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
                                         <span
-                                            className={`h-2 w-2 rounded-full ${disaster ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                                            className={`h-2 w-2 rounded-full ${disaster ? 'bg-success' : 'bg-muted-foreground/40'}`}
                                             aria-hidden="true"
                                         />
                                         {disaster ? (
                                             <>
-                                                Active disaster: <span className="font-semibold text-gray-900">{disaster.name}</span>
+                                                Active disaster: <span className="font-semibold text-foreground">{disaster.name}</span>
                                             </>
                                         ) : (
                                             'No active disaster. Showing records from all disasters.'
@@ -354,7 +355,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                 </div>
 
                                 {/* Category switcher */}
-                                <nav className="inline-flex self-start rounded-lg bg-gray-100 p-1 lg:self-auto" aria-label="Report type">
+                                <nav className="inline-flex self-start rounded-lg bg-muted p-1 lg:self-auto" aria-label="Report type">
                                     {CATEGORIES.map((c) => {
                                         const active = c.key === category.key;
                                         const TabIcon = c.icon;
@@ -364,10 +365,10 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                 href={route(c.routeName)}
                                                 aria-current={active ? 'page' : undefined}
                                                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                                                    active ? ACCENTS[c.accent].tabActive : 'text-gray-600 hover:text-gray-900'
+                                                    active ? ACCENTS[c.accent].tabActive : 'text-muted-foreground hover:text-foreground'
                                                 }`}
                                             >
-                                                <TabIcon className="h-4 w-4" />
+                                                <TabIcon className="h-4 w-4" aria-hidden="true" />
                                                 {c.label}
                                             </Link>
                                         );
@@ -376,240 +377,252 @@ export default function PersonSubmissions({ config, records, users = [], filters
                             </div>
                         </div>
 
-                        {/* Summary */}
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className={`rounded-lg border border-t-4 bg-white p-4 ${accent.stripe}`}>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{config.statLabel}</p>
-                                <p className="mt-2 text-3xl font-bold tabular-nums text-gray-900">{summary.total}</p>
-                                <p className="mt-1 text-xs text-gray-500">{hasFilters ? 'Matching your filters' : scopeLabel}</p>
+                        {/* Summary strip */}
+                        <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-t-4 bg-border lg:grid-cols-4 ${accent.stripe}`}>
+                            <div className="bg-card p-4">
+                                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{config.statLabel}</dt>
+                                <dd className="mt-1">
+                                    <span className="text-3xl font-semibold tabular-nums text-foreground">{summary.total}</span>
+                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                        {hasFilters ? 'Matching your filters' : scopeLabel}
+                                    </span>
+                                </dd>
                             </div>
-                            <StatTile label="By sex">
-                                <SexSplit stats={summary} accent={accent} />
-                            </StatTile>
-                            <StatTile label="Reporting offices" hint="Accounts that submitted at least one record">
-                                <p className="flex items-center gap-2 text-2xl font-bold tabular-nums text-gray-900">
-                                    <Building2 className="h-5 w-5 text-gray-400" />
-                                    {summary.submitters}
-                                </p>
-                            </StatTile>
-                            <StatTile label="Latest submission" hint={formatDateTime(summary.latest_at)}>
-                                <p className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-                                    <Clock className="h-5 w-5 text-gray-400" />
-                                    {summary.latest_at ? timeAgo(summary.latest_at) : 'None yet'}
-                                </p>
-                            </StatTile>
-                        </div>
+                            <div className="bg-card p-4">
+                                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">By sex</dt>
+                                <dd className="mt-1">
+                                    <SexSplit stats={summary} accent={accent} />
+                                </dd>
+                            </div>
+                            <div className="bg-card p-4">
+                                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reporting offices</dt>
+                                <dd className="mt-1">
+                                    <span className="flex items-center gap-2 text-2xl font-semibold tabular-nums text-foreground">
+                                        <Building2 className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                                        {summary.submitters}
+                                    </span>
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">With at least one record</span>
+                                </dd>
+                            </div>
+                            <div className="bg-card p-4">
+                                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latest submission</dt>
+                                <dd className="mt-1">
+                                    <span className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                                        <Clock className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                                        {summary.latest_at ? timeAgo(summary.latest_at) : 'None yet'}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{formatDateTime(summary.latest_at)}</span>
+                                </dd>
+                            </div>
+                        </dl>
 
-                        {/* Filters */}
-                        <form
-                            className="rounded-lg border bg-white p-4"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                visit();
-                            }}
-                        >
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-                                <div className="sm:col-span-2 lg:col-span-4">
-                                    <Label htmlFor="search" className="text-xs text-gray-600">Search</Label>
-                                    <div className="relative mt-1">
-                                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                        <Input
-                                            id="search"
-                                            type="search"
-                                            placeholder={config.searchPlaceholder}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="lg:col-span-3">
-                                    <Label htmlFor="user" className="text-xs text-gray-600">Submitted by</Label>
-                                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                                        <SelectTrigger id="user" className="mt-1">
-                                            <SelectValue placeholder="Anyone" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Anyone</SelectItem>
-                                            {users.map((user) => (
-                                                <SelectItem key={user.id} value={user.id.toString()}>
-                                                    {user.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="lg:col-span-2">
-                                    <Label htmlFor="date_from" className="text-xs text-gray-600">Submitted from</Label>
+                        {/* Search + filters */}
+                        <div className="space-y-3">
+                            <form
+                                className="flex flex-col gap-2 sm:flex-row"
+                                role="search"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    visit();
+                                }}
+                            >
+                                <div className="relative flex-1">
+                                    <Label htmlFor="search" className="sr-only">Search</Label>
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                                     <Input
-                                        id="date_from"
-                                        type="date"
-                                        value={dateFrom}
-                                        max={dateTo || undefined}
-                                        onChange={(e) => setDateFrom(e.target.value)}
-                                        className="mt-1"
+                                        id="search"
+                                        type="search"
+                                        placeholder={config.searchPlaceholder}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="h-11 bg-card pl-9 md:h-9"
                                     />
                                 </div>
-                                <div className="lg:col-span-2">
-                                    <Label htmlFor="date_to" className="text-xs text-gray-600">Submitted to</Label>
-                                    <Input
-                                        id="date_to"
-                                        type="date"
-                                        value={dateTo}
-                                        min={dateFrom || undefined}
-                                        onChange={(e) => setDateTo(e.target.value)}
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
-                                    <Button type="submit" className="flex-1">
-                                        Apply
-                                    </Button>
-                                </div>
-                            </div>
+
+                                <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button type="button" variant="outline" className="h-11 gap-2 bg-card md:h-9">
+                                            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                                            Filters
+                                            {advancedCount > 0 && (
+                                                <span className="rounded-full bg-primary px-1.5 text-xs font-semibold tabular-nums text-primary-foreground">
+                                                    {advancedCount}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] space-y-4">
+                                        <div>
+                                            <Label htmlFor="user" className="text-xs text-muted-foreground">Submitted by</Label>
+                                            <Select value={selectedUser} onValueChange={setSelectedUser}>
+                                                <SelectTrigger id="user" className="mt-1 h-11 md:h-9">
+                                                    <SelectValue placeholder="Anyone" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Anyone</SelectItem>
+                                                    {users.map((user) => (
+                                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                                            {user.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <Label htmlFor="date_from" className="text-xs text-muted-foreground">Submitted from</Label>
+                                                <Input
+                                                    id="date_from"
+                                                    type="date"
+                                                    value={dateFrom}
+                                                    max={dateTo || undefined}
+                                                    onChange={(e) => setDateFrom(e.target.value)}
+                                                    className="mt-1 h-11 md:h-9"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="date_to" className="text-xs text-muted-foreground">Submitted to</Label>
+                                                <Input
+                                                    id="date_to"
+                                                    type="date"
+                                                    value={dateTo}
+                                                    min={dateFrom || undefined}
+                                                    onChange={(e) => setDateTo(e.target.value)}
+                                                    className="mt-1 h-11 md:h-9"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 border-t pt-3">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-11 md:h-9"
+                                                onClick={() => {
+                                                    handleReset();
+                                                    setFiltersOpen(false);
+                                                }}
+                                            >
+                                                Reset
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                className="h-11 md:h-9"
+                                                onClick={() => {
+                                                    visit();
+                                                    setFiltersOpen(false);
+                                                }}
+                                            >
+                                                Apply filters
+                                            </Button>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+                                <Button type="submit" className="h-11 md:h-9" disabled={loading}>
+                                    {loading ? 'Searching…' : 'Search'}
+                                </Button>
+                            </form>
 
                             {chips.length > 0 && (
-                                <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
-                                    <span className="text-xs text-gray-500">Filtered by</span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Filtered by</span>
                                     {chips.map((chip) => (
                                         <FilterChip key={chip.label} label={chip.label} onRemove={chip.clear} />
                                     ))}
                                     <button
                                         type="button"
                                         onClick={handleReset}
-                                        className="ml-1 text-xs font-medium text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline"
+                                        className="ml-1 rounded text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         Clear all
                                     </button>
                                 </div>
                             )}
-                        </form>
+                        </div>
 
                         {/* Records */}
-                        <section className="overflow-hidden rounded-lg border bg-white">
+                        <section className="overflow-hidden rounded-lg border bg-card" aria-busy={loading}>
                             <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-                                <h3 className="text-sm font-semibold text-gray-900">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     {config.listTitle}
                                     <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${accent.tabCount}`}>
                                         {records.total}
                                     </span>
-                                </h3>
+                                </h2>
                                 {records.data.length > 0 && (
-                                    <p className="hidden text-xs text-gray-500 sm:block">Select a row to see the full record</p>
+                                    <p className="hidden text-xs text-muted-foreground sm:block">Select a record to see the full details</p>
                                 )}
                             </div>
 
                             {records.data.length > 0 ? (
-                                <>
-                                    {/* Table: md and up */}
-                                    <div className="hidden overflow-x-auto md:block">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                                                <tr>
-                                                    <th className="px-4 py-2.5 font-medium">Person</th>
-                                                    <th className="px-4 py-2.5 font-medium">Address</th>
-                                                    {config.columns.map((col) => (
-                                                        <th key={col.key} className="px-4 py-2.5 font-medium">{col.label}</th>
-                                                    ))}
-                                                    <th className="px-4 py-2.5 font-medium">Submitted by</th>
-                                                    <th className="px-4 py-2.5 text-right font-medium">Submitted</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {records.data.map((record) => (
-                                                    <tr
-                                                        key={record.id}
-                                                        onClick={() => setSelected(record)}
-                                                        className="cursor-pointer align-top hover:bg-gray-50 focus-within:bg-gray-50"
-                                                    >
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <span
-                                                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${accent.avatar}`}
-                                                                    aria-hidden="true"
-                                                                >
-                                                                    {initials(record.name)}
-                                                                </span>
-                                                                <div className="min-w-0">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setSelected(record);
-                                                                        }}
-                                                                        className="rounded text-left font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                                                        aria-label={`View details for ${record.name || 'unnamed record'}`}
-                                                                    >
-                                                                        {record.name || <Empty>No name</Empty>}
-                                                                    </button>
-                                                                    <p className="text-xs text-gray-500">{ageSex(record)}</p>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="max-w-[16rem] px-4 py-3 text-gray-600">
-                                                            <p className="line-clamp-2" title={record.address || undefined}>
-                                                                {record.address || <Empty>Not given</Empty>}
-                                                            </p>
-                                                        </td>
-                                                        {config.columns.map((col) => (
-                                                            <td key={col.key} className="max-w-[16rem] px-4 py-3 text-gray-700">
-                                                                <p className="line-clamp-2" title={formatField(record, col) || undefined}>
-                                                                    {formatField(record, col) || <Empty>—</Empty>}
-                                                                </p>
-                                                            </td>
-                                                        ))}
-                                                        <td className="px-4 py-3">
-                                                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                                                                <Users className="h-3.5 w-3.5 text-gray-400" />
-                                                                {record.user?.name || 'Unknown'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
-                                                            <p className="text-gray-900">{formatDay(record.created_at) || '—'}</p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {formatTime(record.created_at)}
-                                                                {wasEdited(record) && <span className="ml-1.5 text-gray-500">· edited</span>}
-                                                            </p>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Cards: below md */}
-                                    <ul className="divide-y md:hidden">
+                                <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+                                    <ul className="divide-y">
                                         {records.data.map((record) => (
                                             <li key={record.id}>
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelected(record)}
-                                                    className="flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50"
+                                                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 focus:outline-none focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                                                 >
                                                     <span
-                                                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${accent.avatar}`}
+                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${accent.avatar}`}
                                                         aria-hidden="true"
                                                     >
                                                         {initials(record.name)}
                                                     </span>
+
                                                     <span className="min-w-0 flex-1">
-                                                        <span className="flex items-baseline justify-between gap-2">
-                                                            <span className="truncate font-medium text-gray-900">{record.name || 'No name'}</span>
-                                                            <span className="shrink-0 text-xs tabular-nums text-gray-500">{formatDay(record.created_at)}</span>
+                                                        <span className="flex flex-wrap items-baseline gap-x-2">
+                                                            <span className="font-medium text-foreground">{record.name || 'No name'}</span>
+                                                            <span className="text-xs text-muted-foreground">{ageSex(record)}</span>
                                                         </span>
-                                                        <span className="block text-xs text-gray-500">{ageSex(record)}</span>
-                                                        <span className="mt-1 block text-sm text-gray-700 line-clamp-2">
-                                                            {formatField(record, config.columns[0]) || 'No details given'}
+                                                        {record.address && (
+                                                            <span className="mt-0.5 flex items-start gap-1 text-sm text-muted-foreground">
+                                                                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                                                <span className="line-clamp-1">{record.address}</span>
+                                                            </span>
+                                                        )}
+                                                        <span className="mt-2 flex flex-wrap gap-1.5">
+                                                            {config.columns.map((col) => {
+                                                                const value = formatField(record, col);
+                                                                if (!value) return null;
+                                                                return (
+                                                                    <span
+                                                                        key={col.key}
+                                                                        title={`${col.label}: ${value}`}
+                                                                        className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs"
+                                                                    >
+                                                                        <span className="shrink-0 text-muted-foreground">{col.label}:</span>
+                                                                        <span className="max-w-[16rem] truncate font-medium text-foreground">{value}</span>
+                                                                    </span>
+                                                                );
+                                                            })}
                                                         </span>
-                                                        <span className="mt-1 block text-xs text-gray-500">By {record.user?.name || 'Unknown'}</span>
+                                                        <span className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground sm:hidden">
+                                                            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                                                            {record.user?.name || 'Unknown'} · {formatDay(record.created_at) || '—'}
+                                                        </span>
                                                     </span>
+
+                                                    <span className="hidden shrink-0 text-right text-xs tabular-nums sm:block">
+                                                        <span className="flex items-center justify-end gap-1.5 font-medium text-foreground">
+                                                            <Users className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                                                            {record.user?.name || 'Unknown'}
+                                                        </span>
+                                                        <span className="mt-0.5 block text-muted-foreground">{formatDay(record.created_at) || '—'}</span>
+                                                        <span className="block text-muted-foreground">
+                                                            {formatTime(record.created_at)}
+                                                            {wasEdited(record) && ' · edited'}
+                                                        </span>
+                                                    </span>
+                                                    <ChevronRight className="mt-2.5 hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
                                                 </button>
                                             </li>
                                         ))}
                                     </ul>
 
                                     <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-sm tabular-nums text-gray-600">
+                                        <p className="text-sm tabular-nums text-muted-foreground">
                                             Showing {records.from}–{records.to} of {records.total}
                                         </p>
                                         <div className="flex flex-wrap items-center gap-4">
@@ -621,23 +634,23 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                             <Pagination records={records} />
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             ) : (
                                 <div className="flex flex-col items-center px-4 py-14 text-center">
                                     {hasFilters ? (
                                         <>
-                                            <SearchX className="mb-3 h-10 w-10 text-gray-300" />
-                                            <p className="font-medium text-gray-900">No records match these filters</p>
-                                            <p className="mt-1 text-sm text-gray-500">Try a different search or a wider date range.</p>
+                                            <SearchX className="mb-3 h-10 w-10 text-muted-foreground/60" />
+                                            <p className="font-medium text-foreground">No records match these filters</p>
+                                            <p className="mt-1 text-sm text-muted-foreground">Try a different search or a wider date range.</p>
                                             <Button variant="outline" size="sm" onClick={handleReset} className="mt-4">
                                                 Clear filters
                                             </Button>
                                         </>
                                     ) : (
                                         <>
-                                            <Icon className="mb-3 h-10 w-10 text-gray-300" />
-                                            <p className="font-medium text-gray-900">{config.emptyTitle}</p>
-                                            <p className="mt-1 max-w-sm text-sm text-gray-500">
+                                            <Icon className="mb-3 h-10 w-10 text-muted-foreground/60" />
+                                            <p className="font-medium text-foreground">{config.emptyTitle}</p>
+                                            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                                                 Records appear here as soon as an office submits them in the situational report.
                                             </p>
                                         </>
@@ -674,7 +687,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     <DetailRow label="Address">
                                         {selected.address ? (
                                             <span className="inline-flex gap-1.5">
-                                                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                                                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                                                 {selected.address}
                                             </span>
                                         ) : (
@@ -688,14 +701,14 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     ))}
                                 </dl>
 
-                                <h4 className="mt-6 text-xs font-medium uppercase tracking-wide text-gray-500">Submission</h4>
+                                <h4 className="mt-6 text-xs font-medium uppercase tracking-wide text-muted-foreground">Submission</h4>
                                 <dl className="mt-2 divide-y border-y">
                                     <DetailRow label="Submitted by">{selected.user?.name || 'Unknown'}</DetailRow>
                                     <DetailRow label="Submitted">{formatDateTime(selected.created_at) || '—'}</DetailRow>
                                     {wasEdited(selected) && (
                                         <DetailRow label="Last edited">
                                             {formatDateTime(selected.updated_at)}
-                                            <span className="block text-xs text-gray-500">by {selected.updater.name}</span>
+                                            <span className="block text-xs text-muted-foreground">by {selected.updater.name}</span>
                                         </DetailRow>
                                     )}
                                 </dl>
