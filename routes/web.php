@@ -330,6 +330,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'casualties' => [],
                 'injured' => [],
                 'missing' => [],
+                'impactSummary' => \App\Services\HumanImpactStats::forDisaster(null),
                 'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
             ]);
         }
@@ -353,24 +354,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             ->limit(100)
             ->get();
             
+        // All records (no limit) but only the columns the graphs use, so totals stay correct.
         $casualties = \App\Models\Casualty::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
             ->latest()
-            ->limit(50)
-            ->get();
-            
+            ->get(['id', 'sex', 'age', 'cause_of_death', 'created_at']);
+
         $injured = \App\Models\Injured::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
             ->latest()
-            ->limit(50)
-            ->get();
-            
+            ->get(['id', 'sex', 'age', 'diagnosis', 'created_at']);
+
         $missing = \App\Models\Missing::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
             ->latest()
-            ->limit(50)
-            ->get();
-        
+            ->get(['id', 'sex', 'age', 'cause', 'created_at']);
+
         return Inertia::render('Admin/Dashboard', [
             'weatherReports' => $weatherReports,
             'waterLevels' => $waterLevels,
@@ -378,6 +374,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,
+            'impactSummary' => \App\Services\HumanImpactStats::forDisaster($activeTyphoon),
             'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');

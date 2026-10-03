@@ -26,6 +26,15 @@
     --warning-foreground: 0 0% 100%;
     --info: 221 83% 53%;
     --info-foreground: 0 0% 100%;
+    /* data-viz series (validated: dataviz validate_palette.js, light vs #ffffff) */
+    --viz-male: #2a78d6;
+    --viz-female: #eb6834;
+    --viz-unknown: #898781;
+    --viz-axis: #c3c2b7;
+    --viz-grid: #e1e0d9;
+    --viz-dead: #e34948;
+    --viz-injured: #eda100;
+    --viz-missing: #4a3aa7;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
@@ -67,6 +76,14 @@
     --warning-foreground: 222 47% 11%;
     --info: 217 91% 60%;
     --info-foreground: 222 47% 11%;
+    --viz-male: #3987e5;
+    --viz-female: #d95926;
+    --viz-unknown: #898781;
+    --viz-axis: #383835;
+    --viz-grid: #2c2c2a;
+    --viz-dead: #b52f2f;
+    --viz-injured: #b98c00;
+    --viz-missing: #9085e9;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
