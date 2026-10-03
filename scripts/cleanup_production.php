@@ -7,9 +7,9 @@
  * Usage: php cleanup_production.php
  */
 
-require __DIR__.'/vendor/autoload.php';
+require dirname(__DIR__).'/vendor/autoload.php';
 
-$app = require_once __DIR__.'/bootstrap/app.php';
+$app = require_once dirname(__DIR__).'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 echo "=== STARTING PRODUCTION CLEANUP ===\n\n";

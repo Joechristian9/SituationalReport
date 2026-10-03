@@ -2,9 +2,9 @@
 
 // Run this on production to check the state
 
-require __DIR__.'/vendor/autoload.php';
+require dirname(__DIR__).'/vendor/autoload.php';
 
-$app = require_once __DIR__.'/bootstrap/app.php';
+$app = require_once dirname(__DIR__).'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 echo "=== PRODUCTION STATUS CHECK ===\n\n";
@@ -17,8 +17,8 @@ echo "- disaster_types table: " . (Schema::hasTable('disaster_types') ? 'EXISTS 
 
 // Check if files exist
 echo "Code Files:\n";
-echo "- DisasterType model: " . (file_exists(__DIR__.'/app/Models/DisasterType.php') ? 'EXISTS ✗ (SHOULD BE REMOVED)' : 'MISSING ✓') . "\n";
-echo "- DisasterTypeController: " . (file_exists(__DIR__.'/app/Http/Controllers/DisasterTypeController.php') ? 'EXISTS ✗ (SHOULD BE REMOVED)' : 'MISSING ✓') . "\n\n";
+echo "- DisasterType model: " . (file_exists(dirname(__DIR__).'/app/Models/DisasterType.php') ? 'EXISTS ✗ (SHOULD BE REMOVED)' : 'MISSING ✓') . "\n";
+echo "- DisasterTypeController: " . (file_exists(dirname(__DIR__).'/app/Http/Controllers/DisasterTypeController.php') ? 'EXISTS ✗ (SHOULD BE REMOVED)' : 'MISSING ✓') . "\n\n";
 
 // Check git status
 echo "Git Status:\n";
