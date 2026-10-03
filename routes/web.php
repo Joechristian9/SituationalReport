@@ -6,21 +6,18 @@ use App\Http\Controllers\AssistanceProvidedLguController;
 use App\Http\Controllers\CasualtyController;
 use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DisasterController;
 use App\Http\Controllers\IncidentMonitoredController;
-use App\Http\Controllers\MissingController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SituationOverviewController;
-use App\Http\Controllers\PreEmptiveReportController;
-use App\Http\Controllers\UscDeclarationController;
-use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\InjuredController;
-use App\Http\Controllers\PDFController;
+use App\Http\Controllers\MissingController;
+use App\Http\Controllers\PreEmptiveReportController;
+use App\Http\Controllers\PrePositioningController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Http\Controllers\SuspensionOfWorkController;
-use App\Http\Controllers\DisasterController;
-use App\Http\Controllers\HistoryController;
-use App\Models\SuspensionOfClass;
+use App\Http\Controllers\UscDeclarationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -49,7 +46,6 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
     // Dashboard - accessible even without active typhoon (for regular users)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
 
     // Route to display the HTML overview of the report for a specific year
     Route::get('/reports/view', [ReportController::class, 'view'])
@@ -123,195 +119,191 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     // ============= FORM ROUTES (Requires Active Typhoon) =============
     Route::middleware(['typhoon.active'])->group(function () {
 
-    /* ---------------- Weather Reports (new API routes) ---------------- */
-    Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
-        ->name('weather-reports.store');
-    Route::get('/api/weather-reports', [SituationOverviewController::class, 'getReports'])
-        ->name('api.weather-reports');
-    Route::get('/api/weather-timeline', [SituationOverviewController::class, 'getWeatherTimeline'])
-        ->name('api.weather-timeline');
-    
-    /* ---------------- Real-time Typing Indicator ---------------- */
-    Route::post('/broadcast-typing', [SituationOverviewController::class, 'broadcastTyping'])
-        ->name('broadcast.typing');
+        /* ---------------- Weather Reports (new API routes) ---------------- */
+        Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
+            ->name('weather-reports.store');
+        Route::get('/api/weather-reports', [SituationOverviewController::class, 'getReports'])
+            ->name('api.weather-reports');
+        Route::get('/api/weather-timeline', [SituationOverviewController::class, 'getWeatherTimeline'])
+            ->name('api.weather-timeline');
 
+        /* ---------------- Real-time Typing Indicator ---------------- */
+        Route::post('/broadcast-typing', [SituationOverviewController::class, 'broadcastTyping'])
+            ->name('broadcast.typing');
 
-    /* ---------------- Water Level Reports ---------------- */
-    Route::post('/water-level-reports', [SituationOverviewController::class, 'storeWaterLevel'])
-        ->name('water-level-reports.store');
+        /* ---------------- Water Level Reports ---------------- */
+        Route::post('/water-level-reports', [SituationOverviewController::class, 'storeWaterLevel'])
+            ->name('water-level-reports.store');
 
+        /* ---------------- Electricity Reports ---------------- */
+        Route::post('/electricity-reports', [SituationOverviewController::class, 'storeElectricity'])
+            ->name('electricity-reports.store');
 
-    /* ---------------- Electricity Reports ---------------- */
-    Route::post('/electricity-reports', [SituationOverviewController::class, 'storeElectricity'])
-        ->name('electricity-reports.store');
+        /* ---------------- Water Service Reports ---------------- */
+        Route::post('/water-service-reports', [SituationOverviewController::class, 'storeWaterService'])
+            ->name('water-service-reports.store');
 
-    /* ---------------- Water Service Reports ---------------- */
-    Route::post('/water-service-reports', [SituationOverviewController::class, 'storeWaterService'])
-        ->name('water-service-reports.store');
+        /* ---------------- Communication Reports ---------------- */
+        Route::post('/communication-reports', [SituationOverviewController::class, 'storeCommunication'])
+            ->name('communication-reports.store');
 
-    /* ---------------- Communication Reports ---------------- */
-    Route::post('/communication-reports', [SituationOverviewController::class, 'storeCommunication'])
-        ->name('communication-reports.store');
-    
-    /* ---------------- Communication Services Management ---------------- */
-    Route::get('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'index'])
-        ->name('communication-services.index');
-    Route::post('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'store'])
-        ->name('communication-services.store');
-    Route::delete('/communication-services/{id}', [\App\Http\Controllers\CommunicationServiceController::class, 'destroy'])
-        ->name('communication-services.destroy');
+        /* ---------------- Communication Services Management ---------------- */
+        Route::get('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'index'])
+            ->name('communication-services.index');
+        Route::post('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'store'])
+            ->name('communication-services.store');
+        Route::delete('/communication-services/{id}', [\App\Http\Controllers\CommunicationServiceController::class, 'destroy'])
+            ->name('communication-services.destroy');
 
-    /* ---------------- Road Reports ---------------- */
-    Route::post('/road-reports', [SituationOverviewController::class, 'storeRoad'])
-        ->name('road-reports.store');
+        /* ---------------- Road Reports ---------------- */
+        Route::post('/road-reports', [SituationOverviewController::class, 'storeRoad'])
+            ->name('road-reports.store');
 
-    /* ---------------- Bridge Reports ---------------- */
-    Route::post('/bridge-reports', [SituationOverviewController::class, 'storeBridge'])
-        ->name('bridge-reports.store');
+        /* ---------------- Bridge Reports ---------------- */
+        Route::post('/bridge-reports', [SituationOverviewController::class, 'storeBridge'])
+            ->name('bridge-reports.store');
 
-    
-    // Pre-Emptive Reports - API routes for modernized form
-    Route::post('/pre-emptive-reports', [PreEmptiveReportController::class, 'saveReports']);
-    Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications']);
+        // Pre-Emptive Reports - API routes for modernized form
+        Route::post('/pre-emptive-reports', [PreEmptiveReportController::class, 'saveReports']);
+        Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications']);
 
-    // Declaration under State of Calamity
-    Route::resource('declaration-usc', UscDeclarationController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])
-        ->name('declaration-usc.store');
-    Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
-        ->name('declaration-usc.index');
-    Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
-        ->name('modifications.usc-declaration');
+        // Declaration under State of Calamity
+        Route::resource('declaration-usc', UscDeclarationController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])
+            ->name('declaration-usc.store');
+        Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
+            ->name('declaration-usc.index');
+        Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
+            ->name('modifications.usc-declaration');
 
-    /* ---------------- Response Operations (API routes) ---------------- */
-    Route::get('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'index'])
-        ->name('response-operations.index');
-    Route::post('/response-operations-reports', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
-        ->name('response-operations-reports.store');
-    Route::get('/modifications/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'getModifications'])
-        ->name('modifications.response-operations');
+        /* ---------------- Response Operations (API routes) ---------------- */
+        Route::get('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'index'])
+            ->name('response-operations.index');
+        Route::post('/response-operations-reports', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
+            ->name('response-operations-reports.store');
+        Route::get('/modifications/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'getModifications'])
+            ->name('modifications.response-operations');
 
-    // Deployment of Response Assets
-    Route::resource('pre-positioning', PrePositioningController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/pre-positioning', [PrePositioningController::class, 'store'])
-        ->name('pre-positioning.store');
-    Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
-        ->name('pre-positioning.index');
-    Route::get('/modifications/pre-positioning', [PrePositioningController::class, 'getModifications'])
-        ->name('modifications.pre-positioning');
+        // Deployment of Response Assets
+        Route::resource('pre-positioning', PrePositioningController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/pre-positioning', [PrePositioningController::class, 'store'])
+            ->name('pre-positioning.store');
+        Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
+            ->name('pre-positioning.index');
+        Route::get('/modifications/pre-positioning', [PrePositioningController::class, 'getModifications'])
+            ->name('modifications.pre-positioning');
 
-    // Effects of Incident Monitored
-    Route::resource('incident-monitored', IncidentMonitoredController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
-        ->name('incident-monitored.store');
-    Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
-        ->name('incident-monitored.index');
-    Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
-        ->name('modifications.incident-monitored');
+        // Effects of Incident Monitored
+        Route::resource('incident-monitored', IncidentMonitoredController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
+            ->name('incident-monitored.store');
+        Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
+            ->name('incident-monitored.index');
+        Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
+            ->name('modifications.incident-monitored');
 
-    // Agriculture Reports
-    Route::post('/agriculture-reports', [App\Http\Controllers\AgricultureReportController::class, 'store'])
-        ->middleware('permission:access-agriculture-form')
-        ->name('agriculture-reports.store');
-    Route::get('/modifications/agriculture', [App\Http\Controllers\AgricultureReportController::class, 'getModifications'])
-        ->name('modifications.agriculture');
+        // Agriculture Reports
+        Route::post('/agriculture-reports', [App\Http\Controllers\AgricultureReportController::class, 'store'])
+            ->middleware('permission:access-agriculture-form')
+            ->name('agriculture-reports.store');
+        Route::get('/modifications/agriculture', [App\Http\Controllers\AgricultureReportController::class, 'getModifications'])
+            ->name('modifications.agriculture');
 
-    // Casualties Dead
-    Route::resource('casualties', CasualtyController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/casualties', [CasualtyController::class, 'store'])
-        ->name('casualties.store');
-    Route::get('/casualties', [CasualtyController::class, 'index'])
-        ->name('casualties.index');
-    Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
-        ->name('modifications.casualties');
+        // Casualties Dead
+        Route::resource('casualties', CasualtyController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/casualties', [CasualtyController::class, 'store'])
+            ->name('casualties.store');
+        Route::get('/casualties', [CasualtyController::class, 'index'])
+            ->name('casualties.index');
+        Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
+            ->name('modifications.casualties');
 
-    // Injured
-    Route::resource('injured', InjuredController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/injured', [InjuredController::class, 'store'])
-        ->name('injured.store');
-    Route::get('/injured', [InjuredController::class, 'index'])
-        ->name('injured.index');
-    Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
-        ->name('modifications.injured');
+        // Injured
+        Route::resource('injured', InjuredController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/injured', [InjuredController::class, 'store'])
+            ->name('injured.store');
+        Route::get('/injured', [InjuredController::class, 'index'])
+            ->name('injured.index');
+        Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
+            ->name('modifications.injured');
 
-    // Missing Persons
-    Route::resource('missing', MissingController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/missing', [MissingController::class, 'store'])
-        ->name('missing.store');
-    Route::get('/missing', [MissingController::class, 'index'])
-        ->name('missing.index');
-    Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
-        ->name('modifications.missing');
+        // Missing Persons
+        Route::resource('missing', MissingController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/missing', [MissingController::class, 'store'])
+            ->name('missing.store');
+        Route::get('/missing', [MissingController::class, 'index'])
+            ->name('missing.index');
+        Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
+            ->name('modifications.missing');
 
-    // Affected Tourists
-    Route::resource('affected-tourists', AffectedTouristController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
-        ->name('affected-tourists.store');
-    Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
-        ->name('affected-tourists.index');
-    
-    /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
-    Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
-        ->name('affected-tourists-reports.store');
-    Route::get('/modifications/affected-tourists', [AffectedTouristController::class, 'getModifications'])
-        ->name('modifications.affected-tourists');
+        // Affected Tourists
+        Route::resource('affected-tourists', AffectedTouristController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
+            ->name('affected-tourists.store');
+        Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
+            ->name('affected-tourists.index');
 
-    // Damaged Houses
-    Route::resource('damaged-houses', DamagedHouseReportController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
-        ->name('damaged-houses.store');
-    Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
-        ->name('damaged-houses.index');
-    
-    /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
-    Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])
-        ->name('damaged-houses-reports.store');
-    Route::get('/modifications/damaged-houses', [DamagedHouseReportController::class, 'getModifications'])
-        ->name('modifications.damaged-houses');
+        /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
+        Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
+            ->name('affected-tourists-reports.store');
+        Route::get('/modifications/affected-tourists', [AffectedTouristController::class, 'getModifications'])
+            ->name('modifications.affected-tourists');
 
+        // Damaged Houses
+        Route::resource('damaged-houses', DamagedHouseReportController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
+            ->name('damaged-houses.store');
+        Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
+            ->name('damaged-houses.index');
 
-    // Assistance Extended
-    Route::resource('assistance-extendeds', AssistanceExtendedController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/assistance-extendeds', [AssistanceExtendedController::class, 'store'])
-        ->name('assistance-extendeds.store');
-    Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
-        ->name('assistance-extendeds.index');
-    Route::get('/modifications/assistance-extended', [AssistanceExtendedController::class, 'getModifications'])
-        ->name('modifications.assistance-extended');
+        /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
+        Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])
+            ->name('damaged-houses-reports.store');
+        Route::get('/modifications/damaged-houses', [DamagedHouseReportController::class, 'getModifications'])
+            ->name('modifications.damaged-houses');
 
-    /* ---------------- Suspension of Classes (API routes) ---------------- */
-    Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
-        ->name('suspension-classes-reports.store');
-    Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
-        ->name('modifications.suspension-classes');
+        // Assistance Extended
+        Route::resource('assistance-extendeds', AssistanceExtendedController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/assistance-extendeds', [AssistanceExtendedController::class, 'store'])
+            ->name('assistance-extendeds.store');
+        Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
+            ->name('assistance-extendeds.index');
+        Route::get('/modifications/assistance-extended', [AssistanceExtendedController::class, 'getModifications'])
+            ->name('modifications.assistance-extended');
 
-    /* ---------------- Suspension of Work (API routes) ---------------- */
-    Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
-        ->name('suspension-work-reports.store');
-    Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
-        ->name('modifications.suspension-work');
+        /* ---------------- Suspension of Classes (API routes) ---------------- */
+        Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
+            ->name('suspension-classes-reports.store');
+        Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
+            ->name('modifications.suspension-classes');
 
-    Route::get('/assistance', function () {
-        return inertia('AssistanceExtended/AssistanceIndex');
-    })->name('assistance.index');
+        /* ---------------- Suspension of Work (API routes) ---------------- */
+        Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
+            ->name('suspension-work-reports.store');
+        Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
+            ->name('modifications.suspension-work');
 
-    // Assistance Provided LGUs
-    Route::resource('assistance-provided-lgus', AssistanceProvidedLguController::class)
-        ->only(['index', 'store', 'update']);
-    Route::post('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'store'])
-        ->name('assistance-provided-lgus.store');
-    Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
-        ->name('assistance-provided-lgus.index');
-    
+        Route::get('/assistance', function () {
+            return inertia('AssistanceExtended/AssistanceIndex');
+        })->name('assistance.index');
+
+        // Assistance Provided LGUs
+        Route::resource('assistance-provided-lgus', AssistanceProvidedLguController::class)
+            ->only(['index', 'store', 'update']);
+        Route::post('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'store'])
+            ->name('assistance-provided-lgus.store');
+        Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
+            ->name('assistance-provided-lgus.index');
+
     }); // End of typhoon.active middleware group
 });
 
@@ -321,8 +313,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         // Show data for active or paused disasters (graphs should show historical data).
         // latest() matches the shared `typhoon.active` prop, so the header and the data agree.
         $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
-        
-        if (!$activeTyphoon) {
+
+        if (! $activeTyphoon) {
             // No disaster at all - return empty data
             return Inertia::render('Admin/Dashboard', [
                 'weatherReports' => [],
@@ -335,26 +327,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
             ]);
         }
-        
+
         // Fetch data for the disaster (whether active or paused)
         $weatherReports = \App\Models\WeatherReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
-            
+
         $waterLevels = \App\Models\WaterLevel::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
-            
+
         $preEmptiveReports = \App\Models\PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(100)
             ->get();
-            
+
         // All records (no limit) but only the columns the graphs use, so totals stay correct.
         $casualties = \App\Models\Casualty::where('disaster_id', $activeTyphoon->id)
             ->latest()
@@ -379,34 +371,34 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');
-    
+
     // Form Submission Status (Admin only)
     Route::get('form-submission-status', [DisasterController::class, 'formSubmissionStatus'])
         ->name('admin.form-submission-status');
     Route::get('user-form-data/{userId}', [DisasterController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
-    
+
     // Audit Logs (Admin only)
     Route::get('audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs');
     Route::get('audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
     Route::get('audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->whereNumber('id')->name('admin.audit-logs.show');
-    
+
     // Year Management (Admin only)
     Route::get('years', [App\Http\Controllers\YearController::class, 'index'])->name('admin.years.index');
     Route::post('years', [App\Http\Controllers\YearController::class, 'store'])->name('admin.years.store');
     Route::delete('years/{year}', [App\Http\Controllers\YearController::class, 'destroy'])->name('admin.years.destroy');
-    
+
     // User Management (Admin only)
     Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('admin.users.index');
     Route::post('users', [App\Http\Controllers\UserController::class, 'store'])->name('admin.users.store');
     Route::patch('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
     Route::delete('users/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('admin.users.destroy');
-    
+
     // Submission Activity Pages (Admin only)
     Route::get('casualties/submissions', [CasualtyController::class, 'submissions'])->name('admin.casualties.submissions');
     Route::get('injured/submissions', [InjuredController::class, 'submissions'])->name('admin.injured.submissions');
     Route::get('missing/submissions', [MissingController::class, 'submissions'])->name('admin.missing.submissions');
-    
+
     // Disaster Management (Admin only)
     Route::prefix('disasters')->group(function () {
         Route::get('/', [DisasterController::class, 'index'])->name('disasters.index');
@@ -440,4 +432,4 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/bridge-history', [SituationOverviewController::class, 'getBridgeHistory'])->name('api.bridge-history');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
