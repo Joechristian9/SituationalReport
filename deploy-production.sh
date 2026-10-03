@@ -15,19 +15,23 @@ echo "1. Pulling latest changes from Git..."
 git pull origin main
 
 echo ""
-echo "2. Clearing all caches..."
+echo "2. Installing PHP dependencies (vendor/ is not in Git)..."
+composer install --no-dev --optimize-autoloader --no-interaction
+
+echo ""
+echo "3. Clearing all caches..."
 php artisan optimize:clear
 
 echo ""
-echo "3. Caching configuration..."
+echo "4. Caching configuration..."
 php artisan config:cache
 
 echo ""
-echo "4. Caching routes..."
+echo "5. Caching routes..."
 php artisan route:cache
 
 echo ""
-echo "5. Caching views..."
+echo "6. Caching views..."
 php artisan view:cache
 
 echo ""

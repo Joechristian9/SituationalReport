@@ -19,8 +19,8 @@ cd public_html
 # 3. Pull latest code
 git pull origin main
 
-# 4. Install Faker (required for seeders)
-composer require fakerphp/faker --dev
+# 4. Install PHP dependencies, including dev ones (the seeders need Faker)
+composer install --no-interaction
 
 # 5. BACKUP YOUR DATABASE FIRST!
 # Export current database
@@ -56,8 +56,8 @@ cd public_html
 # 3. Pull latest code
 git pull origin main
 
-# 4. Install Faker
-composer require fakerphp/faker --dev
+# 4. Install PHP dependencies (vendor/ is not in Git)
+composer install --no-dev --optimize-autoloader --no-interaction
 
 # 5. Run ONLY the year seeder (doesn't delete existing data)
 php artisan db:seed --class=YearSeeder
@@ -91,9 +91,8 @@ php artisan route:cache
 - **200 Agriculture Reports**
 
 ### Casualty Data (For Active Disaster Only):
-- **3 Deaths** - detailed with names, ages, causes
-- **5 Injured** - with diagnosis and hospital status
-- **2 Missing** - with last known locations
+- **Dead / Injured / Missing** submitted by the barangay accounts (`HumanImpactDemoSeeder`).
+  On a production server it only runs when `ALLOW_DEMO_SEED=1` is set, so real servers never get fake casualties.
 
 **Total: 1000+ realistic data entries across all modules!**
 
@@ -175,9 +174,14 @@ php artisan optimize:clear
 
 ## 🆘 Troubleshooting
 
-**Error: "Class Faker\Factory not found"**
+**Error: "Class Faker\Factory not found"** (seeding after a `--no-dev` install)
 ```bash
-composer require fakerphp/faker --dev
+composer install --no-interaction
+```
+
+**Error: "Failed opening required ... vendor/..."**
+```bash
+composer install --no-dev --optimize-autoloader --no-interaction
 ```
 
 **Error: "SQLSTATE[23000]: Integrity constraint violation"**

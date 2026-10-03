@@ -15,10 +15,13 @@ Once connected to the server, run these commands:
 ```bash
 cd /home/u988863428/domains/pitonmain.com/public_html
 git pull origin main
+composer install --no-dev --optimize-autoloader --no-interaction
 php artisan cache:clear
 php artisan view:clear
 exit
 ```
+
+`vendor/` is not stored in Git, so `composer install` must run after every pull.
 
 ### Step 3: Clear Browser Cache
 - Visit: https://pitonmain.com/history
@@ -99,5 +102,5 @@ git log -1 --oneline
 ## Alternative: One-Line Deployment
 Copy and paste this entire command (requires password):
 ```bash
-ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com/public_html && git pull origin main && php artisan cache:clear && php artisan view:clear && echo 'Deployment complete!'"
+ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com/public_html && git pull origin main && composer install --no-dev --optimize-autoloader --no-interaction && php artisan cache:clear && php artisan view:clear && echo 'Deployment complete!'"
 ```
