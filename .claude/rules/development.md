@@ -32,6 +32,7 @@
 
 ## 6. Frontend (React/Inertia)
 - **Always invoke the `ui-ux-pro-max` skill before designing, building, restyling, or reviewing any page or component in `resources/js`.** Apply its guidance (layout, typography, color, accessibility, interaction, responsive behavior) while still reusing the existing components and Tailwind setup below. Do not skip it for "small" UI changes.
+- The design system lives in `design-system/situational-report/MASTER.md` (page overrides in `design-system/situational-report/pages/<page>.md`, which win over MASTER). Read it before UI work. Use semantic tokens (`bg-primary`, `text-muted-foreground`, `border-border`), never raw `blue-*`/`gray-*`/`slate-*` palette classes in new code.
 - Reuse `Components/ui` (Button, Dialog, Table, Select, Tabs…) and shared pieces (`SearchBar`, `Pagination`, `RowsPerPage`, `AddRowButton`, `DownloadExcelButton`, `useTableFilter`) before building new ones.
 - Style with Tailwind utilities and the `cn()` helper from `lib/utils.js`. No inline style blocks or new CSS frameworks.
 - Forms use Inertia `useForm`/`router`; show server errors with `InputError`; use `sonner`/`react-hot-toast` already in use (do not add a third toast library).
