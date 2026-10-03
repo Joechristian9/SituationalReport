@@ -53,6 +53,7 @@
 
 ## 9. Testing and verification
 - Pest is the test framework. New features and bug fixes get a Feature test covering: allowed role, forbidden role, no active disaster, and the happy path.
+- **Tests must never touch MySQL.** They use `RefreshDatabase`, which drops every table. A cached config (`bootstrap/cache/config.php`) makes Laravel ignore `phpunit.xml` and run them on the real database. Run `php artisan config:clear` before testing; `tests/TestCase.php` aborts unless the connection is in-memory SQLite — never remove that guard. Never run `config:cache` locally.
 - Run `php artisan test` (or `--filter`) before saying work is done; run `npm run build` for frontend changes. Report real results.
 - Fix the root cause. Do not paper over with temporary routes or data-patching scripts.
 

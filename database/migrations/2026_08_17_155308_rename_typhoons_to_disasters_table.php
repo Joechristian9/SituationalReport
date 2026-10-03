@@ -46,6 +46,17 @@ return new class extends Migration
             'agriculture_reports',
         ];
 
+        // SQLite (test suite) has no information_schema; it only needs the column rename.
+        if (DB::getDriverName() === 'sqlite') {
+            foreach ($tables as $table) {
+                if (Schema::hasTable($table) && Schema::hasColumn($table, 'typhoon_id')) {
+                    Schema::table($table, fn (Blueprint $blueprint) => $blueprint->renameColumn('typhoon_id', 'disaster_id'));
+                }
+            }
+
+            return;
+        }
+
         // Step 3: For each table, drop the foreign key, rename the column, and recreate the foreign key
         foreach ($tables as $table) {
             if (Schema::hasTable($table) && Schema::hasColumn($table, 'typhoon_id')) {
@@ -109,6 +120,18 @@ return new class extends Migration
             'suspension_of_works',
             'agriculture_reports',
         ];
+
+        // SQLite (test suite): just rename the columns and the table back.
+        if (DB::getDriverName() === 'sqlite') {
+            foreach ($tables as $table) {
+                if (Schema::hasTable($table) && Schema::hasColumn($table, 'disaster_id')) {
+                    Schema::table($table, fn (Blueprint $blueprint) => $blueprint->renameColumn('disaster_id', 'typhoon_id'));
+                }
+            }
+            Schema::rename('disasters', 'typhoons');
+
+            return;
+        }
 
         // Step 2: For each table, drop the foreign key, rename the column back, and recreate the foreign key
         foreach ($tables as $table) {
