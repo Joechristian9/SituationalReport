@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { AppSidebar } from '@/Components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/Components/ui/sidebar';
@@ -71,13 +71,8 @@ const CATEGORIES = [
     { key: 'missing', label: 'Missing', routeName: 'admin.missing.submissions', icon: UserSearch, accent: 'info' },
 ];
 
-// Text size choices for the records list (saved per browser).
-const TEXT_SIZES = {
-    sm: { label: 'Small', name: 'text-sm', meta: 'text-xs', chip: 'text-xs' },
-    md: { label: 'Medium', name: 'text-base', meta: 'text-sm', chip: 'text-sm' },
-    lg: { label: 'Large', name: 'text-lg', meta: 'text-base', chip: 'text-base' },
-};
-const TEXT_SIZE_KEY = 'submissions.textSize';
+// Text sizes for the records list.
+const TEXT = { name: 'text-base', meta: 'text-sm', chip: 'text-sm' };
 
 const EMPTY_STATS = { total: 0, male: 0, female: 0, submitters: 0, latest_at: null };
 
@@ -263,33 +258,6 @@ function Pagination({ records }) {
     );
 }
 
-function TextSizeControl({ value, onChange }) {
-    const glyph = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' };
-    return (
-        <div role="radiogroup" aria-label="Text size" className="inline-flex rounded-md border bg-card p-0.5">
-            {Object.entries(TEXT_SIZES).map(([key, size]) => {
-                const active = key === value;
-                return (
-                    <button
-                        key={key}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        aria-label={`${size.label} text`}
-                        title={`${size.label} text`}
-                        onClick={() => onChange(key)}
-                        className={`flex h-9 w-9 items-center justify-center rounded font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-7 md:w-7 ${glyph[key]} ${
-                            active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
-                    >
-                        A
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
-
 function DetailRow({ label, children }) {
     return (
         <div className="grid grid-cols-[8.5rem_1fr] gap-3 py-2.5 text-sm">
@@ -312,23 +280,6 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [textSize, setTextSize] = useState(() => {
-        try {
-            const saved = window.localStorage.getItem(TEXT_SIZE_KEY);
-            return TEXT_SIZES[saved] ? saved : 'md';
-        } catch {
-            return 'md';
-        }
-    });
-    const sz = TEXT_SIZES[textSize];
-
-    useEffect(() => {
-        try {
-            window.localStorage.setItem(TEXT_SIZE_KEY, textSize);
-        } catch {
-            // storage unavailable (private mode); the choice just won't persist
-        }
-    }, [textSize]);
     const perPage = Number(filters.per_page) || 20;
 
     const advancedCount = [filters.user_id, filters.date_from, filters.date_to].filter(Boolean).length;
@@ -409,16 +360,16 @@ export default function PersonSubmissions({ config, records, users = [], filters
                         <div className="space-y-3">
                             <Link
                                 href={route('admin.dashboard')}
-                                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                                className="inline-flex items-center gap-1.5 text-base text-muted-foreground hover:text-foreground"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Dashboard
                             </Link>
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                                 <div className="min-w-0">
-                                    <h1 className="text-2xl font-semibold text-foreground">{config.title}</h1>
-                                    <p className="mt-1 text-sm text-muted-foreground">{config.description}</p>
-                                    <p className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                                    <h1 className="text-3xl font-semibold text-foreground">{config.title}</h1>
+                                    <p className="mt-1.5 text-base text-muted-foreground">{config.description}</p>
+                                    <p className="mt-2.5 inline-flex items-center gap-2 text-sm text-muted-foreground">
                                         <span
                                             className={`h-2 w-2 rounded-full ${disaster ? 'bg-success' : 'bg-muted-foreground/40'}`}
                                             aria-hidden="true"
@@ -629,10 +580,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     </span>
                                 </h2>
                                 {records.data.length > 0 && (
-                                    <div className="flex items-center gap-3">
-                                        <p className="hidden text-xs text-muted-foreground lg:block">Select a record to see the full details</p>
-                                        <TextSizeControl value={textSize} onChange={setTextSize} />
-                                    </div>
+                                    <p className="hidden text-xs text-muted-foreground sm:block">Select a record to see the full details</p>
                                 )}
                             </div>
 
@@ -655,11 +603,11 @@ export default function PersonSubmissions({ config, records, users = [], filters
 
                                                     <span className="min-w-0 flex-1">
                                                         <span className="flex flex-wrap items-baseline gap-x-2">
-                                                            <span className={`font-medium text-foreground ${sz.name}`}>{record.name || 'No name'}</span>
-                                                            <span className={`text-muted-foreground ${sz.meta}`}>{ageSex(record)}</span>
+                                                            <span className={`font-medium text-foreground ${TEXT.name}`}>{record.name || 'No name'}</span>
+                                                            <span className={`text-muted-foreground ${TEXT.meta}`}>{ageSex(record)}</span>
                                                         </span>
                                                         {record.address && (
-                                                            <span className={`mt-0.5 flex items-start gap-1 text-muted-foreground ${sz.meta}`}>
+                                                            <span className={`mt-0.5 flex items-start gap-1 text-muted-foreground ${TEXT.meta}`}>
                                                                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                                                 <span className="line-clamp-1">{record.address}</span>
                                                             </span>
@@ -672,7 +620,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                                     <span
                                                                         key={col.key}
                                                                         title={`${col.label}: ${value}`}
-                                                                        className={`inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 ${sz.chip}`}
+                                                                        className={`inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 ${TEXT.chip}`}
                                                                     >
                                                                         <span className="shrink-0 text-muted-foreground">{col.label}:</span>
                                                                         <span className="max-w-[16rem] truncate font-medium text-foreground">{value}</span>
@@ -680,13 +628,13 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                                 );
                                                             })}
                                                         </span>
-                                                        <span className={`mt-2 flex items-center gap-1.5 text-muted-foreground sm:hidden ${sz.meta}`}>
+                                                        <span className={`mt-2 flex items-center gap-1.5 text-muted-foreground sm:hidden ${TEXT.meta}`}>
                                                             <Users className="h-3.5 w-3.5" aria-hidden="true" />
                                                             {record.user?.name || 'Unknown'} · {formatDay(record.created_at) || '—'}
                                                         </span>
                                                     </span>
 
-                                                    <span className={`hidden shrink-0 text-right tabular-nums sm:block ${sz.meta}`}>
+                                                    <span className={`hidden shrink-0 text-right tabular-nums sm:block ${TEXT.meta}`}>
                                                         <span className="flex items-center justify-end gap-1.5 font-medium text-foreground">
                                                             <Users className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                                                             {record.user?.name || 'Unknown'}
