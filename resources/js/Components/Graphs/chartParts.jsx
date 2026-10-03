@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, HeartPulse, UserSearch } from "lucide-react";
 
 // Shared chart building blocks. Series colors are --viz-* tokens in app.css,
@@ -30,4 +31,49 @@ export function Tip({ className = "", children }) {
             {children}
         </div>
     );
+}
+
+/**
+ * Tooltip rendered in a fixed layer on <body>, so it is never clipped by a scrolling
+ * list. Spread `bind(content)` on each hoverable/focusable mark and render `node` once.
+ */
+export function useFloatingTip() {
+    const [tip, setTip] = useState(null);
+    const hide = () => setTip(null);
+
+    useEffect(() => {
+        if (!tip) return undefined;
+        window.addEventListener("scroll", hide, true);
+        window.addEventListener("resize", hide);
+        return () => {
+            window.removeEventListener("scroll", hide, true);
+            window.removeEventListener("resize", hide);
+        };
+    }, [tip]);
+
+    const show = (event, content) => setTip({ rect: event.currentTarget.getBoundingClientRect(), content });
+    const bind = (content) => ({
+        onMouseEnter: (event) => show(event, content),
+        onMouseLeave: hide,
+        onFocus: (event) => show(event, content),
+        onBlur: hide,
+    });
+
+    let node = null;
+    if (tip && typeof document !== "undefined") {
+        const below = tip.rect.top < 150;
+        const left = Math.min(Math.max(8, tip.rect.left), window.innerWidth - 256);
+        node = createPortal(
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed z-50 min-w-36 max-w-60 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
+                style={{ left, top: below ? tip.rect.bottom + 6 : tip.rect.top - 6, transform: below ? undefined : "translateY(-100%)" }}
+            >
+                {tip.content}
+            </div>,
+            document.body,
+        );
+    }
+
+    return { bind, node, hide };
 }

@@ -4,7 +4,7 @@ import { BarChart3, SearchX, Table2 } from "lucide-react";
 import GraphCard from "../ui/GraphCard";
 import { Button } from "../ui/button";
 import { AGE_BRACKETS, ageBracket, matchesFilters, sexOf } from "./personStats";
-import { LineKey, Swatch, Tip } from "./chartParts";
+import { LineKey, Swatch, Tip, useFloatingTip } from "./chartParts";
 
 /**
  * Shared dashboard graph for the Casualties / Injured / Missing cards.
@@ -25,7 +25,7 @@ const ACCENT_TEXT = {
     info: "text-info",
 };
 
-const ROW_LIMIT = 8;
+const ROW_LIMIT = 5;
 
 const emptyRow = (label) => ({ label, Male: 0, Female: 0, Unknown: 0, total: 0 });
 
@@ -110,11 +110,13 @@ function SexSplit({ counts, total }) {
 // ---------------------------------------------------------------------------
 
 /** Horizontal stacked bars (long category names stay readable, no rotated labels). */
-function CategoryBars({ rows, total, label }) {
-    const max = Math.max(1, ...rows.map((r) => r.total));
+function CategoryBars({ rows, total, label, max: maxOverride }) {
+    const max = maxOverride || Math.max(1, ...rows.map((r) => r.total));
+    const tip = useFloatingTip();
 
     return (
         <ul className="space-y-3" aria-label={label}>
+            {tip.node}
             {rows.map((row) => {
                 const parts = SERIES.filter((s) => row[s.key] > 0);
                 return (
@@ -122,7 +124,8 @@ function CategoryBars({ rows, total, label }) {
                         key={row.label}
                         tabIndex={0}
                         aria-label={`${row.label}: ${row.total} (${describe(row)})`}
-                        className="group relative rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="group rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        {...tip.bind(<SeriesTip row={row} total={total} />)}
                     >
                         <p className="mb-1 break-words text-sm text-foreground">{row.label}</p>
                         <div className="flex items-center gap-2 border-l border-[color:var(--viz-axis)]">
@@ -140,9 +143,6 @@ function CategoryBars({ rows, total, label }) {
                             </div>
                             <span className="text-sm font-semibold tabular-nums text-foreground">{row.total}</span>
                         </div>
-                        <Tip className="bottom-full left-0 mb-1">
-                            <SeriesTip row={row} total={total} />
-                        </Tip>
                     </li>
                 );
             })}
@@ -269,7 +269,7 @@ function DataTable({ view, rows, timeline, groupLabel }) {
         return (
             <table className="w-full text-sm">
                 <caption className="sr-only">Reports per {timeline.weekly ? "week" : "day"}</caption>
-                <thead className="text-left text-xs text-muted-foreground">
+                <thead className="sticky top-0 z-10 bg-card text-left text-xs text-muted-foreground">
                     <tr className="border-b">
                         <th scope="col" className="py-2 font-medium">{timeline.weekly ? "Week of" : "Date"}</th>
                         <th scope="col" className="py-2 text-right font-medium">Reports</th>
@@ -291,7 +291,7 @@ function DataTable({ view, rows, timeline, groupLabel }) {
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <caption className="sr-only">{view === "age" ? "By age group and sex" : `By ${groupLabel}`}</caption>
-                <thead className="text-left text-xs text-muted-foreground">
+                <thead className="sticky top-0 z-10 bg-card text-left text-xs text-muted-foreground">
                     <tr className="border-b">
                         <th scope="col" className="py-2 pr-2 font-medium">{view === "age" ? "Age group" : groupLabel}</th>
                         <th scope="col" className="px-2 py-2 text-right font-medium">Male</th>
@@ -384,6 +384,7 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({
     }, [filtered]);
 
     const visibleGroupRows = showAll ? groupRows : groupRows.slice(0, ROW_LIMIT);
+    const scrolls = (showAll && view === "group") || (asTable && view === "time");
     const ageRows = [...AGE_BRACKETS].map((b) => byAge[b] || emptyRow(b));
     const noAge = byAge.none?.total || 0;
 
@@ -427,20 +428,12 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({
     const chart = () => {
         if (view === "group") {
             return (
-                <>
-                    <CategoryBars rows={visibleGroupRows} total={total} label={`By ${groupLabel}`} />
-                    {groupRows.length > ROW_LIMIT && (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="mt-3 h-9 px-2 text-muted-foreground"
-                            onClick={() => setShowAll((value) => !value)}
-                        >
-                            {showAll ? `Show top ${ROW_LIMIT}` : `Show all ${groupRows.length}`}
-                        </Button>
-                    )}
-                </>
+                <CategoryBars
+                    rows={visibleGroupRows}
+                    total={total}
+                    label={`By ${groupLabel}`}
+                    max={Math.max(1, ...groupRows.map((r) => r.total))}
+                />
             );
         }
         if (view === "age") return <AgePyramid byAge={byAge} total={total} noAge={noAge} unknownSex={counts.Unknown} />;
@@ -466,26 +459,48 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({
                     empty
                 ) : (
                     <>
-                        {asTable ? (
-                            <DataTable
-                                view={view}
-                                rows={view === "age" ? ageRows : visibleGroupRows}
-                                timeline={timeline || { weekly: false, buckets: [] }}
-                                groupLabel={groupLabel}
-                            />
-                        ) : (
-                            chart()
-                        )}
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="mt-3 h-9 gap-1.5 px-2 text-muted-foreground"
-                            onClick={() => setAsTable((value) => !value)}
+                        {/* Expanded lists and long tables scroll inside the card */}
+                        <div
+                            className={scrolls ? "max-h-80 overflow-y-auto overscroll-contain rounded-sm pr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" : ""}
+                            tabIndex={scrolls ? 0 : undefined}
+                            role={scrolls ? "region" : undefined}
+                            aria-label={scrolls ? `${title}: all ${view === "group" ? groupLabel.toLowerCase() : "dates"}` : undefined}
                         >
-                            {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}
-                            {asTable ? "View as chart" : "View as table"}
-                        </Button>
+                            {asTable ? (
+                                <DataTable
+                                    view={view}
+                                    rows={view === "age" ? ageRows : visibleGroupRows}
+                                    timeline={timeline || { weekly: false, buckets: [] }}
+                                    groupLabel={groupLabel}
+                                />
+                            ) : (
+                                chart()
+                            )}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {view === "group" && groupRows.length > ROW_LIMIT && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-9 px-2 text-muted-foreground"
+                                    aria-expanded={showAll}
+                                    onClick={() => setShowAll((value) => !value)}
+                                >
+                                    {showAll ? `Show top ${ROW_LIMIT}` : `Show all ${groupRows.length}`}
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 gap-1.5 px-2 text-muted-foreground"
+                                onClick={() => setAsTable((value) => !value)}
+                            >
+                                {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}
+                                {asTable ? "View as chart" : "View as table"}
+                            </Button>
+                        </div>
                     </>
                 )}
             </div>

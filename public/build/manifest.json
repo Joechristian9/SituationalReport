@@ -149,8 +149,8 @@
       "_circle-alert-Byuf0-DD.js"
     ]
   },
-  "_PersonBreakdownGraph-hJOAS4L4.js": {
-    "file": "assets/PersonBreakdownGraph-hJOAS4L4.js",
+  "_PersonBreakdownGraph-KXhZWhvC.js": {
+    "file": "assets/PersonBreakdownGraph-KXhZWhvC.js",
     "name": "PersonBreakdownGraph",
     "imports": [
       "_index-d-9UipKu.js",
@@ -948,7 +948,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-DObvlKd0.js",
+    "file": "assets/BarangayImpactChart-DihmL1zr.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -975,13 +975,13 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-BA-ktAYG.js",
+    "file": "assets/CasualtyGraph-DiJQd0mE.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
-      "_PersonBreakdownGraph-hJOAS4L4.js",
+      "_PersonBreakdownGraph-KXhZWhvC.js",
       "_user-x-C9cn25HP.js",
       "_GraphCard-DQo_Phxu.js",
       "_app-sidebar-Ds6UvbLN.js",
@@ -1028,7 +1028,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-h1r2TdGH.js",
+    "file": "assets/ImpactTrendChart-BdcseuvW.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1061,13 +1061,13 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-CGh34F4o.js",
+    "file": "assets/InjuredGraph-BadQ_OF7.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
-      "_PersonBreakdownGraph-hJOAS4L4.js",
+      "_PersonBreakdownGraph-KXhZWhvC.js",
       "_user-plus-xDx5x2Jo.js",
       "_GraphCard-DQo_Phxu.js",
       "_app-sidebar-Ds6UvbLN.js",
@@ -1094,13 +1094,13 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-BM_HAyB3.js",
+    "file": "assets/MissingGraph-Bn5dD3Ak.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-d-9UipKu.js",
-      "_PersonBreakdownGraph-hJOAS4L4.js",
+      "_PersonBreakdownGraph-KXhZWhvC.js",
       "_user-search-BLq0pnwY.js",
       "_GraphCard-DQo_Phxu.js",
       "_app-sidebar-Ds6UvbLN.js",
@@ -1350,7 +1350,7 @@
     ]
   },
   "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-rsen_u6s.js",
+    "file": "assets/WeatherDashboard-CJqNwYLk.js",
     "name": "WeatherDashboard",
     "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
     "isDynamicEntry": true,
@@ -1487,7 +1487,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-DpIDlbeB.js",
+    "file": "assets/Dashboard-oYO7hk4D.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1500,6 +1500,7 @@
       "_proxy-AhSCSImF.js",
       "_circle-alert-Byuf0-DD.js",
       "_select-BBTIFybn.js",
+      "_index-6ft4nDGQ.js",
       "_triangle-alert-B-9NMgwH.js",
       "_heart-pulse-WmMxBMdh.js",
       "_user-search-BLq0pnwY.js",
@@ -1507,7 +1508,6 @@
       "_index-2sKsfmU5.js",
       "_loader-circle-CLKlZmhJ.js",
       "_index-B_vI8sF1.js",
-      "_index-6ft4nDGQ.js",
       "_badge-7lIfeA-e.js"
     ],
     "dynamicImports": [
@@ -2281,7 +2281,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-Dg5p-BSk.js",
+    "file": "assets/app-DCW2RYax.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2333,7 +2333,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-CpTiwq2x.css"
+      "assets/app-BGBLcrYv.css"
     ]
   }
 }
