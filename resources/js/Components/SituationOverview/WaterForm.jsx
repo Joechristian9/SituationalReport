@@ -9,6 +9,7 @@ import { usePage } from "@inertiajs/react";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 
 import { Droplet, Loader2, Save, AlertCircle, CheckCircle2 } from "lucide-react";
+import { savedMessage } from "@/lib/offline/queue";
 
 export default function WaterForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -177,7 +178,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
             // Invalidate modification history
             await queryClient.invalidateQueries(['water-service-modifications']);
             
-            toast.success("Water service report saved successfully!");
+            toast.success(savedMessage(response, "Water service report saved successfully!"));
         } catch (err) {
             console.error(err);
             const errorMessage = err.response?.data?.message || 
@@ -231,7 +232,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             onChange={handleInputChange}
                             disabled={disabled}
                             placeholder="e.g., Deep well, Spring, Water district..."
-                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
                         />
                         <ModificationIndicator 
                             recordId={data.waterServices?.[0]?.id} 
@@ -256,7 +257,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             rows="4"
                             disabled={disabled}
                             placeholder="List the barangays served by this water source..."
-                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                         />
                         <ModificationIndicator 
                             recordId={data.waterServices?.[0]?.id} 
@@ -281,7 +282,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             rows="4"
                             disabled={disabled}
                             placeholder="e.g., Fully operational, Intermittent supply, Temporarily unavailable due to maintenance..."
-                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                         />
                         <ModificationIndicator 
                             recordId={data.waterServices?.[0]?.id} 
@@ -307,7 +308,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                             rows="5"
                             disabled={disabled}
                             placeholder="Click to auto-fill date and time, then add your remarks..."
-                            className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                         />
                         <ModificationIndicator 
                             recordId={data.waterServices?.[0]?.id} 
@@ -325,7 +326,7 @@ export default function WaterForm({ data, setData, errors, disabled = false }) {
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

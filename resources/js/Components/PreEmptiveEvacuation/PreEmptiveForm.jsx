@@ -12,6 +12,8 @@ import SearchBar from "../ui/SearchBar";
 import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
+import { savedMessage } from "@/lib/offline/queue";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
 
 const formatFieldName = (field) => {
     return field
@@ -127,7 +129,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                 setData("reports", response.data.reports);
             }
             
-            toast.success("Pre-emptive evacuation reports saved successfully!");
+            toast.success(savedMessage(response, "Pre-emptive evacuation reports saved successfully!"));
         } catch (err) {
             console.error(err);
             if (err.response && err.response.status === 422) {
@@ -191,8 +193,8 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                 </div>
             </div>
             {/* Table */}
-            <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-                <table className="w-full text-sm border-collapse">
+            <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200 md:shadow-sm">
+                <table className={`w-full text-sm border-collapse ${STACKED_TABLE} md:min-w-[72rem]`}>
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
                             <th className="p-3 border-r">Barangay</th>
@@ -248,6 +250,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                     "outside_families",
                                     "outside_persons",
                                 ];
+                                const labels = {"barangay":"Barangay","evacuation_center":"Evacuation center","families":"Families (in center)","persons":"Persons (in center)","outside_center":"Outside center","outside_families":"Families (outside center)","outside_persons":"Persons (outside center)","total_families":"Total families","total_persons":"Total persons"};
                                 
                                 return (
                                 <tr
@@ -255,24 +258,22 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                     className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/60 transition-colors"
                                 >
                                     {fields.map((field) => {
-                                        const historyKey = `${row.id}_${field}`;
-                                        const fieldHistory = modificationData?.history?.[historyKey] || [];
-                                        const latestChange = fieldHistory[0];
-                                        const previousChange = fieldHistory.length > 1 ? fieldHistory[1] : null;
                                         
                                         const isNumberField = ['families', 'persons', 'outside_families', 'outside_persons'].includes(field);
                                         
                                         return (
                                             <td key={field} className="p-2">
+                                                <span className={CELL_LABEL}>{labels[field]}</span>
                                                 <div className="relative">
                                                     <input
                                                         type={isNumberField ? "number" : "text"}
                                                         name={field}
+                                                        aria-label={labels[field]}
                                                         value={row[field] ?? ""}
                                                         onChange={(e) => handleInputChange(actualIndex, e)}
                                                         placeholder={isNumberField ? "0" : `Enter ${formatFieldName(field)}`}
                                                         disabled={disabled}
-                                                        className={`w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} ${fieldHistory.length > 0 ? 'pr-12' : ''} disabled:bg-slate-100 disabled:cursor-not-allowed`}
+                                                        className={`w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition ${isNumberField ? 'text-right' : ''} disabled:bg-slate-100 disabled:cursor-not-allowed`}
                                                     />
                                                     <ModificationIndicator 
                                                         recordId={row.id} 
@@ -285,10 +286,12 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                             </td>
                                         );
                                     })}
-                                    <td className="p-2 text-right font-semibold text-blue-700">
+                                    <td className="p-2 text-right font-semibold text-blue-700 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                        <span className={CELL_LABEL}>Total families</span>
                                         {row.total_families}
                                     </td>
-                                    <td className="p-2 text-right font-semibold text-blue-700">
+                                    <td className="p-2 text-right font-semibold text-blue-700 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                        <span className={CELL_LABEL}>Total persons</span>
                                         {row.total_persons}
                                     </td>
                                 </tr>
@@ -301,22 +304,25 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                             <td className="p-2 text-center" colSpan={2}>
                                 Grand Total
                             </td>
-                            <td className="p-2 text-right text-blue-600">
+                            <td className="p-2 text-right text-blue-600 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Families (in center)</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.families || 0),
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right text-blue-600">
+                            <td className="p-2 text-right text-blue-600 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Persons (in center)</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.persons || 0),
                                     0
                                 )}
                             </td>
-                            <td className="p-2"></td>
-                            <td className="p-2 text-right text-blue-600">
+                            <td className="p-2 max-md:hidden"></td>
+                            <td className="p-2 text-right text-blue-600 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Families (outside center)</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum +
@@ -324,7 +330,8 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right text-blue-600">
+                            <td className="p-2 text-right text-blue-600 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Persons (outside center)</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum +
@@ -332,14 +339,16 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right text-blue-800">
+                            <td className="p-2 text-right text-blue-800 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Total families</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.total_families || 0),
                                     0
                                 )}
                             </td>
-                            <td className="p-2 text-right text-blue-800">
+                            <td className="p-2 text-right text-blue-800 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3">
+                                <span className={CELL_LABEL}>Total persons</span>
                                 {data.reports.reduce(
                                     (sum, row) =>
                                         sum + parseInt(row.total_persons || 0),

@@ -6,6 +6,7 @@ import { usePage } from "@inertiajs/react";
 import { Radio, Loader2, Save, AlertCircle, Plus, X, History } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
+import { savedMessage } from "@/lib/offline/queue";
 
 export default function CommunicationForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -59,7 +60,16 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
     // Check if user has communication form access (CDRRMO users)
     const canManageServices = auth?.user?.permissions?.some(p => p.name === 'access-communication-form') || 
                               auth?.user?.roles?.some(role => role.name === 'admin');
-    
+
+    // Same services as the desktop table columns, grouped for the phone layout.
+    const extraServices = (category, defaults) =>
+        services[category]?.filter((service) => !defaults.includes(service.name.toUpperCase())) ?? [];
+    const phoneGroups = [
+        { key: 'cellphone', title: 'Cellphone (SMS & call)', placeholder: 'e.g., Serviceable', fixed: [['globe', 'Globe'], ['smart', 'Smart']], extra: extraServices('cellphone', ['GLOBE', 'SMART']) },
+        { key: 'internet', title: 'Internet', placeholder: 'e.g., Serviceable', fixed: [['pldt_internet', 'Polaris']], extra: extraServices('internet', ['POLARIS']) },
+        { key: 'radio', title: 'Radio', placeholder: 'e.g., Functional', fixed: [['vhf', 'VHF']], extra: extraServices('radio', ['VHF']) },
+    ];
+
     // Fetch available services
     useEffect(() => {
         const fetchServices = async () => {
@@ -295,7 +305,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                 await queryClient.invalidateQueries(['communication-modifications']);
             }
             
-            toast.success("Communication report saved successfully!");
+            toast.success(savedMessage(response, "Communication report saved successfully!"));
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save communication report.");
@@ -326,7 +336,113 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
+            {/* Phones: one section per service type instead of the wide two-level table. */}
+            <div className="space-y-4 md:hidden">
+                {phoneGroups.map((group) => (
+                    <section key={group.key} className="rounded-xl border bg-card p-4 shadow-sm" aria-labelledby={`comm-${group.key}`}>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <h4 id={`comm-${group.key}`} className="text-sm font-semibold text-foreground">
+                                {group.title}
+                            </h4>
+                            {canManageServices && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setNewService({ name: '', category: group.key }); setShowAddService(true); }}
+                                    disabled={disabled}
+                                    className="inline-flex min-h-11 items-center gap-1 rounded-md border border-input px-3 text-sm font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                                >
+                                    <Plus className="h-4 w-4" aria-hidden="true" /> Add
+                                </button>
+                            )}
+                        </div>
+                        <div className="space-y-3">
+                            {group.fixed.map(([name, label]) => (
+                                <div key={name}>
+                                    <label htmlFor={`comm-field-${name}`} className="mb-1 block text-xs font-semibold text-muted-foreground">
+                                        {label}
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            id={`comm-field-${name}`}
+                                            type="text"
+                                            name={name}
+                                            value={formData[name]}
+                                            onChange={handleInputChange}
+                                            disabled={disabled}
+                                            placeholder={group.placeholder}
+                                            className="w-full rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                                        />
+                                        <ModificationIndicator
+                                            recordId={currentRecordId}
+                                            fieldName={name}
+                                            getFieldHistory={getFieldHistory}
+                                            currentValue={formData[name]}
+                                            showLastModified={false}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            {group.extra.map((service) => (
+                                <div key={service.id}>
+                                    <div className="mb-1 flex items-center justify-between gap-2">
+                                        <label htmlFor={`comm-service-${service.id}`} className="text-xs font-semibold text-muted-foreground">
+                                            {service.name}
+                                        </label>
+                                        {canManageServices && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveService(service.id)}
+                                                disabled={disabled}
+                                                aria-label={`Remove ${service.name}`}
+                                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                                            >
+                                                <X className="h-4 w-4" aria-hidden="true" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <input
+                                        id={`comm-service-${service.id}`}
+                                        type="text"
+                                        name={`service_${service.id}`}
+                                        value={dynamicValues[`service_${service.id}`] || ""}
+                                        onChange={handleInputChange}
+                                        disabled={disabled}
+                                        placeholder={group.placeholder}
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                ))}
+                <section className="rounded-xl border bg-card p-4 shadow-sm">
+                    <label htmlFor="comm-field-remarks" className="mb-1 block text-sm font-semibold text-foreground">
+                        Remarks
+                    </label>
+                    <div className="relative">
+                        <textarea
+                            id="comm-field-remarks"
+                            name="remarks"
+                            value={formData.remarks}
+                            onChange={handleInputChange}
+                            onFocus={handleRemarksFocus}
+                            rows="3"
+                            disabled={disabled}
+                            placeholder="Tap to auto-fill date and time..."
+                            className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                        <ModificationIndicator
+                            recordId={currentRecordId}
+                            fieldName="remarks"
+                            getFieldHistory={getFieldHistory}
+                            currentValue={formData.remarks}
+                            showLastModified={false}
+                        />
+                    </div>
+                </section>
+            </div>
+
+            <div className="hidden md:block bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="bg-blue-50 border-b border-blue-200">
@@ -398,7 +514,8 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     {canManageServices && (
                                         <button
                                             onClick={() => handleRemoveService(service.id)}
-                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            aria-label={`Remove ${service.name}`}
+                                            className="absolute top-1 right-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
                                             disabled={disabled}
                                         >
                                             <X className="w-3 h-3" />
@@ -419,7 +536,8 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     {canManageServices && (
                                         <button
                                             onClick={() => handleRemoveService(service.id)}
-                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            aria-label={`Remove ${service.name}`}
+                                            className="absolute top-1 right-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
                                             disabled={disabled}
                                         >
                                             <X className="w-3 h-3" />
@@ -440,7 +558,8 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                     {canManageServices && (
                                         <button
                                             onClick={() => handleRemoveService(service.id)}
-                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
+                                            aria-label={`Remove ${service.name}`}
+                                            className="absolute top-1 right-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5"
                                             disabled={disabled}
                                         >
                                             <X className="w-3 h-3" />
@@ -622,7 +741,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

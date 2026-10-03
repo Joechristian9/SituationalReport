@@ -9,6 +9,8 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.jsx',
+        // Shared class lists live in .js files too (e.g. lib/responsiveTable.js).
+        './resources/js/**/*.js',
     ],
 
     theme: {

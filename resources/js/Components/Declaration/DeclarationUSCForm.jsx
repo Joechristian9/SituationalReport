@@ -241,7 +241,7 @@ export default function DeclarationUSCForm({ data, setData, errors, disabled = f
                                                             }
                                                             placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
                                                             disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-12 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                                                         />
                                                         <ModificationIndicator 
                                                             recordId={row.id} 

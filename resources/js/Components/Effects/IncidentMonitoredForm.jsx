@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertTriangle, Save, Plus, Loader2, AlertCircle, MoreVertical, Trash2, History } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { savedMessage } from "@/lib/offline/queue";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
 
 export default function IncidentMonitoredForm({ data, setData, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -156,7 +158,7 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                 await queryClient.invalidateQueries(['incident-modifications']);
             }
             
-            toast.success("Incident reports saved successfully!");
+            toast.success(savedMessage(response, "Incident reports saved successfully!"));
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save incident reports.");
@@ -199,15 +201,17 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
         useEffect(() => {
             if (isOpen && buttonRef.current) {
                 const rect = buttonRef.current.getBoundingClientRect();
-                const popoverWidth = 384;
+                // Narrower than 384px on phones, and always kept inside the screen.
+                const popoverWidth = Math.min(384, window.innerWidth - 32);
                 const popoverHeight = 400;
-                
+
                 let left = rect.right + 8;
                 let top = rect.top;
-                
+
                 if (left + popoverWidth > window.innerWidth) {
                     left = rect.left - popoverWidth - 8;
                 }
+                left = Math.min(Math.max(16, left), window.innerWidth - popoverWidth - 16);
                 
                 if (top + popoverHeight > window.innerHeight) {
                     top = window.innerHeight - popoverHeight - 16;
@@ -219,7 +223,8 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                 
                 setPopoverStyle({
                     left: `${left}px`,
-                    top: `${top}px`
+                    top: `${top}px`,
+                    width: `${popoverWidth}px`
                 });
             }
         }, [isOpen]);
@@ -248,7 +253,7 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
         return (
             <>
                 <div 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1"
+                    className="mt-1.5 flex items-center gap-1.5 text-xs"
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                 >
@@ -262,14 +267,15 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                         ref={buttonRef}
                         type="button"
                         onClick={handleClick}
-                        className={`transition-colors relative ${
+                        aria-label="View modification history"
+                        className={`-ml-1 inline-flex min-h-8 min-w-8 items-center justify-center rounded-md transition-colors relative hover:bg-muted ${
                             wasJustUpdated 
                                 ? 'text-green-600 hover:text-green-800' 
                                 : 'text-blue-600 hover:text-blue-800'
                         }`}
                         title="View modification history"
                     >
-                        <History className="w-5 h-5" />
+                        <History className="h-4 w-4" aria-hidden="true" />
                         {wasJustUpdated && (
                             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white"></span>
                         )}
@@ -420,7 +426,7 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
 
                 <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                        <table className={`w-full border-collapse ${STACKED_TABLE} md:min-w-[56rem]`}>
                             <thead className="bg-blue-50 border-b border-blue-200">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Kinds of Incident</th>
@@ -431,16 +437,17 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                                     <th className="px-4 py-3 text-center text-sm font-semibold text-blue-900 w-24">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="md:divide-y md:divide-gray-200">
                                 {incidents.map((incident) => (
                                     <tr key={incident.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Kind of incident</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Kind of incident"
                                                     type="text"
                                                     value={incident.kinds_of_incident}
                                                     onChange={(e) => updateIncident(incident.id, 'kinds_of_incident', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="e.g., Flooding, Landslide"
                                                     disabled={disabled}
                                                 />
@@ -448,24 +455,26 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Date & time</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Date & time"
                                                     type="datetime-local"
                                                     value={incident.date_time}
                                                     onChange={(e) => updateIncident(incident.id, 'date_time', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     disabled={disabled}
                                                 />
                                                 <ModificationIndicator incidentId={incident.id} fieldName="date_time" />
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Location</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Location"
                                                     type="text"
                                                     value={incident.location}
                                                     onChange={(e) => updateIncident(incident.id, 'location', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="e.g 33 Barangays flooded..."
                                                     disabled={disabled}
                                                 />
@@ -473,11 +482,12 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Description</span>
                                             <div className="relative">
-                                                <textarea
+                                                <textarea aria-label="Description"
                                                     value={incident.description}
                                                     onChange={(e) => updateIncident(incident.id, 'description', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="Description"
                                                     rows="2"
                                                     disabled={disabled}
@@ -486,11 +496,12 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Remarks</span>
                                             <div className="relative">
-                                                <textarea
+                                                <textarea aria-label="Remarks"
                                                     value={incident.remarks}
                                                     onChange={(e) => updateIncident(incident.id, 'remarks', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="Remarks"
                                                     rows="2"
                                                     disabled={disabled}
@@ -498,7 +509,7 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                                                 <ModificationIndicator incidentId={incident.id} fieldName="remarks" />
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-center">
+                                        <td className="px-4 py-3 text-center max-md:text-right">
                                             {incidents.length > 1 ? (
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -538,7 +549,7 @@ export default function IncidentMonitoredForm({ data, setData, disabled = false 
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

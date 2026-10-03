@@ -117,4 +117,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Phones: iOS zooms the page when a field under 16px is focused, which breaks the
+     form layout in the field. !important beats the text-sm classes on every input. */
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }

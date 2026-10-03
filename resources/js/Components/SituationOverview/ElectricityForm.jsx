@@ -9,6 +9,8 @@ import { usePage } from "@inertiajs/react";
 import { Zap, Loader2, Save, AlertCircle } from "lucide-react";
 import AddRowButton from "@/Components/ui/AddRowButton";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
+import { savedMessage } from "@/lib/offline/queue";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
 
 export default function ElectricityForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -206,7 +208,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
             // Invalidate modification history
             await queryClient.invalidateQueries(['electricity-modifications']);
             
-            toast.success("Electricity report saved successfully!");
+            toast.success(savedMessage(response, "Electricity report saved successfully!"));
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save electricity report.");
@@ -229,8 +231,8 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-x-auto">
-                <table className="w-full">
+            <div className="md:bg-white md:rounded-xl md:shadow-md md:border-2 md:border-blue-200 md:overflow-x-auto">
+                <table className={`w-full ${STACKED_TABLE}`}>
                     <thead>
                         <tr className="bg-blue-50 border-b border-blue-200">
                             <th className="text-left p-4 font-semibold text-blue-900 w-32">
@@ -251,6 +253,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                         {rows.map((row, index) => (
                             <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
                                 <td className="p-3">
+                                    <span className={CELL_LABEL}>Created by</span>
                                     <div className="text-sm font-medium text-gray-900">
                                         {row.user?.name || (row.user_id === auth.user.id ? 'You' : 'New Entry')}
                                     </div>
@@ -262,13 +265,15 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                 </td>
                                 <td className="p-3">
                                     <div className="relative">
+                                        <span className={CELL_LABEL}>Status of electricity services</span>
                                         <textarea
+                                            aria-label="Status of electricity services"
                                             value={row.status}
                                             onChange={(e) => handleInputChange(index, 'status', e.target.value)}
                                             disabled={disabled}
                                             rows="3"
                                             placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
-                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                         />
                                         <ModificationIndicator 
                                             recordId={row.id} 
@@ -281,13 +286,15 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                 </td>
                                 <td className="p-3">
                                     <div className="relative">
+                                        <span className={CELL_LABEL}>Barangays affected</span>
                                         <textarea
+                                            aria-label="Barangays affected"
                                             value={row.barangays_affected}
                                             onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
                                             disabled={disabled}
                                             rows="3"
                                             placeholder="List affected barangays..."
-                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                         />
                                         <ModificationIndicator 
                                             recordId={row.id} 
@@ -300,14 +307,16 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                                 </td>
                                 <td className="p-3">
                                     <div className="relative">
+                                        <span className={CELL_LABEL}>Remarks</span>
                                         <textarea
+                                            aria-label="Remarks"
                                             value={row.remarks}
                                             onChange={(e) => handleInputChange(index, 'remarks', e.target.value)}
                                             onFocus={() => handleRemarksFocus(index)}
                                             disabled={disabled}
                                             rows="3"
                                             placeholder="Click to auto-fill date and time..."
-                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
                                         />
                                         <ModificationIndicator 
                                             recordId={row.id} 
@@ -330,7 +339,7 @@ export default function ElectricityForm({ data, setData, errors, disabled = fals
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
+                    className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
                 >
                     {isSaving ? (
                         <>

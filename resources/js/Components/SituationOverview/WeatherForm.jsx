@@ -6,6 +6,8 @@ import { usePage } from "@inertiajs/react";
 import { Cloud, Loader2, Save, AlertCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
+import { savedMessage } from "@/lib/offline/queue";
+import { STACKED_KEY_VALUE } from "@/lib/responsiveTable";
 
 export default function WeatherForm({ data, setData, errors, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -149,7 +151,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                 await queryClient.invalidateQueries(['weather-modifications']);
             }
             
-            toast.success("Weather report saved successfully!");
+            toast.success(savedMessage(response, "Weather report saved successfully!"));
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save weather report.");
@@ -183,7 +185,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
             </div>
 
             <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-hidden">
-                <table className="w-full">
+                <table className={`w-full ${STACKED_KEY_VALUE}`}>
                     <tbody>
                         <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
                             <td className="bg-gradient-to-br from-blue-100 to-indigo-100 font-semibold text-blue-900 p-5 border-r border-blue-200 w-1/3 align-middle" rowSpan="4">
@@ -192,6 +194,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     <input
                                         type="text"
                                         name="municipality"
+                                        aria-label="Location"
                                         value={formData.municipality}
                                         onChange={handleInputChange}
                                         disabled={disabled}
@@ -200,7 +203,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     />
                                 </div>
                             </td>
-                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200 w-1/4">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 max-md:pb-1 border-r border-blue-200 w-1/4">
                                 Sky Condition
                             </td>
                             <td className="p-4 bg-white">
@@ -208,11 +211,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     <input
                                         type="text"
                                         name="sky_condition"
+                                        aria-label="Sky condition"
                                         value={formData.sky_condition}
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., Cloudy, Partly cloudy, Clear skies"
-                                        className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
+                                        className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
                                         recordId={currentRecordId}
@@ -225,7 +229,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                             </td>
                         </tr>
                         <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
-                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 max-md:pb-1 border-r border-blue-200">
                                 Wind
                             </td>
                             <td className="p-4 bg-white">
@@ -233,11 +237,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     <input
                                         type="text"
                                         name="wind"
+                                        aria-label="Wind"
                                         value={formData.wind}
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., Light winds, Moderate winds"
-                                        className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
+                                        className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
                                         recordId={currentRecordId}
@@ -250,7 +255,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                             </td>
                         </tr>
                         <tr className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
-                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 max-md:pb-1 border-r border-blue-200">
                                 Precipitation
                             </td>
                             <td className="p-4 bg-white">
@@ -258,11 +263,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     <input
                                         type="text"
                                         name="precipitation"
+                                        aria-label="Precipitation"
                                         value={formData.precipitation}
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., No rain in the last 12 hours"
-                                        className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
+                                        className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
                                         recordId={currentRecordId}
@@ -275,7 +281,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                             </td>
                         </tr>
                         <tr className="hover:bg-blue-50 transition-colors">
-                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 border-r border-blue-200">
+                            <td className="bg-blue-50 font-semibold text-blue-900 p-4 max-md:pb-1 border-r border-blue-200">
                                 Sea Condition
                             </td>
                             <td className="p-4 bg-white">
@@ -283,11 +289,12 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                                     <input
                                         type="text"
                                         name="sea_condition"
+                                        aria-label="Sea condition"
                                         value={formData.sea_condition}
                                         onChange={handleInputChange}
                                         disabled={disabled}
                                         placeholder="e.g., N/A, Calm, Moderate waves"
-                                        className="w-full px-4 py-2.5 pr-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
+                                        className="w-full px-4 py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed shadow-sm"
                                     />
                                     <ModificationIndicator 
                                         recordId={currentRecordId}
@@ -307,7 +314,7 @@ export default function WeatherForm({ data, setData, errors, disabled = false })
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all hover:shadow-lg"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all hover:shadow-lg"
                 >
                     {isSaving ? (
                         <>

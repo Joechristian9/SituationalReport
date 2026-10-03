@@ -84,7 +84,7 @@ export default function Dashboard() {
                         <Separator orientation="vertical" className="h-6 mx-2" />
                         <h1 className="text-xl font-semibold">Dashboard</h1>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                         <NoActiveTyphoonNotification 
                             typhoon={typhoon?.active}
                             hasActive={typhoon?.hasActive}

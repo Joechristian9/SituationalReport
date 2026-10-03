@@ -14,6 +14,8 @@ import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { Route, Loader2, PlusCircle, Save } from "lucide-react";
+import { savedMessage } from "@/lib/offline/queue";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
 
 const formatFieldName = (field) => {
     return field
@@ -174,7 +176,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
             // Invalidate modification history once
             queryClient.invalidateQueries(['road-modifications']);
             
-            toast.success("Road reports saved successfully!");
+            toast.success(savedMessage(response, "Road reports saved successfully!"));
         } catch (err) {
             console.error(err);
             
@@ -224,7 +226,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                 {/* Table */}
                 <div className="bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-md">
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-sm">
+                        <table className={`w-full border-collapse text-sm ${STACKED_TABLE} md:min-w-[56rem]`}>
                             <thead className="bg-blue-50 border-b border-blue-200">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Road Classification</th>
@@ -235,7 +237,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">REMARKS</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-blue-100">
+                            <tbody className="md:divide-y md:divide-blue-100">
                             {paginatedRoads.length === 0 && searchTerm ? (
                                 <tr>
                                     <td colSpan="6" className="p-8 text-center">
@@ -269,6 +271,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                     "re_routing",
                                     "remarks",
                                 ];
+                                const labels = {"road_classification":"Road classification","status":"Status","areas_affected":"Areas/barangays affected","re_routing":"Re-routing","remarks":"Remarks","name_of_road":"Name of road"};
 
                                 return (
                                     <tr
@@ -281,8 +284,9 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                                     key={field}
                                                     className="px-4 py-3"
                                                 >
+                                                    <span className={CELL_LABEL}>{labels[field]}</span>
                                                     <div className="relative">
-                                                        <textarea
+                                                        <textarea aria-label={labels[field]}
                                                             name={field}
                                                             value={
                                                                 row[field] ?? ""
@@ -296,7 +300,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                                                             placeholder="Enter value..."
                                                             disabled={disabled}
                                                             rows="2"
-                                                            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 resize-none"
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 resize-none"
                                                         />
                                                         <ModificationIndicator 
                                                             recordId={row.id} 
@@ -339,7 +343,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                     <button
                         onClick={handleSubmit}
                         disabled={isSaving || !hasChanges || disabled}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
+                        className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
                     >
                         {isSaving ? (
                             <>

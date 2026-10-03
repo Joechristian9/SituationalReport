@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle, Save, ActivitySquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { savedMessage } from "@/lib/offline/queue";
 
 const formatFieldName = (field) => {
     return field
@@ -150,7 +151,7 @@ export default function Index() {
                 setResponses(response.data.responses);
             }
             
-            toast.success("Response operations saved successfully!");
+            toast.success(savedMessage(response, "Response operations saved successfully!"));
         } catch (err) {
             console.error("Full error:", err);
             console.error("Error response:", err.response?.data);
@@ -198,7 +199,7 @@ export default function Index() {
             <SidebarInset>
                 {/* ✅ Header with breadcrumbs */}
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
                         <Separator orientation="vertical" className="h-6 mx-2" />
 
@@ -233,7 +234,7 @@ export default function Index() {
                     />
                 </header>
 
-                <main className="w-full p-6 h-full bg-gray-50">
+                <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
                     
                     <Card className="shadow-lg rounded-2xl border">
                             <CardHeader>
@@ -269,7 +270,7 @@ export default function Index() {
 
                                 {/* Table */}
                                 <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm md:min-w-[56rem]">
                                         <thead className="hidden md:table-header-group bg-blue-500">
                                             <tr className="text-left text-white font-semibold">
                                                 <th className="p-3 border-r">Team/Unit</th>
@@ -340,7 +341,7 @@ export default function Index() {
                                                                                     handleChange(actualIndex, field, e.target.value)
                                                                                 }
                                                                                 placeholder="Enter value..."
-                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-12 resize-none"
+                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition resize-none"
                                                                             />
                                                                         ) : (
                                                                             <input
@@ -351,7 +352,7 @@ export default function Index() {
                                                                                     handleChange(actualIndex, field, e.target.value)
                                                                                 }
                                                                                 placeholder="Enter value..."
-                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-12"
+                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition"
                                                                             />
                                                                         )}
                                                                         <ModificationIndicator 

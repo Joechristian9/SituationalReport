@@ -3,6 +3,22 @@ import { usePage, useForm } from "@inertiajs/react";
 import { toast } from "react-hot-toast";
 import { Loader2, PlusCircle, Building2 } from "lucide-react";
 import AddRowButton from "@/Components/ui/AddRowButton";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
+
+const FIELD_LABELS = {
+    "province": "Province",
+    "city": "City/Community",
+    "barangay": "Barangay",
+    "familiesAffected": "Families affected",
+    "familiesAssisted": "Families assisted",
+    "clusterType": "Cluster type",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "costPerUnit": "Cost/unit",
+    "amount": "Amount",
+    "source": "Source",
+    "remarks": "Remarks"
+};
 
 export default function AssistanceProvidedLgu({ disabled = false }) {
     const { flash } = usePage().props;
@@ -124,7 +140,7 @@ export default function AssistanceProvidedLgu({ disabled = false }) {
 
             {/* Table */}
             <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                <table className="w-full text-sm">
+                <table className={`w-full text-sm ${STACKED_TABLE} md:min-w-[96rem]`}>
                     <thead className="bg-blue-500 sticky top-0 z-10 shadow-sm">
                         <tr className="text-left text-white font-semibold">
                             <th className="p-3 border-r">Province</th>
@@ -165,7 +181,9 @@ export default function AssistanceProvidedLgu({ disabled = false }) {
                                         key={field}
                                         className="p-3 border-r"
                                     >
+                                        <span className={CELL_LABEL}>{FIELD_LABELS[field]}</span>
                                         <input
+                                            aria-label={FIELD_LABELS[field]}
                                             type={
                                                 field.includes("families") ||
                                                     field === "quantity" ||

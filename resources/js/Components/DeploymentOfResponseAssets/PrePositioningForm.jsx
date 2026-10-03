@@ -13,10 +13,8 @@ import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { Shield, History, Loader2, PlusCircle, Save } from "lucide-react";
+import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 import {
-    Tooltip,
-    TooltipTrigger,
-    TooltipContent,
     TooltipProvider,
 } from "@/components/ui/tooltip";
 
@@ -58,6 +56,9 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
+
+    const getFieldHistory = (recordId, fieldName) =>
+        modificationData?.history?.[`${recordId}_${fieldName}`] || [];
 
     const handleInputChange = (index, event) => {
         const { name, value } = event.target;
@@ -175,7 +176,7 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
 
                 {/* Table */}
                 <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm md:min-w-[56rem]">
                         <thead className="hidden md:table-header-group bg-blue-500">
                             <tr className="text-left text-white font-semibold">
                                 <th className="p-3 border-r">Team/Units</th>
@@ -227,14 +228,6 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
                                         className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
                                     >
                                         {fields.map((field) => {
-                                            const historyKey = `${row.id}_${field}`;
-                                            const fieldHistory =
-                                                modificationData?.history?.[historyKey] || [];
-                                            const latestChange = fieldHistory[0];
-                                            const previousChange =
-                                                fieldHistory.length > 1
-                                                    ? fieldHistory[1]
-                                                    : null;
 
                                             return (
                                                 <td
@@ -255,77 +248,11 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
                                                             placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
                                                             min={field === 'personnel_deployed' ? "0" : undefined}
                                                             disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-10 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                                                         />
-                                                        {fieldHistory.length > 0 && (
-                                                            <div className="absolute top-1/2 -translate-y-1/2 right-3">
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <History className="w-5 h-5 text-slate-400 hover:text-blue-600 cursor-pointer" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="right"
-                                                                        className="max-w-xs bg-slate-800 text-white p-3 rounded-lg shadow-lg"
-                                                                    >
-                                                                        <div className="text-sm space-y-2">
-                                                                            <div>
-                                                                                <p className="text-sm font-bold text-white mb-1">
-                                                                                    Latest Change:
-                                                                                </p>
-                                                                                <p>
-                                                                                    <span className="font-semibold text-blue-300">
-                                                                                        {latestChange.user?.name}
-                                                                                    </span>{" "}
-                                                                                    changed from{" "}
-                                                                                    <span className="text-red-400 font-mono">
-                                                                                        {latestChange.old ?? "nothing"}
-                                                                                    </span>{" "}
-                                                                                    to{" "}
-                                                                                    <span className="text-green-400 font-mono">
-                                                                                        {latestChange.new ?? "nothing"}
-                                                                                    </span>
-                                                                                </p>
-                                                                                <p className="text-xs text-gray-400">
-                                                                                    {new Date(latestChange.date).toLocaleString()}
-                                                                                </p>
-                                                                            </div>
-                                                                            {previousChange && (
-                                                                                <div className="mt-2 pt-2 border-t border-gray-600">
-                                                                                    <p className="text-sm font-bold text-gray-300 mb-1">
-                                                                                        Previous Change:
-                                                                                    </p>
-                                                                                    <p>
-                                                                                        <span className="font-semibold text-blue-300">
-                                                                                            {previousChange.user?.name}
-                                                                                        </span>{" "}
-                                                                                        changed from{" "}
-                                                                                        <span className="text-red-400 font-mono">
-                                                                                            {previousChange.old ?? "nothing"}
-                                                                                        </span>{" "}
-                                                                                        to{" "}
-                                                                                        <span className="text-green-400 font-mono">
-                                                                                            {previousChange.new ?? "nothing"}
-                                                                                        </span>
-                                                                                    </p>
-                                                                                    <p className="text-xs text-gray-400">
-                                                                                        {new Date(previousChange.date).toLocaleString()}
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </div>
-                                                        )}
+                                                        <ModificationIndicator recordId={row.id} fieldName={field} getFieldHistory={getFieldHistory} currentValue={row[field]} />
                                                     </div>
-                                                    {latestChange && row[field] && row[field] !== '' && (
-                                                        <p className="text-xs text-slate-500 mt-2">
-                                                            Last modified by{" "}
-                                                            <span className="font-medium text-blue-700">
-                                                                {latestChange.user?.name}
-                                                            </span>
-                                                        </p>
-                                                    )}
+                                                    
                                                 </td>
                                             );
                                         })}

@@ -15,6 +15,7 @@ import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { HandCoins, Loader2, PlusCircle, Save } from "lucide-react";
+import { savedMessage } from "@/lib/offline/queue";
 
 const formatFieldName = (field) => {
     return field
@@ -195,7 +196,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
             // Invalidate modification history once
             queryClient.invalidateQueries(['assistance-modifications']);
             
-            toast.success("Assistance records saved successfully!");
+            toast.success(savedMessage(response, "Assistance records saved successfully!"));
         } catch (err) {
             console.error(err);
             
@@ -332,7 +333,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                                                             step={field === 'amount' ? '0.01' : undefined}
                                                             min={field === 'amount' ? '0' : undefined}
                                                             disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition pr-12 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                                                         />
                                                         <ModificationIndicator 
                                                             recordId={row.id} 

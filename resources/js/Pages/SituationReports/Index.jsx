@@ -716,7 +716,7 @@ export default function Index() {
             </Head>
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
                         <Separator
                             orientation="vertical"
@@ -766,7 +766,7 @@ export default function Index() {
                             return <Breadcrumbs crumbs={crumbs} />;
                         })()}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                         <NoActiveTyphoonNotification
                             typhoon={typhoon?.active}
                             hasActive={typhoon?.hasActive}
@@ -795,7 +795,7 @@ export default function Index() {
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
                                 {/* Content */}
-                                <div className="relative p-6">
+                                <div className="relative p-4 sm:p-6">
                                     <div className="flex flex-col sm:flex-row items-start gap-4">
                                         <div className="flex-shrink-0">
                                             <div className="relative">
@@ -954,7 +954,7 @@ export default function Index() {
                                 </div>
                             )}
                             <Card className="shadow-lg rounded-2xl border">
-                                <CardContent className="p-6">
+                                <CardContent className="p-4 sm:p-6">
                                     <Suspense fallback={<FormLoader />}>
                                         {renderForm(activeForm)}
                                     </Suspense>

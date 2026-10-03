@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ModificationIndicator from '@/Components/shared/ModificationIndicator';
 import { Sprout, Save, Plus, Loader2, AlertCircle, MoreVertical, Trash2 } from 'lucide-react';
+import { savedMessage } from "@/lib/offline/queue";
+import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
 
 export default function AgricultureForm({ data, setData, disabled = false }) {
     const APP_URL = useAppUrl();
@@ -162,7 +164,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                 await queryClient.invalidateQueries(['agriculture-modifications']);
             }
             
-            toast.success("Agriculture reports saved successfully!");
+            toast.success(savedMessage(response, "Agriculture reports saved successfully!"));
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save agriculture reports.");
@@ -217,7 +219,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
 
                 <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                        <table className={`w-full border-collapse ${STACKED_TABLE} md:min-w-[56rem]`}>
                             <thead className="bg-blue-50 border-b border-blue-200">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900" rowSpan="2">Crops<br/>affected</th>
@@ -231,16 +233,17 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Total Production<br/>Loss</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="md:divide-y md:divide-gray-200">
                                 {crops.map((crop) => (
                                     <tr key={crop.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Crops affected</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Crops affected"
                                                     type="text"
                                                     value={crop.crops_affected}
                                                     onChange={(e) => updateCrop(crop.id, 'crops_affected', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="e.g., RICE, CORN, HVCC"
                                                     disabled={disabled}
                                                 />
@@ -254,13 +257,14 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Standing crop (ha)</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Standing crop (ha)"
                                                     type="number"
                                                     step="0.01"
                                                     value={crop.standing_crop_ha}
                                                     onChange={(e) => updateCrop(crop.id, 'standing_crop_ha', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="0.00"
                                                     disabled={disabled}
                                                 />
@@ -274,12 +278,13 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Stage of crop</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Stage of crop"
                                                     type="text"
                                                     value={crop.stage_of_crop}
                                                     onChange={(e) => updateCrop(crop.id, 'stage_of_crop', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="e.g., Vegetative"
                                                     disabled={disabled}
                                                 />
@@ -293,13 +298,14 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Total area affected (ha)</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Total area affected (ha)"
                                                     type="number"
                                                     step="0.01"
                                                     value={crop.total_area_affected_ha}
                                                     onChange={(e) => updateCrop(crop.id, 'total_area_affected_ha', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="0.00"
                                                     disabled={disabled}
                                                 />
@@ -313,13 +319,14 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 border-r border-gray-200">
+                                            <span className={CELL_LABEL}>Total production loss</span>
                                             <div className="relative">
-                                                <input
+                                                <input aria-label="Total production loss"
                                                     type="number"
                                                     step="0.01"
                                                     value={crop.total_production_loss}
                                                     onChange={(e) => updateCrop(crop.id, 'total_production_loss', e.target.value)}
-                                                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50"
                                                     placeholder="0.00"
                                                     disabled={disabled}
                                                 />
@@ -332,7 +339,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-center">
+                                        <td className="px-4 py-3 text-center max-md:text-right">
                                             {crops.length > 1 ? (
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -372,7 +379,7 @@ export default function AgricultureForm({ data, setData, disabled = false }) {
                 <button
                     onClick={handleSubmit}
                     disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                     {isSaving ? (
                         <>

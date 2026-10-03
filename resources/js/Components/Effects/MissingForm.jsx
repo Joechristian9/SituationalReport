@@ -198,7 +198,7 @@ export default function MissingForm({ data, setData, errors, disabled = false })
 
                 {/* Table */}
                 <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm md:min-w-[56rem]">
                         <thead className="hidden md:table-header-group bg-blue-500">
                             <tr className="text-left text-white font-semibold">
                                 <th className="p-3 border-r">Name</th>
@@ -321,7 +321,7 @@ export default function MissingForm({ data, setData, errors, disabled = false })
                                                                             field
                                                                         ).toLowerCase()}...`}
                                                                         disabled={disabled}
-                                                                        className="w-full px-3 py-2 pr-12 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
                                                                     />
                                                                     <ModificationIndicator 
                                                                         recordId={row.id} 
