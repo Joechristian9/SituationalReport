@@ -23,6 +23,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import TablePagination from '@/Components/ui/TablePagination';
+import useMediaQuery from '@/hooks/useMediaQuery';
 
 // Helper function to get icon and color for each disaster type
 const getDisasterIcon = (disasterType) => {
@@ -82,6 +83,12 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [showAllTypes, setShowAllTypes] = useState(false);
     const [carouselIndex, setCarouselIndex] = useState(0);
+    // Disaster-type carousel: one card per slide on phones and tablets, a 2x2 grid on desktop.
+    const perSlide = useMediaQuery('(min-width: 1024px)') ? 4 : 1;
+    const slideCount = Math.max(1, Math.ceil((disasterStats?.length || 0) / perSlide));
+    const slide = Math.min(carouselIndex, slideCount - 1); // stays valid when perSlide changes
+    const slideStats = (disasterStats || []).slice(slide * perSlide, slide * perSlide + perSlide);
+    const goToSlide = (index) => setCarouselIndex(Math.min(Math.max(0, index), slideCount - 1));
     const [formData, setFormData] = useState({
         name: '',
         disaster_type: '',
@@ -551,44 +558,50 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                         </Card>
                                     </motion.div>
 
-                                    {/* Carousel of Disaster Stats - All Types */}
+                                    {/* Carousel of disaster types: one card per slide on phones and tablets
+                                        (swipe or use the arrows), a 2x2 grid of four on desktop. */}
                                     <div className="lg:col-span-2 relative">
-                                        <div className="flex items-center gap-4">
-                                            {/* Previous Button */}
+                                        <div className="flex items-center gap-2 sm:gap-4">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() => setCarouselIndex(Math.max(0, carouselIndex - 1))}
-                                                disabled={carouselIndex === 0}
-                                                className="shrink-0 h-10 w-10 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                                                onClick={() => goToSlide(slide - 1)}
+                                                disabled={slide === 0}
+                                                aria-label="Previous disaster types"
+                                                className="shrink-0 h-11 w-11 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
                                             >
                                                 <ChevronLeft className="w-5 h-5" />
                                             </Button>
 
-                                            {/* Carousel Content - 2x2 Grid */}
-                                            <div className="flex-1 overflow-hidden">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <AnimatePresence mode="wait">
-                                                        {disasterStats.slice(carouselIndex * 4, carouselIndex * 4 + 4).map((stat, index) => (
-                                                            <motion.div
-                                                                key={`${stat.disaster_type}-${carouselIndex}`}
-                                                                initial={{ opacity: 0, x: 50 }}
-                                                                animate={{ opacity: 1, x: 0 }}
-                                                                exit={{ opacity: 0, x: -50 }}
-                                                                transition={{ duration: 0.3, delay: index * 0.05 }}
-                                                            >
-                                                                <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
+                                            <div className="flex-1 min-w-0 overflow-hidden">
+                                                {/* One animated child per slide, as AnimatePresence "wait" requires. */}
+                                                <AnimatePresence mode="wait" initial={false}>
+                                                    <motion.div
+                                                        key={`${perSlide}-${slide}`}
+                                                        className={`grid select-none gap-4 ${perSlide > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
+                                                        initial={{ opacity: 0, x: 40 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        exit={{ opacity: 0, x: -40 }}
+                                                        transition={{ duration: 0.25 }}
+                                                        drag={slideCount > 1 ? 'x' : false}
+                                                        dragDirectionLock
+                                                        dragConstraints={{ left: 0, right: 0 }}
+                                                        dragElastic={0.2}
+                                                        onDragEnd={(event, info) => {
+                                                            if (info.offset.x < -60) goToSlide(slide + 1);
+                                                            else if (info.offset.x > 60) goToSlide(slide - 1);
+                                                        }}
+                                                    >
+                                                        {slideStats.map((stat) => {
+                                                            const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
+                                                            return (
+                                                                <Card key={stat.disaster_type} className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg transition-shadow duration-300 h-full">
                                                                     <CardContent className="p-5">
                                                                         <div className="flex items-center justify-between mb-3">
-                                                                            {(() => {
-                                                                                const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
-                                                                                return (
-                                                                                    <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
-                                                                                        <Icon className="w-5 h-5 text-white" />
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                                                                            <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
+                                                                                <Icon className="w-5 h-5 text-white" aria-hidden="true" />
+                                                                            </div>
+                                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm tabular-nums">
                                                                                 {((stat.count / statusCounts.total) * 100).toFixed(1)}%
                                                                             </div>
                                                                         </div>
@@ -596,46 +609,54 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                                             <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
                                                                                 {stat.disaster_type}
                                                                             </p>
-                                                                            <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
+                                                                            <p className="text-3xl font-bold text-blue-900 tabular-nums">{stat.count}</p>
                                                                             <p className="text-xs text-slate-500 mt-1">
                                                                                 {stat.count === 1 ? 'disaster' : 'disasters'} recorded
                                                                             </p>
                                                                         </div>
                                                                     </CardContent>
                                                                 </Card>
-                                                            </motion.div>
-                                                        ))}
-                                                    </AnimatePresence>
-                                                </div>
+                                                            );
+                                                        })}
+                                                    </motion.div>
+                                                </AnimatePresence>
                                             </div>
 
-                                            {/* Next Button */}
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() => setCarouselIndex(Math.min(Math.ceil(disasterStats.length / 4) - 1, carouselIndex + 1))}
-                                                disabled={carouselIndex >= Math.ceil(disasterStats.length / 4) - 1}
-                                                className="shrink-0 h-10 w-10 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                                                onClick={() => goToSlide(slide + 1)}
+                                                disabled={slide >= slideCount - 1}
+                                                aria-label="Next disaster types"
+                                                className="shrink-0 h-11 w-11 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
                                             >
                                                 <ChevronRight className="w-5 h-5" />
                                             </Button>
                                         </div>
 
-                                        {/* Carousel Indicators */}
-                                        {Math.ceil(disasterStats.length / 4) > 1 && (
-                                            <div className="flex items-center justify-center gap-2 mt-4">
-                                                {Array.from({ length: Math.ceil(disasterStats.length / 4) }).map((_, index) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => setCarouselIndex(index)}
-                                                        className={`h-2 rounded-full transition-all duration-300 ${
-                                                            index === carouselIndex 
-                                                                ? 'w-8 bg-blue-600' 
-                                                                : 'w-2 bg-blue-300 hover:bg-blue-400'
-                                                        }`}
-                                                        aria-label={`Go to slide ${index + 1}`}
-                                                    />
-                                                ))}
+                                        {slideCount > 1 && (
+                                            <div className="mt-3 flex flex-col items-center gap-1">
+                                                <div className="flex flex-wrap items-center justify-center">
+                                                    {Array.from({ length: slideCount }).map((_, index) => (
+                                                        <button
+                                                            key={index}
+                                                            type="button"
+                                                            onClick={() => goToSlide(index)}
+                                                            aria-label={`Go to slide ${index + 1} of ${slideCount}`}
+                                                            aria-current={index === slide ? 'true' : undefined}
+                                                            className="flex h-8 min-w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                        >
+                                                            <span
+                                                                className={`h-2 rounded-full transition-all duration-300 motion-reduce:transition-none ${
+                                                                    index === slide ? 'w-8 bg-blue-600' : 'w-2 bg-blue-300 hover:bg-blue-400'
+                                                                }`}
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
+                                                    {slide + 1} / {slideCount}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
