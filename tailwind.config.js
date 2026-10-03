@@ -13,6 +13,20 @@ export default {
 
     theme: {
     	extend: {
+    		// Landing page motion: transform/opacity only (compositor-friendly)
+    		keyframes: {
+    			sweep: {
+    				to: { transform: 'rotate(360deg)' }
+    			},
+    			'ping-soft': {
+    				'0%': { transform: 'scale(1)', opacity: '0.45' },
+    				'80%, 100%': { transform: 'scale(3)', opacity: '0' }
+    			}
+    		},
+    		animation: {
+    			sweep: 'sweep 12s linear infinite',
+    			'ping-soft': 'ping-soft 3.2s cubic-bezier(0, 0, 0.2, 1) infinite'
+    		},
     		fontFamily: {
     			sans: [
     				'Figtree',
