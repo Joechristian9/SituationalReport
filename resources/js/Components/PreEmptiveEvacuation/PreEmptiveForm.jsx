@@ -9,8 +9,7 @@ import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 
 import { Users, Loader2, PlusCircle, Save } from "lucide-react";
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
@@ -38,6 +37,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(data.reports, ['barangay', 'evacuation_center'], 5);
 
     useEffect(() => {
@@ -183,10 +183,6 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
                 />
 
                 <div className="flex items-center gap-3">
-                    <RowsPerPage
-                        rowsPerPage={rowsPerPage}
-                        setRowsPerPage={setRowsPerPage}
-                    />
                     <DownloadExcelButton
                         data={data.reports}
                         fileName="Pre_Emptive_Evacuation_Reports"
@@ -362,11 +358,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
             </div>
 
             {/* Pagination */}
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            <TablePagination {...pagination} />
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

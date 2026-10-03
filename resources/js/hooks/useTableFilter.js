@@ -69,5 +69,18 @@ export default function useTableFilter(data = [], searchFields = [], initialRows
         totalItems: data.length,
         startIndex,
         endIndex: Math.min(startIndex + rowsPerPage, filteredData.length),
+
+        // Ready-made props for <TablePagination {...pagination} />
+        pagination: {
+            currentPage,
+            totalPages,
+            totalItems: filteredData.length,
+            perPage: rowsPerPage,
+            onPageChange: (page) => setCurrentPage(Math.max(1, Math.min(page, totalPages))),
+            onPerPageChange: (value) => {
+                setRowsPerPage(value);
+                setCurrentPage(1);
+            },
+        },
     };
 }

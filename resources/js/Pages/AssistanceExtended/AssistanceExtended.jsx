@@ -1,8 +1,7 @@
 // resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx
 
 import SearchBar from "@/Components/ui/SearchBar";
-import RowsPerPage from "@/Components/ui/RowsPerPage";
-import Pagination from "@/Components/ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
@@ -67,6 +66,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(assistances, ['agency_officials_groups', 'type_kind_of_assistance', 'beneficiaries'], 5);
 
     useEffect(() => {
@@ -251,10 +251,6 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                         placeholder="Search assistance records..."
                     />
                     <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
                         <DownloadExcelButton
                             data={assistances}
                             fileName="Assistance_Extended_Report"
@@ -361,13 +357,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                     )}
                 </div>
 
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

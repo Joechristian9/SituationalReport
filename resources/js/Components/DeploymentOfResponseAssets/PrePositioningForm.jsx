@@ -1,8 +1,7 @@
 // resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx
 
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
@@ -44,6 +43,7 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(rows, ['team_units', 'area_of_deployment'], 5);
 
     const {
@@ -165,10 +165,6 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
                         placeholder="Search by team/units or area..."
                     />
                     <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
                         <DownloadExcelButton
                             data={rows}
                             fileName="PrePositioning_Report"
@@ -345,13 +341,7 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
                     )}
                 </div>
 
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

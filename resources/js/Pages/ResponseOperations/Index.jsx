@@ -1,6 +1,5 @@
 import SearchBar from "@/Components/ui/SearchBar";
-import RowsPerPage from "@/Components/ui/RowsPerPage";
-import Pagination from "@/Components/ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "@/Components/ui/DownloadExcelButton";
 import AddRowButton from "@/Components/ui/AddRowButton";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
@@ -69,6 +68,7 @@ export default function Index() {
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(responses, ['team_unit', 'incident', 'location'], 5);
 
     const {
@@ -259,10 +259,6 @@ export default function Index() {
                                     />
 
                                     <div className="flex items-center gap-3">
-                                        <RowsPerPage
-                                            rowsPerPage={rowsPerPage}
-                                            setRowsPerPage={setRowsPerPage}
-                                        />
                                         <DownloadExcelButton
                                             data={responses}
                                             fileName="Response_Operations"
@@ -376,13 +372,7 @@ export default function Index() {
                                     </table>
                                 </div>
 
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    onPageChange={(page) =>
-                                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                                    }
-                                />
+                                <TablePagination {...pagination} />
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

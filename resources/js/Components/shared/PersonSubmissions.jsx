@@ -9,15 +9,12 @@ import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/Components/ui/sheet';
-import RowsPerPage from '@/Components/ui/RowsPerPage';
+import TablePagination, { laravelPagination } from '@/Components/ui/TablePagination';
 import {
     AlertTriangle,
     ArrowLeft,
     Building2,
-    ChevronLeft,
     ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
     Clock,
     HeartPulse,
     MapPin,
@@ -181,80 +178,6 @@ function FilterChip({ label, onRemove }) {
                 <X className="h-3 w-3" />
             </button>
         </span>
-    );
-}
-
-function PageNav({ url, label, className = '', children }) {
-    const classes = `h-10 w-10 p-0 md:h-9 md:w-9 ${className}`;
-    return url ? (
-        <Button asChild variant="outline" className={classes}>
-            <Link href={url} preserveScroll preserveState aria-label={label}>
-                {children}
-            </Link>
-        </Button>
-    ) : (
-        <Button variant="outline" className={classes} disabled aria-label={label}>
-            {children}
-        </Button>
-    );
-}
-
-function Pagination({ records }) {
-    if (records.last_page <= 1) return null;
-
-    const pages = (records.links || []).slice(1, -1);
-    const onFirst = records.current_page === 1;
-    const onLast = records.current_page === records.last_page;
-
-    return (
-        <nav className="flex items-center gap-1" aria-label="Pagination">
-            <PageNav url={onFirst ? null : records.first_page_url} label="First page" className="hidden sm:inline-flex">
-                <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
-            </PageNav>
-            <PageNav url={records.prev_page_url} label="Previous page">
-                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-            </PageNav>
-
-            {/* Phones: page summary instead of numbered buttons */}
-            <span className="min-w-24 px-2 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
-                Page {records.current_page} of {records.last_page}
-            </span>
-
-            <ul className="hidden items-center gap-1 sm:flex">
-                {pages.map((link, i) => (
-                    <li key={`${link.label}-${i}`}>
-                        {link.url ? (
-                            <Button
-                                asChild
-                                variant={link.active ? 'default' : 'ghost'}
-                                className="h-9 min-w-9 px-2 tabular-nums"
-                            >
-                                <Link
-                                    href={link.url}
-                                    preserveScroll
-                                    preserveState
-                                    aria-current={link.active ? 'page' : undefined}
-                                    aria-label={`Page ${link.label}`}
-                                >
-                                    {link.label}
-                                </Link>
-                            </Button>
-                        ) : (
-                            <span aria-hidden="true" className="px-1.5 text-sm text-muted-foreground">
-                                …
-                            </span>
-                        )}
-                    </li>
-                ))}
-            </ul>
-
-            <PageNav url={records.next_page_url} label="Next page">
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            </PageNav>
-            <PageNav url={onLast ? null : records.last_page_url} label="Last page" className="hidden sm:inline-flex">
-                <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-            </PageNav>
-        </nav>
     );
 }
 
@@ -651,20 +574,12 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                         ))}
                                     </ul>
 
-                                    <div className="flex flex-col gap-3 border-t bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-                                        <p className="text-sm tabular-nums text-muted-foreground" aria-live="polite">
-                                            Showing <span className="font-medium text-foreground">{records.from}–{records.to}</span> of{' '}
-                                            <span className="font-medium text-foreground">{records.total}</span>
-                                        </p>
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
-                                            <RowsPerPage
-                                                rowsPerPage={perPage}
-                                                setRowsPerPage={(n) => visit({ per_page: n === 20 ? '' : n, page: '' })}
-                                                totalRows={records.total}
-                                            />
-                                            <Pagination records={records} />
-                                        </div>
-                                    </div>
+                                    <TablePagination
+                                        {...laravelPagination(records)}
+                                        onPerPageChange={(n) => visit({ per_page: n === 20 ? '' : n, page: '' })}
+                                        itemLabel="records"
+                                        className="border-t bg-muted/30 px-4 py-3"
+                                    />
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center px-4 py-14 text-center">

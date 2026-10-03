@@ -10,8 +10,7 @@ import useTableFilter from "@/hooks/useTableFilter";
 import { Download, Droplets, Loader2, PlusCircle, Save, History } from "lucide-react";
 
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 
@@ -52,6 +51,7 @@ export default function WaterLevelForm({ data, setData, disabled = false }) {
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(data.reports, ['gauging_station'], 5);
 
     useEffect(() => {
@@ -308,10 +308,6 @@ export default function WaterLevelForm({ data, setData, disabled = false }) {
                     />
 
                     <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
                         <DownloadExcelButton
                             data={data.reports}
                             fileName="Water_Level_Reports"
@@ -499,13 +495,7 @@ export default function WaterLevelForm({ data, setData, disabled = false }) {
                 </div>
 
                 {/* Pagination */}
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Footer */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

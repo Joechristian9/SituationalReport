@@ -10,12 +10,11 @@ import { Label } from '@/Components/ui/label';
 import { Button } from '@/Components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
-import RowsPerPage from '@/Components/ui/RowsPerPage';
+import TablePagination, { laravelPagination } from '@/Components/ui/TablePagination';
 import { toast, Toaster } from 'sonner';
 import {
     Activity,
     ArrowRight,
-    ChevronLeft,
     ChevronRight,
     Download,
     FilePen,
@@ -157,43 +156,6 @@ function FilterSelect({ id, label, value, onChange, allLabel, options }) {
                 </SelectContent>
             </Select>
         </div>
-    );
-}
-
-function Pagination({ logs }) {
-    if (logs.last_page <= 1) return null;
-    const pages = (logs.links || []).slice(1, -1);
-    const Nav = ({ url, label, children }) =>
-        url ? (
-            <Button asChild variant="outline" size="sm" className="h-9 w-9 p-0">
-                <Link href={url} preserveScroll preserveState aria-label={label}>{children}</Link>
-            </Button>
-        ) : (
-            <Button variant="outline" size="sm" className="h-9 w-9 p-0" disabled aria-label={label}>{children}</Button>
-        );
-
-    return (
-        <nav className="flex items-center gap-1" aria-label="Pagination">
-            <Nav url={logs.prev_page_url} label="Previous page"><ChevronLeft className="h-4 w-4" /></Nav>
-            {pages.map((link, i) =>
-                link.url ? (
-                    <Button
-                        key={`${link.label}-${i}`}
-                        asChild
-                        size="sm"
-                        variant={link.active ? 'default' : 'outline'}
-                        className="h-9 min-w-9 px-2 tabular-nums"
-                    >
-                        <Link href={link.url} preserveScroll preserveState aria-current={link.active ? 'page' : undefined}>
-                            {link.label}
-                        </Link>
-                    </Button>
-                ) : (
-                    <span key={`gap-${i}`} aria-hidden="true" className="px-1.5 text-gray-500">…</span>
-                )
-            )}
-            <Nav url={logs.next_page_url} label="Next page"><ChevronRight className="h-4 w-4" /></Nav>
-        </nav>
     );
 }
 
@@ -576,19 +538,12 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                             )}
 
                             {logs.data.length > 0 && (
-                                <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <p className="text-sm tabular-nums text-gray-600">
-                                        Showing {logs.from}–{logs.to} of {logs.total}
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-4">
-                                        <RowsPerPage
-                                            rowsPerPage={perPage}
-                                            setRowsPerPage={(n) => applyFilters({ per_page: n === 20 ? '' : n, page: '' })}
-                                            totalRows={logs.total}
-                                        />
-                                        <Pagination logs={logs} />
-                                    </div>
-                                </div>
+                                <TablePagination
+                                    {...laravelPagination(logs)}
+                                    onPerPageChange={(n) => applyFilters({ per_page: n === 20 ? '' : n, page: '' })}
+                                    itemLabel="entries"
+                                    className="border-t px-4 py-3"
+                                />
                             )}
                         </section>
                     </div>

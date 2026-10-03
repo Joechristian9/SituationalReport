@@ -1,7 +1,6 @@
 // resources/js/Components/Effects/DamagedHousesForm.jsx
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -53,6 +52,7 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(reports, ['barangay'], 5);
 
     const {
@@ -196,10 +196,6 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
 
                     {/* Right: Rows dropdown + download button side-by-side */}
                     <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
                         <DownloadExcelButton
                             data={reports}
                             fileName="Damaged_Houses"
@@ -432,13 +428,7 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
                     </table>
                 </div>
 
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

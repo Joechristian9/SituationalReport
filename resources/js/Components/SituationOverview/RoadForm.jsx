@@ -1,8 +1,7 @@
 // resources/js/Components/SituationOverview/RoadForm.jsx
 
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 import AddRowButton from "../ui/AddRowButton";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
@@ -49,6 +48,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(roads, ['name_of_road'], 5);
 
     useEffect(() => {
@@ -322,13 +322,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
                     )}
                 </div>
 
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4">

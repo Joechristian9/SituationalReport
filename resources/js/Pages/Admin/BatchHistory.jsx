@@ -5,14 +5,14 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, AlertCircle, Download, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Calendar, FileText, AlertCircle, Download, Search, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import RowsPerPage from '@/Components/ui/RowsPerPage';
+import TablePagination from '@/Components/ui/TablePagination';
 import {
     Dialog,
     DialogContent,
@@ -364,82 +364,19 @@ export default function BatchHistory({ batches, availableYears }) {
                                                     </table>
                                                 </div>
 
-                                                {/* Pagination Controls */}
-                                                {filteredData.length > 0 && (
-                                                    <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                                                        {/* Left: Showing X to Y of Z results */}
-                                                        <div className="text-sm text-gray-600">
-                                                            Showing {paginationData.startIndex + 1} to {Math.min(paginationData.endIndex, filteredData.length)} of {filteredData.length} results
-                                                        </div>
-
-                                                        {/* Center: Page Numbers */}
-                                                        <div className="flex items-center gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                                disabled={currentPage === 1}
-                                                                className="h-8 w-8 p-0"
-                                                            >
-                                                                <ChevronLeft className="w-4 h-4" />
-                                                            </Button>
-
-                                                            {/* Page Numbers */}
-                                                            <div className="flex items-center gap-1">
-                                                                {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
-                                                                    .filter(page => {
-                                                                        // Show first page, last page, current page, and pages around current
-                                                                        return (
-                                                                            page === 1 ||
-                                                                            page === paginationData.totalPages ||
-                                                                            Math.abs(page - currentPage) <= 1
-                                                                        );
-                                                                    })
-                                                                    .map((page, index, array) => {
-                                                                        // Add ellipsis if there's a gap
-                                                                        const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
-                                                                        
-                                                                        return (
-                                                                            <React.Fragment key={page}>
-                                                                                {showEllipsisBefore && (
-                                                                                    <span className="px-2 text-gray-400">...</span>
-                                                                                )}
-                                                                                <Button
-                                                                                    variant={currentPage === page ? "default" : "outline"}
-                                                                                    size="sm"
-                                                                                    onClick={() => setCurrentPage(page)}
-                                                                                    className={`h-8 w-8 p-0 ${
-                                                                                        currentPage === page 
-                                                                                            ? 'bg-blue-600 text-white' 
-                                                                                            : ''
-                                                                                    }`}
-                                                                                >
-                                                                                    {page}
-                                                                                </Button>
-                                                                            </React.Fragment>
-                                                                        );
-                                                                    })}
-                                                            </div>
-
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1))}
-                                                                disabled={currentPage === paginationData.totalPages}
-                                                                className="h-8 w-8 p-0"
-                                                            >
-                                                                <ChevronRight className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-
-                                                        {/* Right: Rows per page */}
-                                                        <RowsPerPage 
-                                                            rowsPerPage={itemsPerPage}
-                                                            setRowsPerPage={setItemsPerPage}
-                                                            totalRows={filteredData.length}
-                                                        />
-                                                    </div>
-                                                )}
+                                                {/* Pagination */}
+                                                <TablePagination
+                                                    currentPage={currentPage}
+                                                    totalPages={paginationData.totalPages}
+                                                    totalItems={filteredData.length}
+                                                    perPage={itemsPerPage}
+                                                    onPageChange={setCurrentPage}
+                                                    onPerPageChange={(value) => {
+                                                        setItemsPerPage(value);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className="mt-4 px-2"
+                                                />
                                             </>
                                         ) : searchQuery.trim() ? (
                                             <div className="text-center py-12">

@@ -1,7 +1,6 @@
 // resources/js/Components/Effects/SuspensionOfClassesForm.jsx
 import SearchBar from "../ui/SearchBar";
-import RowsPerPage from "../ui/RowsPerPage";
-import Pagination from "../ui/Pagination";
+import TablePagination from "@/Components/ui/TablePagination";
 import DownloadExcelButton from "../ui/DownloadExcelButton";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -52,6 +51,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors, disable
         rowsPerPage,
         setRowsPerPage,
         totalPages,
+        pagination,
     } = useTableFilter(suspensionList, ['province_city_municipality', 'level'], 5);
 
     // Define the options for the 'Levels' dropdown
@@ -187,10 +187,6 @@ export default function SuspensionOfClassesForm({ data, setData, errors, disable
 
                     {/* Right: Rows dropdown + download button side-by-side */}
                     <div className="flex items-center gap-3">
-                        <RowsPerPage
-                            rowsPerPage={rowsPerPage}
-                            setRowsPerPage={setRowsPerPage}
-                        />
                         <DownloadExcelButton
                             data={suspensionList}
                             fileName="Suspension_Of_Classes"
@@ -384,13 +380,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors, disable
                     </table>
                 </div>
 
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) =>
-                        setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-                    }
-                />
+                <TablePagination {...pagination} />
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">

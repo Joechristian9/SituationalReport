@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, FileText, Loader2 } from "lucide-react";
-import RowsPerPage from '@/Components/ui/RowsPerPage';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronRight, Eye, FileText, Loader2 } from "lucide-react";
+import TablePagination from '@/Components/ui/TablePagination';
 import {
     Popover,
     PopoverContent,
@@ -442,75 +442,18 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                 </Card>
 
                                 {/* Pagination */}
-                                {filteredUsers.length > 0 && (
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-2">
-                                        <div className="text-sm text-slate-600">
-                                            Showing {paginationData.startIndex + 1} to {Math.min(paginationData.endIndex, filteredUsers.length)} of {filteredUsers.length} results
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-2">
-                                            {/* Rows per page */}
-                                            <RowsPerPage 
-                                                rowsPerPage={itemsPerPage} 
-                                                setRowsPerPage={setItemsPerPage}
-                                                totalRows={filteredUsers.length}
-                                            />
-                                            
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                                    disabled={currentPage === 1}
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <ChevronLeft className="w-4 h-4" />
-                                                </Button>
-                                                
-                                                <div className="flex items-center gap-1">
-                                                    {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
-                                                        .filter(page => {
-                                                            // Show first page, last page, current page, and pages around current
-                                                            return page === 1 || 
-                                                                   page === paginationData.totalPages || 
-                                                                   Math.abs(page - currentPage) <= 1;
-                                                        })
-                                                        .map((page, index, array) => (
-                                                            <React.Fragment key={page}>
-                                                                {/* Show ellipsis if there's a gap */}
-                                                                {index > 0 && array[index - 1] !== page - 1 && (
-                                                                    <span className="px-2 text-slate-400">...</span>
-                                                                )}
-                                                                <Button
-                                                                    variant={currentPage === page ? "default" : "outline"}
-                                                                    size="sm"
-                                                                    onClick={() => setCurrentPage(page)}
-                                                                    className={`h-8 w-8 p-0 ${
-                                                                        currentPage === page 
-                                                                            ? "bg-blue-600 hover:bg-blue-700" 
-                                                                            : ""
-                                                                    }`}
-                                                                >
-                                                                    {page}
-                                                                </Button>
-                                                            </React.Fragment>
-                                                        ))
-                                                    }
-                                                </div>
-
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage(prev => Math.min(paginationData.totalPages, prev + 1))}
-                                                    disabled={currentPage === paginationData.totalPages}
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                <TablePagination
+                                    currentPage={currentPage}
+                                    totalPages={paginationData.totalPages}
+                                    totalItems={filteredUsers.length}
+                                    perPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                    onPerPageChange={(value) => {
+                                        setItemsPerPage(value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="mt-4 px-2"
+                                />
                             </>
                         ) : (
                             <Card>

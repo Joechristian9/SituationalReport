@@ -15,12 +15,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import RowsPerPage from '@/Components/ui/RowsPerPage';
+import TablePagination from '@/Components/ui/TablePagination';
 import {
     AlertTriangle,
     Building2,
-    ChevronLeft,
-    ChevronRight,
     Edit,
     Eye,
     EyeOff,
@@ -361,13 +359,6 @@ export default function UserManagement({ users, roles, permissions }) {
         setCurrentPage(1);
     }, [searchQuery, itemsPerPage, tab, sortBy, noAccessOnly]);
 
-    const pageNumbers = useMemo(() => {
-        const pages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-            (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1
-        );
-        return pages.flatMap((p, i) => (i > 0 && p - pages[i - 1] > 1 ? ['gap-' + p, p] : [p]));
-    }, [totalPages, page]);
-
     const setField = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -695,61 +686,16 @@ export default function UserManagement({ users, roles, permissions }) {
                                     </ul>
 
                                     {/* Footer */}
-                                    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-base tabular-nums text-gray-600">
-                                            Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredUsers.length)} of{' '}
-                                            {filteredUsers.length}
-                                        </p>
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            <RowsPerPage
-                                                rowsPerPage={itemsPerPage}
-                                                setRowsPerPage={setItemsPerPage}
-                                                totalRows={filteredUsers.length}
-                                            />
-                                            {totalPages > 1 && (
-                                                <nav className="flex items-center gap-1" aria-label="Pagination">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                        onClick={() => setCurrentPage(page - 1)}
-                                                        disabled={page === 1}
-                                                        aria-label="Previous page"
-                                                    >
-                                                        <ChevronLeft className="h-4 w-4" />
-                                                    </Button>
-                                                    {pageNumbers.map((p) =>
-                                                        typeof p === 'string' ? (
-                                                            <span key={p} aria-hidden="true" className="px-1.5 text-base text-gray-500">
-                                                                …
-                                                            </span>
-                                                        ) : (
-                                                            <Button
-                                                                key={p}
-                                                                variant={p === page ? 'default' : 'outline'}
-                                                                size="sm"
-                                                                className="h-8 min-w-8 px-2 tabular-nums"
-                                                                onClick={() => setCurrentPage(p)}
-                                                                aria-current={p === page ? 'page' : undefined}
-                                                            >
-                                                                {p}
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                        onClick={() => setCurrentPage(page + 1)}
-                                                        disabled={page === totalPages}
-                                                        aria-label="Next page"
-                                                    >
-                                                        <ChevronRight className="h-4 w-4" />
-                                                    </Button>
-                                                </nav>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <TablePagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        totalItems={filteredUsers.length}
+                                        perPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                        onPerPageChange={setItemsPerPage}
+                                        itemLabel="accounts"
+                                        className="border-t px-4 py-3"
+                                    />
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center px-4 py-14 text-center">
