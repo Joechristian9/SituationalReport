@@ -143,7 +143,7 @@ Status chips: `bg-<token>/10 text-<token> border-<token>/30` + icon + text.
 - Duplicate layout files (`AuthenticatedLayout copy.jsx` already removed).
 
 ### Migration plan (incremental, one PR per step)
-1. Apply §3 tokens to `app.css` and `tailwind.config.js` (visual change app-wide; review in browser, both themes).
+1. ✅ Applied §3 tokens to `app.css` and `tailwind.config.js`. **Exception:** the `--sidebar-*` tokens were left as-is, because `app-sidebar.jsx` paints the sidebar with a hard-coded `bg-blue-600`; switching only the tokens would make the mobile sidebar sheet navy while desktop stays blue. Migrate the sidebar component and its tokens together.
 2. Update `Components/ui` (button focus ring, touch sizes, add `success`/`warning` badge variants, status chip).
 3. Build shared `StatusChip` and `StatTile`; use in dashboard and banners.
 4. Migrate pages by area (Dashboard → Situation Reports → Incident Monitored → Admin), replacing raw palette classes with tokens. Do not mix old and new styling inside one page.
