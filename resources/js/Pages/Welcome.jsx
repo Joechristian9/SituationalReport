@@ -1,114 +1,149 @@
 import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, LayoutDashboard } from 'lucide-react';
+
+const BRAND = '#003d82';
+
+/** Concentric "monitoring" rings behind the seals: quiet, institutional, no motion. */
+function MonitoringRings() {
+    return (
+        <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full text-slate-200" aria-hidden="true">
+            {[60, 110, 160, 199].map((r) => (
+                <circle key={r} cx="200" cy="200" r={r} fill="none" stroke="currentColor" strokeWidth="1" />
+            ))}
+            <line x1="0" y1="200" x2="400" y2="200" stroke="currentColor" strokeWidth="1" />
+            <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" strokeWidth="1" />
+            {/* a few reporting points on the rings */}
+            {[
+                [200 + 110 * Math.cos(-0.6), 200 + 110 * Math.sin(-0.6)],
+                [200 + 160 * Math.cos(2.4), 200 + 160 * Math.sin(2.4)],
+                [200 + 199 * Math.cos(0.9), 200 + 199 * Math.sin(0.9)],
+                [200 + 60 * Math.cos(3.6), 200 + 60 * Math.sin(3.6)],
+            ].map(([x, y], i) => (
+                <circle key={i} cx={x} cy={y} r="4" fill={BRAND} opacity="0.55" />
+            ))}
+        </svg>
+    );
+}
+
+function Seal({ src, alt, className = '' }) {
+    return (
+        <img
+            src={src}
+            alt={alt}
+            width="224"
+            height="224"
+            className={`rounded-full bg-white object-cover ring-4 ring-white shadow-lg ${className}`}
+        />
+    );
+}
 
 export default function Welcome({ auth }) {
+    const signedIn = Boolean(auth?.user);
+    const year = new Date().getFullYear();
+
+    const primaryAction = signedIn ? (
+        <Link
+            href={route('dashboard')}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg px-6 text-base font-semibold text-white shadow-sm transition-colors hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            style={{ backgroundColor: BRAND, '--tw-ring-color': BRAND }}
+        >
+            <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
+            Go to dashboard
+        </Link>
+    ) : (
+        <Link
+            href={route('login')}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg px-6 text-base font-semibold text-white shadow-sm transition-colors hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            style={{ backgroundColor: BRAND, '--tw-ring-color': BRAND }}
+        >
+            Sign in
+            <ArrowRight className="h-5 w-5" aria-hidden="true" />
+        </Link>
+    );
+
     return (
         <>
-            <Head title="Welcome to CDRRMO" />
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-                {/* Navigation */}
-                <nav className="absolute top-0 right-0 p-6 z-10">
-                    {auth.user ? (
-                        <Link
-                            href="/dashboard"
-                            className="px-6 py-2.5 bg-gradient-to-r from-[#003d82] to-[#4472C4] text-white font-semibold rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                        >
-                            Go to Dashboard
-                        </Link>
-                    ) : (
-                        <div className="flex gap-4">
-                            {/* <Link
-                                href={route('login')}
-                                className="px-6 py-2.5 bg-gradient-to-r from-[#003d82] to-[#4472C4] text-white font-semibold rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                            >
-                                Log in
-                            </Link> */}
-                        </div>
-                    )}
-                </nav>
+            <Head title="CDRRMO Situational Reports" />
 
-                {/* Hero Section */}
-                <div className="relative flex min-h-screen flex-col items-center justify-center px-6 overflow-hidden">
-                    {/* Blurry 3D Visual Elements */}
-                    {/* Large orb - top right */}
-                    <div className="absolute top-10 right-10 w-96 h-96 bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200 opacity-30 rounded-full blur-3xl transform-gpu"></div>
-                    
-                    {/* Medium orb - bottom left */}
-                    <div className="absolute bottom-20 left-10 w-80 h-80 bg-gradient-to-tr from-indigo-300 via-blue-300 to-sky-200 opacity-25 rounded-full blur-3xl transform-gpu"></div>
-                    
-                    {/* Small orb - top left */}
-                    <div className="absolute top-32 left-32 w-64 h-64 bg-gradient-to-br from-cyan-300 to-blue-200 opacity-20 rounded-full blur-2xl transform-gpu"></div>
-                    
-                    {/* Small orb - bottom right */}
-                    <div className="absolute bottom-32 right-32 w-72 h-72 bg-gradient-to-tl from-blue-300 to-indigo-200 opacity-20 rounded-full blur-2xl transform-gpu"></div>
-                    
-                    {/* Tiny accent orb - middle right */}
-                    <div className="absolute top-1/2 right-20 w-48 h-48 bg-gradient-to-bl from-sky-400 to-blue-300 opacity-25 rounded-full blur-xl transform-gpu"></div>
-                    
-                    {/* Tiny accent orb - middle left */}
-                    <div className="absolute top-1/3 left-16 w-56 h-56 bg-gradient-to-br from-blue-200 to-cyan-300 opacity-20 rounded-full blur-xl transform-gpu"></div>
-                    
-                    {/* Center soft glow */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-100 via-transparent to-transparent opacity-30 rounded-full blur-3xl"></div>
-                    
-                    <div className="relative z-10 text-center max-w-5xl">
-                        {/* Logos - Side by Side */}
-                        <div className="mb-8 flex justify-center items-center gap-8">
-                            <img 
-                                src="/images/ilagan.jpeg" 
-                                alt="City of Ilagan Logo" 
-                                className="w-40 h-40 rounded-full border-8 border-white shadow-2xl"
-                            />
-                            <img 
-                                src="/images/cdrrmo_logo.jpg" 
-                                alt="CDRRMO Logo" 
-                                className="w-40 h-40 rounded-full border-8 border-white shadow-2xl"
-                            />
+            <div className="flex min-h-dvh flex-col bg-white text-slate-900">
+                {/* Top bar */}
+                <header className="border-b border-slate-200">
+                    <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <img src="/images/cdrrmo_logo.jpg" alt="" width="36" height="36" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                            <p className="min-w-0 truncate text-sm font-semibold sm:text-base">
+                                <span style={{ color: BRAND }}>SitReps</span>
+                                <span className="mx-2 text-slate-300" aria-hidden="true">|</span>
+                                <span className="text-slate-600">CDRRMO Ilagan</span>
+                            </p>
                         </div>
-                        
-                        {/* Title */}
-                        <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
-                            City Disaster Risk Reduction
-                        </h1>
-                        <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#003d82] to-[#4472C4] bg-clip-text text-transparent mb-6">
-                            and Management Office
-                        </h2>
-                        
-                        {/* Subtitle */}
-                        <p className="text-xl text-gray-600 mb-4">
-                            City of Ilagan, Province of Isabela
-                        </p>
-                        <div className="w-32 h-1 bg-gradient-to-r from-[#003d82] to-[#4472C4] mx-auto mb-8 rounded-full"></div>
-                        
-                        {/* Description */}
-                        <p className="text-lg text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
-                            Situational Reports System for monitoring, reporting, and coordinating 
-                            emergency operations across the City of Ilagan.
-                        </p>
-                        
-                        {/* CTA Button */}
-                        {!auth.user && (
+                        {signedIn ? (
+                            <Link
+                                href={route('dashboard')}
+                                className="shrink-0 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                            >
+                                Dashboard
+                            </Link>
+                        ) : (
                             <Link
                                 href={route('login')}
-                                className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#003d82] to-[#4472C4] text-white text-lg font-semibold rounded-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200"
+                                className="shrink-0 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                             >
-                                Get Started
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
+                                Sign in
                             </Link>
                         )}
                     </div>
+                </header>
 
-                    {/* Footer */}
-                    <div className="relative z-10 mt-20 text-center text-gray-600">
-                        <p className="text-sm">
-                            © {new Date().getFullYear()} City of Ilagan CDRRMO. All rights reserved.
-                        </p>
-                        <p className="text-xs mt-2">
-                            CDRRMO Building, City Hall Compound, San Vicente, City of Ilagan, Isabela 3300
-                        </p>
+                {/* Hero */}
+                <main className="flex flex-1 items-center">
+                    <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:px-8">
+                        <div>
+                            {/* Seals on small screens (the large composition is desktop-only) */}
+                            <div className="mb-8 flex items-center gap-3 lg:hidden">
+                                <Seal src="/images/ilagan.jpeg" alt="Seal of the City of Ilagan" className="h-16 w-16 ring-2" />
+                                <Seal src="/images/cdrrmo_logo.jpg" alt="CDRRMO Ilagan logo" className="h-16 w-16 ring-2" />
+                            </div>
+
+                            <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: BRAND }}>
+                                City of Ilagan · Province of Isabela
+                            </p>
+                            <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight text-slate-900 [text-wrap:balance] sm:text-5xl lg:text-[3.4rem]">
+                                City Disaster Risk Reduction and Management Office
+                            </h1>
+                            <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+                                Situational Reports System for monitoring, reporting, and coordinating emergency
+                                operations across the City of Ilagan.
+                            </p>
+
+                            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+                                {primaryAction}
+                                {!signedIn && (
+                                    <p className="text-sm text-slate-500">For authorized city offices and barangay accounts.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Seal composition (desktop) */}
+                        <div className="relative mx-auto hidden aspect-square w-full max-w-md lg:block">
+                            <MonitoringRings />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Seal src="/images/cdrrmo_logo.jpg" alt="CDRRMO Ilagan logo" className="h-56 w-56" />
+                            </div>
+                            <div className="absolute bottom-[12%] left-[6%]">
+                                <Seal src="/images/ilagan.jpeg" alt="Seal of the City of Ilagan" className="h-28 w-28" />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </main>
+
+                {/* Footer */}
+                <footer className="border-t border-slate-200">
+                    <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                        <p>© {year} City of Ilagan CDRRMO</p>
+                        <p>CDRRMO Building, City Hall Compound, San Vicente, City of Ilagan, Isabela 3300</p>
+                    </div>
+                </footer>
             </div>
         </>
     );
