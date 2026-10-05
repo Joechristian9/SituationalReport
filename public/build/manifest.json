@@ -59,8 +59,8 @@
       "_button-B779lBis.js"
     ]
   },
-  "_Index-BmYIp0NI.js": {
-    "file": "assets/Index-BmYIp0NI.js",
+  "_Index-DGh1GYRo.js": {
+    "file": "assets/Index-DGh1GYRo.js",
     "name": "Index",
     "isDynamicEntry": true,
     "imports": [
@@ -114,8 +114,8 @@
       "_CartesianChart-CDiwklzz.js"
     ]
   },
-  "_LiveIndicator-CeNyhejx.js": {
-    "file": "assets/LiveIndicator-CeNyhejx.js",
+  "_LiveIndicator-CTrXRkKj.js": {
+    "file": "assets/LiveIndicator-CTrXRkKj.js",
     "name": "LiveIndicator",
     "imports": [
       "_button-B779lBis.js",
@@ -140,8 +140,8 @@
       "_index-BMXUZj-9.js"
     ]
   },
-  "_PersonBreakdownGraph-BlKKZ1Dh.js": {
-    "file": "assets/PersonBreakdownGraph-BlKKZ1Dh.js",
+  "_PersonBreakdownGraph-BH9xDEvE.js": {
+    "file": "assets/PersonBreakdownGraph-BH9xDEvE.js",
     "name": "PersonBreakdownGraph",
     "imports": [
       "_button-B779lBis.js",
@@ -154,8 +154,8 @@
       "_table-2-B7VIRPdw.js"
     ]
   },
-  "_PersonSubmissions-Cig6NF5S.js": {
-    "file": "assets/PersonSubmissions-Cig6NF5S.js",
+  "_PersonSubmissions-CpoQ0JgU.js": {
+    "file": "assets/PersonSubmissions-CpoQ0JgU.js",
     "name": "PersonSubmissions",
     "imports": [
       "_button-B779lBis.js",
@@ -163,8 +163,8 @@
       "_InstallAppButton-CqrzS3Wx.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_popover-0I1FJSE7.js",
-      "_TablePagination-BbUFx7xo.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_TablePagination-inSuJ3Cj.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
       "_user-search--BhkckSL.js",
@@ -222,8 +222,8 @@
       "_index-CiJDnfNk.js"
     ]
   },
-  "_TablePagination-BbUFx7xo.js": {
-    "file": "assets/TablePagination-BbUFx7xo.js",
+  "_TablePagination-inSuJ3Cj.js": {
+    "file": "assets/TablePagination-inSuJ3Cj.js",
     "name": "TablePagination",
     "imports": [
       "_button-B779lBis.js",
@@ -675,14 +675,14 @@
     ]
   },
   "resources/js/Components/Declaration/DeclarationUSCForm.jsx": {
-    "file": "assets/DeclarationUSCForm-VZb482Eq.js",
+    "file": "assets/DeclarationUSCForm-C-jh0B8N.js",
     "name": "DeclarationUSCForm",
     "src": "resources/js/Components/Declaration/DeclarationUSCForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_useQuery-DznBxC20.js",
@@ -704,14 +704,14 @@
     ]
   },
   "resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx": {
-    "file": "assets/PrePositioningForm-BhpjB4Ma.js",
+    "file": "assets/PrePositioningForm-DuGcc98i.js",
     "name": "PrePositioningForm",
     "src": "resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
@@ -734,14 +734,14 @@
     ]
   },
   "resources/js/Components/Effects/AffectedTouristsForm.jsx": {
-    "file": "assets/AffectedTouristsForm-EpY_lQwh.js",
+    "file": "assets/AffectedTouristsForm-B7A_DWBD.js",
     "name": "AffectedTouristsForm",
     "src": "resources/js/Components/Effects/AffectedTouristsForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
@@ -750,7 +750,7 @@
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
-      "_Index-BmYIp0NI.js",
+      "_Index-DGh1GYRo.js",
       "_circle-plus-CkQgHkN6.js",
       "_loader-circle-Bg2bNQim.js",
       "_save-BJSpwbJC.js",
@@ -774,14 +774,14 @@
     ]
   },
   "resources/js/Components/Effects/CasualtyForm.jsx": {
-    "file": "assets/CasualtyForm-DBdGaU3W.js",
+    "file": "assets/CasualtyForm-ab46mwxd.js",
     "name": "CasualtyForm",
     "src": "resources/js/Components/Effects/CasualtyForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_useQuery-DznBxC20.js",
@@ -803,20 +803,20 @@
     ]
   },
   "resources/js/Components/Effects/DamagedHousesForm.jsx": {
-    "file": "assets/DamagedHousesForm-BcIAqdBU.js",
+    "file": "assets/DamagedHousesForm-C7gZxbSP.js",
     "name": "DamagedHousesForm",
     "src": "resources/js/Components/Effects/DamagedHousesForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
       "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
-      "_Index-BmYIp0NI.js",
+      "_Index-DGh1GYRo.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
@@ -870,14 +870,14 @@
     ]
   },
   "resources/js/Components/Effects/InjuredForm.jsx": {
-    "file": "assets/InjuredForm-DvidjzlK.js",
+    "file": "assets/InjuredForm-C5iAeB06.js",
     "name": "InjuredForm",
     "src": "resources/js/Components/Effects/InjuredForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
@@ -900,14 +900,14 @@
     ]
   },
   "resources/js/Components/Effects/MissingForm.jsx": {
-    "file": "assets/MissingForm-C_5kN16-.js",
+    "file": "assets/MissingForm-D8HxDoF5.js",
     "name": "MissingForm",
     "src": "resources/js/Components/Effects/MissingForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_useQuery-DznBxC20.js",
@@ -929,14 +929,14 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfClassesForm.jsx": {
-    "file": "assets/SuspensionOfClassesForm-DBhD8Gv_.js",
+    "file": "assets/SuspensionOfClassesForm-DROVTP_W.js",
     "name": "SuspensionOfClassesForm",
     "src": "resources/js/Components/Effects/SuspensionOfClassesForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
@@ -945,7 +945,7 @@
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
-      "_Index-BmYIp0NI.js",
+      "_Index-DGh1GYRo.js",
       "_circle-plus-CkQgHkN6.js",
       "_loader-circle-Bg2bNQim.js",
       "_save-BJSpwbJC.js",
@@ -969,14 +969,14 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfWorkForm.jsx": {
-    "file": "assets/SuspensionOfWorkForm-8buyvyZf.js",
+    "file": "assets/SuspensionOfWorkForm-L81rUhxe.js",
     "name": "SuspensionOfWorkForm",
     "src": "resources/js/Components/Effects/SuspensionOfWorkForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
@@ -998,7 +998,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-ka3XxcpC.js",
+    "file": "assets/BarangayImpactChart-RfqYZD6c.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1012,7 +1012,7 @@
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1031,13 +1031,13 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-DOQWC457.js",
+    "file": "assets/CasualtyGraph-DffATuzz.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BlKKZ1Dh.js",
+      "_PersonBreakdownGraph-BH9xDEvE.js",
       "_user-x-DyVe3_fx.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1048,7 +1048,7 @@
       "_index-BRr5WLxJ.js",
       "_plus-IR_qbhg1.js",
       "_index-BMXUZj-9.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1090,7 +1090,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-CrB5dt1I.js",
+    "file": "assets/ImpactHourlyChart-Di1MSpPh.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1109,7 +1109,7 @@
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1127,7 +1127,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-ECKg37Py.js",
+    "file": "assets/ImpactTrendChart-DMkD0E-i.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1145,7 +1145,7 @@
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1164,13 +1164,13 @@
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-DYdvoO7U.js",
+    "file": "assets/InjuredGraph-7qSGEvV_.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BlKKZ1Dh.js",
+      "_PersonBreakdownGraph-BH9xDEvE.js",
       "_user-plus-D2fkc2Bv.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1181,7 +1181,7 @@
       "_index-BRr5WLxJ.js",
       "_plus-IR_qbhg1.js",
       "_index-BMXUZj-9.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1201,13 +1201,13 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-D00fqUGV.js",
+    "file": "assets/MissingGraph-xuasbV-6.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BlKKZ1Dh.js",
+      "_PersonBreakdownGraph-BH9xDEvE.js",
       "_user-search--BhkckSL.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1218,7 +1218,7 @@
       "_index-BRr5WLxJ.js",
       "_plus-IR_qbhg1.js",
       "_index-BMXUZj-9.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1281,7 +1281,7 @@
     ]
   },
   "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx": {
-    "file": "assets/PreEmptiveForm-C-6KWntC.js",
+    "file": "assets/PreEmptiveForm-CqZyu48D.js",
     "name": "PreEmptiveForm",
     "src": "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx",
     "isDynamicEntry": true,
@@ -1294,7 +1294,7 @@
       "_useTableFilter-CMPj2l2Z.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_responsiveTable-Dmn1AxN5.js",
       "_app-sidebar-CHXSnfHj.js",
@@ -1312,13 +1312,13 @@
     ]
   },
   "resources/js/Components/SituationOverview/BridgeForm.jsx": {
-    "file": "assets/BridgeForm-B7t9a3bI.js",
+    "file": "assets/BridgeForm-q9rI61tU.js",
     "name": "BridgeForm",
     "src": "resources/js/Components/SituationOverview/BridgeForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
@@ -1404,13 +1404,13 @@
     ]
   },
   "resources/js/Components/SituationOverview/RoadForm.jsx": {
-    "file": "assets/RoadForm-Bnm-rI3f.js",
+    "file": "assets/RoadForm-bcLJ9q3e.js",
     "name": "RoadForm",
     "src": "resources/js/Components/SituationOverview/RoadForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
@@ -1493,13 +1493,14 @@
     ]
   },
   "resources/js/Components/Weather/PagasaPanel.jsx": {
-    "file": "assets/PagasaPanel-z67OKEMr.js",
+    "file": "assets/PagasaPanel-CwWM6BpB.js",
     "name": "PagasaPanel",
     "src": "resources/js/Components/Weather/PagasaPanel.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_useQuery-DznBxC20.js",
+      "_badge-DakfyDJK.js",
       "_card-DLtSoeSB.js",
       "_refresh-cw-DTX2xSa2.js",
       "_triangle-alert-B0deY1Jc.js",
@@ -1517,7 +1518,7 @@
     ]
   },
   "resources/js/Pages/Admin/AuditLogs.jsx": {
-    "file": "assets/AuditLogs-BlIoLze5.js",
+    "file": "assets/AuditLogs-CxK6XpHw.js",
     "name": "AuditLogs",
     "src": "resources/js/Pages/Admin/AuditLogs.jsx",
     "isDynamicEntry": true,
@@ -1526,9 +1527,9 @@
       "_InstallAppButton-CqrzS3Wx.js",
       "_app-sidebar-CHXSnfHj.js",
       "_RowsPerPage-CB7T4lpS.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_index-D-2vz3Ii.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_index-CiJDnfNk.js",
       "_activity-uslhAnz5.js",
       "_shield-alert-DNFHAunb.js",
@@ -1549,7 +1550,7 @@
     ]
   },
   "resources/js/Pages/Admin/BatchHistory.jsx": {
-    "file": "assets/BatchHistory-5HFd7Xbz.js",
+    "file": "assets/BatchHistory-CWundfIU.js",
     "name": "BatchHistory",
     "src": "resources/js/Pages/Admin/BatchHistory.jsx",
     "isEntry": true,
@@ -1562,7 +1563,7 @@
       "_badge-DakfyDJK.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_tabs-4bWIjkuq.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_index-D-2vz3Ii.js",
       "_proxy-lcxMRJun.js",
       "_file-text-CA8ywQtK.js",
@@ -1599,13 +1600,13 @@
     ]
   },
   "resources/js/Pages/Admin/CasualtySubmissions.jsx": {
-    "file": "assets/CasualtySubmissions-CRJvFEyt.js",
+    "file": "assets/CasualtySubmissions-BySWxcNI.js",
     "name": "CasualtySubmissions",
     "src": "resources/js/Pages/Admin/CasualtySubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonSubmissions-Cig6NF5S.js",
+      "_PersonSubmissions-CpoQ0JgU.js",
       "_app-sidebar-CHXSnfHj.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
@@ -1614,9 +1615,9 @@
       "_index-BMXUZj-9.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_popover-0I1FJSE7.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_chevron-left-Br0C7Txt.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1632,7 +1633,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-D3Oqg-n7.js",
+    "file": "assets/Dashboard-BresbW2z.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1642,7 +1643,7 @@
       "_button-B779lBis.js",
       "_app-sidebar-CHXSnfHj.js",
       "_InstallAppButton-CqrzS3Wx.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_index-BRr5WLxJ.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1675,7 +1676,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-CInqUcJg.js",
+    "file": "assets/DisasterManagement-CWLwBsLY.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isDynamicEntry": true,
@@ -1687,7 +1688,7 @@
       "_badge-DakfyDJK.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_index-D-2vz3Ii.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_plus-IR_qbhg1.js",
       "_proxy-lcxMRJun.js",
       "_triangle-alert-B0deY1Jc.js",
@@ -1712,7 +1713,7 @@
     ]
   },
   "resources/js/Pages/Admin/FormSubmissionStatus.jsx": {
-    "file": "assets/FormSubmissionStatus-Dj1DoyS8.js",
+    "file": "assets/FormSubmissionStatus-CvE3eMUX.js",
     "name": "FormSubmissionStatus",
     "src": "resources/js/Pages/Admin/FormSubmissionStatus.jsx",
     "isDynamicEntry": true,
@@ -1723,10 +1724,10 @@
       "_Breadcrumbs-Do1uc-_P.js",
       "_card-DLtSoeSB.js",
       "_badge-DakfyDJK.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_popover-0I1FJSE7.js",
       "_table-DRSBujQ3.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_file-text-CA8ywQtK.js",
       "_circle-alert-DjmEy2Xe.js",
       "_search-D1jHXigC.js",
@@ -1743,13 +1744,13 @@
     ]
   },
   "resources/js/Pages/Admin/InjuredSubmissions.jsx": {
-    "file": "assets/InjuredSubmissions-U1MojhYE.js",
+    "file": "assets/InjuredSubmissions-BU3fTdoM.js",
     "name": "InjuredSubmissions",
     "src": "resources/js/Pages/Admin/InjuredSubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonSubmissions-Cig6NF5S.js",
+      "_PersonSubmissions-CpoQ0JgU.js",
       "_app-sidebar-CHXSnfHj.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
@@ -1758,9 +1759,9 @@
       "_index-BMXUZj-9.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_popover-0I1FJSE7.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_chevron-left-Br0C7Txt.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1776,13 +1777,13 @@
     ]
   },
   "resources/js/Pages/Admin/MissingSubmissions.jsx": {
-    "file": "assets/MissingSubmissions-Djj7rYS5.js",
+    "file": "assets/MissingSubmissions-C0lO4-5B.js",
     "name": "MissingSubmissions",
     "src": "resources/js/Pages/Admin/MissingSubmissions.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonSubmissions-Cig6NF5S.js",
+      "_PersonSubmissions-CpoQ0JgU.js",
       "_app-sidebar-CHXSnfHj.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
@@ -1791,9 +1792,9 @@
       "_index-BMXUZj-9.js",
       "_RowsPerPage-CB7T4lpS.js",
       "_popover-0I1FJSE7.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_chevron-left-Br0C7Txt.js",
-      "_LiveIndicator-CeNyhejx.js",
+      "_LiveIndicator-CTrXRkKj.js",
       "_pause-DuURlhp7.js",
       "_triangle-alert-B0deY1Jc.js",
       "_heart-pulse-BokU321a.js",
@@ -1809,7 +1810,7 @@
     ]
   },
   "resources/js/Pages/Admin/UserManagement.jsx": {
-    "file": "assets/UserManagement-CyYMu84i.js",
+    "file": "assets/UserManagement-CQD6y4I4.js",
     "name": "UserManagement",
     "src": "resources/js/Pages/Admin/UserManagement.jsx",
     "isDynamicEntry": true,
@@ -1818,7 +1819,7 @@
       "_app-sidebar-CHXSnfHj.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_RowsPerPage-CB7T4lpS.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_index-D-2vz3Ii.js",
       "_user-plus-D2fkc2Bv.js",
       "_building-2-Mni1EW_U.js",
@@ -1865,14 +1866,14 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx": {
-    "file": "assets/AssistanceExtended-2B3gKABd.js",
+    "file": "assets/AssistanceExtended-24O8BiXK.js",
     "name": "AssistanceExtended",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_useQuery-DznBxC20.js",
@@ -1893,7 +1894,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx": {
-    "file": "assets/AssistanceIndex-J5QHVI6O.js",
+    "file": "assets/AssistanceIndex-VFy7EeIC.js",
     "name": "AssistanceIndex",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx",
     "isDynamicEntry": true,
@@ -2065,7 +2066,7 @@
     ]
   },
   "resources/js/Pages/Declaration/Index.jsx": {
-    "file": "assets/Index-BVuDx_Gu.js",
+    "file": "assets/Index-p7NaPpcP.js",
     "name": "Index",
     "src": "resources/js/Pages/Declaration/Index.jsx",
     "isDynamicEntry": true,
@@ -2091,7 +2092,7 @@
     ]
   },
   "resources/js/Pages/DeploymentOfResponse/Index.jsx": {
-    "file": "assets/Index-M0TQ5d2G.js",
+    "file": "assets/Index-F5vIDcyI.js",
     "name": "Index",
     "src": "resources/js/Pages/DeploymentOfResponse/Index.jsx",
     "isDynamicEntry": true,
@@ -2282,14 +2283,14 @@
     ]
   },
   "resources/js/Pages/ResponseOperations/Index.jsx": {
-    "file": "assets/Index-2_8yurEF.js",
+    "file": "assets/Index-tpB0vgRf.js",
     "name": "Index",
     "src": "resources/js/Pages/ResponseOperations/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
-      "_TablePagination-BbUFx7xo.js",
+      "_TablePagination-inSuJ3Cj.js",
       "_AddRowButton-DqBO4W-q.js",
       "_card-DLtSoeSB.js",
       "_ActiveDisasterHeader-DnT10brW.js",
@@ -2344,7 +2345,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-DAM23vI-.js",
+    "file": "assets/Index-CxwEb-uZ.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -2453,7 +2454,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-COgrj5Qw.js",
+    "file": "assets/app-CeGqzW4B.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2494,7 +2495,7 @@
       "resources/js/Pages/DeploymentOfResponse/Index.jsx",
       "resources/js/Pages/ElectricityHistory/Index.jsx",
       "resources/js/Pages/IncidentHistory/Index.jsx",
-      "_Index-BmYIp0NI.js",
+      "_Index-DGh1GYRo.js",
       "resources/js/Pages/PreEmptiveHistory/Index.jsx",
       "resources/js/Pages/Profile/Edit.jsx",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.jsx",
@@ -2509,7 +2510,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-Zi5Wm7dn.css"
+      "assets/app-CMoYhlFY.css"
     ]
   }
 }
