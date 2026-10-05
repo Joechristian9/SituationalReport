@@ -11,14 +11,6 @@
       "_InstallAppButton-CqrzS3Wx.js"
     ]
   },
-  "_ActivePoints-CQOhhqoi.js": {
-    "file": "assets/ActivePoints-CQOhhqoi.js",
-    "name": "ActivePoints",
-    "imports": [
-      "_button-B779lBis.js",
-      "_CartesianChart-CyrS6dnk.js"
-    ]
-  },
   "_AddRowButton-DqBO4W-q.js": {
     "file": "assets/AddRowButton-DqBO4W-q.js",
     "name": "AddRowButton",
@@ -35,22 +27,14 @@
       "_index-BMXUZj-9.js"
     ]
   },
-  "_CartesianChart-CyrS6dnk.js": {
-    "file": "assets/CartesianChart-CyrS6dnk.js",
+  "_CartesianChart-CDiwklzz.js": {
+    "file": "assets/CartesianChart-CDiwklzz.js",
     "name": "CartesianChart",
     "imports": [
       "_button-B779lBis.js",
       "_index-BRr5WLxJ.js",
       "_with-selector-CYOho4Lw.js",
       "_app-sidebar-CHXSnfHj.js"
-    ]
-  },
-  "_CartesianGrid-Ds3MriGU.js": {
-    "file": "assets/CartesianGrid-Ds3MriGU.js",
-    "name": "CartesianGrid",
-    "imports": [
-      "_button-B779lBis.js",
-      "_CartesianChart-CyrS6dnk.js"
     ]
   },
   "_DownloadExcelButton-7Kpex8xr.js": {
@@ -75,8 +59,8 @@
       "_button-B779lBis.js"
     ]
   },
-  "_Index-BMTfozxM.js": {
-    "file": "assets/Index-BMTfozxM.js",
+  "_Index-BmYIp0NI.js": {
+    "file": "assets/Index-BmYIp0NI.js",
     "name": "Index",
     "isDynamicEntry": true,
     "imports": [
@@ -122,14 +106,12 @@
       "_index-CiJDnfNk.js"
     ]
   },
-  "_LineChart-BQvycohy.js": {
-    "file": "assets/LineChart-BQvycohy.js",
+  "_LineChart-B9ohuMnl.js": {
+    "file": "assets/LineChart-B9ohuMnl.js",
     "name": "LineChart",
     "imports": [
       "_button-B779lBis.js",
-      "_CartesianChart-CyrS6dnk.js",
-      "_ActivePoints-CQOhhqoi.js",
-      "_CartesianGrid-Ds3MriGU.js"
+      "_CartesianChart-CDiwklzz.js"
     ]
   },
   "_LiveIndicator-CeNyhejx.js": {
@@ -140,13 +122,12 @@
       "_pause-DuURlhp7.js"
     ]
   },
-  "_ModernSelect-XgAnJ0De.js": {
-    "file": "assets/ModernSelect-XgAnJ0De.js",
+  "_ModernSelect-DoqAKm7O.js": {
+    "file": "assets/ModernSelect-DoqAKm7O.js",
     "name": "ModernSelect",
     "imports": [
-      "_CartesianChart-CyrS6dnk.js",
+      "_CartesianChart-CDiwklzz.js",
       "_button-B779lBis.js",
-      "_CartesianGrid-Ds3MriGU.js",
       "_index-BMXUZj-9.js"
     ]
   },
@@ -159,8 +140,8 @@
       "_index-BMXUZj-9.js"
     ]
   },
-  "_PersonBreakdownGraph-BnFphng0.js": {
-    "file": "assets/PersonBreakdownGraph-BnFphng0.js",
+  "_PersonBreakdownGraph-BlKKZ1Dh.js": {
+    "file": "assets/PersonBreakdownGraph-BlKKZ1Dh.js",
     "name": "PersonBreakdownGraph",
     "imports": [
       "_button-B779lBis.js",
@@ -221,12 +202,13 @@
       "_index-BMXUZj-9.js"
     ]
   },
-  "_ServiceHistoryPage-B2ge4CCk.js": {
-    "file": "assets/ServiceHistoryPage-B2ge4CCk.js",
+  "_ServiceHistoryPage-BiCfBQ8N.js": {
+    "file": "assets/ServiceHistoryPage-BiCfBQ8N.js",
     "name": "ServiceHistoryPage",
     "imports": [
       "_button-B779lBis.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_app-sidebar-CHXSnfHj.js",
       "_Breadcrumbs-Do1uc-_P.js",
@@ -352,13 +334,6 @@
   "_cloud-off-HmOU5nPR.js": {
     "file": "assets/cloud-off-HmOU5nPR.js",
     "name": "cloud-off",
-    "imports": [
-      "_button-B779lBis.js"
-    ]
-  },
-  "_cloud-snow-B8Owgdxw.js": {
-    "file": "assets/cloud-snow-B8Owgdxw.js",
-    "name": "cloud-snow",
     "imports": [
       "_button-B779lBis.js"
     ]
@@ -541,6 +516,13 @@
       "_button-B779lBis.js"
     ]
   },
+  "_shield-alert-DNFHAunb.js": {
+    "file": "assets/shield-alert-DNFHAunb.js",
+    "name": "shield-alert",
+    "imports": [
+      "_button-B779lBis.js"
+    ]
+  },
   "_shield-check-CJXB8xdS.js": {
     "file": "assets/shield-check-CJXB8xdS.js",
     "name": "shield-check",
@@ -601,9 +583,16 @@
       "_button-B779lBis.js"
     ]
   },
-  "_useAppUrl-KW-mleRc.js": {
-    "file": "assets/useAppUrl-KW-mleRc.js",
+  "_useAppUrl-C2vNkHXY.js": {
+    "file": "assets/useAppUrl-C2vNkHXY.js",
     "name": "useAppUrl",
+    "imports": [
+      "_button-B779lBis.js"
+    ]
+  },
+  "_useQuery-DznBxC20.js": {
+    "file": "assets/useQuery-DznBxC20.js",
+    "name": "useQuery",
     "imports": [
       "_QueryClientProvider-B6a1D8G0.js",
       "_button-B779lBis.js"
@@ -644,15 +633,8 @@
       "_button-B779lBis.js"
     ]
   },
-  "_waves-B3i7MUNf.js": {
-    "file": "assets/waves-B3i7MUNf.js",
-    "name": "waves",
-    "imports": [
-      "_button-B779lBis.js"
-    ]
-  },
-  "_wind-4m-tzMQz.js": {
-    "file": "assets/wind-4m-tzMQz.js",
+  "_wind-Dd8svWQw.js": {
+    "file": "assets/wind-Dd8svWQw.js",
     "name": "wind",
     "imports": [
       "_button-B779lBis.js"
@@ -666,14 +648,15 @@
     ]
   },
   "resources/js/Components/Agriculture/AgricultureForm.jsx": {
-    "file": "assets/AgricultureForm-xyoVbRhQ.js",
+    "file": "assets/AgricultureForm-Xw01DtXE.js",
     "name": "AgricultureForm",
     "src": "resources/js/Components/Agriculture/AgricultureForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_index-BWQi6ydC.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useAppUrl-C2vNkHXY.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_app-sidebar-CHXSnfHj.js",
       "_ModificationIndicator-tFz7lunO.js",
@@ -692,7 +675,7 @@
     ]
   },
   "resources/js/Components/Declaration/DeclarationUSCForm.jsx": {
-    "file": "assets/DeclarationUSCForm-jaabA81p.js",
+    "file": "assets/DeclarationUSCForm-VZb482Eq.js",
     "name": "DeclarationUSCForm",
     "src": "resources/js/Components/Declaration/DeclarationUSCForm.jsx",
     "isDynamicEntry": true,
@@ -702,9 +685,10 @@
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_file-text-CA8ywQtK.js",
       "_circle-plus-CkQgHkN6.js",
@@ -720,7 +704,7 @@
     ]
   },
   "resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx": {
-    "file": "assets/PrePositioningForm-DbhT8Jyp.js",
+    "file": "assets/PrePositioningForm-BhpjB4Ma.js",
     "name": "PrePositioningForm",
     "src": "resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx",
     "isDynamicEntry": true,
@@ -729,9 +713,10 @@
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
@@ -749,7 +734,7 @@
     ]
   },
   "resources/js/Components/Effects/AffectedTouristsForm.jsx": {
-    "file": "assets/AffectedTouristsForm-DbVbJsUp.js",
+    "file": "assets/AffectedTouristsForm-EpY_lQwh.js",
     "name": "AffectedTouristsForm",
     "src": "resources/js/Components/Effects/AffectedTouristsForm.jsx",
     "isDynamicEntry": true,
@@ -757,14 +742,15 @@
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
-      "_Index-BMTfozxM.js",
+      "_Index-BmYIp0NI.js",
       "_circle-plus-CkQgHkN6.js",
       "_loader-circle-Bg2bNQim.js",
       "_save-BJSpwbJC.js",
@@ -788,7 +774,7 @@
     ]
   },
   "resources/js/Components/Effects/CasualtyForm.jsx": {
-    "file": "assets/CasualtyForm-D4roKaVb.js",
+    "file": "assets/CasualtyForm-DBdGaU3W.js",
     "name": "CasualtyForm",
     "src": "resources/js/Components/Effects/CasualtyForm.jsx",
     "isDynamicEntry": true,
@@ -798,9 +784,10 @@
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_user-x-DyVe3_fx.js",
       "_circle-plus-CkQgHkN6.js",
@@ -816,7 +803,7 @@
     ]
   },
   "resources/js/Components/Effects/DamagedHousesForm.jsx": {
-    "file": "assets/DamagedHousesForm-BscV2zUp.js",
+    "file": "assets/DamagedHousesForm-BcIAqdBU.js",
     "name": "DamagedHousesForm",
     "src": "resources/js/Components/Effects/DamagedHousesForm.jsx",
     "isDynamicEntry": true,
@@ -824,11 +811,12 @@
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
-      "_Index-BMTfozxM.js",
+      "_Index-BmYIp0NI.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
@@ -856,15 +844,16 @@
     ]
   },
   "resources/js/Components/Effects/IncidentMonitoredForm.jsx": {
-    "file": "assets/IncidentMonitoredForm-BY6t6xo_.js",
+    "file": "assets/IncidentMonitoredForm-CPiAmM8I.js",
     "name": "IncidentMonitoredForm",
     "src": "resources/js/Components/Effects/IncidentMonitoredForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_index-BWQi6ydC.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_app-sidebar-CHXSnfHj.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_responsiveTable-Dmn1AxN5.js",
       "_triangle-alert-B0deY1Jc.js",
@@ -881,7 +870,7 @@
     ]
   },
   "resources/js/Components/Effects/InjuredForm.jsx": {
-    "file": "assets/InjuredForm-ZQE8L5RR.js",
+    "file": "assets/InjuredForm-DvidjzlK.js",
     "name": "InjuredForm",
     "src": "resources/js/Components/Effects/InjuredForm.jsx",
     "isDynamicEntry": true,
@@ -890,9 +879,10 @@
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
@@ -910,7 +900,7 @@
     ]
   },
   "resources/js/Components/Effects/MissingForm.jsx": {
-    "file": "assets/MissingForm-Bb6ZU_F-.js",
+    "file": "assets/MissingForm-C_5kN16-.js",
     "name": "MissingForm",
     "src": "resources/js/Components/Effects/MissingForm.jsx",
     "isDynamicEntry": true,
@@ -920,9 +910,10 @@
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_user-search--BhkckSL.js",
       "_circle-plus-CkQgHkN6.js",
@@ -938,7 +929,7 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfClassesForm.jsx": {
-    "file": "assets/SuspensionOfClassesForm-Ahj4qpDJ.js",
+    "file": "assets/SuspensionOfClassesForm-DBhD8Gv_.js",
     "name": "SuspensionOfClassesForm",
     "src": "resources/js/Components/Effects/SuspensionOfClassesForm.jsx",
     "isDynamicEntry": true,
@@ -946,14 +937,15 @@
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_InstallAppButton-CqrzS3Wx.js",
-      "_Index-BMTfozxM.js",
+      "_Index-BmYIp0NI.js",
       "_circle-plus-CkQgHkN6.js",
       "_loader-circle-Bg2bNQim.js",
       "_save-BJSpwbJC.js",
@@ -977,7 +969,7 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfWorkForm.jsx": {
-    "file": "assets/SuspensionOfWorkForm-CylK-TBJ.js",
+    "file": "assets/SuspensionOfWorkForm-8buyvyZf.js",
     "name": "SuspensionOfWorkForm",
     "src": "resources/js/Components/Effects/SuspensionOfWorkForm.jsx",
     "isDynamicEntry": true,
@@ -985,9 +977,10 @@
       "_button-B779lBis.js",
       "_DownloadExcelButton-7Kpex8xr.js",
       "_TablePagination-BbUFx7xo.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
@@ -1005,7 +998,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-BjkBCwVa.js",
+    "file": "assets/BarangayImpactChart-ka3XxcpC.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1038,13 +1031,13 @@
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-7ZW7agO1.js",
+    "file": "assets/CasualtyGraph-DOQWC457.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BnFphng0.js",
+      "_PersonBreakdownGraph-BlKKZ1Dh.js",
       "_user-x-DyVe3_fx.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1075,19 +1068,18 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-BfrkZXYk.js",
+    "file": "assets/EvacuationGraph-tXqTqn2E.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_GraphCard-BI7MKgeM.js",
-      "_ModernSelect-XgAnJ0De.js",
+      "_ModernSelect-DoqAKm7O.js",
       "_app-sidebar-CHXSnfHj.js",
       "_house-C4DA4H8X.js",
       "_trending-up-zvAVaBJ8.js",
-      "_CartesianChart-CyrS6dnk.js",
-      "_CartesianGrid-Ds3MriGU.js",
+      "_CartesianChart-CDiwklzz.js",
       "_index-BRr5WLxJ.js",
       "_search-D1jHXigC.js",
       "_index-BMXUZj-9.js",
@@ -1098,7 +1090,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-CyGEG_tu.js",
+    "file": "assets/ImpactHourlyChart-CrB5dt1I.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1106,9 +1098,8 @@
       "_button-B779lBis.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
-      "_CartesianChart-CyrS6dnk.js",
-      "_LineChart-BQvycohy.js",
-      "_CartesianGrid-Ds3MriGU.js",
+      "_CartesianChart-CDiwklzz.js",
+      "_LineChart-B9ohuMnl.js",
       "_app-sidebar-CHXSnfHj.js",
       "_table-2-B7VIRPdw.js",
       "_activity-uslhAnz5.js",
@@ -1132,12 +1123,11 @@
       "_index-CeItMrzf.js",
       "_circle-alert-DjmEy2Xe.js",
       "_plus-IR_qbhg1.js",
-      "_with-selector-CYOho4Lw.js",
-      "_ActivePoints-CQOhhqoi.js"
+      "_with-selector-CYOho4Lw.js"
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-Cee_sPyc.js",
+    "file": "assets/ImpactTrendChart-ECKg37Py.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1145,9 +1135,8 @@
       "_button-B779lBis.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
-      "_CartesianChart-CyrS6dnk.js",
-      "_LineChart-BQvycohy.js",
-      "_CartesianGrid-Ds3MriGU.js",
+      "_CartesianChart-CDiwklzz.js",
+      "_LineChart-B9ohuMnl.js",
       "_app-sidebar-CHXSnfHj.js",
       "_table-2-B7VIRPdw.js",
       "_trending-up-zvAVaBJ8.js",
@@ -1171,18 +1160,17 @@
       "_index-CeItMrzf.js",
       "_circle-alert-DjmEy2Xe.js",
       "_plus-IR_qbhg1.js",
-      "_with-selector-CYOho4Lw.js",
-      "_ActivePoints-CQOhhqoi.js"
+      "_with-selector-CYOho4Lw.js"
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-C27aEH6r.js",
+    "file": "assets/InjuredGraph-DYdvoO7U.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BnFphng0.js",
+      "_PersonBreakdownGraph-BlKKZ1Dh.js",
       "_user-plus-D2fkc2Bv.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1213,13 +1201,13 @@
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-CeJOuUem.js",
+    "file": "assets/MissingGraph-D00fqUGV.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_PersonBreakdownGraph-BnFphng0.js",
+      "_PersonBreakdownGraph-BlKKZ1Dh.js",
       "_user-search--BhkckSL.js",
       "_GraphCard-BI7MKgeM.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1249,20 +1237,19 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-rvwo60FP.js",
+    "file": "assets/WaterLevelGraph-CVhDiiAs.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_GraphCard-BI7MKgeM.js",
-      "_ModernSelect-XgAnJ0De.js",
+      "_ModernSelect-DoqAKm7O.js",
       "_clock-BYq68510.js",
       "_trending-up-zvAVaBJ8.js",
       "_triangle-alert-B0deY1Jc.js",
       "_droplet-D-qrHdZo.js",
-      "_CartesianChart-CyrS6dnk.js",
-      "_CartesianGrid-Ds3MriGU.js",
+      "_CartesianChart-CDiwklzz.js",
       "_loader-circle-Bg2bNQim.js",
       "_formatDistanceToNow-CPe9kqAT.js",
       "_index-BMXUZj-9.js",
@@ -1276,7 +1263,7 @@
     ]
   },
   "resources/js/Components/Graphs/WeatherGraph.jsx": {
-    "file": "assets/WeatherGraph-D8gsNgeO.js",
+    "file": "assets/WeatherGraph-CWyIx-R0.js",
     "name": "WeatherGraph",
     "src": "resources/js/Components/Graphs/WeatherGraph.jsx",
     "isDynamicEntry": true,
@@ -1285,8 +1272,7 @@
       "_GraphCard-BI7MKgeM.js",
       "_cloud-off-HmOU5nPR.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_wind-4m-tzMQz.js",
-      "_waves-B3i7MUNf.js",
+      "_wind-Dd8svWQw.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -1295,15 +1281,16 @@
     ]
   },
   "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx": {
-    "file": "assets/PreEmptiveForm-BQr6HebP.js",
+    "file": "assets/PreEmptiveForm-C-6KWntC.js",
     "name": "PreEmptiveForm",
     "src": "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_DownloadExcelButton-7Kpex8xr.js",
@@ -1325,16 +1312,17 @@
     ]
   },
   "resources/js/Components/SituationOverview/BridgeForm.jsx": {
-    "file": "assets/BridgeForm-DO9GjT3A.js",
+    "file": "assets/BridgeForm-B7t9a3bI.js",
     "name": "BridgeForm",
     "src": "resources/js/Components/SituationOverview/BridgeForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_TablePagination-BbUFx7xo.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_responsiveTable-Dmn1AxN5.js",
       "_ModificationIndicator-tFz7lunO.js",
@@ -1366,14 +1354,15 @@
     ]
   },
   "resources/js/Components/SituationOverview/CommunicationForm.jsx": {
-    "file": "assets/CommunicationForm-vCgQRShK.js",
+    "file": "assets/CommunicationForm--HyOx3ex.js",
     "name": "CommunicationForm",
     "src": "resources/js/Components/SituationOverview/CommunicationForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_index-BWQi6ydC.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useAppUrl-C2vNkHXY.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_app-sidebar-CHXSnfHj.js",
@@ -1389,15 +1378,16 @@
     ]
   },
   "resources/js/Components/SituationOverview/ElectricityForm.jsx": {
-    "file": "assets/ElectricityForm-DHw3VCkT.js",
+    "file": "assets/ElectricityForm-Bp9dTNsY.js",
     "name": "ElectricityForm",
     "src": "resources/js/Components/SituationOverview/ElectricityForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_responsiveTable-Dmn1AxN5.js",
@@ -1414,7 +1404,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/RoadForm.jsx": {
-    "file": "assets/RoadForm-BrFdYOu3.js",
+    "file": "assets/RoadForm-Bnm-rI3f.js",
     "name": "RoadForm",
     "src": "resources/js/Components/SituationOverview/RoadForm.jsx",
     "isDynamicEntry": true,
@@ -1422,9 +1412,10 @@
       "_button-B779lBis.js",
       "_TablePagination-BbUFx7xo.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_responsiveTable-Dmn1AxN5.js",
       "resources/js/Pages/SituationReports/Index.jsx",
@@ -1455,15 +1446,16 @@
     ]
   },
   "resources/js/Components/SituationOverview/WaterForm.jsx": {
-    "file": "assets/WaterForm-CI89jIy4.js",
+    "file": "assets/WaterForm-BNjvsbl5.js",
     "name": "WaterForm",
     "src": "resources/js/Components/SituationOverview/WaterForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_droplet-D-qrHdZo.js",
       "_loader-circle-Bg2bNQim.js",
@@ -1476,14 +1468,15 @@
     ]
   },
   "resources/js/Components/SituationOverview/WeatherForm.jsx": {
-    "file": "assets/WeatherForm-BmMly2rG.js",
+    "file": "assets/WeatherForm-Bii_-Atl.js",
     "name": "WeatherForm",
     "src": "resources/js/Components/SituationOverview/WeatherForm.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
       "_index-BWQi6ydC.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useAppUrl-C2vNkHXY.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_ModificationIndicator-tFz7lunO.js",
       "_responsiveTable-Dmn1AxN5.js",
@@ -1499,47 +1492,32 @@
       "_plus-IR_qbhg1.js"
     ]
   },
-  "resources/js/Components/Weather/WeatherDashboard.jsx": {
-    "file": "assets/WeatherDashboard-C1c_mvyw.js",
-    "name": "WeatherDashboard",
-    "src": "resources/js/Components/Weather/WeatherDashboard.jsx",
+  "resources/js/Components/Weather/PagasaPanel.jsx": {
+    "file": "assets/PagasaPanel-z67OKEMr.js",
+    "name": "PagasaPanel",
+    "src": "resources/js/Components/Weather/PagasaPanel.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "resources/js/Pages/Admin/Dashboard.jsx",
-      "_cloud-snow-B8Owgdxw.js",
-      "_wind-4m-tzMQz.js",
-      "_app-sidebar-CHXSnfHj.js",
-      "_loader-circle-Bg2bNQim.js",
+      "_useQuery-DznBxC20.js",
+      "_card-DLtSoeSB.js",
       "_refresh-cw-DTX2xSa2.js",
-      "_clock-BYq68510.js",
       "_triangle-alert-B0deY1Jc.js",
-      "_eye-CwdfhCZJ.js",
-      "_droplets-B4Xg36xs.js",
-      "_CartesianChart-CyrS6dnk.js",
-      "_ActivePoints-CQOhhqoi.js",
+      "_loader-circle-Bg2bNQim.js",
+      "_shield-alert-DNFHAunb.js",
+      "_app-sidebar-CHXSnfHj.js",
+      "_formatDistanceToNow-CPe9kqAT.js",
+      "_format-CECWTHA7.js",
+      "_QueryClientProvider-B6a1D8G0.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
-      "_LiveIndicator-CeNyhejx.js",
-      "_pause-DuURlhp7.js",
-      "_heart-pulse-BokU321a.js",
-      "_user-search--BhkckSL.js",
-      "_index-D-2vz3Ii.js",
-      "_RowsPerPage-CB7T4lpS.js",
-      "_index-BMXUZj-9.js",
-      "_format-CECWTHA7.js",
-      "_ActiveDisasterHeader-DnT10brW.js",
-      "_badge-DakfyDJK.js",
-      "_proxy-lcxMRJun.js",
-      "_index-CeItMrzf.js",
-      "_circle-alert-DjmEy2Xe.js",
       "_plus-IR_qbhg1.js",
-      "_with-selector-CYOho4Lw.js"
+      "_index-BMXUZj-9.js"
     ]
   },
   "resources/js/Pages/Admin/AuditLogs.jsx": {
-    "file": "assets/AuditLogs-CaegRAPr.js",
+    "file": "assets/AuditLogs-BlIoLze5.js",
     "name": "AuditLogs",
     "src": "resources/js/Pages/Admin/AuditLogs.jsx",
     "isDynamicEntry": true,
@@ -1553,6 +1531,7 @@
       "_LiveIndicator-CeNyhejx.js",
       "_index-CiJDnfNk.js",
       "_activity-uslhAnz5.js",
+      "_shield-alert-DNFHAunb.js",
       "_search-D1jHXigC.js",
       "_search-x-Td6ZWWj8.js",
       "_index-BMXUZj-9.js",
@@ -1653,7 +1632,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-CPRE-6vl.js",
+    "file": "assets/Dashboard-D3Oqg-n7.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1683,7 +1662,7 @@
       "_badge-DakfyDJK.js"
     ],
     "dynamicImports": [
-      "resources/js/Components/Weather/WeatherDashboard.jsx",
+      "resources/js/Components/Weather/PagasaPanel.jsx",
       "resources/js/Components/Graphs/WeatherGraph.jsx",
       "resources/js/Components/Graphs/WaterLevelGraph.jsx",
       "resources/js/Components/Graphs/EvacuationGraph.jsx",
@@ -1696,7 +1675,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-CkbfsZYq.js",
+    "file": "assets/DisasterManagement-CInqUcJg.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isDynamicEntry": true,
@@ -1725,9 +1704,7 @@
       "_loader-circle-Bg2bNQim.js",
       "_circle-alert-DjmEy2Xe.js",
       "_user-lFxxeY3c.js",
-      "_wind-4m-tzMQz.js",
-      "_waves-B3i7MUNf.js",
-      "_cloud-snow-B8Owgdxw.js",
+      "_wind-Dd8svWQw.js",
       "_droplets-B4Xg36xs.js",
       "_format-CECWTHA7.js",
       "_index-BRr5WLxJ.js",
@@ -1862,17 +1839,18 @@
     ]
   },
   "resources/js/Pages/AgricultureHistory/Index.jsx": {
-    "file": "assets/Index-BBfe_CFF.js",
+    "file": "assets/Index-CdFk8t2p.js",
     "name": "Index",
     "src": "resources/js/Pages/AgricultureHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -1887,7 +1865,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx": {
-    "file": "assets/AssistanceExtended-CIdkJVge.js",
+    "file": "assets/AssistanceExtended-2B3gKABd.js",
     "name": "AssistanceExtended",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx",
     "isDynamicEntry": true,
@@ -1897,9 +1875,10 @@
       "_TablePagination-BbUFx7xo.js",
       "_AddRowButton-DqBO4W-q.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_circle-plus-CkQgHkN6.js",
       "_loader-circle-Bg2bNQim.js",
@@ -1914,7 +1893,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx": {
-    "file": "assets/AssistanceIndex-BO6sPY7B.js",
+    "file": "assets/AssistanceIndex-J5QHVI6O.js",
     "name": "AssistanceIndex",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx",
     "isDynamicEntry": true,
@@ -2034,17 +2013,18 @@
     ]
   },
   "resources/js/Pages/BridgeHistory/Index.jsx": {
-    "file": "assets/Index-2LtHkwl5.js",
+    "file": "assets/Index-C5t3BRPO.js",
     "name": "Index",
     "src": "resources/js/Pages/BridgeHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2059,17 +2039,18 @@
     ]
   },
   "resources/js/Pages/CommunicationHistory/Index.jsx": {
-    "file": "assets/Index-CeAQfck_.js",
+    "file": "assets/Index-Dxd9E6LX.js",
     "name": "Index",
     "src": "resources/js/Pages/CommunicationHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2084,7 +2065,7 @@
     ]
   },
   "resources/js/Pages/Declaration/Index.jsx": {
-    "file": "assets/Index-VYMZUktY.js",
+    "file": "assets/Index-BVuDx_Gu.js",
     "name": "Index",
     "src": "resources/js/Pages/Declaration/Index.jsx",
     "isDynamicEntry": true,
@@ -2110,7 +2091,7 @@
     ]
   },
   "resources/js/Pages/DeploymentOfResponse/Index.jsx": {
-    "file": "assets/Index-DSBkmmQI.js",
+    "file": "assets/Index-M0TQ5d2G.js",
     "name": "Index",
     "src": "resources/js/Pages/DeploymentOfResponse/Index.jsx",
     "isDynamicEntry": true,
@@ -2136,18 +2117,19 @@
     ]
   },
   "resources/js/Pages/ElectricityHistory/Index.jsx": {
-    "file": "assets/Index-BnNSooy7.js",
+    "file": "assets/Index-Bf2HzoJg.js",
     "name": "Index",
     "src": "resources/js/Pages/ElectricityHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
       "_clock-BYq68510.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2162,17 +2144,18 @@
     ]
   },
   "resources/js/Pages/IncidentHistory/Index.jsx": {
-    "file": "assets/Index-DCFli0cW.js",
+    "file": "assets/Index-3YEiREnd.js",
     "name": "Index",
     "src": "resources/js/Pages/IncidentHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2187,17 +2170,18 @@
     ]
   },
   "resources/js/Pages/PreEmptiveHistory/Index.jsx": {
-    "file": "assets/Index-Dzz8P5y6.js",
+    "file": "assets/Index-qLyEsfd2.js",
     "name": "Index",
     "src": "resources/js/Pages/PreEmptiveHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2271,20 +2255,21 @@
     ]
   },
   "resources/js/Pages/ReportHistory/Index.jsx": {
-    "file": "assets/Index-gGq7wqJZ.js",
+    "file": "assets/Index-C0tvq3X_.js",
     "name": "Index",
     "src": "resources/js/Pages/ReportHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_tabs-4bWIjkuq.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_app-sidebar-CHXSnfHj.js",
       "_Breadcrumbs-Do1uc-_P.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_card-DLtSoeSB.js",
       "_badge-DakfyDJK.js",
       "_loader-circle-Bg2bNQim.js",
@@ -2297,7 +2282,7 @@
     ]
   },
   "resources/js/Pages/ResponseOperations/Index.jsx": {
-    "file": "assets/Index-CciD25sQ.js",
+    "file": "assets/Index-2_8yurEF.js",
     "name": "Index",
     "src": "resources/js/Pages/ResponseOperations/Index.jsx",
     "isDynamicEntry": true,
@@ -2309,9 +2294,10 @@
       "_card-DLtSoeSB.js",
       "_ActiveDisasterHeader-DnT10brW.js",
       "_ModificationIndicator-tFz7lunO.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
       "_index-BWQi6ydC.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_useTableFilter-CMPj2l2Z.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_app-sidebar-CHXSnfHj.js",
@@ -2332,17 +2318,18 @@
     ]
   },
   "resources/js/Pages/RoadHistory/Index.jsx": {
-    "file": "assets/Index-C5hIryi_.js",
+    "file": "assets/Index-BDbojHCz.js",
     "name": "Index",
     "src": "resources/js/Pages/RoadHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2357,7 +2344,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-CZqpiVBw.js",
+    "file": "assets/Index-DAM23vI-.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -2402,19 +2389,20 @@
     ]
   },
   "resources/js/Pages/WaterServiceHistory/Index.jsx": {
-    "file": "assets/Index-BRWsNN-C.js",
+    "file": "assets/Index-BdeUbsxJ.js",
     "name": "Index",
     "src": "resources/js/Pages/WaterServiceHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_droplets-B4Xg36xs.js",
       "_app-sidebar-CHXSnfHj.js",
       "_clock-BYq68510.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2429,17 +2417,18 @@
     ]
   },
   "resources/js/Pages/WeatherHistory/Index.jsx": {
-    "file": "assets/Index-CQFUZemc.js",
+    "file": "assets/Index-D1Z8Bdbj.js",
     "name": "Index",
     "src": "resources/js/Pages/WeatherHistory/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-B779lBis.js",
-      "_ServiceHistoryPage-B2ge4CCk.js",
+      "_ServiceHistoryPage-BiCfBQ8N.js",
       "_table-DRSBujQ3.js",
       "_app-sidebar-CHXSnfHj.js",
-      "_useAppUrl-KW-mleRc.js",
+      "_useQuery-DznBxC20.js",
       "_QueryClientProvider-B6a1D8G0.js",
+      "_useAppUrl-C2vNkHXY.js",
       "_InstallAppButton-CqrzS3Wx.js",
       "_index-CiJDnfNk.js",
       "_index-BRr5WLxJ.js",
@@ -2464,7 +2453,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CfhNBywR.js",
+    "file": "assets/app-COgrj5Qw.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2505,7 +2494,7 @@
       "resources/js/Pages/DeploymentOfResponse/Index.jsx",
       "resources/js/Pages/ElectricityHistory/Index.jsx",
       "resources/js/Pages/IncidentHistory/Index.jsx",
-      "_Index-BMTfozxM.js",
+      "_Index-BmYIp0NI.js",
       "resources/js/Pages/PreEmptiveHistory/Index.jsx",
       "resources/js/Pages/Profile/Edit.jsx",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.jsx",
@@ -2520,7 +2509,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-T3NbHeP6.css"
+      "assets/app-Zi5Wm7dn.css"
     ]
   }
 }
