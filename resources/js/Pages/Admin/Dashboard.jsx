@@ -21,7 +21,7 @@ import ImpactStatCards from "@/Components/Graphs/ImpactStatCards";
 import DisasterContextBar from "@/Components/DisasterContextBar";
 
 // Lazy load heavy components - only load when needed
-const WeatherDashboard = lazy(() => import("@/Components/Weather/WeatherDashboard"));
+const PagasaPanel = lazy(() => import("@/Components/Weather/PagasaPanel"));
 const WeatherGraph = lazy(() => import("@/Components/Graphs/WeatherGraph"));
 const WaterLevelGraph = lazy(() => import("@/Components/Graphs/WaterLevelGraph"));
 const EvacuationGraph = lazy(() => import("@/Components/Graphs/EvacuationGraph"));
@@ -181,7 +181,7 @@ export default function Dashboard({
                             onClick={() => setActiveTab("environment")}
                         />
                         <Tab
-                            label="Weather Forecast"
+                            label="PAGASA"
                             icon={<CloudSun size={16} />}
                             isActive={activeTab === "weather"}
                             onClick={() => setActiveTab("weather")}
@@ -199,7 +199,7 @@ export default function Dashboard({
                             <Suspense fallback={<LoadingSpinner />}>
                                 {activeTab === "weather" && (
                                     <div>
-                                        <WeatherDashboard />
+                                        <PagasaPanel />
                                     </div>
                                 )}
 
