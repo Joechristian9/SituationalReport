@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -22,9 +21,7 @@ test('users can authenticate using the login screen', function () {
 });
 
 test('admins land on the admin dashboard after login', function () {
-    Role::findOrCreate('admin');
-    $user = User::factory()->create();
-    $user->assignRole('admin');
+    $user = userWithRole('admin');
 
     $response = $this->post('/login', [
         'email' => $user->email,

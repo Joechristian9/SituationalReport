@@ -16,10 +16,6 @@ class DashboardController extends Controller
     {
         $request->session()->reflash();
 
-        if ($request->user()->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        return redirect()->route('situation-reports.index');
+        return redirect()->route($request->user()->homeRoute());
     }
 }

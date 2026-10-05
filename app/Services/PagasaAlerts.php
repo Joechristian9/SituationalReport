@@ -32,26 +32,19 @@ class PagasaAlerts
     // Each relevant entry costs one request; the feed is newest first, so older ones have expired.
     private const MAX_ENTRIES = 15;
 
-    private const SEVERITY_RANK = ['Extreme' => 0, 'Severe' => 1, 'Moderate' => 2, 'Minor' => 3, 'Unknown' => 4];
+    // Anything else (e.g. "Unknown") sorts last.
+    private const SEVERITY_RANK = ['Extreme' => 0, 'Severe' => 1, 'Moderate' => 2, 'Minor' => 3];
 
     /**
      * @return array{alerts: array<int, array<string, mixed>>, fetchedAt: ?string, stale: bool}
      */
     public static function current(): array
     {
-        $result = Cache::get(self::CACHE_KEY);
-
-        if (! $result) {
-            try {
-                $result = ['alerts' => self::fetch(), 'fetchedAt' => now()->toIso8601String(), 'stale' => false];
-                Cache::put(self::CACHE_KEY, $result, now()->addMinutes(10));
-                Cache::forever(self::LAST_GOOD_KEY, $result);
-            } catch (Throwable $e) {
-                report($e);
-                // PAGASA unreachable: show the last copy we had rather than "no alerts".
-                $result = [...(Cache::get(self::LAST_GOOD_KEY) ?? ['alerts' => [], 'fetchedAt' => null]), 'stale' => true];
-            }
-        }
+        // Only one request fetches from PAGASA at a time; the others get the last copy
+        // instead of each holding a PHP worker for up to 15s while PAGASA is slow.
+        $result = Cache::get(self::CACHE_KEY)
+            ?? Cache::lock('pagasa.fetch', 30)->get(fn () => Cache::get(self::CACHE_KEY) ?? self::refresh())
+            ?: self::lastGood(stale: false);
 
         // Cached alerts can expire before the cache does.
         $result['alerts'] = array_values(array_filter(
@@ -60,6 +53,32 @@ class PagasaAlerts
         ));
 
         return $result;
+    }
+
+    private static function refresh(): array
+    {
+        try {
+            $result = ['alerts' => self::fetch(), 'fetchedAt' => now()->toIso8601String(), 'stale' => false];
+            Cache::forever(self::LAST_GOOD_KEY, $result);
+            $ttl = now()->addMinutes(10);
+        } catch (Throwable $e) {
+            report($e);
+            // PAGASA unreachable: show the last copy we had rather than "no alerts", and
+            // wait a little before trying again instead of retrying on every request.
+            $result = self::lastGood(stale: true);
+            $ttl = now()->addMinutes(2);
+        }
+
+        Cache::put(self::CACHE_KEY, $result, $ttl);
+
+        return $result;
+    }
+
+    private static function lastGood(bool $stale): array
+    {
+        $last = Cache::get(self::LAST_GOOD_KEY) ?? ['alerts' => [], 'fetchedAt' => null, 'stale' => true];
+
+        return $stale ? [...$last, 'stale' => true] : $last;
     }
 
     /**
@@ -93,8 +112,8 @@ class PagasaAlerts
         }
 
         $alerts = array_values($alerts);
-        usort($alerts, fn (array $a, array $b) => [$b['mentionsIsabela'], self::SEVERITY_RANK[$a['severity']] ?? 4, $b['sent']]
-            <=> [$a['mentionsIsabela'], self::SEVERITY_RANK[$b['severity']] ?? 4, $a['sent']]);
+        usort($alerts, fn (array $a, array $b) => [$b['mentionsIsabela'], self::SEVERITY_RANK[$a['severity']] ?? PHP_INT_MAX, $b['sent']]
+            <=> [$a['mentionsIsabela'], self::SEVERITY_RANK[$b['severity']] ?? PHP_INT_MAX, $a['sent']]);
 
         return $alerts;
     }

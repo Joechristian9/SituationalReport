@@ -41,7 +41,11 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function userWithRole(string $role = 'user'): App\Models\User
 {
-    // ..
+    Spatie\Permission\Models\Role::findOrCreate($role);
+    $user = App\Models\User::factory()->create();
+    $user->assignRole($role);
+
+    return $user;
 }

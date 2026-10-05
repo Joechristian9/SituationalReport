@@ -11,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -46,9 +46,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     public function isAdmin()
     {
         return $this->hasRole('admin');
+    }
+
+    /** Where this user lands after login: only admins have a dashboard. */
+    public function homeRoute(): string
+    {
+        return $this->isAdmin() ? 'admin.dashboard' : 'situation-reports.index';
     }
 
     public function isUser()
@@ -84,9 +91,9 @@ class User extends Authenticatable
 
     /**
      * Check if this user can access another user's data
-     * 
-     * @param int $userId The user ID whose data to check
-     * @param string $permissionType 'read' or 'write'
+     *
+     * @param  int  $userId  The user ID whose data to check
+     * @param  string  $permissionType  'read' or 'write'
      * @return bool
      */
     public function canAccessUserData($userId, $permissionType = 'read')
@@ -107,7 +114,7 @@ class User extends Authenticatable
             ->where('shared_with_user_id', $this->id)
             ->first();
 
-        if (!$sharing) {
+        if (! $sharing) {
             return false;
         }
 
@@ -122,8 +129,8 @@ class User extends Authenticatable
 
     /**
      * Get all user IDs whose data this user can access
-     * 
-     * @param string $permissionType 'read' or 'write'
+     *
+     * @param  string  $permissionType  'read' or 'write'
      * @return array
      */
     public function getAccessibleUserIds($permissionType = 'read')

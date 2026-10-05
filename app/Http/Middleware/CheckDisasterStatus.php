@@ -33,8 +33,8 @@ class CheckDisasterStatus
                 ], 403);
             }
 
-            // For Inertia requests, send users to their reports page with the message
-            return redirect()->route('situation-reports.index')->with('error', 'No active disaster report. Forms are currently disabled.');
+            // For Inertia requests, send users to their home page with the message
+            return redirect()->route($request->user()->homeRoute())->with('error', 'No active disaster report. Forms are currently disabled.');
         }
 
         // If typhoon is paused, allow page to load but forms will be disabled

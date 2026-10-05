@@ -32,14 +32,15 @@ function useOnline() {
 // the page by the same amount and the form's submit button never sits underneath it.
 function useReservedBottomSpace(node) {
     useEffect(() => {
+        if (!node) return undefined;
         const root = document.documentElement;
-        if (!node) {
-            root.style.removeProperty('--offline-status-h');
-            return undefined;
-        }
+        let last = '';
         const observer = new ResizeObserver(() => {
-            const fromBottom = window.innerHeight - node.getBoundingClientRect().top;
-            root.style.setProperty('--offline-status-h', `${Math.ceil(fromBottom) + 16}px`);
+            const value = `${Math.ceil(window.innerHeight - node.getBoundingClientRect().top) + 16}px`;
+            // Each write restyles the whole page, so skip it when nothing changed.
+            if (value === last) return;
+            last = value;
+            root.style.setProperty('--offline-status-h', value);
         });
         observer.observe(node);
         return () => {

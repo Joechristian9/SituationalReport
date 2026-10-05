@@ -1,19 +1,8 @@
 <?php
 
-use App\Models\User;
 use App\Services\PagasaAlerts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Spatie\Permission\Models\Role;
-
-function pagasaUser(string $role): User
-{
-    Role::findOrCreate($role);
-    $user = User::factory()->create();
-    $user->assignRole($role);
-
-    return $user;
-}
 
 function capEntry(string $title, string $href): string
 {
@@ -64,7 +53,7 @@ beforeEach(fn () => Cache::flush());
 it('shows admins the active PAGASA alerts that concern Isabela', function () {
     fakePagasa();
 
-    $response = $this->actingAs(pagasaUser('admin'))->getJson(route('admin.pagasa-alerts'))->assertOk();
+    $response = $this->actingAs(userWithRole('admin'))->getJson(route('admin.pagasa-alerts'))->assertOk();
 
     expect($response->json('stale'))->toBeFalse()
         ->and(collect($response->json('alerts'))->pluck('id')->all())->toBe(['isabela'])
@@ -74,7 +63,7 @@ it('shows admins the active PAGASA alerts that concern Isabela', function () {
 });
 
 it('keeps regular users out', function () {
-    $this->actingAs(pagasaUser('user'))->getJson(route('admin.pagasa-alerts'))->assertForbidden();
+    $this->actingAs(userWithRole('user'))->getJson(route('admin.pagasa-alerts'))->assertForbidden();
 });
 
 it('requires login', function () {
@@ -84,12 +73,12 @@ it('requires login', function () {
 it('works when no disaster is active, since it only reads PAGASA data', function () {
     fakePagasa();
 
-    $this->actingAs(pagasaUser('admin'))->getJson(route('admin.pagasa-alerts'))->assertOk();
+    $this->actingAs(userWithRole('admin'))->getJson(route('admin.pagasa-alerts'))->assertOk();
 });
 
 it('serves the last good copy, marked stale, when PAGASA is down', function () {
     fakePagasa(thenDown: true);
-    $admin = pagasaUser('admin');
+    $admin = userWithRole('admin');
     $this->actingAs($admin)->getJson(route('admin.pagasa-alerts'))->assertOk();
 
     Cache::forget('pagasa.alerts'); // the 10-minute copy ran out
@@ -97,11 +86,15 @@ it('serves the last good copy, marked stale, when PAGASA is down', function () {
     $response = $this->actingAs($admin)->getJson(route('admin.pagasa-alerts'))->assertOk();
     expect($response->json('stale'))->toBeTrue()
         ->and(collect($response->json('alerts'))->pluck('id')->all())->toBe(['isabela']);
+
+    // The failure is remembered briefly, so the next request doesn't hit PAGASA again.
+    $this->actingAs($admin)->getJson(route('admin.pagasa-alerts'))->assertOk();
+    Http::assertSentCount(4); // feed + 2 alerts, then the one failed feed request
 });
 
 it('caches the feed instead of calling PAGASA on every request', function () {
     fakePagasa();
-    $admin = pagasaUser('admin');
+    $admin = userWithRole('admin');
 
     $this->actingAs($admin)->getJson(route('admin.pagasa-alerts'));
     $this->actingAs($admin)->getJson(route('admin.pagasa-alerts'));

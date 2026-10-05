@@ -64,7 +64,8 @@ export default function TablePagination({
 }) {
     if (!totalItems) return null;
 
-    const page = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+    const lastPage = Math.max(1, totalPages);
+    const page = Math.min(Math.max(1, currentPage), lastPage);
     const from = (page - 1) * perPage + 1;
     const to = Math.min(page * perPage, totalItems);
     const nav = { pageHref, onPageChange };
@@ -87,10 +88,10 @@ export default function TablePagination({
 
                     {/* Phones: compact "2 / 5"; larger screens: numbered pages */}
                     <span className="min-w-14 px-1 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
-                        {page} / {Math.max(1, totalPages)}
+                        {page} / {lastPage}
                     </span>
                     <ul className="hidden items-center gap-1.5 sm:flex">
-                        {pageWindow(page, Math.max(1, totalPages)).map((item, i) => (
+                        {pageWindow(page, lastPage).map((item, i) => (
                             <li key={item === "gap" ? `gap-${i}` : item}>
                                 {item === "gap" ? (
                                     <span className="px-1 text-sm text-muted-foreground" aria-hidden="true">…</span>
@@ -103,7 +104,7 @@ export default function TablePagination({
                         ))}
                     </ul>
 
-                    <PageControl page={page + 1} label="Next page" disabled={page >= totalPages} {...nav}>
+                    <PageControl page={page + 1} label="Next page" disabled={page >= lastPage} {...nav}>
                         <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </PageControl>
                 </nav>
