@@ -25,7 +25,7 @@ class CheckDisasterStatus
         $typhoon = Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
 
         // Check if there's no typhoon at all
-        if (!$typhoon) {
+        if (! $typhoon) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'No active disaster report. Forms are currently disabled.',
@@ -33,8 +33,8 @@ class CheckDisasterStatus
                 ], 403);
             }
 
-            // For Inertia requests, redirect to dashboard with message
-            return redirect()->route('dashboard')->with('error', 'No active disaster report. Forms are currently disabled.');
+            // For Inertia requests, send users to their reports page with the message
+            return redirect()->route('situation-reports.index')->with('error', 'No active disaster report. Forms are currently disabled.');
         }
 
         // If typhoon is paused, allow page to load but forms will be disabled

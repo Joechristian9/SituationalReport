@@ -313,7 +313,9 @@ const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
         <main
             ref={ref}
             className={cn(
-                "relative flex w-full flex-1 flex-col bg-background",
+                // min-w-0: without it this flex item grows to its widest child (a wide
+                // table), so the whole page scrolls sideways and the header gets cut off.
+                "relative flex w-full min-w-0 flex-1 flex-col bg-background",
                 "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
                 className
             )}

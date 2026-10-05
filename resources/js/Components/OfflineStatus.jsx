@@ -28,6 +28,27 @@ function useOnline() {
     return online;
 }
 
+// The card is fixed to the bottom of the screen; publish its height so app.css can pad
+// the page by the same amount and the form's submit button never sits underneath it.
+function useReservedBottomSpace(node) {
+    useEffect(() => {
+        const root = document.documentElement;
+        if (!node) {
+            root.style.removeProperty('--offline-status-h');
+            return undefined;
+        }
+        const observer = new ResizeObserver(() => {
+            const fromBottom = window.innerHeight - node.getBoundingClientRect().top;
+            root.style.setProperty('--offline-status-h', `${Math.ceil(fromBottom) + 16}px`);
+        });
+        observer.observe(node);
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty('--offline-status-h');
+        };
+    }, [node]);
+}
+
 function QueuedItem({ item }) {
     const [confirming, setConfirming] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -89,6 +110,8 @@ export default function OfflineStatus() {
     const [reloadNeeded, setReloadNeeded] = useState(false);
     const [open, setOpen] = useState(false);
     const [userId, setUserId] = useState(() => currentUser()?.id ?? null);
+    const [card, setCard] = useState(null);
+    useReservedBottomSpace(card);
 
     useEffect(() => {
         const load = () => allItems().then((all) => setItems(all.filter((item) => item.userId === (currentUser()?.id ?? null)))).catch(() => setItems([]));
@@ -139,7 +162,7 @@ export default function OfflineStatus() {
     const summary = [waiting && `${waiting} waiting to send`, failed && `${failed} not sent`].filter(Boolean).join(' · ');
 
     return (
-        <div className="fixed bottom-4 left-4 z-[90] flex w-[calc(100vw-2rem)] max-w-sm flex-col items-start gap-2">
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[90] flex w-[calc(100vw-2rem)] max-w-sm flex-col items-start gap-2">
             <span role="status" aria-live="polite" className="sr-only">
                 {notice}
             </span>
@@ -162,7 +185,7 @@ export default function OfflineStatus() {
                 </div>
             )}
 
-            <div className="w-full space-y-2 rounded-xl border bg-card p-3 text-sm shadow-lg">
+            <div ref={setCard} className="w-full space-y-2 rounded-xl border bg-card p-3 text-sm shadow-lg">
                 {!online && (
                     <p className="flex items-start gap-2 text-foreground">
                         <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />

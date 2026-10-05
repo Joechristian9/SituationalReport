@@ -114,8 +114,14 @@
   * {
     @apply border-border;
   }
+  /* OfflineStatus sets --offline-status-h while its fixed card is showing, so the end of
+     every page (usually the submit button) can still scroll out from under it. */
+  html {
+    scroll-padding-bottom: var(--offline-status-h, 0px);
+  }
   body {
     @apply bg-background text-foreground;
+    padding-bottom: var(--offline-status-h, 0px);
   }
   /* Phones: iOS zooms the page when a field under 16px is focused, which breaks the
      form layout in the field. !important beats the text-sm classes on every input. */

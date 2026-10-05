@@ -78,35 +78,35 @@ export default function TablePagination({
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                 {onPerPageChange && <RowsPerPage rowsPerPage={perPage} setRowsPerPage={onPerPageChange} />}
 
-                {totalPages > 1 && (
-                    <nav className="flex items-center gap-1.5" aria-label="Pagination">
-                        <PageControl page={page - 1} label="Previous page" disabled={page <= 1} {...nav}>
-                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                        </PageControl>
+                {/* Shown even for a single page (arrows disabled) so people can see the
+                    table is paged; hiding it read as "pagination is broken". */}
+                <nav className="flex items-center gap-1.5" aria-label="Pagination">
+                    <PageControl page={page - 1} label="Previous page" disabled={page <= 1} {...nav}>
+                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                    </PageControl>
 
-                        {/* Phones: compact "2 / 5"; larger screens: numbered pages */}
-                        <span className="min-w-14 px-1 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
-                            {page} / {totalPages}
-                        </span>
-                        <ul className="hidden items-center gap-1.5 sm:flex">
-                            {pageWindow(page, totalPages).map((item, i) => (
-                                <li key={item === "gap" ? `gap-${i}` : item}>
-                                    {item === "gap" ? (
-                                        <span className="px-1 text-sm text-muted-foreground" aria-hidden="true">…</span>
-                                    ) : (
-                                        <PageControl page={item} label={`Page ${item}`} active={item === page} {...nav}>
-                                            {item}
-                                        </PageControl>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                    {/* Phones: compact "2 / 5"; larger screens: numbered pages */}
+                    <span className="min-w-14 px-1 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
+                        {page} / {Math.max(1, totalPages)}
+                    </span>
+                    <ul className="hidden items-center gap-1.5 sm:flex">
+                        {pageWindow(page, Math.max(1, totalPages)).map((item, i) => (
+                            <li key={item === "gap" ? `gap-${i}` : item}>
+                                {item === "gap" ? (
+                                    <span className="px-1 text-sm text-muted-foreground" aria-hidden="true">…</span>
+                                ) : (
+                                    <PageControl page={item} label={`Page ${item}`} active={item === page} {...nav}>
+                                        {item}
+                                    </PageControl>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
 
-                        <PageControl page={page + 1} label="Next page" disabled={page >= totalPages} {...nav}>
-                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                        </PageControl>
-                    </nav>
-                )}
+                    <PageControl page={page + 1} label="Next page" disabled={page >= totalPages} {...nav}>
+                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    </PageControl>
+                </nav>
             </div>
         </div>
     );
