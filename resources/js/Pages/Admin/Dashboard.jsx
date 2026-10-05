@@ -135,8 +135,10 @@ export default function Dashboard({
                             className="mx-1 h-6 shrink-0 sm:mx-2"
                         />
                         <div className="min-w-0">
+                            {/* Phones get a short title; the greeting was always cut to "Welcome, Ad…". */}
                             <h1 className="truncate text-base font-semibold text-blue-700 sm:text-xl">
-                                Welcome, {auth.user.name}!
+                                <span className="sm:hidden">Dashboard</span>
+                                <span className="hidden sm:inline">Welcome, {auth.user.name}!</span>
                             </h1>
                             <p className="hidden truncate text-xs text-gray-500 sm:block">
                                 Glad to have you back! Here’s what’s happening
@@ -183,8 +185,8 @@ export default function Dashboard({
                         <Tab
                             label="PAGASA"
                             icon={<CloudSun size={16} />}
-                            isActive={activeTab === "weather"}
-                            onClick={() => setActiveTab("weather")}
+                            isActive={activeTab === "pagasa"}
+                            onClick={() => setActiveTab("pagasa")}
                         />
                     </div>
                     <AnimatePresence mode="wait">
@@ -197,11 +199,7 @@ export default function Dashboard({
                             transition={{ duration: 0.3 }}
                         >
                             <Suspense fallback={<LoadingSpinner />}>
-                                {activeTab === "weather" && (
-                                    <div>
-                                        <PagasaPanel />
-                                    </div>
-                                )}
+                                {activeTab === "pagasa" && <PagasaPanel />}
 
                                 {activeTab === "live" && (
                                     <div className="space-y-6">

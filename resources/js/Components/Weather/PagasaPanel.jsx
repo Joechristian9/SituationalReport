@@ -1,8 +1,9 @@
-import React from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
-import { AlertTriangle, CheckCircle2, ExternalLink, Loader2, MapPin, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Loader2, Map as MapIcon, MapPin, RefreshCw, ShieldAlert } from "lucide-react";
+import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { cn } from "@/lib/utils";
@@ -32,9 +33,9 @@ function AlertCard({ alert }) {
                         {alert.expires && ` · Valid until ${when(alert.expires)}`}
                     </p>
                 </div>
-                <span className={cn("shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold", SEVERITY[alert.severity] ?? "border-border bg-muted text-muted-foreground")}>
+                <Badge variant="outline" className={cn("shrink-0", SEVERITY[alert.severity] ?? "bg-muted text-muted-foreground")}>
                     {alert.severity}
-                </span>
+                </Badge>
             </div>
 
             {alert.mentionsIsabela && (
@@ -81,9 +82,12 @@ function AlertCard({ alert }) {
  * public API, so its map is embedded rather than rebuilt here.
  */
 export default function PagasaPanel() {
+    const [showMap, setShowMap] = useState(false);
     const { data, isLoading, isError, isFetching, refetch } = useQuery({
         queryKey: ["pagasa-alerts"],
         queryFn: async () => (await axios.get(route("admin.pagasa-alerts"))).data,
+        // The server caches for 10 minutes, so re-opening the tab needn't refetch.
+        staleTime: 1000 * 60 * 5,
         refetchInterval: 1000 * 60 * 10,
     });
 
@@ -165,15 +169,38 @@ export default function PagasaPanel() {
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg">PANaHON live weather map</CardTitle>
                     <CardDescription>
-                        Radar, rainfall, forecasts and weather stations from PAGASA. If the map stays blank, use Open PANaHON.
+                        Radar, rainfall, forecasts and weather stations from PAGASA.
+                        {showMap && " If the map stays blank, use Open PANaHON."}
                     </CardDescription>
                 </CardHeader>
-                <iframe
-                    src={PANAHON_URL}
-                    title="PAGASA PANaHON live weather map"
-                    loading="lazy"
-                    className="block h-[70vh] min-h-[420px] w-full border-t"
-                />
+                {/* Loaded on request: it is PAGASA's whole site (~2 MB, with its own console
+                    warnings) and on phones a full-height map traps page scrolling. */}
+                {showMap ? (
+                    <iframe
+                        src={PANAHON_URL}
+                        title="PAGASA PANaHON live weather map"
+                        className="block h-[60svh] min-h-[360px] w-full border-t md:h-[70vh] md:min-h-[420px]"
+                    />
+                ) : (
+                    <div className="flex flex-col items-center gap-4 border-t bg-muted px-6 py-10 text-center">
+                        <MapIcon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                        <p className="max-w-md text-sm text-muted-foreground">
+                            The map opens PAGASA&apos;s full PANaHON site inside this page. It uses more data, so it loads only when you ask.
+                        </p>
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                            <Button className="min-h-11 gap-2 md:min-h-9" onClick={() => setShowMap(true)}>
+                                <MapIcon className="h-4 w-4" aria-hidden="true" />
+                                Load live map
+                            </Button>
+                            <Button asChild variant="outline" className="min-h-11 gap-2 md:min-h-9">
+                                <a href={PANAHON_URL} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                                    Open in new tab
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                )}
                 <p className="border-t px-6 py-3 text-xs leading-relaxed text-muted-foreground">
                     Map and data © PAGASA-DOST, shown directly from{" "}
                     <a href={PANAHON_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
