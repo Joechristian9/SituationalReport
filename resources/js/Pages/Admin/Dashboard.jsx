@@ -12,7 +12,7 @@ import LiveImpactFeed from "@/Components/LiveImpactFeed";
 import useNewImpactReports from "@/hooks/useNewImpactReports";
 import { Toaster } from "sonner";
 import { Separator } from "@/Components/ui/separator";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { m as motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Users, Sun, CloudSun, Loader2, Radio } from "lucide-react";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";

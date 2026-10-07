@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, X, AlertCircle, Pause } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 
 /**
  * NoActiveDisasterNotification Component

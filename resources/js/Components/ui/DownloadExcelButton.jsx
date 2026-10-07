@@ -1,6 +1,9 @@
-import React from "react";
-import * as XLSX from "xlsx";
-import { Download } from "lucide-react";
+import React, { useState } from "react";
+import { Download, Loader2 } from "lucide-react";
+
+// xlsx is ~280 KB, so it is fetched only when someone is about to export,
+// not on every page that shows this button.
+const loadXlsx = () => import("xlsx");
 
 /**
  * Reusable Excel download button
@@ -20,8 +23,10 @@ export default function DownloadExcelButton({
     label = "Download Excel",
     className = "",
 }) {
-    const handleDownload = () => {
-        if (!data || data.length === 0) return;
+    const [busy, setBusy] = useState(false);
+
+    const handleDownload = async () => {
+        if (!data || data.length === 0 || busy) return;
 
         // ✅ Clean the data by removing unwanted fields
         const cleanedData = data.map((item) => {
@@ -30,19 +35,33 @@ export default function DownloadExcelButton({
             return newItem;
         });
 
-        // ✅ Generate and download Excel file
-        const worksheet = XLSX.utils.json_to_sheet(cleanedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-        XLSX.writeFile(workbook, `${fileName}.xlsx`);
+        setBusy(true);
+        try {
+            const XLSX = await loadXlsx();
+
+            // ✅ Generate and download Excel file
+            const worksheet = XLSX.utils.json_to_sheet(cleanedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            XLSX.writeFile(workbook, `${fileName}.xlsx`);
+        } finally {
+            setBusy(false);
+        }
     };
+
+    const Icon = busy ? Loader2 : Download;
 
     return (
         <button
+            type="button"
             onClick={handleDownload}
-            className={`flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg shadow hover:bg-green-700 active:scale-95 transition-transform ${className}`}
+            onPointerEnter={loadXlsx}
+            onFocus={loadXlsx}
+            disabled={busy}
+            aria-busy={busy}
+            className={`flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg shadow hover:bg-green-700 active:scale-95 transition-transform disabled:cursor-wait disabled:opacity-80 ${className}`}
         >
-            <Download className="w-4 h-4" />
+            <Icon className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} aria-hidden="true" />
             <span>{label}</span>
         </button>
     );

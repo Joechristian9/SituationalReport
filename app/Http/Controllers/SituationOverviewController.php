@@ -48,14 +48,7 @@ class SituationOverviewController extends Controller
         if ($user && !$user->isAdmin()) {
             // Get all user IDs whose data this user can access (including their own)
             $accessibleUserIds = $user->getAccessibleUserIds('read');
-            
-            \Log::info('SituationOverview user access debug', [
-                'current_user_id' => $user->id,
-                'current_user_name' => $user->name,
-                'accessible_user_ids' => $accessibleUserIds,
-                'typhoon_id' => $typhoonId,
-            ]);
-            
+
             $weatherQuery->whereIn('user_id', $accessibleUserIds);
             $waterLevelQuery->whereIn('user_id', $accessibleUserIds);
             $electricityQuery->whereIn('user_id', $accessibleUserIds);
@@ -70,21 +63,6 @@ class SituationOverviewController extends Controller
             $injuredQuery->whereIn('user_id', $accessibleUserIds);
             $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
-
-        // Debug logging
-        $casualtiesData = $casualtyQuery->orderBy('updated_at', 'desc')->limit(100)->get();
-        $injuredData = $injuredQuery->orderBy('updated_at', 'desc')->limit(100)->get();
-        $missingData = $missingQuery->orderBy('updated_at', 'desc')->limit(100)->get();
-        
-        \Log::info('SituationOverview casualties debug', [
-            'user_id' => Auth::id(),
-            'typhoon_id' => $typhoonId,
-            'accessible_user_ids' => $accessibleUserIds ?? 'no filter',
-            'casualties_count' => $casualtiesData->count(),
-            'casualties_data' => $casualtiesData->toArray(),
-            'injured_count' => $injuredData->count(),
-            'missing_count' => $missingData->count(),
-        ]);
 
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherQuery
@@ -125,9 +103,12 @@ class SituationOverviewController extends Controller
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'preEmptiveReports' => $preEmptiveQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'casualties' => $casualtiesData,
-            'injured' => $injuredData,
-            'missing' => $missingData,
+            'casualties' => $casualtyQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'injured' => $injuredQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            'missing' => $missingQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get(),
         ]);
     }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/Components/ui/badge';
 import { Cloud, CheckCircle, Bell, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 
 /**
  * ActiveTyphoonHeader Component
