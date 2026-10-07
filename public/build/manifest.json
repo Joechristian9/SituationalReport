@@ -153,15 +153,15 @@
       "_index-yu7IHB8_.js"
     ]
   },
-  "_PersonBreakdownGraph-BJ5z21fi.js": {
-    "file": "assets/PersonBreakdownGraph-BJ5z21fi.js",
+  "_PersonBreakdownGraph-BK_GSQ8K.js": {
+    "file": "assets/PersonBreakdownGraph-BK_GSQ8K.js",
     "name": "PersonBreakdownGraph",
     "imports": [
       "_button-oBRmgf7s.js",
       "_GraphCard-DW5J36_j.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
       "_format-4V4WjiMJ.js",
-      "_addDays-DpqBMovO.js",
+      "_subDays-B1Y21v7H.js",
       "_search-x-BNKdZs0l.js",
       "_app-sidebar-BF5Wx8la.js",
       "_table-2-BXnh1FP0.js"
@@ -258,13 +258,6 @@
     "name": "activity",
     "imports": [
       "_button-oBRmgf7s.js"
-    ]
-  },
-  "_addDays-DpqBMovO.js": {
-    "file": "assets/addDays-DpqBMovO.js",
-    "name": "addDays",
-    "imports": [
-      "_refresh-cw-DvEBDFLF.js"
     ]
   },
   "_app-sidebar-BF5Wx8la.js": {
@@ -582,6 +575,13 @@
     "name": "shield-check",
     "imports": [
       "_button-oBRmgf7s.js"
+    ]
+  },
+  "_subDays-B1Y21v7H.js": {
+    "file": "assets/subDays-B1Y21v7H.js",
+    "name": "subDays",
+    "imports": [
+      "_refresh-cw-DvEBDFLF.js"
     ]
   },
   "_table-2-BXnh1FP0.js": {
@@ -1079,7 +1079,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-CWLA0_5H.js",
+    "file": "assets/BarangayImpactChart-C-v2-8wb.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1112,18 +1112,19 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
+      "_subDays-B1Y21v7H.js",
       "_plus-CYRuQbfi.js",
       "_LogoutDialog-W72BDAwS.js"
     ]
   },
   "resources/js/Components/Graphs/CasualtyGraph.jsx": {
-    "file": "assets/CasualtyGraph-DEh8XhSY.js",
+    "file": "assets/CasualtyGraph-Va9eNahZ.js",
     "name": "CasualtyGraph",
     "src": "resources/js/Components/Graphs/CasualtyGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-oBRmgf7s.js",
-      "_PersonBreakdownGraph-BJ5z21fi.js",
+      "_PersonBreakdownGraph-BK_GSQ8K.js",
       "_user-x-9_IUglh_.js",
       "_GraphCard-DW5J36_j.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1153,7 +1154,7 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
-      "_addDays-DpqBMovO.js",
+      "_subDays-B1Y21v7H.js",
       "_search-x-BNKdZs0l.js",
       "_table-2-BXnh1FP0.js"
     ]
@@ -1184,7 +1185,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-LerIetwu.js",
+    "file": "assets/ImpactHourlyChart-CCJ2GiJx.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1220,13 +1221,14 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
+      "_subDays-B1Y21v7H.js",
       "_plus-CYRuQbfi.js",
       "_LogoutDialog-W72BDAwS.js",
       "_with-selector-L7l30iGH.js"
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-kusaRIAB.js",
+    "file": "assets/ImpactTrendChart-DVqLyOsg.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1262,19 +1264,20 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
+      "_subDays-B1Y21v7H.js",
       "_plus-CYRuQbfi.js",
       "_LogoutDialog-W72BDAwS.js",
       "_with-selector-L7l30iGH.js"
     ]
   },
   "resources/js/Components/Graphs/InjuredGraph.jsx": {
-    "file": "assets/InjuredGraph-DJJJ6UxV.js",
+    "file": "assets/InjuredGraph-CTQcgBCq.js",
     "name": "InjuredGraph",
     "src": "resources/js/Components/Graphs/InjuredGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-oBRmgf7s.js",
-      "_PersonBreakdownGraph-BJ5z21fi.js",
+      "_PersonBreakdownGraph-BK_GSQ8K.js",
       "_user-plus-BhUBJj5U.js",
       "_GraphCard-DW5J36_j.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1304,19 +1307,19 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
-      "_addDays-DpqBMovO.js",
+      "_subDays-B1Y21v7H.js",
       "_search-x-BNKdZs0l.js",
       "_table-2-BXnh1FP0.js"
     ]
   },
   "resources/js/Components/Graphs/MissingGraph.jsx": {
-    "file": "assets/MissingGraph-CQPM6Rsg.js",
+    "file": "assets/MissingGraph-Csdk5fT4.js",
     "name": "MissingGraph",
     "src": "resources/js/Components/Graphs/MissingGraph.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_button-oBRmgf7s.js",
-      "_PersonBreakdownGraph-BJ5z21fi.js",
+      "_PersonBreakdownGraph-BK_GSQ8K.js",
       "_user-search-BfbaQ-4l.js",
       "_GraphCard-DW5J36_j.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
@@ -1345,7 +1348,7 @@
       "_circle-check-big-n4MZmvA5.js",
       "_is-html-element-CQto32_L.js",
       "_circle-alert-25_jW4bM.js",
-      "_addDays-DpqBMovO.js",
+      "_subDays-B1Y21v7H.js",
       "_search-x-BNKdZs0l.js",
       "_table-2-BXnh1FP0.js"
     ]
@@ -1660,7 +1663,7 @@
     ]
   },
   "resources/js/Pages/Admin/AuditLogs.jsx": {
-    "file": "assets/AuditLogs-DGb3jPq5.js",
+    "file": "assets/AuditLogs-BuhN6r9X.js",
     "name": "AuditLogs",
     "src": "resources/js/Pages/Admin/AuditLogs.jsx",
     "isDynamicEntry": true,
@@ -1680,7 +1683,7 @@
       "_index-yu7IHB8_.js",
       "_refresh-cw-DvEBDFLF.js",
       "_format-4V4WjiMJ.js",
-      "_addDays-DpqBMovO.js",
+      "_subDays-B1Y21v7H.js",
       "_dialog-CPpGTCFq.js",
       "_shield-check-BlohCWDu.js",
       "_LogoutDialog-W72BDAwS.js",
@@ -1789,7 +1792,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-DcLj07za.js",
+    "file": "assets/Dashboard-dZ6LIpBg.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -1811,11 +1814,12 @@
       "_proxy-BtTDzBKD.js",
       "_circle-alert-25_jW4bM.js",
       "_dialog-CPpGTCFq.js",
+      "_index-yu7IHB8_.js",
+      "_subDays-B1Y21v7H.js",
       "_create-proxy-Cgvax20Z.js",
       "_circle-check-big-n4MZmvA5.js",
       "_index-nSegvi8j.js",
       "_plus-CYRuQbfi.js",
-      "_index-yu7IHB8_.js",
       "_index-grBzJTiS.js",
       "_LogoutDialog-W72BDAwS.js",
       "_pause-B8mR45b6.js",
@@ -2670,7 +2674,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-BFaDSjpi.js",
+    "file": "assets/app-CSJKsmRo.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2724,7 +2728,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-C-OVBW3Y.css"
+      "assets/app-DRNdhYI3.css"
     ]
   },
   "resources/js/lib/motionFeatures.js": {
