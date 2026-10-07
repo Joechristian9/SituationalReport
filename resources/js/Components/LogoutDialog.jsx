@@ -47,9 +47,9 @@ export default function LogoutDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Log out of this phone?</DialogTitle>
+                    <DialogTitle>Log out of this device?</DialogTitle>
                     <DialogDescription>
-                        After logging out, the app won't open without internet until you log in again with a connection.
+                        You'll need an internet connection to log in again. Until then, the app won't open offline on this device.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -57,7 +57,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
                     <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
                         <span>
-                            {unsent} report{unsent === 1 ? '' : 's'} on this phone {unsent === 1 ? "hasn't" : "haven't"} been sent yet. {unsent === 1 ? 'It stays' : 'They stay'} here and {unsent === 1 ? 'is' : 'are'} sent after you log in again.
+                            {unsent} report{unsent === 1 ? '' : 's'} on this device {unsent === 1 ? "hasn't" : "haven't"} been sent yet. {unsent === 1 ? 'It stays' : 'They stay'} here and {unsent === 1 ? 'is' : 'are'} sent after you log in again.
                         </span>
                     </p>
                 )}
