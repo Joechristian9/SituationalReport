@@ -7,6 +7,7 @@ import { allItems, removeItem, subscribe } from '@/lib/offline/store';
 import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
 import { cn } from '@/lib/utils';
+import useOnline from '@/hooks/useOnline';
 
 const STATUS = {
     pending: { label: 'Waiting to send', tone: 'border-warning/30 bg-warning/10 text-warning' },
@@ -25,19 +26,6 @@ const TONE = {
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-function useOnline() {
-    const [online, setOnline] = useState(() => navigator.onLine);
-    useEffect(() => {
-        const update = () => setOnline(navigator.onLine);
-        window.addEventListener('online', update);
-        window.addEventListener('offline', update);
-        return () => {
-            window.removeEventListener('online', update);
-            window.removeEventListener('offline', update);
-        };
-    }, []);
-    return online;
-}
 
 // The status is fixed to the bottom of the screen; publish its height so app.css can pad
 // the page by the same amount and the form's submit button never sits underneath it.

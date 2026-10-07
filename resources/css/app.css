@@ -133,3 +133,25 @@
     }
   }
 }
+
+@layer base {
+  /* Clear-glass card on the auth pages (design-system/situational-report/pages/login.md).
+     Re-points the tokens so every component inside reads light-on-glass. Tokens that carry
+     their own alpha (background, border, input, accent) must not get /opacity modifiers inside. */
+  .auth-glass {
+    --foreground: 0 0% 100%;
+    --muted-foreground: 220 14% 76%;
+    --background: 0 0% 100% / 0.08;
+    --border: 0 0% 100% / 0.1;
+    --input: 0 0% 100% / 0.08;
+    --ring: 213 94% 68%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 0 0% 100% / 0.12;
+    --accent-foreground: 213 97% 80%;
+    --muted: 220 20% 30%;
+    --destructive: 0 91% 75%;
+    --success: 142 69% 65%;
+    --warning: 43 96% 65%;
+  }
+}

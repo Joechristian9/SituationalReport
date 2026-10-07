@@ -1,12 +1,17 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import InstallAppButton from '@/Components/InstallAppButton';
+import { useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AlertTriangle, ArrowRight, CheckCircle2, CloudOff, Eye, EyeOff, LifeBuoy, Loader2, Lock, Mail } from 'lucide-react';
+import InputError from '@/Components/InputError';
+import InstallAppButton from '@/Components/InstallAppButton';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import GuestLayout from '@/Layouts/GuestLayout';
+import useOnline from '@/hooks/useOnline';
+import { cn } from '@/lib/utils';
 
+const fieldIcon = 'pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary';
+const fieldInput = 'h-12 rounded-lg bg-background pl-11 text-lg md:text-lg focus-visible:ring-2';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -16,133 +21,164 @@ export default function Login({ status, canResetPassword }) {
         // reports saved offline send on their own when the connection returns.
         remember: true,
     });
+    const online = useOnline();
+    const [showPassword, setShowPassword] = useState(false);
+    const [capsLock, setCapsLock] = useState(false);
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
 
     const submit = (e) => {
         e.preventDefault();
 
         post(route('login'), {
+            onError: (errs) => (errs.email ? emailRef : passwordRef).current?.focus(),
             onFinish: () => reset('password'),
         });
     };
+
+    const trackCapsLock = (e) => setCapsLock(e.getModifierState?.('CapsLock') ?? false);
 
     return (
         <GuestLayout>
             <Head title="Log in" />
 
-            <div className="w-full">
-                {/* Welcome Header */}
-                <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
-                    <p className="text-gray-600">Sign in to access the Situational Reports System</p>
-                </div>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Welcome back</h1>
+            <p className="mt-2 text-base text-muted-foreground">Sign in with the account issued by your CDRRMO administrator.</p>
 
+            <div className="mt-6 space-y-3 empty:hidden" aria-live="polite">
                 {status && (
-                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700">
+                    <p className="flex items-start gap-2 rounded-lg border border-success/30 bg-success/10 p-3 text-base text-success">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                         {status}
-                    </div>
+                    </p>
                 )}
+                {!online && (
+                    <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-base text-warning">
+                        <CloudOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        You're offline. Signing in needs an internet connection.
+                    </p>
+                )}
+            </div>
 
-                <form onSubmit={submit} className="space-y-6">
-                    <div>
-                        <InputLabel 
-                            htmlFor="email" 
-                            value="Email Address" 
-                            className="text-gray-700 font-semibold mb-2"
-                        />
-
-                        <TextInput
+            <form onSubmit={submit} className="mt-6 space-y-5">
+                <div className="space-y-2">
+                    <Label htmlFor="email" className="text-base">Email address</Label>
+                    <div className="group relative">
+                        <Mail className={fieldIcon} aria-hidden="true" />
+                        <Input
+                            ref={emailRef}
                             id="email"
                             type="email"
                             name="email"
                             value={data.email}
-                            className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            autoComplete="username"
-                            isFocused={true}
-                            placeholder="Enter your email"
                             onChange={(e) => setData('email', e.target.value)}
+                            autoComplete="username"
+                            inputMode="email"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                            autoFocus
+                            required
+                            placeholder="Barangay name@barangay.local"
+                            aria-invalid={errors.email ? true : undefined}
+                            aria-describedby={errors.email ? 'email-error' : undefined}
+                            className={cn(fieldInput, errors.email && 'border-destructive focus-visible:ring-destructive')}
                         />
-
-                        <InputError message={errors.email} className="mt-2" />
                     </div>
+                    <InputError id="email-error" message={errors.email} className="text-base" />
+                </div>
 
-                    <div>
-                        <InputLabel 
-                            htmlFor="password" 
-                            value="Password" 
-                            className="text-gray-700 font-semibold mb-2"
-                        />
-
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            autoComplete="current-password"
-                            placeholder="Enter your password"
-                            onChange={(e) => setData('password', e.target.value)}
-                        />
-
-                        <InputError message={errors.password} className="mt-2" />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <label className="flex items-center">
-                            <Checkbox
-                                name="remember"
-                                checked={data.remember}
-                                onChange={(e) =>
-                                    setData('remember', e.target.checked)
-                                }
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">
-                                Remember me
-                            </span>
-                        </label>
-
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="password" className="text-base">Password</Label>
                         {canResetPassword && (
                             <Link
                                 href={route('password.request')}
-                                className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                className="-my-2 inline-flex min-h-11 items-center rounded-sm text-base font-medium text-accent-foreground underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
                             >
                                 Forgot password?
                             </Link>
                         )}
                     </div>
-
-                    <div className="pt-2">
+                    <div className="group relative">
+                        <Lock className={fieldIcon} aria-hidden="true" />
+                        <Input
+                            ref={passwordRef}
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={data.password}
+                            onChange={(e) => setData('password', e.target.value)}
+                            onKeyDown={trackCapsLock}
+                            onKeyUp={trackCapsLock}
+                            onBlur={() => setCapsLock(false)}
+                            autoComplete="current-password"
+                            required
+                            aria-invalid={errors.password ? true : undefined}
+                            aria-describedby={[errors.password && 'password-error', capsLock && 'caps-lock'].filter(Boolean).join(' ') || undefined}
+                            className={cn(fieldInput, 'pr-11 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden', errors.password && 'border-destructive focus-visible:ring-destructive')}
+                        />
                         <button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full bg-gradient-to-r from-[#003d82] to-[#4472C4] text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            aria-pressed={showPassword}
+                            aria-controls="password"
+                            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                         >
-                            {processing ? (
-                                <span className="flex items-center justify-center">
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Signing in...
-                                </span>
-                            ) : (
-                                'Sign In'
-                            )}
+                            {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
                         </button>
                     </div>
-                </form>
-
-                <div className="mt-6">
-                    <InstallAppButton />
+                    {capsLock && (
+                        <p id="caps-lock" className="flex items-center gap-1.5 text-base text-warning">
+                            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                            Caps Lock is on
+                        </p>
+                    )}
+                    <InputError id="password-error" message={errors.password} className="text-base" />
                 </div>
 
-                {/* Additional Info */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                    <p className="text-xs text-gray-500 text-center">
-                        For assistance, contact your system administrator
-                    </p>
-                </div>
+                <label htmlFor="remember" className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md">
+                    <input
+                        id="remember"
+                        type="checkbox"
+                        name="remember"
+                        checked={data.remember}
+                        onChange={(e) => setData('remember', e.target.checked)}
+                        className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-input bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-0"
+                    />
+                    <span className="text-base">
+                        <span className="font-medium text-foreground">Keep me signed in</span>
+                        <span className="block text-muted-foreground">Lets reports saved offline send automatically.</span>
+                    </span>
+                </label>
+
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="group h-12 w-full rounded-lg text-lg font-semibold shadow-lg shadow-primary/30 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                >
+                    {processing ? (
+                        <>
+                            <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                            Signing in…
+                        </>
+                    ) : (
+                        <>
+                            Sign in
+                            <ArrowRight className="transition-transform duration-200 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+                        </>
+                    )}
+                </Button>
+            </form>
+
+            <div className="mt-6 empty:hidden">
+                <InstallAppButton />
             </div>
+
+            <p className="mt-6 border-t border-border pt-5 text-center text-sm text-muted-foreground [text-wrap:balance]">
+                <LifeBuoy className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
+                Need an account or locked out? Contact your CDRRMO system administrator.
+            </p>
         </GuestLayout>
     );
 }

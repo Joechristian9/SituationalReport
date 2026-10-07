@@ -26,12 +26,17 @@ export default {
     			},
     			shimmer: {
     				'100%': { transform: 'translateX(100%)' }
+    			},
+    			'grow-x': {
+    				from: { transform: 'scaleX(0)' },
+    				to: { transform: 'scaleX(1)' }
     			}
     		},
     		animation: {
     			sweep: 'sweep 12s linear infinite',
     			'ping-soft': 'ping-soft 3.2s cubic-bezier(0, 0, 0.2, 1) infinite',
-    			shimmer: 'shimmer 1.6s ease-in-out infinite'
+    			shimmer: 'shimmer 1.6s ease-in-out infinite',
+    			'grow-x': 'grow-x 700ms cubic-bezier(0.22, 1, 0.36, 1) both'
     		},
     		fontFamily: {
     			sans: [

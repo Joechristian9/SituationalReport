@@ -1,75 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, LayoutDashboard } from 'lucide-react';
-
-const BRAND = '#003d82';
-const BRAND_DEEP = '#001b3d';
-
-// Reporting points on the outer rings, placed clear of the centred text:
-// [radius (of 500), angle in radians, ping delay]
-const POINTS = [
-    [470, 0.2, '0s'],
-    [480, -2.5, '0.7s'],
-    [440, 2.35, '1.4s'],
-    [470, 3.4, '2.1s'],
-    [440, -0.75, '2.8s'],
-    [480, 0.95, '3.5s'],
-];
-const pct = (v) => `${(v / 1000) * 100}%`;
-
-// Entrance: fade + rise once on load. Motion-safe only; transform/opacity only.
-const enter =
-    'motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-700 motion-safe:fill-mode-both';
-
-/** Topographic contour lines (static SVG, very low contrast). */
-function Contours() {
-    const lines = Array.from({ length: 12 }, (_, i) => {
-        const y = 40 + i * 80;
-        const a = 24 + (i % 3) * 12;
-        return `M-50 ${y} C 200 ${y - a}, 400 ${y + a}, 700 ${y} S 1150 ${y - a}, 1300 ${y + a / 2}`;
-    });
-    return (
-        <svg viewBox="0 0 1200 960" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden="true">
-            {lines.map((d, i) => (
-                <path key={i} d={d} fill="none" stroke="white" strokeOpacity="0.06" strokeWidth="1.5" />
-            ))}
-        </svg>
-    );
-}
-
-/** Large radar behind the content: rings, a slow sweep and pinging report points. */
-function Radar() {
-    return (
-        <div
-            className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[min(68rem,170vw)] -translate-x-1/2 -translate-y-1/2 [mask-image:radial-gradient(circle,black_45%,transparent_72%)]"
-            aria-hidden="true"
-        >
-            <svg viewBox="0 0 1000 1000" className="absolute inset-0 h-full w-full">
-                {[100, 180, 300, 420, 499].map((r) => (
-                    <circle key={r} cx="500" cy="500" r={r} fill="none" stroke="white" strokeOpacity="0.13" strokeWidth="1" />
-                ))}
-                <line x1="0" y1="500" x2="1000" y2="500" stroke="white" strokeOpacity="0.08" strokeWidth="1" />
-                <line x1="500" y1="0" x2="500" y2="1000" stroke="white" strokeOpacity="0.08" strokeWidth="1" />
-            </svg>
-
-            {/* Sweep: one composited layer rotating; hidden for reduced motion */}
-            <div
-                className="absolute inset-0 rounded-full will-change-transform motion-safe:animate-sweep motion-reduce:hidden"
-                style={{ background: 'conic-gradient(from 0deg, rgba(147, 197, 253, 0.2), rgba(147, 197, 253, 0) 70deg, transparent)' }}
-            />
-
-            {POINTS.map(([r, a, delay]) => (
-                <span
-                    key={`${r}-${a}`}
-                    className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: pct(500 + r * Math.cos(a)), top: pct(500 + r * Math.sin(a)) }}
-                >
-                    <span className="absolute inset-0 rounded-full bg-sky-300 motion-safe:animate-ping-soft" style={{ animationDelay: delay }} />
-                    <span className="absolute inset-0 rounded-full bg-sky-300 ring-2 ring-white/70" />
-                </span>
-            ))}
-        </div>
-    );
-}
+import { BRAND, BRAND_DEEP } from '@/lib/brand';
+import { Contours, Radar, enter } from '@/Components/BrandBackdrop';
 
 function Seal({ src, alt }) {
     return (
@@ -124,7 +56,7 @@ export default function Welcome({ auth }) {
                 <header className="relative z-10">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:h-20 sm:px-8">
                         <div className="flex min-w-0 items-center gap-3">
-                            <img src="/images/cdrrmo_logo.jpg" alt="" width="36" height="36" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
+                            <img src="/images/cdrrmo_logo_192.jpg" alt="" width="36" height="36" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
                             <p className="min-w-0 truncate text-sm font-semibold sm:text-base">
                                 SitReps
                                 <span className="mx-2 text-white/40" aria-hidden="true">|</span>
@@ -145,7 +77,7 @@ export default function Welcome({ auth }) {
                     <div className="mx-auto flex max-w-4xl flex-col items-center">
                         <div className={`flex items-center gap-4 ${enter}`}>
                             <Seal src="/images/ilagan.jpeg" alt="Seal of the City of Ilagan" />
-                            <Seal src="/images/cdrrmo_logo.jpg" alt="CDRRMO Ilagan logo" />
+                            <Seal src="/images/cdrrmo_logo_192.jpg" alt="CDRRMO Ilagan logo" />
                         </div>
 
                         <p className={`mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-sky-200 sm:text-sm ${enter} motion-safe:delay-100`}>
