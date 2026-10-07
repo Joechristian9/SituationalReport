@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronRight, Eye, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronRight, Eye, FileText } from "lucide-react";
+import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
 import {
     Popover,
@@ -565,14 +566,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                     </div>
                                                 </div>
                                                 {loadingFormData ? (
-                                                    <div className="flex flex-col items-center justify-center py-20 bg-gradient-to-b from-gray-50 to-white">
-                                                        <div className="relative">
-                                                            <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
-                                                            <Loader2 className="w-16 h-16 animate-spin text-blue-600 absolute top-0 left-0" />
-                                                        </div>
-                                                        <p className="text-sm text-gray-600 mt-4 font-medium">Loading data...</p>
-                                                        <p className="text-xs text-gray-400 mt-1">Please wait</p>
-                                                    </div>
+                                                    <SkeletonTable columns={4} label="Loading form data…" className="p-4" />
                                                 ) : (
                                                     <div className="bg-gradient-to-b from-gray-50 to-white">
                                                         {renderFormData(selectedFormData.data)}
