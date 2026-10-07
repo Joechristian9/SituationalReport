@@ -49,7 +49,7 @@ export default function LiveIndicator({ live, className }) {
                 aria-label={paused ? 'Resume live updates' : 'Pause live updates'}
                 title={paused ? 'Resume live updates' : 'Pause live updates'}
                 className={cn(
-                    'inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm font-medium tabular-nums transition-colors',
+                    'inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium tabular-nums transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none md:min-h-8',
                     TONES[state],
                     className,
@@ -63,7 +63,8 @@ export default function LiveIndicator({ live, className }) {
                 )}
                 {state === 'paused' && <Pause className="h-3.5 w-3.5" aria-hidden="true" />}
                 {state === 'stale' && <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}
-                <span aria-hidden="true">{label}</span>
+                {/* Phones: icon/dot only to save header space; the button keeps its aria-label and title. */}
+                <span aria-hidden="true" className="hidden sm:inline">{label}</span>
                 {state === 'live' && (
                     <span className="hidden text-xs font-normal opacity-80 sm:inline" aria-hidden="true">
                         · {ago(seconds)}

@@ -32,20 +32,16 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-        
+
         // Eager load roles to prevent N+1 query on isAdmin() check
         $user = Auth::user()->load('roles:id,name');
-        
+
         $request->session()->regenerate();
 
         // Log successful login
         AuditLogger::logLogin("User {$user->name} logged in successfully");
 
-        if ($user->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard', [], false));
-        } else {
-            return redirect()->intended(route('situation-reports.index', [], false));
-        }
+        return redirect()->intended(route($user->homeRoute(), [], false));
     }
 
     /**

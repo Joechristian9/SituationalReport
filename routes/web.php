@@ -10,6 +10,7 @@ use App\Http\Controllers\DisasterController;
 use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\InjuredController;
 use App\Http\Controllers\MissingController;
+use App\Http\Controllers\PagasaAlertController;
 use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\ProfileController;
@@ -374,6 +375,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');
+
+    // PAGASA alerts for the dashboard's PAGASA tab (cached server-side)
+    Route::get('pagasa-alerts', [PagasaAlertController::class, 'index'])->name('admin.pagasa-alerts');
 
     // Form Submission Status (Admin only)
     Route::get('form-submission-status', [DisasterController::class, 'formSubmissionStatus'])

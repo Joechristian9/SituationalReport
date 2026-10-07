@@ -3,16 +3,6 @@
 use App\Models\Injured;
 use App\Models\Typhoon;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
-
-function offlineUser(string $role = 'user'): User
-{
-    Role::findOrCreate($role);
-    $user = User::factory()->create();
-    $user->assignRole($role);
-
-    return $user;
-}
 
 function injuredPayload(): array
 {
@@ -20,7 +10,7 @@ function injuredPayload(): array
 }
 
 it('saves a queued offline report once, even if it is sent twice', function () {
-    $user = offlineUser();
+    $user = userWithRole();
     $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
     $headers = ['X-Offline-Key' => 'abc12345-key', 'X-Offline-Disaster' => (string) $disaster->id, 'Accept' => 'application/json'];
 
@@ -34,8 +24,8 @@ it('saves a queued offline report once, even if it is sent twice', function () {
 });
 
 it('treats the same key from another user as a separate report', function () {
-    $first = offlineUser();
-    $second = offlineUser();
+    $first = userWithRole();
+    $second = userWithRole();
     $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $first->id]);
     $headers = ['X-Offline-Key' => 'shared-key-123', 'X-Offline-Disaster' => (string) $disaster->id];
 
@@ -46,7 +36,7 @@ it('treats the same key from another user as a separate report', function () {
 });
 
 it('refuses a report filed for a disaster that is no longer the active one', function () {
-    $user = offlineUser();
+    $user = userWithRole();
     $old = Typhoon::create(['name' => 'Old Storm', 'status' => 'ended', 'created_by' => $user->id]);
     Typhoon::create(['name' => 'New Storm', 'status' => 'active', 'created_by' => $user->id]);
 
@@ -59,7 +49,7 @@ it('refuses a report filed for a disaster that is no longer the active one', fun
 });
 
 it('keeps blocking offline reports while there is no active disaster', function () {
-    $user = offlineUser();
+    $user = userWithRole();
 
     $this->actingAs($user)
         ->postJson(route('injured.store'), injuredPayload(), ['X-Offline-Key' => 'no-disaster-1', 'X-Offline-Disaster' => '1'])
@@ -69,7 +59,7 @@ it('keeps blocking offline reports while there is no active disaster', function 
 });
 
 it('asks the device to wait while the disaster is paused', function () {
-    $user = offlineUser();
+    $user = userWithRole();
     $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'paused', 'created_by' => $user->id]);
 
     $this->actingAs($user)
@@ -92,7 +82,7 @@ it('rejects offline reports from accounts without a reporting role', function ()
 });
 
 it('leaves ordinary online saves unchanged', function () {
-    $user = offlineUser();
+    $user = userWithRole();
     Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
 
     $this->actingAs($user)->postJson(route('injured.store'), injuredPayload())->assertSuccessful();
