@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\AffectedTouristController;
+use App\Http\Controllers\AgricultureReportController;
 use App\Http\Controllers\AssistanceExtendedController;
 use App\Http\Controllers\AssistanceProvidedLguController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CasualtyController;
+use App\Http\Controllers\CommunicationServiceController;
 use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisasterController;
@@ -15,11 +18,25 @@ use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ResponseOperationController;
 use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\SuspensionOfClassController;
 use App\Http\Controllers\SuspensionOfWorkController;
 use App\Http\Controllers\UscDeclarationController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\YearController;
+use App\Models\Casualty;
+use App\Models\Injured;
+use App\Models\Missing;
+use App\Models\PreEmptiveReport;
+use App\Models\ReportView;
+use App\Models\Typhoon;
+use App\Models\WaterLevel;
+use App\Models\WeatherReport;
+use App\Services\DisasterHistory;
+use App\Services\HumanImpactStats;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -91,7 +108,7 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     })->name('pre-emptive.history');
 
     // Agriculture History Page - accessible even without active typhoon
-    Route::get('/agriculture/history', [App\Http\Controllers\AgricultureReportController::class, 'history'])
+    Route::get('/agriculture/history', [AgricultureReportController::class, 'history'])
         ->middleware('permission:access-agriculture-form')
         ->name('agriculture.history');
 
@@ -153,11 +170,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
             ->name('communication-reports.store');
 
         /* ---------------- Communication Services Management ---------------- */
-        Route::get('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'index'])
+        Route::get('/communication-services', [CommunicationServiceController::class, 'index'])
             ->name('communication-services.index');
-        Route::post('/communication-services', [\App\Http\Controllers\CommunicationServiceController::class, 'store'])
+        Route::post('/communication-services', [CommunicationServiceController::class, 'store'])
             ->name('communication-services.store');
-        Route::delete('/communication-services/{id}', [\App\Http\Controllers\CommunicationServiceController::class, 'destroy'])
+        Route::delete('/communication-services/{id}', [CommunicationServiceController::class, 'destroy'])
             ->name('communication-services.destroy');
 
         /* ---------------- Road Reports ---------------- */
@@ -183,11 +200,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
             ->name('modifications.usc-declaration');
 
         /* ---------------- Response Operations (API routes) ---------------- */
-        Route::get('/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'index'])
+        Route::get('/response-operations', [ResponseOperationController::class, 'index'])
             ->name('response-operations.index');
-        Route::post('/response-operations-reports', [\App\Http\Controllers\ResponseOperationController::class, 'store'])
+        Route::post('/response-operations-reports', [ResponseOperationController::class, 'store'])
             ->name('response-operations-reports.store');
-        Route::get('/modifications/response-operations', [\App\Http\Controllers\ResponseOperationController::class, 'getModifications'])
+        Route::get('/modifications/response-operations', [ResponseOperationController::class, 'getModifications'])
             ->name('modifications.response-operations');
 
         // Deployment of Response Assets
@@ -211,10 +228,10 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
             ->name('modifications.incident-monitored');
 
         // Agriculture Reports
-        Route::post('/agriculture-reports', [App\Http\Controllers\AgricultureReportController::class, 'store'])
+        Route::post('/agriculture-reports', [AgricultureReportController::class, 'store'])
             ->middleware('permission:access-agriculture-form')
             ->name('agriculture-reports.store');
-        Route::get('/modifications/agriculture', [App\Http\Controllers\AgricultureReportController::class, 'getModifications'])
+        Route::get('/modifications/agriculture', [AgricultureReportController::class, 'getModifications'])
             ->name('modifications.agriculture');
 
         // Casualties Dead
@@ -314,10 +331,10 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Admin Dashboard - show data for both active and paused disasters
-    Route::get('dashboard', function (\Illuminate\Http\Request $request) {
+    Route::get('dashboard', function (Request $request) {
         // Show data for active or paused disasters (graphs should show historical data).
         // latest() matches the shared `typhoon.active` prop, so the header and the data agree.
-        $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
+        $activeTyphoon = Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
 
         if (! $activeTyphoon) {
             // No disaster at all - return empty data
@@ -328,43 +345,43 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'casualties' => [],
                 'injured' => [],
                 'missing' => [],
-                'impactSummary' => \App\Services\HumanImpactStats::forDisaster(null),
+                'impactSummary' => HumanImpactStats::forDisaster(null),
                 'recentImpact' => [],
-                'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
+                'newReportCounts' => ReportView::newCountsFor(null),
                 // Nothing to monitor: show the history of past disasters instead.
-                'history' => fn () => \App\Services\DisasterHistory::for($request->only(['type', 'barangay', 'metric'])),
+                'history' => fn () => DisasterHistory::for($request->only(['type', 'barangay', 'metric'])),
             ]);
         }
 
         // Fetch data for the disaster (whether active or paused)
-        $weatherReports = \App\Models\WeatherReport::where('disaster_id', $activeTyphoon->id)
+        $weatherReports = WeatherReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
 
-        $waterLevels = \App\Models\WaterLevel::where('disaster_id', $activeTyphoon->id)
+        $waterLevels = WaterLevel::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(50)
             ->get();
 
-        $preEmptiveReports = \App\Models\PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
+        $preEmptiveReports = PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
             ->with('user:id,name')
             ->latest()
             ->limit(100)
             ->get();
 
         // All records (no limit) but only the columns the graphs use, so totals stay correct.
-        $casualties = \App\Models\Casualty::where('disaster_id', $activeTyphoon->id)
+        $casualties = Casualty::where('disaster_id', $activeTyphoon->id)
             ->latest()
             ->get(['id', 'sex', 'age', 'cause_of_death', 'created_at']);
 
-        $injured = \App\Models\Injured::where('disaster_id', $activeTyphoon->id)
+        $injured = Injured::where('disaster_id', $activeTyphoon->id)
             ->latest()
             ->get(['id', 'sex', 'age', 'diagnosis', 'created_at']);
 
-        $missing = \App\Models\Missing::where('disaster_id', $activeTyphoon->id)
+        $missing = Missing::where('disaster_id', $activeTyphoon->id)
             ->latest()
             ->get(['id', 'sex', 'age', 'cause', 'created_at']);
 
@@ -375,9 +392,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,
-            'impactSummary' => \App\Services\HumanImpactStats::forDisaster($activeTyphoon),
-            'recentImpact' => \App\Services\HumanImpactStats::recent($activeTyphoon, 50),
-            'newReportCounts' => \App\Models\ReportView::newCountsFor($activeTyphoon->id),
+            'impactSummary' => HumanImpactStats::forDisaster($activeTyphoon),
+            'recentImpact' => HumanImpactStats::recent($activeTyphoon, 50),
+            'newReportCounts' => ReportView::newCountsFor($activeTyphoon->id),
         ]);
     })->name('admin.dashboard');
 
@@ -391,20 +408,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.user-form-data');
 
     // Audit Logs (Admin only)
-    Route::get('audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs');
-    Route::get('audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
-    Route::get('audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->whereNumber('id')->name('admin.audit-logs.show');
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');
+    Route::get('audit-logs/export', [AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+    Route::get('audit-logs/{id}', [AuditLogController::class, 'show'])->whereNumber('id')->name('admin.audit-logs.show');
 
     // Year Management (Admin only)
-    Route::get('years', [App\Http\Controllers\YearController::class, 'index'])->name('admin.years.index');
-    Route::post('years', [App\Http\Controllers\YearController::class, 'store'])->name('admin.years.store');
-    Route::delete('years/{year}', [App\Http\Controllers\YearController::class, 'destroy'])->name('admin.years.destroy');
+    Route::get('years', [YearController::class, 'index'])->name('admin.years.index');
+    Route::post('years', [YearController::class, 'store'])->name('admin.years.store');
+    Route::delete('years/{year}', [YearController::class, 'destroy'])->name('admin.years.destroy');
 
     // User Management (Admin only)
-    Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('admin.users.index');
-    Route::post('users', [App\Http\Controllers\UserController::class, 'store'])->name('admin.users.store');
-    Route::patch('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
-    Route::delete('users/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('admin.users.destroy');
+    Route::get('users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::patch('users/{user}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     // Submission Activity Pages (Admin only)
     Route::get('casualties/submissions', [CasualtyController::class, 'submissions'])->name('admin.casualties.submissions');
@@ -437,7 +454,7 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
     Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');
-    Route::get('/api/agriculture-history', [App\Http\Controllers\AgricultureReportController::class, 'apiHistory'])
+    Route::get('/api/agriculture-history', [AgricultureReportController::class, 'apiHistory'])
         ->middleware('permission:access-agriculture-form')
         ->name('api.agriculture-history');
     Route::get('/api/incident-history', [IncidentMonitoredController::class, 'apiHistory'])->name('api.incident-history');
