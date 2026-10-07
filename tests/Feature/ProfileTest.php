@@ -61,9 +61,9 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_admin_can_delete_their_account(): void
     {
-        $user = User::factory()->create();
+        $user = userWithRole('admin');
 
         $response = $this
             ->actingAs($user)
@@ -79,9 +79,23 @@ class ProfileTest extends TestCase
         $this->assertNull($user->fresh());
     }
 
+    public function test_regular_user_cannot_delete_their_account_or_its_reports(): void
+    {
+        $user = userWithRole('user');
+        $disaster = \App\Models\Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
+        \App\Models\Casualty::factory()->create(['user_id' => $user->id, 'disaster_id' => $disaster->id]);
+
+        $this->actingAs($user)
+            ->delete('/profile', ['password' => 'password'])
+            ->assertForbidden();
+
+        $this->assertNotNull($user->fresh());
+        $this->assertSame(1, \App\Models\Casualty::where('user_id', $user->id)->count());
+    }
+
     public function test_correct_password_must_be_provided_to_delete_account(): void
     {
-        $user = User::factory()->create();
+        $user = userWithRole('admin');
 
         $response = $this
             ->actingAs($user)

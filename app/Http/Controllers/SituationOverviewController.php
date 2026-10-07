@@ -824,14 +824,12 @@ class SituationOverviewController extends Controller
             \Log::error('Bridge form submission error: ' . $e->getMessage(), [
                 'exception' => $e,
                 'user_id' => Auth::id(),
-                'request_data' => $request->all()
             ]);
-            
+
+            // Exception details stay in the log; the client only learns that it failed.
             return response()->json([
                 'error' => 'An error occurred while saving bridge reports',
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'message' => 'An error occurred while saving bridge reports',
             ], 500);
         }
     }

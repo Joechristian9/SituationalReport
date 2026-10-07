@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Injured;
 use App\Models\Typhoon;
 use App\Traits\BuildsSubmissionList;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ use Inertia\Inertia;
 
 class InjuredController extends Controller
 {
-    use BuildsSubmissionList, ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
     /**
      * Display a listing of the injured records.
      * Optimized: Limit records for better performance
@@ -137,6 +138,8 @@ class InjuredController extends Controller
      */
     public function update(Request $request, Injured $injured)
     {
+        $this->authorizeRecordWrite($injured);
+
         $validated = $request->validate([
             'name'              => 'nullable|string|max:255',
             'age'               => 'nullable|integer',

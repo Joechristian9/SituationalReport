@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PrePositioning;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,7 @@ use Inertia\Inertia;
 
 class PrePositioningController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
     /**
      * Show list of Pre-Positionings
      * Optimized: Limit records for better performance
@@ -124,6 +125,8 @@ class PrePositioningController extends Controller
      */
     public function update(Request $request, PrePositioning $prePositioning)
     {
+        $this->authorizeRecordWrite($prePositioning);
+
         $validated = $request->validate([
             'team_units'         => 'nullable|string|max:255',
             'team_leader'        => 'nullable|string|max:255',

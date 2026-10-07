@@ -107,9 +107,10 @@ class AgricultureReportController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
+
             return response()->json([
                 'message' => 'Failed to save agriculture reports',
-                'error' => $e->getMessage()
             ], 500);
         }
     }

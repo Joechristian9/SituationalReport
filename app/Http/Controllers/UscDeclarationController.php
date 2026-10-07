@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UscDeclaration;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,7 @@ use Inertia\Inertia;
 
 class UscDeclarationController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
     /**
      * Show list of USC Declarations
      * Optimized: Limit records for better performance
@@ -99,6 +100,8 @@ class UscDeclarationController extends Controller
      */
     public function update(Request $request, UscDeclaration $uscDeclaration)
     {
+        $this->authorizeRecordWrite($uscDeclaration);
+
         $validated = $request->validate([
             'declared_by'       => 'nullable|string|max:255',
             'resolution_number' => 'nullable|string|max:255',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AssistanceExtended;
 use App\Models\Modification;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,7 @@ use Inertia\Inertia;
 
 class AssistanceExtendedController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
 
     /**
      * Display a listing of the resource.
@@ -124,6 +125,8 @@ class AssistanceExtendedController extends Controller
      */
     public function update(Request $request, AssistanceExtended $assistanceExtended)
     {
+        $this->authorizeRecordWrite($assistanceExtended);
+
         $validated = $request->validate([
             'agency_officials_groups' => 'nullable|string|max:255',
             'type_kind_of_assistance' => 'nullable|string|max:255',

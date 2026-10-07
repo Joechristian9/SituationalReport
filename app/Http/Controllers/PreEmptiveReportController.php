@@ -275,7 +275,7 @@ class PreEmptiveReportController extends Controller
             \Log::error($e->getTraceAsString());
             return response()->json([
                 'history' => (object)[],
-                'error' => $e->getMessage()
+                'error' => 'Could not load the modification history.'
             ]);
         }
     }
@@ -306,7 +306,7 @@ class PreEmptiveReportController extends Controller
             return response()->json([
                 'reports' => [],
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Could not load pre-emptive history.'
             ], 500);
         }
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssistanceProvidedLgu;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,7 @@ use Inertia\Inertia;
 
 class AssistanceProvidedLguController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
 
     public function index()
     {
@@ -74,6 +75,8 @@ class AssistanceProvidedLguController extends Controller
 
     public function update(Request $request, AssistanceProvidedLgu $assistanceProvidedLgu)
     {
+        $this->authorizeRecordWrite($assistanceProvidedLgu);
+
         $validated = $request->validate([
             'province'          => 'nullable|string|max:255',
             'city'              => 'nullable|string|max:255',

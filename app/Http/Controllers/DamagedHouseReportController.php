@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DamagedHouseReport;
 use App\Models\Modification;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,7 @@ use Inertia\Inertia;
 
 class DamagedHouseReportController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
@@ -140,6 +141,8 @@ class DamagedHouseReportController extends Controller
      */
     public function update(Request $request, DamagedHouseReport $damagedHouseReport)
     {
+        $this->authorizeRecordWrite($damagedHouseReport);
+
         $validated = $request->validate([
             'barangay' => 'nullable|string|max:255',
             'partially' => 'nullable|integer|min:0',

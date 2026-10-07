@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\IncidentMonitored;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,7 @@ use Inertia\Inertia;
 
 class IncidentMonitoredController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
     /**
      * Show list of monitored incidents
      * Optimized: Limit records for better performance
@@ -193,6 +194,8 @@ class IncidentMonitoredController extends Controller
      */
     public function update(Request $request, IncidentMonitored $incidentMonitored)
     {
+        $this->authorizeRecordWrite($incidentMonitored);
+
         $validated = $request->validate([
             'kinds_of_incident' => 'nullable|string|max:255',
             'date_time'         => 'nullable|date',
@@ -256,7 +259,7 @@ class IncidentMonitoredController extends Controller
      */
     public function apiHistory()
     {
-        $incidents = IncidentMonitored::with(['typhoon', 'user'])
+        $incidents = IncidentMonitored::with(['typhoon', 'user:id,name'])
             ->latest()
             ->limit(200)
             ->get();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Missing; // 1. Use the Missing model
 use App\Models\Typhoon;
 use App\Traits\BuildsSubmissionList;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ use Inertia\Inertia;
 
 class MissingController extends Controller
 {
-    use BuildsSubmissionList, ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
     /**
      * Display a listing of the missing person records.
      * Optimized: Limit records for better performance
@@ -138,6 +139,8 @@ class MissingController extends Controller
      */
     public function update(Request $request, Missing $missing)
     {
+        $this->authorizeRecordWrite($missing);
+
         // 5. Validate the fields for a single missing record
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',

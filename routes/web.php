@@ -39,7 +39,10 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Deleting an account cascades to its reports, so only admins may do it.
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->middleware('role:admin')
+        ->name('profile.destroy');
 });
 
 // Situation Reports
@@ -421,8 +424,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     });
 });
 
-// API route for checking active disaster (accessible by all authenticated users)
-Route::middleware(['auth'])->group(function () {
+// Disaster status and history APIs. They need a role like every other data
+// route; an account without one must not read report data.
+Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/api/disaster/active', [DisasterController::class, 'getActiveTyphoon'])->name('api.disaster.active');
     Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
     Route::get('/api/electricity-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewElectricityPdf'])->name('api.electricity-history.pdf');
