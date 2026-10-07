@@ -4,11 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Models\Typhoon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class DisasterController extends Controller
 {
+    /**
+     * Report tables (with a user_id column) shown on the form submission status page.
+     * Also the only tables getUserFormData() may read, so request input never picks the table.
+     */
+    private const FORM_TABLES = [
+        'weather_reports' => 'Weather Report',
+        'electricity_services' => 'Electricity Services',
+        'water_services' => 'Water Services',
+        'communications' => 'Communication Services',
+        'pre_emptive_reports' => 'Pre-Emptive Evacuation',
+        'incident_monitored' => 'Incident Monitored',
+        'casualties' => 'Casualties',
+        'injureds' => 'Injured',
+        'missing' => 'Missing Persons',
+        'pre_positionings' => 'Pre-Positioning',
+        'usc_declarations' => 'USC Declaration',
+        'damaged_house_reports' => 'Damaged Houses',
+        'affected_tourists' => 'Affected Tourists',
+        'response_operations' => 'Response Operations',
+        'assistance_extendeds' => 'Assistance Extended',
+        'assistance_provided_lgus' => 'Assistance Provided LGUs',
+        'suspension_of_classes' => 'Suspension of Classes',
+        'suspension_of_works' => 'Suspension of Work',
+        'bridges' => 'Bridges',
+        'roads' => 'Roads',
+        'water_levels' => 'Water Levels',
+    ];
+
     /**
      * Display disaster management page
      * Optimized with eager loading and selective fields
@@ -456,31 +485,8 @@ class DisasterController extends Controller
     {
         $activeTyphoon = Typhoon::getActiveTyphoon();
         
-        // Define form mappings with table names and display names
-        $formMappings = [
-            'weather_reports' => 'Weather Report',
-            'electricity_services' => 'Electricity Services',
-            'water_services' => 'Water Services',
-            'communications' => 'Communication Services',
-            'pre_emptive_reports' => 'Pre-Emptive Evacuation',
-            'incident_monitored' => 'Incident Monitored',
-            'casualties' => 'Casualties',
-            'injureds' => 'Injured',
-            'missing' => 'Missing Persons',
-            'pre_positionings' => 'Pre-Positioning',
-            'usc_declarations' => 'USC Declaration',
-            'damaged_house_reports' => 'Damaged Houses',
-            'affected_tourists' => 'Affected Tourists',
-            'response_operations' => 'Response Operations',
-            'assistance_extendeds' => 'Assistance Extended',
-            'assistance_provided_lgus' => 'Assistance Provided LGUs',
-            'suspension_of_classes' => 'Suspension of Classes',
-            'suspension_of_works' => 'Suspension of Work',
-            'bridges' => 'Bridges',
-            'roads' => 'Roads',
-            'water_levels' => 'Water Levels',
-        ];
-        
+        $formMappings = self::FORM_TABLES;
+
         // Initialize variables before the closure
         $submissionsByUser = [];
         $agricultureData = null;
@@ -585,13 +591,18 @@ class DisasterController extends Controller
      */
     public function getUserFormData(Request $request, $userId)
     {
+        $validated = $request->validate([
+            'table' => ['required', 'string', Rule::in([...array_keys(self::FORM_TABLES), 'agriculture_reports'])],
+            'form_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $activeTyphoon = Typhoon::getActiveTyphoon();
-        
+
         if (!$activeTyphoon) {
             return response()->json(['error' => 'No active disaster'], 404);
         }
-        
-        $table = $request->input('table');
+
+        $table = $validated['table'];
         $user = \App\Models\User::findOrFail($userId);
         
         // Fetch data from the specified table
@@ -606,7 +617,7 @@ class DisasterController extends Controller
         $data = $query->latest('updated_at')->get();
         
         return response()->json([
-            'form_name' => $request->input('form_name'),
+            'form_name' => $validated['form_name'] ?? null,
             'user_name' => $user->name,
             'data' => $data,
         ]);
