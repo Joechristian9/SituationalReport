@@ -8,14 +8,17 @@ import { router } from '@inertiajs/react';
  * Own loop instead of Inertia's usePoll: that one only throttles hidden tabs,
  * captures its options on first render, and cannot skip a tick while the
  * previous request is still running.
+ *
+ * `enabled: false` stops polling entirely, e.g. disaster pages when no disaster is
+ * active: nothing new can arrive, so the requests would only cost data in the field.
  */
-export default function useLiveRefresh({ only, interval = 15000 }) {
+export default function useLiveRefresh({ only, interval = 15000, enabled = true }) {
     const [paused, setPaused] = useState(false);
     const [updatedAt, setUpdatedAt] = useState(() => Date.now());
     const propsKey = only.join(',');
 
     useEffect(() => {
-        if (paused) return undefined;
+        if (paused || !enabled) return undefined;
 
         let inFlight = false;
         const refresh = () => {
@@ -38,9 +41,9 @@ export default function useLiveRefresh({ only, interval = 15000 }) {
             clearInterval(timer);
             document.removeEventListener('visibilitychange', refresh);
         };
-    }, [paused, interval, propsKey]);
+    }, [paused, enabled, interval, propsKey]);
 
     const toggle = useCallback(() => setPaused((value) => !value), []);
 
-    return { paused, updatedAt, interval, toggle };
+    return { paused, updatedAt, interval, toggle, enabled };
 }

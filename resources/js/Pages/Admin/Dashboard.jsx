@@ -5,7 +5,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import useLiveRefresh from "@/hooks/useLiveRefresh";
 import LiveIndicator from "@/Components/LiveIndicator";
 import LiveImpactFeed from "@/Components/LiveImpactFeed";
@@ -31,6 +31,7 @@ const MissingGraph = lazy(() => import("@/Components/Graphs/MissingGraph"));
 const ImpactTrendChart = lazy(() => import("@/Components/Graphs/ImpactTrendChart"));
 const BarangayImpactChart = lazy(() => import("@/Components/Graphs/BarangayImpactChart"));
 const ImpactHourlyChart = lazy(() => import("@/Components/Graphs/ImpactHourlyChart"));
+const DisasterHistory = lazy(() => import("@/Components/Graphs/DisasterHistory"));
 
 // Loading fallback component
 const LoadingSpinner = () => (
@@ -90,12 +91,20 @@ export default function Dashboard({
     impactSummary = null,
     recentImpact = [],
     newReportCounts = { casualties: 0, injured: 0, missing: 0 },
+    history = null,
 }) {
     const { auth, typhoon } = usePage().props;
 
+    // Live only while a disaster is active or paused. `typhoon` is refreshed too, so polling
+    // stops on its own when the disaster ends while this page is open.
     const live = useLiveRefresh({
-        only: ["casualties", "injured", "missing", "impactSummary", "recentImpact", "newReportCounts"],
+        only: ["casualties", "injured", "missing", "impactSummary", "recentImpact", "newReportCounts", "typhoon"],
+        enabled: Boolean(typhoon?.hasActive),
     });
+    // The disaster ended while this page was open: fetch the history it now shows instead.
+    useEffect(() => {
+        if (!typhoon?.hasActive && !history) router.reload({ only: ["history"] });
+    }, [typhoon?.hasActive, history]);
     const freshReports = useNewImpactReports(recentImpact);
     // New reports stay tagged in the feed; the tab badge only counts ones not yet looked at.
     const [viewedReports, setViewedReports] = useState(() => new Set());
@@ -238,7 +247,10 @@ export default function Dashboard({
                                     </div>
                                 )}
 
-                                {activeTab === "impact" && (
+                                {/* Nothing active: the server sends past-disaster history instead of empty charts. */}
+                                {activeTab === "impact" && history && <DisasterHistory history={history} />}
+
+                                {activeTab === "impact" && !history && (
                                     <div className="space-y-6">
                                         {/* Stat cards: current totals from the database */}
                                         <ImpactStatCards

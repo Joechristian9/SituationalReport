@@ -198,7 +198,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const Icon = category.icon;
     const summary = { ...EMPTY_STATS, ...(stats || {}) };
     // The records prop is named after the category (casualties / injured / missing).
-    const live = useLiveRefresh({ only: [config.category, 'stats', 'disaster'] });
+    // Live only while a disaster is active: without one, no new reports can arrive.
+    const live = useLiveRefresh({ only: [config.category, 'stats', 'disaster'], enabled: Boolean(disaster) });
 
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [selectedUser, setSelectedUser] = useState(filters.user_id ? String(filters.user_id) : 'all');

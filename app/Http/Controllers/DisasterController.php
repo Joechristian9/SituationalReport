@@ -110,7 +110,7 @@ class DisasterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:disasters,name',
-            'disaster_type' => 'required|string|in:Typhoon,Tropical Storm,Tropical Depression,Flood,Flash Flood,Earthquake,Landslide,Storm Surge,Drought,Volcanic Eruption,Fire,Tornado,Heavy Rainfall,Other',
+            'disaster_type' => ['required', 'string', Rule::in(Typhoon::TYPES)],
             'description' => 'nullable|string|max:1000',
         ]);
 

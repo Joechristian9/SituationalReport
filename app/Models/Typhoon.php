@@ -16,6 +16,12 @@ class Typhoon extends Model
      */
     protected $table = 'disasters';
 
+    /** Allowed `disaster_type` values (matches the column's enum). */
+    public const TYPES = [
+        'Typhoon', 'Tropical Storm', 'Tropical Depression', 'Flood', 'Flash Flood', 'Earthquake', 'Landslide',
+        'Storm Surge', 'Drought', 'Volcanic Eruption', 'Fire', 'Tornado', 'Heavy Rainfall', 'Other',
+    ];
+
     protected $fillable = [
         'name',
         'disaster_type',

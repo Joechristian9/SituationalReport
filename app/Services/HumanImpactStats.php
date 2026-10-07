@@ -217,7 +217,8 @@ class HumanImpactStats
         return $rows;
     }
 
-    private static function isOffice(?User $user): bool
+    /** City office (not barangay) account: anything outside the @barangay.local domain. */
+    public static function isOffice(?User $user): bool
     {
         return $user ? ! str_ends_with(strtolower($user->email), '@barangay.local') : false;
     }

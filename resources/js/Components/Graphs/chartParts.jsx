@@ -17,7 +17,11 @@ export function Swatch({ color }) {
 }
 
 /** Legend / tooltip key for lines. */
-export function LineKey({ color }) {
+export function LineKey({ color, dashed = false }) {
+    if (dashed) {
+        // Matches a strokeDasharray line, e.g. a reference/average series.
+        return <span className="inline-block w-4 shrink-0 border-t-2 border-dashed" style={{ borderColor: color }} aria-hidden="true" />;
+    }
     return <span className="inline-block h-0.5 w-3 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />;
 }
 

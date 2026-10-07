@@ -314,7 +314,7 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Admin Dashboard - show data for both active and paused disasters
-    Route::get('dashboard', function () {
+    Route::get('dashboard', function (\Illuminate\Http\Request $request) {
         // Show data for active or paused disasters (graphs should show historical data).
         // latest() matches the shared `typhoon.active` prop, so the header and the data agree.
         $activeTyphoon = \App\Models\Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
@@ -331,6 +331,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
                 'impactSummary' => \App\Services\HumanImpactStats::forDisaster(null),
                 'recentImpact' => [],
                 'newReportCounts' => \App\Models\ReportView::newCountsFor(null),
+                // Nothing to monitor: show the history of past disasters instead.
+                'history' => fn () => \App\Services\DisasterHistory::for($request->only(['type', 'barangay', 'metric'])),
             ]);
         }
 

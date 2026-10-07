@@ -36,7 +36,7 @@ import LiveIndicator from '@/Components/LiveIndicator';
 
 export default function FormSubmissionStatus({ users, activeTyphoon }) {
     // Slower than the other pages: this page runs about 20 grouped queries per refresh.
-    const live = useLiveRefresh({ only: ['users', 'activeTyphoon'], interval: 30000 });
+    const live = useLiveRefresh({ only: ['users', 'activeTyphoon'], interval: 30000, enabled: Boolean(activeTyphoon) });
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);

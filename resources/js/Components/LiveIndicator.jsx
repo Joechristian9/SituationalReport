@@ -19,14 +19,17 @@ function ago(seconds) {
  * that pauses/resumes updates, so the touch target stays large.
  */
 export default function LiveIndicator({ live, className }) {
-    const { paused, updatedAt, interval, toggle } = live;
+    const { paused, updatedAt, interval, toggle, enabled = true } = live;
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
-        if (paused) return undefined;
+        if (paused || !enabled) return undefined;
         const timer = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(timer);
-    }, [paused]);
+    }, [paused, enabled]);
+
+    // Not polling (e.g. no active disaster): saying "Live" or "Not updating" would mislead.
+    if (!enabled) return null;
 
     const seconds = Math.max(0, Math.round((now - updatedAt) / 1000));
     // Three missed refreshes in a row means something is wrong (offline, session expired).
