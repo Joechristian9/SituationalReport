@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { router } from '@inertiajs/react';
 import { allItems, putItem, removeItem } from './store';
 import { currentSession, currentUser } from './context';
 
@@ -9,6 +10,32 @@ const listeners = new Set();
 // Forms whose queued save from this very page was just sent: their rows now have
 // server ids the page doesn't know, so saving again before a reload would duplicate them.
 const sentFromThisPage = new Set();
+// Newest of those sends, compared with the last edit to know whether a refresh is safe.
+let latestSentSavedAt = 0;
+let lastEditAt = 0;
+const noteEdit = () => {
+    lastEditAt = Date.now();
+};
+document.addEventListener('input', noteEdit, true);
+document.addEventListener('change', noteEdit, true);
+
+/** Nothing was typed since the sent saves, so reloading the page loses no input. */
+export const canRefreshWithoutLosingEdits = () => lastEditAt <= latestSentSavedAt;
+
+/** Reload the current page's data and rebuild its forms, so rows get their server ids. */
+export function refreshPage() {
+    router.visit(window.location.href, {
+        preserveState: false,
+        preserveScroll: true,
+        replace: true,
+        onSuccess: () => {
+            sentFromThisPage.clear();
+            latestSentSavedAt = 0;
+            state.reloadNeeded = false;
+            emit();
+        },
+    });
+}
 
 function emit() {
     listeners.forEach((listener) => listener({ ...state }));
@@ -24,6 +51,36 @@ export const syncState = () => ({ ...state });
 /** True if saving this form now could duplicate rows that were just sent from this page. */
 export const needsReloadBeforeSaving = (path) => sentFromThisPage.has(`${currentSession()}|${path}`);
 
+/**
+ * Send one queued save. If the session expired while offline, the first try fails the
+ * CSRF check (419) even when "Remember me" can sign the user back in. Then fetch a fresh
+ * token cookie (that request also restores the remembered login) and retry with it;
+ * `freshToken.used` keeps the rest of this run on the cookie token.
+ */
+async function send(item, freshToken) {
+    const post = () =>
+        axios.post(item.url, item.payload, {
+            offlineSync: true,
+            headers: {
+                Accept: 'application/json',
+                'X-Offline-Key': item.id,
+                'X-Offline-Disaster': item.disasterId ?? '',
+                // The page's X-CSRF-TOKEN belongs to the expired session and Laravel reads it
+                // first; blank it so the X-XSRF-TOKEN header axios adds from the cookie is used.
+                ...(freshToken.used ? { 'X-CSRF-TOKEN': '' } : {}),
+            },
+        });
+
+    try {
+        return await post();
+    } catch (error) {
+        if (error.response?.status !== 419 || freshToken.used) throw error;
+        await axios.get(route('sanctum.csrf-cookie'), { offlineSync: true });
+        freshToken.used = true;
+        return post();
+    }
+}
+
 export async function syncNow() {
     const user = currentUser();
     if (state.running || !user || !navigator.onLine) return;
@@ -35,20 +92,15 @@ export async function syncNow() {
             (item) => item.userId === user.id && (item.status === 'pending' || item.status === 'waiting'),
         );
 
+        const freshToken = { used: false };
         for (const item of items) {
             try {
-                await axios.post(item.url, item.payload, {
-                    offlineSync: true,
-                    headers: {
-                        Accept: 'application/json',
-                        'X-Offline-Key': item.id,
-                        'X-Offline-Disaster': item.disasterId ?? '',
-                    },
-                });
+                await send(item, freshToken);
                 await removeItem(item.id);
                 state.loginNeeded = false;
                 if (item.session === currentSession()) {
                     sentFromThisPage.add(`${item.session}|${item.path}`);
+                    latestSentSavedAt = Math.max(latestSentSavedAt, item.savedAt);
                     state.reloadNeeded = true;
                 }
                 window.dispatchEvent(new CustomEvent('offline:sent', { detail: item }));

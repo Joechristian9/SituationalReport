@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { trackPages, currentPage, currentDisaster, currentSession, currentUser } from './context';
 import { QUEUED_MESSAGE, endpointFor, enqueue, mergePayloads, openItemFor } from './queue';
 import { removeItem } from './store';
-import { needsReloadBeforeSaving, syncNow } from './sync';
+import { canRefreshWithoutLosingEdits, needsReloadBeforeSaving, refreshPage, subscribeSync, syncNow } from './sync';
 
 const PAGE_CACHE_PREFIX = 'sitrep-pages';
 const WARM_EVERY_MS = 30 * 60 * 1000;
@@ -107,6 +107,17 @@ function installInertia() {
     router.on('navigate', () => syncNow());
 }
 
+// After offline saves from this page are sent, its forms must reload to learn the new
+// row ids. Do it automatically unless the user has typed since; then OfflineStatus asks.
+function refreshAfterSync() {
+    let wasRunning = false;
+    subscribeSync((sync) => {
+        const finished = wasRunning && !sync.running;
+        wasRunning = sync.running;
+        if (finished && sync.reloadNeeded && canRefreshWithoutLosingEdits()) refreshPage();
+    });
+}
+
 function appBase() {
     // eslint-disable-next-line no-undef
     const url = typeof Ziggy !== 'undefined' && Ziggy.url ? Ziggy.url : window.location.origin;
@@ -155,6 +166,22 @@ function forgetPagesOnUserChange() {
     }
 }
 
+/**
+ * Ask the browser not to clear saved pages and unsent reports when the phone runs low on
+ * space. Chrome, Edge and Safari decide silently; Firefox shows a prompt, so ask only in
+ * the installed app or once a report has actually been saved offline.
+ */
+async function keepOfflineData() {
+    try {
+        if (!navigator.storage?.persist || (await navigator.storage.persisted())) return;
+        await navigator.storage.persist();
+    } catch {
+        // Not granted: data is kept as long as the browser has room.
+    }
+}
+
+const runningInstalled = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
 async function registerServiceWorker() {
     // Production builds only: in dev the assets come from the Vite server. Needs https or localhost.
     if (!import.meta.env.PROD || !('serviceWorker' in navigator) || !window.isSecureContext) return;
@@ -174,7 +201,10 @@ export function installOffline(initialPage) {
     router.on('navigate', forgetPagesOnUserChange);
     installAxios();
     installInertia();
+    refreshAfterSync();
     registerServiceWorker();
+    if (runningInstalled()) keepOfflineData();
+    window.addEventListener('offline:queued', keepOfflineData);
 
     window.addEventListener('online', () => syncNow());
     setInterval(() => syncNow(), 30000);

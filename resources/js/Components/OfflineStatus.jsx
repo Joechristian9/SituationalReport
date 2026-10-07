@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, Loader2, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { allItems, removeItem, subscribe } from '@/lib/offline/store';
-import { subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
+import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,17 @@ const STATUS = {
     waiting: { label: 'Waiting: disaster paused', tone: 'border-warning/30 bg-warning/10 text-warning' },
     failed: { label: 'Not sent', tone: 'border-destructive/30 bg-destructive/10 text-destructive' },
 };
+
+// The pill floats over the page, so its background stays opaque (bg-card); the status
+// colour goes on the border, icon and text.
+const TONE = {
+    warning: 'border-warning/40 text-warning',
+    destructive: 'border-destructive/40 text-destructive',
+    success: 'border-success/40 text-success',
+    neutral: 'border-border text-foreground',
+};
+
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
 function useOnline() {
     const [online, setOnline] = useState(() => navigator.onLine);
@@ -28,7 +39,7 @@ function useOnline() {
     return online;
 }
 
-// The card is fixed to the bottom of the screen; publish its height so app.css can pad
+// The status is fixed to the bottom of the screen; publish its height so app.css can pad
 // the page by the same amount and the form's submit button never sits underneath it.
 function useReservedBottomSpace(node) {
     useEffect(() => {
@@ -100,15 +111,17 @@ function QueuedItem({ item }) {
 }
 
 /**
- * Bottom-left status for offline use: shows when the device is offline, when saves
- * are waiting on this device, and what happened when they were sent.
+ * One small status pill for offline use. Saving offline and sending later happen on
+ * their own; the pill only says what is going on, and asks for something only when a
+ * save failed, the session expired, or a refresh would discard what the user typed.
  */
 export default function OfflineStatus() {
     const online = useOnline();
     const [items, setItems] = useState([]);
     const [sync, setSync] = useState(syncState);
     const [notice, setNotice] = useState(null);
-    const [reloadNeeded, setReloadNeeded] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+    const [askRefresh, setAskRefresh] = useState(false);
     const [open, setOpen] = useState(false);
     const [userId, setUserId] = useState(() => currentUser()?.id ?? null);
     const [card, setCard] = useState(null);
@@ -120,23 +133,31 @@ export default function OfflineStatus() {
         const stopStore = subscribe(load);
         const stopSync = subscribeSync((next) => {
             setSync(next);
-            if (next.reloadNeeded) setReloadNeeded(true);
+            // Sent saves came from this page and the user typed since: refreshing on our
+            // own would discard that, so ask. Otherwise install.js refreshes by itself.
+            setAskRefresh(!next.running && next.reloadNeeded && !canRefreshWithoutLosingEdits());
         });
         const stopNavigate = router.on('navigate', () => {
             setUserId(currentUser()?.id ?? null);
-            setReloadNeeded(false);
+            setAskRefresh(false);
             load();
         });
 
         let timer;
-        const flash = (text) => {
+        let sentCount = 0;
+        const onQueued = (event) => setAnnouncement(`${event.detail.label} saved on this device. It will be sent when you're back online.`);
+        const onSent = () => {
+            sentCount += 1;
+            const text = `${plural(sentCount, 'report')} sent`;
             setNotice(text);
+            setAnnouncement(text);
             clearTimeout(timer);
-            timer = setTimeout(() => setNotice(null), 5000);
+            timer = setTimeout(() => {
+                setNotice(null);
+                sentCount = 0;
+            }, 4000);
         };
-        const onQueued = (event) => flash(`${event.detail.label} saved on this device. It will be sent when you're back online.`);
-        const onSent = (event) => flash(`${event.detail.label} report sent.`);
-        const onReload = () => setReloadNeeded(true);
+        const onReload = () => setAskRefresh(true);
         window.addEventListener('offline:queued', onQueued);
         window.addEventListener('offline:sent', onSent);
         window.addEventListener('offline:reload-required', onReload);
@@ -156,90 +177,97 @@ export default function OfflineStatus() {
 
     const waiting = items.filter((item) => item.status !== 'failed').length;
     const failed = items.filter((item) => item.status === 'failed').length;
-    if (online && !items.length && !notice && !reloadNeeded && !sync.loginNeeded) {
-        return <span role="status" aria-live="polite" className="sr-only" />;
+
+    // One message at a time, most important first.
+    let pill = null;
+    if (sync.loginNeeded && waiting) {
+        pill = { tone: 'warning', icon: AlertTriangle, text: `Session expired. Log in to send ${plural(waiting, 'saved report')}.`, action: 'login' };
+    } else if (askRefresh) {
+        pill = { tone: 'neutral', icon: CheckCircle2, text: 'Offline reports sent. Refresh before saving again; changes typed since then are cleared.', action: 'refresh' };
+    } else if (failed) {
+        pill = { tone: 'destructive', icon: AlertTriangle, text: `${failed} not sent · Review` };
+    } else if (!online) {
+        pill = { tone: 'warning', icon: CloudOff, text: waiting ? `Offline · ${waiting} waiting to send` : 'Offline · you can keep working' };
+    } else if (sync.running && waiting) {
+        pill = { tone: 'neutral', icon: Loader2, spin: true, text: `Sending ${plural(waiting, 'report')}…` };
+    } else if (notice) {
+        pill = { tone: 'success', icon: CheckCircle2, text: notice };
+    } else if (waiting) {
+        pill = { tone: 'neutral', icon: UploadCloud, text: `${waiting} waiting to send` };
     }
 
-    const summary = [waiting && `${waiting} waiting to send`, failed && `${failed} not sent`].filter(Boolean).join(' · ');
+    const liveRegion = (
+        <span role="status" aria-live="polite" className="sr-only">
+            {announcement}
+        </span>
+    );
+    if (!pill) return liveRegion;
+
+    const Icon = pill.icon;
+    const icon = <Icon className={cn('h-4 w-4 shrink-0', pill.spin && 'animate-spin motion-reduce:animate-none')} aria-hidden="true" />;
+    const expandable = items.length > 0 && !pill.action;
 
     return (
-        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[90] flex w-[calc(100vw-2rem)] max-w-sm flex-col items-start gap-2">
-            <span role="status" aria-live="polite" className="sr-only">
-                {notice}
-            </span>
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[90] flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 sm:max-w-sm">
+            {liveRegion}
 
-            {open && items.length > 0 && (
-                <div id="offline-queue" className="max-h-[60vh] w-full overflow-y-auto rounded-xl border bg-card p-4 text-sm shadow-lg">
+            {open && expandable && (
+                <div id="offline-queue" className="max-h-[60vh] w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border bg-card p-4 text-sm shadow-md sm:w-96">
                     <h2 className="font-semibold text-foreground">Saved on this device</h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Reports are sent automatically, oldest first, when the internet is back.</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">These are sent automatically, oldest first, when the internet is back.</p>
                     <ul className="mt-1 divide-y">
                         {items.map((item) => (
                             <QueuedItem key={item.id} item={item} />
                         ))}
                     </ul>
-                    {waiting > 0 && (
-                        <Button type="button" size="sm" className="mt-2 min-h-11 w-full gap-1.5 md:min-h-9" disabled={!online || sync.running} onClick={() => syncNow()}>
+                    {waiting > 0 && online && (
+                        <Button type="button" size="sm" className="mt-2 min-h-11 w-full gap-1.5 md:min-h-9" disabled={sync.running} onClick={() => syncNow()}>
                             {sync.running ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <UploadCloud className="h-4 w-4" aria-hidden="true" />}
-                            {online ? (sync.running ? 'Sending…' : 'Send now') : 'Waiting for internet'}
+                            {sync.running ? 'Sending…' : 'Send now'}
                         </Button>
                     )}
                 </div>
             )}
 
-            <div ref={setCard} className="w-full space-y-2 rounded-xl border bg-card p-3 text-sm shadow-lg">
-                {!online && (
-                    <p className="flex items-start gap-2 text-foreground">
-                        <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-                        <span>
-                            <span className="font-semibold">You're offline.</span> You can keep filling in forms; saves stay on this device.
+            <div ref={setCard}>
+                {pill.action ? (
+                    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-card px-3 py-2 text-sm font-medium shadow-md', TONE[pill.tone])}>
+                        <span className="flex min-w-0 items-start gap-2">
+                            <span className="mt-0.5">{icon}</span>
+                            <span className="text-foreground">{pill.text}</span>
                         </span>
-                    </p>
-                )}
-
-                {notice && (
-                    <p className="flex items-start gap-2 text-foreground">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
-                        <span>{notice}</span>
-                    </p>
-                )}
-
-                {reloadNeeded && (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-foreground">Your offline reports were sent. Reload this page before editing those forms again.</p>
-                        <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={() => window.location.reload()}>
-                            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                            Reload
-                        </Button>
+                        {pill.action === 'login' ? (
+                            <Button asChild size="sm" className="min-h-11 md:min-h-8">
+                                <a href={route('login')}>Log in</a>
+                            </Button>
+                        ) : (
+                            <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={refreshPage}>
+                                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                                Refresh
+                            </Button>
+                        )}
                     </div>
-                )}
-
-                {sync.loginNeeded && waiting > 0 && (
-                    <p className="flex items-start gap-2 text-foreground">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-                        <span>
-                            Your session expired. <a href={route('login')} className="font-medium text-primary underline">Log in again</a> to send {waiting} saved report{waiting === 1 ? '' : 's'}.
-                        </span>
-                    </p>
-                )}
-
-                {items.length > 0 && (
+                ) : expandable ? (
                     <button
                         type="button"
                         onClick={() => setOpen((value) => !value)}
                         aria-expanded={open}
                         aria-controls="offline-queue"
                         className={cn(
-                            'flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2 font-medium transition-colors hover:bg-muted md:min-h-9',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
-                            failed ? 'text-destructive' : 'text-foreground',
+                            'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border bg-card px-4 text-sm font-medium shadow-md transition-colors md:min-h-9',
+                            'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
+                            TONE[pill.tone],
                         )}
                     >
-                        <span className="flex items-center gap-2">
-                            {failed ? <AlertTriangle className="h-4 w-4" aria-hidden="true" /> : <UploadCloud className="h-4 w-4" aria-hidden="true" />}
-                            {summary}
-                        </span>
-                        <ChevronDown className={cn('h-4 w-4 transition-transform motion-reduce:transition-none', open && 'rotate-180')} aria-hidden="true" />
+                        {icon}
+                        <span>{pill.text}</span>
+                        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none', open && 'rotate-180')} aria-hidden="true" />
                     </button>
+                ) : (
+                    <div className={cn('inline-flex min-h-11 items-center gap-2 rounded-full border bg-card px-4 text-sm font-medium shadow-md md:min-h-9', TONE[pill.tone])}>
+                        {icon}
+                        <span>{pill.text}</span>
+                    </div>
                 )}
             </div>
         </div>
