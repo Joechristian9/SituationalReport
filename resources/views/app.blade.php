@@ -10,7 +10,10 @@
         <!-- Installable app + offline use (see public/sw.js) -->
         <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
         <meta name="theme-color" content="#2563eb">
-        <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192.png') }}">
+        <!-- ?v= busts the browser's long-lived icon cache when the logo changes. -->
+        <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="48x48">
+        <link rel="icon" type="image/png" href="{{ asset('images/icons/favicon-32.png') }}?v=2" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('images/icons/apple-touch-icon.png') }}?v=2">
         <meta name="mobile-web-app-capable" content="yes">
         <!-- Older iPhones still read the apple- prefixed tag; the standard one above silences Chrome's warning. -->
         <meta name="apple-mobile-web-app-capable" content="yes">

@@ -241,11 +241,11 @@
         </div>
         <div class="header-right">
             @php
-                $imagePath = public_path('images/ilagan.jpeg');
+                $imagePath = public_path('images/cdrrmo_logo.jpg');
                 $imageData = base64_encode(file_get_contents($imagePath));
                 $src = 'data:image/jpeg;base64,' . $imageData;
             @endphp
-            <img src="{{ $src }}" alt="City of Ilagan Logo" class="header-logo">
+            <img src="{{ $src }}" alt="CDRRMO Ilagan Logo" class="header-logo">
         </div>
     </header>
     
