@@ -2506,7 +2506,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CqR8KWZC.js",
+    "file": "assets/app-hTma_qy5.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -2563,7 +2563,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-DjRPIubd.css"
+      "assets/app-C8qPg0A9.css"
     ]
   }
 }
