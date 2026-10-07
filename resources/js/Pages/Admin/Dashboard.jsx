@@ -13,7 +13,8 @@ import useNewImpactReports from "@/hooks/useNewImpactReports";
 import { Toaster } from "sonner";
 import { Separator } from "@/Components/ui/separator";
 import { m as motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { Users, Sun, CloudSun, Loader2, Radio } from "lucide-react";
+import { Users, Sun, CloudSun, Radio } from "lucide-react";
+import { SkeletonChart } from "@/Components/ui/skeleton";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
 import ImpactFilters from "@/Components/Graphs/ImpactFilters";
@@ -32,13 +33,6 @@ const ImpactTrendChart = lazy(() => import("@/Components/Graphs/ImpactTrendChart
 const BarangayImpactChart = lazy(() => import("@/Components/Graphs/BarangayImpactChart"));
 const ImpactHourlyChart = lazy(() => import("@/Components/Graphs/ImpactHourlyChart"));
 const DisasterHistory = lazy(() => import("@/Components/Graphs/DisasterHistory"));
-
-// Loading fallback component
-const LoadingSpinner = () => (
-    <div className="flex items-center justify-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-    </div>
-);
 
 // Memoized Tab component to prevent unnecessary re-renders
 const Tab = React.memo(({ label, icon, isActive, onClick, count = 0 }) => (
@@ -207,7 +201,7 @@ export default function Dashboard({
                             variants={pageVariants}
                             transition={{ duration: 0.3 }}
                         >
-                            <Suspense fallback={<LoadingSpinner />}>
+                            <Suspense fallback={<SkeletonChart />}>
                                 {activeTab === "pagasa" && <PagasaPanel />}
 
                                 {activeTab === "live" && (

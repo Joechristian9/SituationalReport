@@ -2,7 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
-import { AlertTriangle, CheckCircle2, ExternalLink, Loader2, Map as MapIcon, MapPin, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Map as MapIcon, MapPin, RefreshCw, ShieldAlert } from "lucide-react";
+import { SkeletonList } from "@/Components/ui/skeleton";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -127,10 +128,7 @@ export default function PagasaPanel() {
                     )}
 
                     {isLoading ? (
-                        <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                            Checking PAGASA…
-                        </p>
+                        <SkeletonList rows={2} label="Checking PAGASA…" />
                     ) : isError ? (
                         <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

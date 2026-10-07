@@ -15,7 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, History, Clock, Cloud, Eye, Edit, ChevronDown, ChevronUp, Calendar, MoreVertical, FileText, Download } from "lucide-react";
+import { History, Clock, Cloud, Eye, Edit, ChevronDown, ChevronUp, Calendar, MoreVertical, FileText, Download } from "lucide-react";
+import { SkeletonTable } from "@/Components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     DropdownMenu,
@@ -106,9 +107,9 @@ export default function ServiceHistoryPage({
 
                         {/* History Content */}
                         {isLoading ? (
-                            <div className="flex items-center justify-center py-16">
-                                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                            </div>
+                            <Card className="p-4 shadow-sm">
+                                <SkeletonTable columns={6} label="Loading history…" />
+                            </Card>
                         ) : historyData && historyData.length > 0 ? (
                             <Card className="overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">

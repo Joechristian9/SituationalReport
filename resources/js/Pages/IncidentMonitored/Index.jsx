@@ -20,12 +20,12 @@ import {
     CheckCircle2,
     AlertTriangle,
     UserX,
-    Loader2,
     Plane,
     SaveAll,
     School,
     HelpCircle,
 } from "lucide-react";
+import { SkeletonForm } from "@/Components/ui/skeleton";
 import { LiaHouseDamageSolid } from "react-icons/lia";
 
 import {
@@ -45,12 +45,7 @@ const DamagedHousesForm = lazy(() => import("@/Components/Effects/DamagedHousesF
 const SuspensionOfClassesForm = lazy(() => import("@/Components/Effects/SuspensionOfClassesForm"));
 const SuspensionOfWorkForm = lazy(() => import("@/Components/Effects/SuspensionOfWorkForm"));
 
-// Loading fallback
-const FormLoader = () => (
-    <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-    </div>
-);
+const FormLoader = () => <SkeletonForm className="py-2" />;
 
 export default function Index() {
     const { flash, incidents, casualties, injured, missing, affectedTourists, damagedHouses, suspensionOfClasses, suspensionOfWork, typhoon } = usePage().props;

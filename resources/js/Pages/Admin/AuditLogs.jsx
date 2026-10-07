@@ -21,7 +21,6 @@ import {
     Download,
     FilePen,
     KeyRound,
-    Loader2,
     LogIn,
     LogOut,
     Plus,
@@ -34,6 +33,7 @@ import {
     UserCheck,
     X,
 } from 'lucide-react';
+import { SkeletonList } from '@/Components/ui/skeleton';
 
 // How each action is drawn and phrased. Full class strings so Tailwind keeps them.
 const ACTIONS = {
@@ -574,10 +574,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                 </SheetHeader>
                                 <div className="mt-6">
                                     {loadingDetails || !details ? (
-                                        <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-500">
-                                            <Loader2 className="h-5 w-5 animate-spin" />
-                                            Loading entry…
-                                        </div>
+                                        <SkeletonList rows={3} label="Loading entry…" />
                                     ) : (
                                         <LogDetail details={details} />
                                     )}

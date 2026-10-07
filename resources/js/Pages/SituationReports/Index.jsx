@@ -25,7 +25,6 @@ import {
     Phone,
     Route,
     Landmark,
-    Loader2,
     ClipboardList,
     MapPin,
     CheckCircle2,
@@ -36,6 +35,7 @@ import {
     UserRound,
     UserSearch,
 } from "lucide-react";
+import { SkeletonForm } from "@/Components/ui/skeleton";
 
 // Lazy load form components for better performance
 const WeatherForm = lazy(() =>
@@ -79,11 +79,7 @@ const MissingForm = lazy(() =>
     import("@/Components/Effects/MissingForm")
 );
 
-const FormLoader = () => (
-    <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-    </div>
-);
+const FormLoader = () => <SkeletonForm className="py-2" />;
 
 export default function Index() {
     const {

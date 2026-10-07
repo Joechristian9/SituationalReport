@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, FileText, AlertCircle, Download, Search, Plus } from 'lucide-react';
+import { SkeletonTable } from '@/Components/ui/skeleton';
 import { m as motion } from 'framer-motion';
 import axios from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -317,10 +318,7 @@ export default function BatchHistory({ batches, availableYears }) {
                                         </div>
 
                                         {loading ? (
-                                            <div className="text-center py-12">
-                                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                                <p className="mt-2 text-sm text-gray-600">Loading records...</p>
-                                            </div>
+                                            <SkeletonTable columns={5} />
                                         ) : paginationData.paginatedData.length > 0 ? (
                                             <>
                                                 <div className="overflow-x-auto">
