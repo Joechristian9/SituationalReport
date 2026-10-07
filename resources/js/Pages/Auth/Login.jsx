@@ -12,7 +12,9 @@ export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
-        remember: false,
+        // On by default: field phones lose signal for days, and staying signed in lets
+        // reports saved offline send on their own when the connection returns.
+        remember: true,
     });
 
     const submit = (e) => {

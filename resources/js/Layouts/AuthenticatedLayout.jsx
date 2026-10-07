@@ -5,9 +5,11 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
+import LogoutDialog from '@/Components/LogoutDialog';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const [logoutOpen, setLogoutOpen] = useState(false);
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -67,13 +69,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                         >
                                             Profile
                                         </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
+                                        <button
+                                            type="button"
+                                            onClick={() => setLogoutOpen(true)}
+                                            className="block w-full px-4 py-2 text-start text-sm leading-5 text-foreground transition duration-150 ease-in-out hover:bg-muted focus:bg-muted focus:outline-none"
                                         >
                                             Log Out
-                                        </Dropdown.Link>
+                                        </button>
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
@@ -151,17 +153,19 @@ export default function AuthenticatedLayout({ header, children }) {
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 Profile
                             </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
+                            <button
+                                type="button"
+                                onClick={() => setLogoutOpen(true)}
+                                className="flex w-full items-start border-l-4 border-transparent py-2 pe-4 ps-3 text-base font-medium text-muted-foreground transition duration-150 ease-in-out hover:border-border hover:bg-muted hover:text-foreground focus:outline-none"
                             >
                                 Log Out
-                            </ResponsiveNavLink>
+                            </button>
                         </div>
                     </div>
                 </div>
             </nav>
+
+            <LogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
 
             {header && (
                 <header className="bg-white shadow">

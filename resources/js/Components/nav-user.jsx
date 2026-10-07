@@ -17,11 +17,12 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { Link } from "@inertiajs/react";
-import { clearOfflinePages } from "@/lib/offline/install";
+import { useState } from "react";
+import LogoutDialog from "@/Components/LogoutDialog";
 
 export function NavUser({ user }) {
     const { isMobile } = useSidebar();
+    const [logoutOpen, setLogoutOpen] = useState(false);
 
     return (
         // ✅ MODIFICATION: Glassmorphism classes applied to the root element.
@@ -94,24 +95,13 @@ export function NavUser({ user }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuSeparator />
-                        <Link
-                            method="post"
-                            href={route("logout")}
-                            // Cached pages hold this user's data; queued reports stay for their next login.
-                            onClick={() => clearOfflinePages()}
-                            onSuccess={() => {
-                                // Force full page reload to clear CSRF token
-                                window.location.href = '/';
-                            }}
-                        >
-                            <DropdownMenuItem>
-                                <LogOut className="mr-2 h-4 w-4" />{" "}
-                                {/* Added margin for icon spacing */}
-                                Log out
-                            </DropdownMenuItem>
-                        </Link>
+                        <DropdownMenuItem onSelect={() => setLogoutOpen(true)}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Log out
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                <LogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
             </SidebarMenuItem>
         </SidebarMenu>
     );
