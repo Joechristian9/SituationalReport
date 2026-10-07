@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Deploy bundles are build artifacts, never committed
+/deploy-*.zip
