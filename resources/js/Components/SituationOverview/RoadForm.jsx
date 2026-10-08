@@ -1,365 +1,73 @@
 // resources/js/Components/SituationOverview/RoadForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { Route } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { Route, Loader2, PlusCircle, Save } from "lucide-react";
-import { savedMessage } from "@/lib/offline/queue";
-import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
+const COLUMNS = [
+    { name: "road_classification", label: "Road classification", className: "w-44" },
+    { name: "name_of_road", label: "Name of road" },
+    { name: "status", label: "Status", placeholder: "e.g. Passable", className: "w-40" },
+    { name: "areas_affected", label: "Areas / barangays affected", type: "textarea" },
+    { name: "re_routing", label: "Re-routing", type: "textarea" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const blankRow = () => ({ road_classification: "", name_of_road: "", status: "", areas_affected: "", re_routing: "", remarks: "" });
 
 export default function RoadForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const [isSaving, setIsSaving] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef(null);
-    const [originalData, setOriginalData] = useState(null);
-    
     const roads = data?.roads ?? [];
-    
-    // Store original data on mount for change detection
-    useEffect(() => {
-        if (!originalData) {
-            setOriginalData(JSON.parse(JSON.stringify(roads)));
-        }
-    }, []);
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedRoads,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(roads, ['name_of_road'], 5);
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target)
-            ) {
-                setShowDropdown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["road-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/road`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((rows) => setData("roads", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.road");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: roads,
+        setRows,
+        blankRow,
+        url: route("road-reports.store"),
+        key: "roads",
+        historyKey,
+        successMessage: "Road report saved.",
+        disabled,
     });
-
-    const handleInputChange = useCallback((index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...roads];
-        newRows[index][name] = value;
-        setData("roads", newRows);
-    }, [roads, setData]);
-
-    const handleAddRow = () => {
-        setData("roads", [
-            ...roads,
-            {
-                id: `new-${Date.now()}`,
-                road_classification: "",
-                name_of_road: "",
-                status: "",
-                areas_affected: "",
-                re_routing: "",
-                remarks: "",
-            },
-        ]);
-    };
-
-    // Check if data has changed
-    const hasChanges = useMemo(() => {
-        if (!originalData) return false;
-        return JSON.stringify(originalData) !== JSON.stringify(roads);
-    }, [originalData, roads]);
-    
-    // Validate roads before submission
-    const validateRoads = useCallback(() => {
-        const errors = [];
-        
-        roads.forEach((road, index) => {
-            // Check if at least one field has a value (OR logic)
-            const hasAnyValue = 
-                (road.road_classification && road.road_classification.trim() !== '') ||
-                (road.name_of_road && road.name_of_road.trim() !== '') ||
-                (road.status && road.status.trim() !== '') ||
-                (road.areas_affected && road.areas_affected.trim() !== '') ||
-                (road.re_routing && road.re_routing.trim() !== '') ||
-                (road.remarks && road.remarks.trim() !== '');
-            
-            // If no fields are filled, that's an error
-            if (!hasAnyValue) {
-                errors.push(`Row ${index + 1}: At least one field must be filled`);
-            }
-        });
-        
-        return errors;
-    }, [roads]);
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        // Check if there are any changes
-        if (!hasChanges) {
-            toast.info("No changes to save");
-            return;
-        }
-        
-        // Validate data before submission
-        const validationErrors = validateRoads();
-        if (validationErrors.length > 0) {
-            toast.error(validationErrors[0]);
-            return;
-        }
-        
-        setIsSaving(true);
-        
-        try {
-            // Clean string IDs for new rows
-            const cleanedRoads = roads.map(road => ({
-                ...road,
-                id: typeof road.id === 'string' ? null : road.id
-            }));
-            
-            const response = await axios.post(`${APP_URL}/road-reports`, {
-                roads: cleanedRoads,
-            });
-            
-            // Update local state with server response if available
-            // Only overwrite if the server actually returns at least one road
-            if (response.data && Array.isArray(response.data.roads) && response.data.roads.length > 0) {
-                setData("roads", response.data.roads);
-                // Update original data to reflect saved state
-                setOriginalData(JSON.parse(JSON.stringify(response.data.roads)));
-            } else {
-                // No roads returned – keep current data as the saved state
-                setOriginalData(JSON.parse(JSON.stringify(roads)));
-            }
-            
-            // Invalidate modification history once
-            queryClient.invalidateQueries(['road-modifications']);
-            
-            toast.success(savedMessage(response, "Road reports saved successfully!"));
-        } catch (err) {
-            console.error(err);
-            
-            // Provide more specific error messages
-            const errorMessage = err.response?.data?.message || 
-                                err.response?.data?.error ||
-                                "Failed to save road reports. Please try again.";
-            
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(roads, ["name_of_road", "areas_affected"], 5);
 
     return (
-        <div className="space-y-6">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                    <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
-                        <Route className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                        <h4 className="font-semibold text-blue-900 mb-1 text-lg">Roads Monitoring</h4>
-                        <p className="text-blue-700 text-sm">
-                            One report per typhoon — update anytime to keep information current.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={Route} title="Roads" description="One list per disaster. Update it anytime; every change is kept in the history." />
 
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search road or area"
+                excel={{ data: roads, fileName: "Roads_Report", sheetName: "Roads" }}
+            />
 
+            <ReportTable
+                caption="Roads"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={Route}
+                emptyText="No roads recorded."
+                minWidth="md:min-w-[64rem]"
+            />
+            {errors?.roads && <p className="text-sm text-destructive">{errors.roads}</p>}
 
-                {/* Table */}
-                <div className="bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-md">
-                    <div className="overflow-x-auto">
-                        <table className={`w-full border-collapse text-sm ${STACKED_TABLE} md:min-w-[56rem]`}>
-                            <thead className="bg-blue-50 border-b border-blue-200">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Road Classification</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Name of Road</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Status</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Areas/Barangays Affected</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Re-routing</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">REMARKS</th>
-                                </tr>
-                            </thead>
-                            <tbody className="md:divide-y md:divide-blue-100">
-                            {paginatedRoads.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <Route size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No road matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedRoads.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "road_classification",
-                                    "name_of_road",
-                                    "status",
-                                    "areas_affected",
-                                    "re_routing",
-                                    "remarks",
-                                ];
-                                const labels = {"road_classification":"Road classification","status":"Status","areas_affected":"Areas/barangays affected","re_routing":"Re-routing","remarks":"Remarks","name_of_road":"Name of road"};
+            <TablePagination {...pagination} />
 
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="hover:bg-gray-50"
-                                    >
-                                        {fields.map((field) => {
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="px-4 py-3"
-                                                >
-                                                    <span className={CELL_LABEL}>{labels[field]}</span>
-                                                    <div className="relative">
-                                                        <textarea aria-label={labels[field]}
-                                                            name={field}
-                                                            value={
-                                                                row[field] ?? ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleInputChange(
-                                                                    actualIndex,
-                                                                    e
-                                                                )
-                                                            }
-                                                            placeholder="Enter value..."
-                                                            disabled={disabled}
-                                                            rows="2"
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 resize-none"
-                                                        />
-                                                        <ModificationIndicator 
-                                                            recordId={row.id} 
-                                                            fieldName={field}
-                                                            getFieldHistory={getFieldHistory}
-                                                            currentValue={row[field]}
-                                                            showLastModified={true}
-                                                        />
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
-                    </div>
-                    {errors.roads && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.roads}
-                        </div>
-                    )}
-                </div>
-
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={handleAddRow}
-                        disabled={disabled}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg disabled:cursor-not-allowed disabled:opacity-50 transition shadow-sm"
-                    >
-                        <PlusCircle className="w-4 h-4" />
-                        Add Row
-                    </button>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || !hasChanges || disabled}
-                        className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : hasChanges ? (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>Save Road Report</span>
-                            </>
-                        ) : (
-                            <span>No Changes</span>
-                        )}
-                    </button>
-                </div>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} addLabel="Add road" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save roads" />
         </div>
     );
 }

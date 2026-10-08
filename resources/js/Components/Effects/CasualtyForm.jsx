@@ -1,391 +1,76 @@
 // resources/js/Components/Effects/CasualtyForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { UserX } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { UserX, Loader2, PlusCircle, Save } from "lucide-react";
+const SEX = ["Male", "Female"];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const COLUMNS = [
+    { name: "name", label: "Name", placeholder: "Full name" },
+    { name: "age", label: "Age", type: "number", min: 0, step: 1, className: "w-24" },
+    { name: "sex", label: "Sex", type: "select", options: SEX, className: "w-32" },
+    { name: "address", label: "Address" },
+    { name: "cause_of_death", label: "Cause of death" },
+    { name: "date_died", label: "Date died", type: "date", className: "w-40" },
+    { name: "place_of_incident", label: "Place of incident" },
+];
 
-// The enhanced SexSelector component as dropdown
-const SexSelector = ({ value, onChange, disabled }) => {
-    // Normalize value for comparison (case-insensitive, handles null/undefined)
-    const currentValue = value ? String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase() : "";
-    
-    return (
-        <select
-            value={currentValue}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={disabled}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-        >
-            <option value="">Select sex...</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
-    );
-};
+const blankRow = () => ({ name: "", age: "", sex: "", address: "", cause_of_death: "", date_died: "", place_of_incident: "" });
 
 export default function CasualtyForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const [isSaving, setIsSaving] = useState(false);
-    
     const casualties = data?.casualties ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedCasualties,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(casualties, ['name', 'address'], 5);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["casualties-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/casualties`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((rows) => setData("casualties", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.casualties");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: casualties,
+        setRows,
+        blankRow,
+        url: route("casualties.store"),
+        key: "casualties",
+        historyKey,
+        successMessage: "Casualties saved.",
+        disabled,
     });
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...casualties];
-        newRows[index][name] = value;
-        setData("casualties", newRows);
-    };
-
-    const handleAddRow = () => {
-        setData("casualties", [
-            ...casualties,
-            {
-                id: `new-${Date.now()}`,
-                name: "",
-                age: "",
-                sex: "",
-                address: "",
-                cause_of_death: "",
-                date_died: "",
-                place_of_incident: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean string IDs for new rows
-            const cleanedCasualties = casualties.map(casualty => ({
-                ...casualty,
-                id: typeof casualty.id === 'string' ? null : casualty.id
-            }));
-            
-            console.log('Submitting casualties:', cleanedCasualties);
-            
-            const response = await axios.post(
-                `${APP_URL}/casualties`, 
-                { casualties: cleanedCasualties },
-                { headers: { 'Accept': 'application/json' } }
-            );
-            
-            console.log('Casualties response:', response.data);
-            
-            // Update local state with server response if available
-            if (response.data && response.data.casualties) {
-                setData("casualties", response.data.casualties);
-                
-                // Invalidate and refetch modification history after state update
-                await queryClient.invalidateQueries(['casualties-modifications']);
-            }
-            
-            toast.success(response.data?.message || "Casualties report saved successfully!");
-        } catch (err) {
-            console.error("Save error:", err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
-        } finally {
-            setIsSaving(false);
-            // Force refetch after small delay to ensure data is fresh
-            setTimeout(() => {
-                queryClient.invalidateQueries(['casualties-modifications']);
-            }, 200);
-        }
-    };
-
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(casualties, ["name", "address"], 5);
 
     return (
-        <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-red-100 text-red-600 p-2 rounded-lg">
-                        <UserX size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Casualties - Dead
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Record the details for each deceased individual.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={UserX} title="Casualties: dead" description="Record the details of each person who died." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by name or address..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={casualties}
-                            fileName="Casualties_Dead_Report"
-                            sheetName="Casualties"
-                        />
-                    </div>
-                </div>
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search by name or address"
+                excel={{ data: casualties, fileName: "Casualties_Dead_Report", sheetName: "Casualties" }}
+            />
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm md:min-w-[64rem]">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Name</th>
-                                <th className="p-3 border-r">Age</th>
-                                <th className="p-3 border-r">Sex</th>
-                                <th className="p-3 border-r">Address</th>
-                                <th className="p-3 border-r">Cause of Death</th>
-                                <th className="p-3 border-r">Date Died</th>
-                                <th className="p-3">Place of Incident</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedCasualties.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="7" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <UserX size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No casualty matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedCasualties.length === 0 ? (
-                                <tr className="block md:table-row">
-                                <td
-                                    colSpan="7"
-                                    className="text-center py-12 px-4 text-gray-500"
-                                >
-                                    <UserX
-                                        size={40}
-                                        className="mx-auto text-gray-400"
-                                    />
-                                    <p className="font-medium mt-2">
-                                        No casualties have been recorded.
-                                    </p>
-                                    <p className="text-xs mt-1">
-                                        Click{" "}
-                                        <span className="font-semibold text-blue-600">
-                                            "Add Row"
-                                        </span>{" "}
-                                        to begin.
-                                    </p>
-                                </td>
-                            </tr>
-                        ) : (
-                            paginatedCasualties.map((row, index) => {
-                                const actualIndex = (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "name",
-                                    "age",
-                                    "sex",
-                                    "address",
-                                    "cause_of_death",
-                                    "date_died",
-                                    "place_of_incident",
-                                ];
-
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        {field === "sex" ? (
-                                                            <div className="relative">
-                                                                <SexSelector
-                                                                    value={row.sex}
-                                                                    onChange={(newValue) =>
-                                                                        handleInputChange(actualIndex, {
-                                                                            target: {
-                                                                                name: "sex",
-                                                                                value: newValue,
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    disabled={disabled}
-                                                                />
-                                                                <ModificationIndicator 
-                                                                    recordId={row.id} 
-                                                                    fieldName="sex"
-                                                                    getFieldHistory={getFieldHistory}
-                                                                    currentValue={row.sex}
-                                                                    showLastModified={true}
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <input
-                                                                    type={
-                                                                        field === "date_died"
-                                                                            ? "date"
-                                                                            : field === "age"
-                                                                            ? "number"
-                                                                            : "text"
-                                                                    }
-                                                                    min={field === "age" ? 0 : undefined}
-                                                                    name={field}
-                                                                    value={row[field] ?? ""}
-                                                                    onChange={(e) =>
-                                                                        handleInputChange(actualIndex, e)
-                                                                    }
-                                                                    placeholder={`Enter ${formatFieldName(
-                                                                        field
-                                                                    ).toLowerCase()}...`}
-                                                                    disabled={disabled}
-                                                                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                                />
-                                                                <ModificationIndicator 
-                                                                    recordId={row.id} 
-                                                                    fieldName={field}
-                                                                    getFieldHistory={getFieldHistory}
-                                                                    currentValue={row[field]}
-                                                                    showLastModified={true}
-                                                                />
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-                {errors.casualties && (
-                    <div className="text-red-500 text-sm mt-2 px-3">
-                        {errors.casualties}
-                    </div>
-                )}
-            </div>
+            <ReportTable
+                caption="Casualties: dead"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={UserX}
+                emptyText="No casualties recorded."
+                minWidth="md:min-w-[64rem]"
+            />
+            {errors?.casualties && <p className="text-sm text-destructive">{errors.casualties}</p>}
 
             <TablePagination {...pagination} />
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <AddRowButton
-                        onClick={handleAddRow}
-                        disabled={disabled}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <PlusCircle size={16} /> Add Row
-                    </AddRowButton>
-                </div>
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={isSaving || disabled}
-                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                >
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Saving...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-5 h-5" />
-                            <span>{disabled ? 'Forms Disabled' : 'Save Casualties Report'}</span>
-                        </>
-                    )}
-                </button>
-            </div>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save casualties" />
         </div>
     );
 }

@@ -1,368 +1,73 @@
 // resources/js/Components/SituationOverview/BridgeForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { Landmark } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
-import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { Landmark, History, Loader2, PlusCircle, Save } from "lucide-react";
-import { savedMessage } from "@/lib/offline/queue";
-import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-import {
-    TooltipProvider,
-} from "@/components/ui/tooltip";
+const COLUMNS = [
+    { name: "road_classification", label: "Road classification", className: "w-44" },
+    { name: "name_of_bridge", label: "Name of bridge" },
+    { name: "status", label: "Status", placeholder: "e.g. Not passable", className: "w-40" },
+    { name: "areas_affected", label: "Areas / barangays affected", type: "textarea" },
+    { name: "re_routing", label: "Re-routing", type: "textarea" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const blankRow = () => ({ road_classification: "", name_of_bridge: "", status: "", areas_affected: "", re_routing: "", remarks: "" });
 
 export default function BridgeForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { auth } = usePage().props;
-    const [isSaving, setIsSaving] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef(null);
-    const [originalData, setOriginalData] = useState(null);
-    
     const bridges = data?.bridges ?? [];
-    
-    // Store original data on mount for change detection
-    useEffect(() => {
-        if (!originalData) {
-            setOriginalData(JSON.parse(JSON.stringify(bridges)));
-        }
-    }, []);
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedBridges,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(bridges, ['name_of_bridge'], 5);
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target)
-            ) {
-                setShowDropdown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["bridge-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/bridge`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((rows) => setData("bridges", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.bridge");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: bridges,
+        setRows,
+        blankRow,
+        url: route("bridge-reports.store"),
+        key: "bridges",
+        historyKey,
+        successMessage: "Bridge report saved.",
+        disabled,
     });
-
-    const getFieldHistory = (recordId, fieldName) =>
-        modificationData?.history?.[`${recordId}_${fieldName}`] || [];
-
-    const handleInputChange = useCallback((index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...bridges];
-        newRows[index][name] = value;
-        setData("bridges", newRows);
-    }, [bridges, setData]);
-
-    const handleAddRow = () => {
-        setData("bridges", [
-            ...bridges,
-            {
-                id: `new-${Date.now()}`,
-                road_classification: "",
-                name_of_bridge: "",
-                status: "",
-                areas_affected: "",
-                re_routing: "",
-                remarks: "",
-            },
-        ]);
-    };
-
-    // Check if data has changed
-    const hasChanges = useMemo(() => {
-        if (!originalData) return false;
-        return JSON.stringify(originalData) !== JSON.stringify(bridges);
-    }, [originalData, bridges]);
-    
-    // Validate bridges before submission
-    const validateBridges = useCallback(() => {
-        const errors = [];
-        
-        bridges.forEach((bridge, index) => {
-            // Check if at least one field has a value (OR logic)
-            const hasAnyValue = 
-                (bridge.road_classification && bridge.road_classification.trim() !== '') ||
-                (bridge.name_of_bridge && bridge.name_of_bridge.trim() !== '') ||
-                (bridge.status && bridge.status.trim() !== '') ||
-                (bridge.areas_affected && bridge.areas_affected.trim() !== '') ||
-                (bridge.re_routing && bridge.re_routing.trim() !== '') ||
-                (bridge.remarks && bridge.remarks.trim() !== '');
-            
-            // If no fields are filled, that's an error
-            if (!hasAnyValue) {
-                errors.push(`Row ${index + 1}: At least one field must be filled`);
-            }
-        });
-        
-        return errors;
-    }, [bridges]);
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        
-        // Check if there are any changes
-        if (!hasChanges) {
-            toast.info("No changes to save");
-            return;
-        }
-        
-        // Validate data before submission
-        const validationErrors = validateBridges();
-        if (validationErrors.length > 0) {
-            toast.error(validationErrors[0]);
-            return;
-        }
-        
-        setIsSaving(true);
-        
-        try {
-            // Clean string IDs for new rows
-            const cleanedBridges = bridges.map(bridge => ({
-                ...bridge,
-                id: typeof bridge.id === 'string' ? null : bridge.id
-            }));
-            
-            const response = await axios.post(`${APP_URL}/bridge-reports`, {
-                bridges: cleanedBridges,
-            });
-            
-            // Update local state with server response if available
-            // Only overwrite if the server actually returns at least one bridge
-            if (response.data && Array.isArray(response.data.bridges) && response.data.bridges.length > 0) {
-                setData("bridges", response.data.bridges);
-                // Update original data to reflect saved state
-                setOriginalData(JSON.parse(JSON.stringify(response.data.bridges)));
-            } else {
-                // No bridges returned – keep current data as the saved state
-                setOriginalData(JSON.parse(JSON.stringify(bridges)));
-            }
-            
-            // Invalidate modification history once
-            queryClient.invalidateQueries(['bridge-modifications']);
-            
-            toast.success(savedMessage(response, "Bridge reports saved successfully!"));
-        } catch (err) {
-            console.error(err);
-            
-            // Provide more specific error messages
-            const errorMessage = err.response?.data?.message || 
-                                err.response?.data?.error ||
-                                "Failed to save bridge reports. Please try again.";
-            
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(bridges, ["name_of_bridge", "areas_affected"], 5);
 
     return (
-        <TooltipProvider>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                    <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
-                        <Landmark className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                        <h4 className="font-semibold text-blue-900 mb-1 text-lg">Bridges / Overflow Bridges</h4>
-                        <p className="text-blue-700 text-sm">
-                            One report per typhoon — update anytime to keep information current.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={Landmark} title="Bridges and overflow bridges" description="One list per disaster. Update it anytime; every change is kept in the history." />
 
-                {/* Table */}
-                <div className="bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-md">
-                    <div className="overflow-x-auto">
-                        <table className={`w-full border-collapse text-sm ${STACKED_TABLE} md:min-w-[56rem]`}>
-                            <thead className="bg-blue-50 border-b border-blue-200">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Road Classification</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Name of Bridges</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Status</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Areas/Barangays Affected</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">Re-routing</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900">REMARKS</th>
-                                </tr>
-                            </thead>
-                            <tbody className="md:divide-y md:divide-gray-200">
-                            {paginatedBridges.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <Landmark size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No bridge matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedBridges.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "road_classification",
-                                    "name_of_bridge",
-                                    "status",
-                                    "areas_affected",
-                                    "re_routing",
-                                    "remarks",
-                                ];
-                                const labels = {"road_classification":"Road classification","status":"Status","areas_affected":"Areas/barangays affected","re_routing":"Re-routing","remarks":"Remarks","name_of_bridge":"Name of bridge"};
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search bridge or area"
+                excel={{ data: bridges, fileName: "Bridges_Report", sheetName: "Bridges" }}
+            />
 
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="hover:bg-gray-50"
-                                    >
-                                        {fields.map((field) => {
+            <ReportTable
+                caption="Bridges and overflow bridges"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={Landmark}
+                emptyText="No bridges recorded."
+                minWidth="md:min-w-[64rem]"
+            />
+            {errors?.bridges && <p className="text-sm text-destructive">{errors.bridges}</p>}
 
-                                            const commonProps = {
-                                                name: field,
-                                                value: row[field] ?? "",
-                                                onChange: (e) =>
-                                                    handleInputChange(
-                                                        actualIndex,
-                                                        e
-                                                    ),
-                                                disabled: disabled,
-                                                className:
-                                                    "w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed",
-                                            };
+            <TablePagination {...pagination} />
 
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="px-4 py-3"
-                                                >
-                                                    <span className={CELL_LABEL}>{labels[field]}</span>
-                                                    <div className="relative">
-                                                        <textarea aria-label={labels[field]}
-                                                            {...commonProps}
-                                                            placeholder="Enter value..."
-                                                            rows="2"
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 resize-none"
-                                                        />
-
-                                                        <ModificationIndicator recordId={row.id} fieldName={field} getFieldHistory={getFieldHistory} currentValue={row[field]} />
-                                                    </div>
-                                                    
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
-                    </div>
-                    {errors.bridges && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.bridges}
-                        </div>
-                    )}
-                </div>
-
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={handleAddRow}
-                        disabled={disabled}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg disabled:cursor-not-allowed disabled:opacity-50 transition shadow-sm"
-                    >
-                        <PlusCircle className="w-4 h-4" />
-                        Add Row
-                    </button>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || !hasChanges || disabled}
-                        className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : hasChanges ? (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>Save Bridges Report</span>
-                            </>
-                        ) : (
-                            <span>No Changes</span>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </TooltipProvider>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} addLabel="Add bridge" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save bridges" />
+        </div>
     );
 }

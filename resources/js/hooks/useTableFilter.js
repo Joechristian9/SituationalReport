@@ -11,8 +11,11 @@ import { useState, useMemo } from 'react';
  */
 export default function useTableFilter(data = [], searchFields = [], initialRowsPerPage = 5) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [requestedPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
+    // Callers pass a new array literal every render; key on its contents so the
+    // filter only reruns when the data or the search actually changes.
+    const searchKey = searchFields.join('|');
 
     // Enhanced filtering: searches across multiple fields with OR logic
     const filteredData = useMemo(() => {
@@ -32,15 +35,13 @@ export default function useTableFilter(data = [], searchFields = [], initialRows
                 return value.toString().toLowerCase().includes(lowerSearchTerm);
             });
         });
-    }, [data, searchTerm, searchFields]);
+    }, [data, searchTerm, searchKey]);
 
     // Calculate pagination
     const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
-    
-    // Reset to page 1 if current page exceeds total pages
-    if (currentPage > totalPages && totalPages > 0) {
-        setCurrentPage(1);
-    }
+
+    // Clamp instead of setting state during render when rows shrink below the page.
+    const currentPage = Math.min(requestedPage, totalPages);
 
     const startIndex = (currentPage - 1) * rowsPerPage;
     const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
@@ -64,6 +65,13 @@ export default function useTableFilter(data = [], searchFields = [], initialRows
         setRowsPerPage,
         totalPages,
         
+        // Call right after appending a row: clears the search and opens the last page,
+        // so the new row is on screen instead of hidden on a page the user is not on.
+        showNewRow: () => {
+            setSearchTerm('');
+            setCurrentPage(Math.ceil((data.length + 1) / rowsPerPage));
+        },
+
         // Metadata
         totalFilteredItems: filteredData.length,
         totalItems: data.length,

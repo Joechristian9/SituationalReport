@@ -1,368 +1,75 @@
 // resources/js/Components/SituationOverview/ElectricityForm.jsx
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
+import { useCallback, useMemo } from "react";
 import { usePage } from "@inertiajs/react";
-import { Zap, Loader2, Save, AlertCircle } from "lucide-react";
-import AddRowButton from "@/Components/ui/AddRowButton";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-import { savedMessage } from "@/lib/offline/queue";
-import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
+import { Zap } from "lucide-react";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor, { isNewRow } from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
+import asOfNow from "@/Components/forms/asOfNow";
+
+const blankRow = () => ({ status: "", barangays_affected: "", remarks: "" });
 
 export default function ElectricityForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { typhoon, auth } = usePage().props;
-    const [isSaving, setIsSaving] = useState(false);
-    const [originalData, setOriginalData] = useState(null);
-    const [currentDateTime, setCurrentDateTime] = useState(new Date());
-    const [rows, setRows] = useState([{
-        id: null,
-        status: "",
-        barangays_affected: "",
-        remarks: ""
-    }]);
-    
-    const [previousDisabled, setPreviousDisabled] = useState(disabled);
-    
-    // Fetch modification history
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["electricity-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/electricity`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const { auth } = usePage().props;
+    const services = data?.electricityServices ?? [];
+    const setRows = useCallback((rows) => setData("electricityServices", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.electricity");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: services,
+        setRows,
+        blankRow,
+        url: route("electricity-reports.store"),
+        key: "electricityServices",
+        historyKey,
+        successMessage: "Electricity report saved.",
+        disabled,
     });
 
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-    
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentDateTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
-    
-    useEffect(() => {
-        // Load ALL electricity services (all users can edit all records)
-        const services = data.electricityServices ?? [];
-        
-        // Check if typhoon was recently resumed
-        const typhoonResumedAt = typhoon?.resumed_at;
-        
-        if (services.length > 0) {
-            const firstService = services[0];
-            
-            // If typhoon was resumed and this record was created BEFORE the resume, don't load it
-            if (typhoonResumedAt && firstService.created_at) {
-                const serviceCreatedAt = new Date(firstService.created_at);
-                const resumedAt = new Date(typhoonResumedAt);
-                
-                if (serviceCreatedAt < resumedAt) {
-                    // This is old data from before resume, keep form empty
-                    return;
-                }
-            }
-            
-            const loadedRows = services.map(service => ({
-                id: service.id,
-                user_id: service.user_id, // Keep track of who created it
-                status: service.status || "",
-                barangays_affected: service.barangays_affected || "",
-                remarks: service.remarks || "",
-                user: service.user // Keep user info for display
-            }));
-            
-            setRows(loadedRows);
-            setOriginalData(JSON.parse(JSON.stringify(loadedRows)));
-        }
-    }, [data.electricityServices, typhoon]);
-    
-    useEffect(() => {
-        if (previousDisabled === true && disabled === false) {
-            const hasData = rows.some(row => row.status || row.barangays_affected || row.remarks);
-            if (hasData) {
-                setRows([{
-                    id: null,
-                    status: "",
-                    barangays_affected: "",
-                    remarks: ""
-                }]);
-                setOriginalData(null);
-            }
-        }
-        setPreviousDisabled(disabled);
-    }, [disabled]);
-
-    const handleInputChange = (index, field, value) => {
-        const newRows = [...rows];
-        newRows[index][field] = value;
-        setRows(newRows);
-    };
-
-    const handleRemarksFocus = (index) => {
-        if (!rows[index].remarks || rows[index].remarks.trim() === '') {
-            const dateTimeString = currentDateTime.toLocaleString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-            
-            const newRows = [...rows];
-            newRows[index].remarks = `As of ${dateTimeString}: `;
-            setRows(newRows);
-        }
-    };
-
-    const addRow = () => {
-        setRows([...rows, {
-            id: null,
-            status: "",
-            barangays_affected: "",
-            remarks: ""
-        }]);
-    };
-
-    const hasData = useMemo(() => {
-        return rows.some(row => 
-            row.status.trim() !== '' || 
-            row.barangays_affected.trim() !== '' || 
-            row.remarks.trim() !== ''
-        );
-    }, [rows]);
-
-    const hasChanges = useMemo(() => {
-        if (!originalData) return hasData;
-        
-        // Filter out empty rows before comparing
-        const filteredRows = rows.filter(row => 
-            row.status.trim() !== '' || 
-            row.barangays_affected.trim() !== '' || 
-            row.remarks.trim() !== ''
-        );
-        
-        const filteredOriginal = originalData.filter(row => 
-            row.status.trim() !== '' || 
-            row.barangays_affected.trim() !== '' || 
-            row.remarks.trim() !== ''
-        );
-        
-        return JSON.stringify(filteredOriginal) !== JSON.stringify(filteredRows);
-    }, [originalData, rows]);
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled.");
-            return;
-        }
-
-        if (!hasChanges) {
-            toast.info("No changes to save");
-            return;
-        }
-        
-        setIsSaving(true);
-        
-        try {
-            // Filter out empty rows
-            const validRows = rows.filter(row => 
-                row.status.trim() !== '' || 
-                row.barangays_affected.trim() !== '' || 
-                row.remarks.trim() !== ''
-            );
-
-            // Include user_id to preserve original creator
-            const servicesWithUserId = validRows.map(row => ({
-                id: row.id,
-                user_id: row.user_id || auth.user.id, // Preserve original user_id or use current user
-                status: row.status,
-                barangays_affected: row.barangays_affected,
-                remarks: row.remarks,
-            }));
-
-            const response = await axios.post(`${APP_URL}/electricity-reports`, {
-                electricityServices: servicesWithUserId,
-            });
-            
-            if (response.data && Array.isArray(response.data.electricityServices)) {
-                setData("electricityServices", response.data.electricityServices);
-                setOriginalData(JSON.parse(JSON.stringify(rows)));
-            }
-            
-            // Invalidate modification history
-            await queryClient.invalidateQueries(['electricity-modifications']);
-            
-            toast.success(savedMessage(response, "Electricity report saved successfully!"));
-        } catch (err) {
-            console.error(err);
-            toast.error(err.response?.data?.message || "Failed to save electricity report.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    const columns = useMemo(
+        () => [
+            {
+                name: "created_by",
+                label: "Created by",
+                type: "computed",
+                className: "w-36",
+                compute: (row) => {
+                    if (isNewRow(row)) return "You (not saved yet)";
+                    const name = row.user?.name ?? "Unknown";
+                    return row.user_id === auth.user.id ? `${name} (you)` : name;
+                },
+            },
+            { name: "status", label: "Status of electricity services", type: "textarea", placeholder: "e.g. 66 barangays energized in the City of Ilagan" },
+            { name: "barangays_affected", label: "Barangays affected", type: "textarea", placeholder: "List affected barangays" },
+            { name: "remarks", label: "Remarks", type: "textarea", placeholder: "Starts with today's date and time", prefillOnFocus: asOfNow },
+        ],
+        [auth.user.id],
+    );
 
     return (
-        <div className="space-y-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
-                    <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Electricity Status Update (Collaborative)</h4>
-                    <p className="text-blue-700 text-sm">
-                        All users can view and edit all electricity reports — work together to keep information current.
-                    </p>
-                </div>
-            </div>
+        <div className="space-y-5">
+            <FormHeader
+                icon={Zap}
+                title="Electricity services"
+                description="Shared by every office: anyone with access can update any entry. Clear an entry you created and save to remove it."
+            />
 
-            <div className="md:bg-white md:rounded-xl md:shadow-md md:border-2 md:border-blue-200 md:overflow-x-auto">
-                <table className={`w-full ${STACKED_TABLE}`}>
-                    <thead>
-                        <tr className="bg-blue-50 border-b border-blue-200">
-                            <th className="text-left p-4 font-semibold text-blue-900 w-32">
-                                CREATED BY
-                            </th>
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
-                                STATUS OF ELECTRICITY SERVICES
-                            </th>
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
-                                BARANGAYS AFFECTED
-                            </th>
-                            <th className="text-left p-4 font-semibold text-blue-900 w-1/4">
-                                REMARKS
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((row, index) => (
-                            <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
-                                <td className="p-3">
-                                    <span className={CELL_LABEL}>Created by</span>
-                                    <div className="text-sm font-medium text-gray-900">
-                                        {row.user?.name || (row.user_id === auth.user.id ? 'You' : 'New Entry')}
-                                    </div>
-                                    {row.user?.name && (
-                                        <div className="text-xs text-gray-500">
-                                            {row.user_id === auth.user.id ? '(You)' : ''}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="p-3">
-                                    <div className="relative">
-                                        <span className={CELL_LABEL}>Status of electricity services</span>
-                                        <textarea
-                                            aria-label="Status of electricity services"
-                                            value={row.status}
-                                            onChange={(e) => handleInputChange(index, 'status', e.target.value)}
-                                            disabled={disabled}
-                                            rows="3"
-                                            placeholder="e.g., 66 Barangays are energized in the City of Ilagan"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                        />
-                                        <ModificationIndicator 
-                                            recordId={row.id} 
-                                            fieldName="status"
-                                            getFieldHistory={getFieldHistory}
-                                            currentValue={row.status}
-                                            showLastModified={false}
-                                        />
-                                    </div>
-                                </td>
-                                <td className="p-3">
-                                    <div className="relative">
-                                        <span className={CELL_LABEL}>Barangays affected</span>
-                                        <textarea
-                                            aria-label="Barangays affected"
-                                            value={row.barangays_affected}
-                                            onChange={(e) => handleInputChange(index, 'barangays_affected', e.target.value)}
-                                            disabled={disabled}
-                                            rows="3"
-                                            placeholder="List affected barangays..."
-                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                        />
-                                        <ModificationIndicator 
-                                            recordId={row.id} 
-                                            fieldName="barangays_affected"
-                                            getFieldHistory={getFieldHistory}
-                                            currentValue={row.barangays_affected}
-                                            showLastModified={false}
-                                        />
-                                    </div>
-                                </td>
-                                <td className="p-3">
-                                    <div className="relative">
-                                        <span className={CELL_LABEL}>Remarks</span>
-                                        <textarea
-                                            aria-label="Remarks"
-                                            value={row.remarks}
-                                            onChange={(e) => handleInputChange(index, 'remarks', e.target.value)}
-                                            onFocus={() => handleRemarksFocus(index)}
-                                            disabled={disabled}
-                                            rows="3"
-                                            placeholder="Click to auto-fill date and time..."
-                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                                        />
-                                        <ModificationIndicator 
-                                            recordId={row.id} 
-                                            fieldName="remarks"
-                                            getFieldHistory={getFieldHistory}
-                                            currentValue={row.remarks}
-                                            showLastModified={false}
-                                        />
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <ReportTable
+                caption="Electricity services"
+                columns={columns}
+                rows={services}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                emptyIcon={Zap}
+                emptyText="No electricity status recorded."
+            />
+            {errors?.electricityServices && <p className="text-sm text-destructive">{errors.electricityServices}</p>}
 
-            <div className="flex justify-between items-center">
-                <AddRowButton onClick={addRow} disabled={disabled} label="Add Status Entry" />
-                
-                <button
-                    onClick={handleSubmit}
-                    disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition shadow-sm"
-                >
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Submitting...</span>
-                        </>
-                    ) : !hasData ? (
-                        <>
-                            <AlertCircle className="w-5 h-5" />
-                            <span>Fill in the form</span>
-                        </>
-                    ) : hasChanges ? (
-                        <>
-                            <Save className="w-5 h-5" />
-                            <span>Submit Report</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>No Changes</span>
-                        </>
-                    )}
-                </button>
-            </div>
+            <FormActions onAdd={addRow} addLabel="Add status entry" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save electricity" />
         </div>
     );
 }

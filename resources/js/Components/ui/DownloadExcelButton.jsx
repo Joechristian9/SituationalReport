@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // xlsx is ~280 KB, so it is fetched only when someone is about to export,
 // not on every page that shows this button.
@@ -57,11 +58,15 @@ export default function DownloadExcelButton({
             onClick={handleDownload}
             onPointerEnter={loadXlsx}
             onFocus={loadXlsx}
-            disabled={busy}
+            disabled={busy || !data?.length}
             aria-busy={busy}
-            className={`flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg shadow hover:bg-green-700 active:scale-95 transition-transform disabled:cursor-wait disabled:opacity-80 ${className}`}
+            className={cn(
+                "inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9",
+                busy && "disabled:cursor-wait",
+                className,
+            )}
         >
-            <Icon className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} aria-hidden="true" />
+            <Icon className={cn("h-4 w-4 text-success", busy && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
             <span>{label}</span>
         </button>
     );

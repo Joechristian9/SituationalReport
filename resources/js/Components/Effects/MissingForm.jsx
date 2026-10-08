@@ -1,386 +1,72 @@
 // resources/js/Components/Effects/MissingForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { UserSearch } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { UserSearch, Loader2, PlusCircle, Save } from "lucide-react";
+const COLUMNS = [
+    { name: "name", label: "Name", placeholder: "Full name" },
+    { name: "age", label: "Age", type: "number", min: 0, step: 1, className: "w-24" },
+    { name: "sex", label: "Sex", type: "select", options: ["Male", "Female"], className: "w-32" },
+    { name: "address", label: "Address" },
+    { name: "cause", label: "Cause" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-// The enhanced SexSelector component as dropdown
-const SexSelector = ({ value, onChange, disabled }) => {
-    // Normalize value for comparison (case-insensitive, handles null/undefined)
-    const currentValue = value ? String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase() : "";
-    
-    return (
-        <select
-            value={currentValue}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={disabled}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none transition bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-        >
-            <option value="">Select sex...</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
-    );
-};
+const blankRow = () => ({ name: "", age: "", sex: "", address: "", cause: "", remarks: "" });
 
 export default function MissingForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const [isSaving, setIsSaving] = useState(false);
-    
     const missingList = data?.missing ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedMissing,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(missingList, ['name', 'address'], 5);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["missing-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/missing`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((rows) => setData("missing", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.missing");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: missingList,
+        setRows,
+        blankRow,
+        url: route("missing.store"),
+        key: "missing",
+        historyKey,
+        successMessage: "Missing persons saved.",
+        disabled,
     });
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...missingList];
-        newRows[index][name] = value;
-        setData("missing", newRows);
-    };
-
-    const handleAddRow = () => {
-        setData("missing", [
-            ...missingList,
-            {
-                id: `new-${Date.now()}`,
-                name: "",
-                age: "",
-                sex: "",
-                address: "",
-                cause: "",
-                remarks: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean string IDs for new rows
-            const cleanedMissing = missingList.map(missing => ({
-                ...missing,
-                id: typeof missing.id === 'string' ? null : missing.id
-            }));
-            
-            console.log('Submitting missing:', cleanedMissing);
-            
-            const response = await axios.post(
-                `${APP_URL}/missing`, 
-                { missing: cleanedMissing },
-                { headers: { 'Accept': 'application/json' } }
-            );
-            
-            console.log('Missing response:', response.data);
-            
-            // Update local state with server response if available
-            if (response.data && response.data.missing) {
-                setData("missing", response.data.missing);
-                
-                // Invalidate and refetch modification history after state update
-                await queryClient.invalidateQueries(['missing-modifications']);
-            }
-            
-            toast.success(response.data?.message || "Missing persons report saved successfully!");
-        } catch (err) {
-            console.error("Save error:", err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
-        } finally {
-            setIsSaving(false);
-            // Force refetch after small delay to ensure data is fresh
-            setTimeout(() => {
-                queryClient.invalidateQueries(['missing-modifications']);
-            }, 200);
-        }
-    };
-
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(missingList, ["name", "address"], 5);
 
     return (
-        <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
-                        <UserSearch size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Casualties - Missing
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Record the details for each missing individual.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={UserSearch} title="Casualties: missing" description="Record the details of each missing person." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by name or address..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={missingList}
-                            fileName="Casualties_Missing_Report"
-                            sheetName="Missing"
-                        />
-                    </div>
-                </div>
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search by name or address"
+                excel={{ data: missingList, fileName: "Casualties_Missing_Report", sheetName: "Missing" }}
+            />
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm md:min-w-[56rem]">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Name</th>
-                                <th className="p-3 border-r">Age</th>
-                                <th className="p-3 border-r">Sex</th>
-                                <th className="p-3 border-r">Address</th>
-                                <th className="p-3 border-r">Cause</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedMissing.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <UserSearch size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No missing person matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedMissing.length === 0 ? (
-                                <tr className="block md:table-row">
-                                    <td
-                                        colSpan="6"
-                                        className="text-center py-12 px-4 text-gray-500"
-                                    >
-                                        <UserSearch
-                                            size={40}
-                                            className="mx-auto text-gray-400"
-                                        />
-                                        <p className="font-medium mt-2">
-                                            No missing persons have been recorded.
-                                        </p>
-                                        <p className="text-xs mt-1">
-                                            Click{" "}
-                                            <span className="font-semibold text-indigo-600">
-                                                "Add Row"
-                                            </span>{" "}
-                                            to begin.
-                                        </p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedMissing.map((row, index) => {
-                                    const actualIndex = (currentPage - 1) * rowsPerPage + index;
-                                    const fields = [
-                                        "name",
-                                        "age",
-                                        "sex",
-                                        "address",
-                                        "cause",
-                                        "remarks",
-                                    ];
+            <ReportTable
+                caption="Casualties: missing"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={UserSearch}
+                emptyText="No missing persons recorded."
+            />
+            {errors?.missing && <p className="text-sm text-destructive">{errors.missing}</p>}
 
-                                    return (
-                                        <tr
-                                            key={row.id}
-                                            className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                        >
-                                            {fields.map((field) => {
-                                                return (
-                                                    <td
-                                                        key={field}
-                                                        className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                    >
-                                                        <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                            {formatFieldName(field)}
-                                                        </label>
-                                                        <div className="relative mt-1 md:mt-0">
-                                                            {field === "sex" ? (
-                                                                <div className="relative">
-                                                                    <SexSelector
-                                                                        value={row.sex}
-                                                                        onChange={(newValue) =>
-                                                                            handleInputChange(actualIndex, {
-                                                                                target: {
-                                                                                    name: "sex",
-                                                                                    value: newValue,
-                                                                                },
-                                                                            })
-                                                                        }
-                                                                        disabled={disabled}
-                                                                    />
-                                                                    <ModificationIndicator 
-                                                                        recordId={row.id} 
-                                                                        fieldName="sex"
-                                                                        getFieldHistory={getFieldHistory}
-                                                                        currentValue={row.sex}
-                                                                        showLastModified={true}
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <input
-                                                                        type={
-                                                                            field === "age"
-                                                                                ? "number"
-                                                                                : "text"
-                                                                        }
-                                                                        min={field === "age" ? 0 : undefined}
-                                                                        name={field}
-                                                                        value={row[field] ?? ""}
-                                                                        onChange={(e) =>
-                                                                            handleInputChange(actualIndex, e)
-                                                                        }
-                                                                        placeholder={`Enter ${formatFieldName(
-                                                                            field
-                                                                        ).toLowerCase()}...`}
-                                                                        disabled={disabled}
-                                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                                    />
-                                                                    <ModificationIndicator 
-                                                                        recordId={row.id} 
-                                                                        fieldName={field}
-                                                                        getFieldHistory={getFieldHistory}
-                                                                        currentValue={row[field]}
-                                                                        showLastModified={true}
-                                                                    />
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                    {errors.missing && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.missing}
-                        </div>
-                    )}
-                </div>
+            <TablePagination {...pagination} />
 
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-indigo-600 border-indigo-300 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save Missing Report'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save missing" />
+        </div>
     );
 }

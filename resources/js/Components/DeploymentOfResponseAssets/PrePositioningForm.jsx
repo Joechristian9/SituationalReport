@@ -1,306 +1,73 @@
 // resources/js/Components/DeploymentOfResponseAssets/PrePositioningForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { Shield } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { Shield, History, Loader2, PlusCircle, Save } from "lucide-react";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-import {
-    TooltipProvider,
-} from "@/components/ui/tooltip";
+const COLUMNS = [
+    { name: "team_units", label: "Team / units" },
+    { name: "team_leader", label: "Team leader" },
+    { name: "personnel_deployed", label: "Personnel deployed", type: "number", min: 0, step: 1, align: "right", className: "w-36" },
+    { name: "response_assets", label: "Response assets" },
+    { name: "capability", label: "Capability" },
+    { name: "area_of_deployment", label: "Area of deployment" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const blankRow = () => ({ team_units: "", team_leader: "", personnel_deployed: "", response_assets: "", capability: "", area_of_deployment: "" });
 
 export default function PrePositioningForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const [isSaving, setIsSaving] = useState(false);
-    
     const rows = data?.pre_positionings ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedRows,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(rows, ['team_units', 'area_of_deployment'], 5);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["pre-positioning-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/pre-positioning`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((next) => setData("pre_positionings", next), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.pre-positioning");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows,
+        setRows,
+        blankRow,
+        url: route("pre-positioning.store"),
+        key: "pre_positionings",
+        historyKey,
+        successMessage: "Pre-positioning saved.",
+        disabled,
     });
-
-    const getFieldHistory = (recordId, fieldName) =>
-        modificationData?.history?.[`${recordId}_${fieldName}`] || [];
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...rows];
-        newRows[index][name] = value;
-        setData("pre_positionings", newRows);
-    };
-
-    const handleAddRow = () => {
-        setData("pre_positionings", [
-            ...rows,
-            {
-                id: `new-${Date.now()}`,
-                team_units: "",
-                team_leader: "",
-                personnel_deployed: "",
-                response_assets: "",
-                capability: "",
-                area_of_deployment: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean string IDs for new rows
-            const cleanedRows = rows.map(row => ({
-                ...row,
-                id: typeof row.id === 'string' ? null : row.id
-            }));
-            
-            const response = await axios.post(
-                `${APP_URL}/pre-positioning`, 
-                { pre_positionings: cleanedRows },
-                { headers: { 'Accept': 'application/json' } }
-            );
-            
-            // Update local state with server response if available
-            // Only overwrite if the server actually returns at least one item
-            if (response.data && Array.isArray(response.data.pre_positionings) && response.data.pre_positionings.length > 0) {
-                setData("pre_positionings", response.data.pre_positionings);
-                
-                // Invalidate and refetch modification history after state update
-                await queryClient.invalidateQueries(['pre-positioning-modifications']);
-            }
-            
-            toast.success(response.data?.message || "Pre-Positioning records saved successfully!");
-        } catch (err) {
-            console.error("Save error:", err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
-        } finally {
-            setIsSaving(false);
-            // Force refetch after small delay to ensure data is fresh
-            setTimeout(() => {
-                queryClient.invalidateQueries(['pre-positioning-modifications']);
-            }, 200);
-        }
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(rows, ["team_units", "area_of_deployment"], 5);
 
     return (
-        <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-orange-100 text-orange-600 p-2 rounded-lg">
-                        <Shield size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Pre-Positioning of Response Assets
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Enter details of deployed teams and response assets.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={Shield} title="Pre-positioning of response assets" description="Teams and response assets deployed, and where." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by team/units or area..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={rows}
-                            fileName="PrePositioning_Report"
-                            sheetName="Pre-Positioning"
-                        />
-                    </div>
-                </div>
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search team or area"
+                excel={{ data: rows, fileName: "PrePositioning_Report", sheetName: "Pre-Positioning" }}
+            />
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm md:min-w-[56rem]">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Team/Units</th>
-                                <th className="p-3 border-r">Team Leader</th>
-                                <th className="p-3 border-r">No. Personnel Deployed</th>
-                                <th className="p-3 border-r">Response Assets</th>
-                                <th className="p-3 border-r">Capability</th>
-                                <th className="p-3">Area of Deployment</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedRows.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <Shield size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No team or deployment area matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedRows.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "team_units",
-                                    "team_leader",
-                                    "personnel_deployed",
-                                    "response_assets",
-                                    "capability",
-                                    "area_of_deployment",
-                                ];
+            <ReportTable
+                caption="Pre-positioning of response assets"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={Shield}
+                emptyText="No teams or assets recorded."
+                minWidth="md:min-w-[64rem]"
+            />
+            {errors?.pre_positionings && <p className="text-sm text-destructive">{errors.pre_positionings}</p>}
 
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
+            <TablePagination {...pagination} />
 
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        <input
-                                                            type={field === 'personnel_deployed' ? 'number' : 'text'}
-                                                            name={field}
-                                                            value={row[field] ?? ""}
-                                                            onChange={(e) =>
-                                                                handleInputChange(actualIndex, e)
-                                                            }
-                                                            placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
-                                                            min={field === 'personnel_deployed' ? "0" : undefined}
-                                                            disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                        />
-                                                        <ModificationIndicator recordId={row.id} fieldName={field} getFieldHistory={getFieldHistory} currentValue={row[field]} />
-                                                    </div>
-                                                    
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                    {errors.pre_positionings && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.pre_positionings}
-                        </div>
-                    )}
-                </div>
-
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save Pre-Positioning'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </TooltipProvider>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} addLabel="Add team" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save pre-positioning" />
+        </div>
     );
 }

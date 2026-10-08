@@ -1,7 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
-import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import {
     SidebarProvider,
@@ -11,7 +10,8 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import FormPanel from "@/Components/forms/FormPanel";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { m as motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,12 +21,11 @@ import {
     AlertTriangle,
     UserX,
     Plane,
-    SaveAll,
     School,
     HelpCircle,
+    Home,
 } from "lucide-react";
 import { SkeletonForm } from "@/Components/ui/skeleton";
-import { LiaHouseDamageSolid } from "react-icons/lia";
 
 import {
     Tabs as UITabs,
@@ -60,7 +59,7 @@ export default function Index() {
         { label: "Incidents Monitored", icon: <AlertTriangle size={18} /> },
         { label: "Casualties", icon: <UserX size={18} /> },
         { label: "Affected Tourists", icon: <Plane size={18} /> },
-        { label: "Damaged Houses", icon: <LiaHouseDamageSolid size={18} /> },
+        { label: "Damaged Houses", icon: <Home size={18} /> },
         { label: "Suspension of Classes & Work", icon: <School size={18} /> },
     ];
 
@@ -134,13 +133,7 @@ export default function Index() {
         damaged_houses: damagedHouses && damagedHouses.length > 0
             ? damagedHouses
             : [
-                { 
-                    id: `new-${Date.now()}`, 
-                    barangay: "", 
-                    partially: "", 
-                    totally: "", 
-                    total: 0 
-                },
+                { id: `new-${Date.now()}`, barangay: "", partially: "", totally: "" },
             ],
         suspension_of_classes: suspensionOfClasses && suspensionOfClasses.length > 0
             ? suspensionOfClasses
@@ -165,7 +158,7 @@ export default function Index() {
             ],
     };
 
-    const { data, setData, post, processing, errors } = useForm(defaultState);
+    const { data, setData, errors } = useForm(defaultState);
 
     // Update incidents from backend when data changes
     useEffect(() => {
@@ -228,18 +221,6 @@ export default function Index() {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post(route("incident-monitored.store"), { preserveScroll: true });
-        post(route("casualties.store"), { preserveScroll: true });
-        post(route("injured.store"), { preserveScroll: true });
-        post(route("missing.store"), { preserveScroll: true });
-        post(route("affected-tourists.store"), { preserveScroll: true });
-        post(route("damaged-houses.store"), { preserveScroll: true });
-        post(route("suspension-classes-reports.store"), { preserveScroll: true });
-        post(route("suspension-work-reports.store"), { preserveScroll: true });
-    };
-
     const isStepEmpty = (stepNumber) => {
         switch (stepNumber) {
             case 1:
@@ -296,7 +277,7 @@ export default function Index() {
                     data.suspension_of_classes.every(
                         (r) =>
                             !r.province_city_municipality &&
-                            !r.levels &&
+                            !r.level &&
                             !r.date_of_suspension &&
                             !r.remarks
                     ) &&
@@ -363,106 +344,60 @@ export default function Index() {
                     />
                 </header>
 
-                <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
-                    
-                    <form onSubmit={handleSubmit}>
-                        <Card className="shadow-lg rounded-2xl border">
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-500">
-                                        Report {step} of {steps.length}
-                                    </span>
-                                </CardTitle>
+                <main className="h-full w-full bg-background p-4 sm:p-6">
+                    <FormPanel className="p-0 sm:p-0">
+                        <div className="border-b border-border p-4 sm:p-6">
+                            <p className="text-sm text-muted-foreground tabular-nums">
+                                Report {step} of {steps.length}
+                            </p>
 
-                                {/* ---------- STEPPER ---------- */}
-                                <div className="relative w-full mt-8">
-                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 z-0">
-                                        <div
-                                            className="h-0.5 bg-blue-600 transition-all duration-500"
-                                            style={{
-                                                width: `${
-                                                    ((step - 1) /
-                                                        (steps.length - 1)) *
-                                                    100
-                                                }%`,
-                                            }}
-                                        ></div>
-                                    </div>
-
-                                    <div className="relative flex justify-between z-10">
-                                        {steps.map((item, index) => {
-                                            const stepNumber = index + 1;
-                                            const wasVisited =
-                                                step > stepNumber;
-                                            const isActive =
-                                                step === stepNumber;
-                                            const empty =
-                                                wasVisited &&
-                                                isStepEmpty(stepNumber);
-
-                                            let icon;
-                                            if (empty) {
-                                                icon = (
-                                                    <HelpCircle
-                                                        size={20}
-                                                        className="text-gray-400"
-                                                    />
-                                                );
-                                            } else if (wasVisited) {
-                                                icon = (
-                                                    <CheckCircle2
-                                                        size={22}
-                                                        className="text-green-500"
-                                                    />
-                                                );
-                                            } else {
-                                                icon = item.icon;
-                                            }
-
-                                            return (
+                            {/* Stepper: every step stays reachable; done and skipped steps are marked with icon and text. */}
+                            <nav aria-label="Report steps" className="mt-4">
+                                <ol className="grid grid-cols-5 gap-1">
+                                    {steps.map((item, index) => {
+                                        const stepNumber = index + 1;
+                                        const visited = step > stepNumber;
+                                        const active = step === stepNumber;
+                                        const empty = visited && isStepEmpty(stepNumber);
+                                        const state = empty ? "Skipped" : visited ? "Done" : null;
+                                        return (
+                                            <li key={item.label} className="min-w-0">
                                                 <button
-                                                    key={index}
                                                     type="button"
-                                                    onClick={() =>
-                                                        setStep(stepNumber)
-                                                    }
-                                                    className="flex flex-col items-center focus:outline-none group transition"
+                                                    onClick={() => setStep(stepNumber)}
+                                                    aria-current={active ? "step" : undefined}
+                                                    className="group flex w-full min-h-11 flex-col items-center gap-1.5 rounded-md px-1 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                 >
-                                                    <div
-                                                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                                                            empty
-                                                                ? "border-gray-300 bg-gray-50 text-gray-400"
-                                                                : wasVisited
-                                                                ? "border-green-500 bg-green-50 text-green-500"
-                                                                : isActive
-                                                                ? "border-blue-600 bg-blue-50 text-blue-600 shadow-lg scale-110"
-                                                                : "border-gray-300 bg-white text-gray-500 group-hover:border-blue-400"
-                                                        }`}
-                                                    >
-                                                        {icon}
-                                                    </div>
                                                     <span
-                                                        className={`mt-2 text-xs ${
-                                                            empty
-                                                                ? "text-gray-400"
-                                                                : wasVisited
-                                                                ? "text-green-600 font-medium"
-                                                                : isActive
-                                                                ? "text-blue-600 font-semibold"
-                                                                : "text-gray-500 group-hover:text-blue-500"
-                                                        }`}
+                                                        className={cn(
+                                                            "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors motion-reduce:transition-none",
+                                                            active && "border-primary bg-primary text-primary-foreground",
+                                                            !active && visited && !empty && "border-success bg-success/10 text-success",
+                                                            !active && empty && "border-border bg-muted text-muted-foreground",
+                                                            !active && !visited && "border-border bg-card text-muted-foreground group-hover:border-primary group-hover:text-primary",
+                                                        )}
                                                     >
+                                                        {empty ? (
+                                                            <HelpCircle className="h-5 w-5" aria-hidden="true" />
+                                                        ) : visited ? (
+                                                            <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                                                        ) : (
+                                                            item.icon
+                                                        )}
+                                                    </span>
+                                                    <span className={cn("text-xs leading-tight", active ? "font-semibold text-foreground" : "text-muted-foreground")}>
                                                         {item.label}
+                                                        {state && <span className="sr-only"> ({state})</span>}
                                                     </span>
                                                 </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </CardHeader>
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                            </nav>
+                        </div>
 
-                            {/* ---------- CONTENT ---------- */}
-                            <CardContent className="space-y-8">
+                        <div className="space-y-8 p-4 sm:p-6">
                                 <AnimatePresence mode="wait">
                                     {step === 1 && (
                                         <motion.div
@@ -644,32 +579,29 @@ export default function Index() {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                            </CardContent>
+                        </div>
 
-                            {/* ---------- FOOTER ---------- */}
-                            <div className="flex justify-between items-center p-4 border-t bg-gray-50 rounded-b-2xl">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={step === 1}
-                                    onClick={() => setStep(step - 1)}
-                                    className="flex items-center gap-2"
-                                >
-                                    <ChevronLeft size={16} /> Back
+                        {/* Step navigation is secondary: each form's Save is the one primary action. */}
+                        <div className="flex items-center justify-between gap-3 border-t border-border p-4 sm:px-6">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={step === 1}
+                                onClick={() => setStep(step - 1)}
+                                className="min-h-11 sm:min-h-9"
+                            >
+                                <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Back
+                            </Button>
+
+                            {step < steps.length && (
+                                <Button type="button" variant="outline" onClick={() => setStep(step + 1)} className="min-h-11 sm:min-h-9">
+                                    <span className="sm:hidden">Next</span>
+                                    <span className="hidden sm:inline">Next: {steps[step].label}</span>
+                                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
                                 </Button>
-
-                                {step < steps.length && (
-                                    <Button
-                                        type="button"
-                                        onClick={() => setStep(step + 1)}
-                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                                    >
-                                        Next <ChevronRight size={16} />
-                                    </Button>
-                                )}
-                            </div>
-                        </Card>
-                    </form>
+                            )}
+                        </div>
+                    </FormPanel>
                 </main>
             </SidebarInset>
         </SidebarProvider>

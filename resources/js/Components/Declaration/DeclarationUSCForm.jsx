@@ -1,303 +1,71 @@
 // resources/js/Components/Declaration/DeclarationUSCForm.jsx
 
-import SearchBar from "../ui/SearchBar";
+import { useCallback } from "react";
+import { FileText } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-import AddRowButton from "../ui/AddRowButton";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import { FileText, Loader2, PlusCircle, Save } from "lucide-react";
+const COLUMNS = [
+    { name: "declared_by", label: "Declared by", placeholder: "e.g. City of Ilagan" },
+    { name: "resolution_number", label: "Resolution number" },
+    { name: "date_approved", label: "Date approved", type: "date", className: "w-44" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const blankRow = () => ({ declared_by: "", resolution_number: "", date_approved: "" });
 
 export default function DeclarationUSCForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const [isSaving, setIsSaving] = useState(false);
-    
     const declarations = data?.usc_declarations ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedDeclarations,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(declarations, ['declared_by', 'resolution_number'], 5);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["usc-declaration-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/usc-declaration`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const setRows = useCallback((rows) => setData("usc_declarations", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.usc-declaration");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: declarations,
+        setRows,
+        blankRow,
+        url: route("declaration-usc.store"),
+        key: "usc_declarations",
+        responseKey: "declarations",
+        historyKey,
+        successMessage: "Declarations saved.",
+        disabled,
     });
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const newRows = [...declarations];
-        newRows[index][name] = value;
-        setData("usc_declarations", newRows);
-    };
-
-    const handleAddRow = () => {
-        setData("usc_declarations", [
-            ...declarations,
-            {
-                id: `new-${Date.now()}`,
-                declared_by: "",
-                resolution_number: "",
-                date_approved: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean string IDs for new rows
-            const cleanedDeclarations = declarations.map(declaration => ({
-                ...declaration,
-                id: typeof declaration.id === 'string' ? null : declaration.id
-            }));
-            
-            const response = await axios.post(
-                `${APP_URL}/declaration-usc`, 
-                { usc_declarations: cleanedDeclarations },
-                { headers: { 'Accept': 'application/json' } }
-            );
-            
-            // Update local state with server response if available
-            if (response.data && response.data.declarations) {
-                setData("usc_declarations", response.data.declarations);
-                
-                // Invalidate and refetch modification history after state update
-                await queryClient.invalidateQueries(['usc-declaration-modifications']);
-            }
-            
-            toast.success(response.data?.message || "USC Declarations saved successfully!");
-        } catch (err) {
-            console.error("Save error:", err);
-            if (err.response && err.response.status === 422) {
-                toast.error(
-                    "Validation failed. Please check the form for errors."
-                );
-                console.error("Validation Errors:", err.response.data.errors);
-            } else {
-                toast.error(
-                    "Failed to save. Please check the console for details."
-                );
-            }
-        } finally {
-            setIsSaving(false);
-            // Force refetch after small delay to ensure data is fresh
-            setTimeout(() => {
-                queryClient.invalidateQueries(['usc-declaration-modifications']);
-            }, 200);
-        }
-    };
-
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(declarations, ["declared_by", "resolution_number"], 5);
 
     return (
-        <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
-                        <FileText size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            USC Declarations
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Enter details of declarations under State of Calamity.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={FileText} title="Declarations of a state of calamity" description="Resolutions declaring a state of calamity, and when they were approved." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search by declared by or resolution number..."
-                    />
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={declarations}
-                            fileName="USC_Declarations"
-                            sheetName="Declarations"
-                        />
-                    </div>
-                </div>
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search declared by or resolution number"
+                excel={{ data: declarations, fileName: "USC_Declarations", sheetName: "Declarations" }}
+            />
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Declared By</th>
-                                <th className="p-3 border-r">Resolution Number</th>
-                                <th className="p-3">Date Approved</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedDeclarations.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="3" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <FileText size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No declaration matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedDeclarations.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "declared_by",
-                                    "resolution_number",
-                                    "date_approved",
-                                ];
+            <ReportTable
+                caption="Declarations of a state of calamity"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={FileText}
+                emptyText="No declarations recorded."
+                minWidth="md:min-w-[40rem]"
+            />
+            {errors?.usc_declarations && <p className="text-sm text-destructive">{errors.usc_declarations}</p>}
 
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        <input
-                                                            type={field === 'date_approved' ? 'date' : 'text'}
-                                                            name={field}
-                                                            value={
-                                                                row[field] ?? ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleInputChange(
-                                                                    actualIndex,
-                                                                    e
-                                                                )
-                                                            }
-                                                            placeholder={`Enter ${formatFieldName(field).toLowerCase()}...`}
-                                                            disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                        />
-                                                        <ModificationIndicator 
-                                                            recordId={row.id} 
-                                                            fieldName={field} 
-                                                            getFieldHistory={getFieldHistory}
-                                                            currentValue={row[field]}
-                                                            showLastModified={false}
-                                                        />
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                    {errors.usc_declarations && (
-                        <div className="text-red-500 text-sm mt-2 px-3">
-                            {errors.usc_declarations}
-                        </div>
-                    )}
-                </div>
+            <TablePagination {...pagination} />
 
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save USC Declarations'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} addLabel="Add declaration" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save declarations" />
         </div>
     );
 }

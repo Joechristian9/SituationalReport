@@ -1,4 +1,5 @@
 import { useEffect, lazy, Suspense } from "react";
+import FormPanel from "@/Components/forms/FormPanel";
 import { usePage, Head, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
@@ -18,7 +19,7 @@ const DeclarationUSCForm = lazy(() => import("@/Components/Declaration/Declarati
 
 const FormLoader = () => (
     <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-label="Loading form" />
     </div>
 );
 
@@ -101,16 +102,17 @@ export default function Index() {
                     />
                 </header>
 
-                <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
-                    
-                    <Suspense fallback={<FormLoader />}>
-                        <DeclarationUSCForm
-                            data={data}
-                            setData={setData}
-                            errors={errors}
-                            disabled={formsDisabled}
-                        />
-                    </Suspense>
+                <main className="h-full w-full bg-background p-4 sm:p-6">
+                    <FormPanel>
+                        <Suspense fallback={<FormLoader />}>
+                            <DeclarationUSCForm
+                                data={data}
+                                setData={setData}
+                                errors={errors}
+                                disabled={formsDisabled}
+                            />
+                        </Suspense>
+                    </FormPanel>
                 </main>
             </SidebarInset>
         </SidebarProvider>

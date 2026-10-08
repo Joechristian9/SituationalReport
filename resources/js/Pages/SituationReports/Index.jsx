@@ -1,10 +1,9 @@
 // resources/js/Pages/SituationReports/Index.jsx
 
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { usePage, Head, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 
-import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonNotification from "@/Components/NoActiveDisasterNotification";
 import {
@@ -15,11 +14,10 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import FormPanel from "@/Components/forms/FormPanel";
 import { Button } from "@/components/ui/button";
 import {
     Cloud,
-    Waves,
     Zap,
     Droplet,
     Phone,
@@ -27,8 +25,8 @@ import {
     Landmark,
     ClipboardList,
     MapPin,
-    CheckCircle2,
     ArrowLeft,
+    ChevronRight,
     Flame,
     Sprout,
     UserX,
@@ -56,9 +54,6 @@ const CommunicationForm = lazy(() =>
 const RoadForm = lazy(() => import("@/Components/SituationOverview/RoadForm"));
 const BridgeForm = lazy(() =>
     import("@/Components/SituationOverview/BridgeForm")
-);
-const PrePositioningReportsForm = lazy(() =>
-    import("@/Components/DeploymentOfResponseAssets/PrePositioningForm")
 );
 const IncidentMonitoredForm = lazy(() =>
     import("@/Components/Effects/IncidentMonitoredForm")
@@ -92,6 +87,7 @@ export default function Index() {
         roads,
         bridges,
         preEmptiveReports,
+        agriculture,
         casualties,
         injured,
         missing,
@@ -99,16 +95,6 @@ export default function Index() {
         auth,
     } = usePage().props;
     
-    // Debug: Log casualties/injured/missing props on page load
-    console.log('Props received on page load:', {
-        casualties: casualties,
-        injured: injured,
-        missing: missing,
-        casualtiesCount: casualties?.length,
-        injuredCount: injured?.length,
-        missingCount: missing?.length
-    });
-
     // Check if forms should be disabled (no active disaster, ended, or paused)
     const formsDisabled =
         !typhoon?.hasActive ||
@@ -285,6 +271,8 @@ export default function Index() {
             label: "Pre-positioning",
             icon: <MapPin size={18} />,
             permission: "access-pre-positioning-form",
+            // Has its own page with the saved records; this page does not load them.
+            href: "pre-positioning.index",
         },
         {
             label: "Incident Monitored",
@@ -328,8 +316,8 @@ export default function Index() {
                 ? weatherReports
                 : [
                       {
-                          id: null,
-                          municipality: "",
+                          id: "new-0",
+                          municipality: "City of Ilagan",
                           sky_condition: "",
                           wind: "",
                           precipitation: "",
@@ -341,7 +329,7 @@ export default function Index() {
                 ? preEmptiveReports
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           barangay: "",
                           evacuation_center: "",
                           families: "",
@@ -353,20 +341,9 @@ export default function Index() {
                           total_persons: 0,
                       },
                   ],
-        prePositioning: [
-            {
-                id: null,
-                asset_type: "",
-                description: "",
-                quantity: "",
-                location: "",
-                deployed_by: "",
-                remarks: "",
-            },
-        ],
         incidents: [
             {
-                id: null,
+                id: "new-0",
                 kinds_of_incident: "",
                 date_time: "",
                 location: "",
@@ -374,22 +351,26 @@ export default function Index() {
                 remarks: "",
             },
         ],
-        agriculture: [
-            {
-                id: null,
-                crops_affected: "",
-                standing_crop_ha: "",
-                stage_of_crop: "",
-                total_area_affected_ha: "",
-                total_production_loss: "",
-            },
-        ],
+        agriculture:
+            agriculture && agriculture.length > 0
+                ? agriculture
+                : [
+                      {
+                          id: "new-0",
+                          crops_affected: "",
+                          standing_crop_ha: "",
+                          stage_of_crop: "",
+                          total_area_affected_ha: "",
+                          total_production_loss: "",
+                          remarks: "",
+                      },
+                  ],
         casualties:
             casualties && casualties.length > 0
                 ? casualties
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           name: "",
                           age: "",
                           sex: "",
@@ -404,7 +385,7 @@ export default function Index() {
                 ? injured
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           name: "",
                           age: "",
                           sex: "",
@@ -418,7 +399,7 @@ export default function Index() {
                 ? missing
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           name: "",
                           age: "",
                           sex: "",
@@ -432,7 +413,7 @@ export default function Index() {
                 ? waterLevels
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           gauging_station: "",
                           current_level: "",
                           alarm_level: "",
@@ -445,7 +426,7 @@ export default function Index() {
                 ? electricity
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           status: "",
                           barangays_affected: "",
                           remarks: "",
@@ -456,7 +437,7 @@ export default function Index() {
                 ? waterServices
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           source_of_water: "",
                           barangays_served: "",
                           status: "",
@@ -468,7 +449,7 @@ export default function Index() {
                 ? communications
                 : [
                       {
-                          id: null,
+                          id: "new-0",
                           globe: "",
                           smart: "",
                           pldt_landline: "",
@@ -477,14 +458,35 @@ export default function Index() {
                           remarks: "",
                       },
                   ],
+        // Starter rows use a "new-" id: rows are edited by id, and saving sends it as null.
         roads:
             roads && roads.length > 0
                 ? roads
-                : [],
+                : [
+                      {
+                          id: "new-0",
+                          road_classification: "",
+                          name_of_road: "",
+                          status: "",
+                          areas_affected: "",
+                          re_routing: "",
+                          remarks: "",
+                      },
+                  ],
         bridges:
             bridges && bridges.length > 0
                 ? bridges
-                : [],
+                : [
+                      {
+                          id: "new-0",
+                          road_classification: "",
+                          name_of_bridge: "",
+                          status: "",
+                          areas_affected: "",
+                          re_routing: "",
+                          remarks: "",
+                      },
+                  ],
     });
 
     useEffect(() => {
@@ -560,14 +562,6 @@ export default function Index() {
         }
     };
 
-    // CORRECTED: 'key' is removed from this object
-    const motionProps = {
-        initial: { opacity: 0, x: 50 },
-        animate: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: -50 },
-        transition: { duration: 0.3 },
-    };
-
     // Render form based on step number
     const renderForm = (formLabel) => {
         switch (formLabel) {
@@ -639,15 +633,6 @@ export default function Index() {
                     <PreEmptiveForm
                         data={{ reports: data.preEmptiveReports }}
                         setData={(key, value) => setData('preEmptiveReports', value)}
-                        errors={errors}
-                        disabled={formsDisabled}
-                    />
-                );
-            case "Pre-positioning":
-                return (
-                    <PrePositioningReportsForm
-                        data={data}
-                        setData={setData}
                         errors={errors}
                         disabled={formsDisabled}
                     />
@@ -777,60 +762,20 @@ export default function Index() {
                     </div>
                 </header>
 
-                <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
-                    {/* Welcome message and card selection */}
+                <main className="h-full w-full bg-background p-4 sm:p-6">
+                    {/* Form selection */}
                     {!activeForm && (
-                        <>
-                            {/* Enhanced Welcome Card */}
-                            <div className="relative mb-6 overflow-hidden rounded-xl shadow-md">
-                                {/* Gradient Background */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
-
-                                {/* Decorative Elements */}
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-
-                                {/* Content */}
-                                <div className="relative p-4 sm:p-6">
-                                    <div className="flex flex-col sm:flex-row items-start gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="relative">
-                                                <div className="absolute inset-0 bg-white/30 rounded-xl blur-lg animate-pulse"></div>
-                                                <div className="relative w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                                                    <CheckCircle2
-                                                        size={24}
-                                                        className="text-blue-600"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1.5">
-                                                Welcome, {auth.user.name}!
-                                            </h2>
-                                            <p className="text-blue-50 text-sm sm:text-base mb-3">
-                                                Select a form below to submit
-                                                and manage your reports during
-                                                active typhoon events.
-                                            </p>
-                                            <div className="flex items-center gap-2.5 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/30">
-                                                <CheckCircle2
-                                                    size={18}
-                                                    className="text-green-300 flex-shrink-0"
-                                                />
-                                                <span className="text-white text-xs sm:text-sm">
-                                                    Your submissions will be
-                                                    included in the consolidated
-                                                    situational report
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="mx-auto max-w-7xl">
+                            <div className="mb-6">
+                                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                                    Welcome, {auth.user.name}
+                                </h1>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Choose a form. What you save goes into the consolidated situational report.
+                                </p>
                             </div>
 
-                            {/* Enhanced Card Selection */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {steps.map((formStep) => {
                                     const descriptions = {
                                         Weather:
@@ -863,100 +808,56 @@ export default function Index() {
                                     };
 
                                     return (
-                                        <Card
+                                        <button
                                             key={formStep.label}
-                                            className="group relative cursor-pointer overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 bg-white"
+                                            type="button"
                                             onClick={() =>
-                                                setActiveForm(formStep.label)
+                                                formStep.href
+                                                    ? router.visit(route(formStep.href))
+                                                    : setActiveForm(formStep.label)
                                             }
+                                            className="group flex min-h-11 items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
                                         >
-                                            {/* Hover Gradient Effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                            <CardHeader className="relative p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="relative flex-shrink-0">
-                                                        {/* Icon Glow Effect */}
-                                                        <div className="absolute inset-0 bg-blue-400/30 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                                        <div className="relative p-2.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg group-hover:from-blue-500 group-hover:to-indigo-500 transition-all duration-300">
-                                                            {React.cloneElement(
-                                                                formStep.icon,
-                                                                {
-                                                                    size: 20,
-                                                                    className:
-                                                                        "text-blue-600 group-hover:text-white transition-colors duration-300",
-                                                                }
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <CardTitle className="text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 leading-tight">
-                                                            {formStep.label}
-                                                        </CardTitle>
-                                                    </div>
-                                                    {/* Arrow Indicator */}
-                                                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-1 group-hover:translate-x-0">
-                                                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg">
-                                                            <svg
-                                                                className="w-3.5 h-3.5 text-white"
-                                                                fill="none"
-                                                                stroke="currentColor"
-                                                                viewBox="0 0 24 24"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M9 5l7 7-7 7"
-                                                                />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Description Text */}
-                                                <p className="text-xs text-gray-600 leading-relaxed mt-2.5 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
-                                                    {descriptions[
-                                                        formStep.label
-                                                    ] ||
-                                                        `Click to submit ${formStep.label.toLowerCase()}`}
-                                                </p>
-                                            </CardHeader>
-
-                                            {/* Bottom Accent Line */}
-                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                                        </Card>
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:h-5 [&_svg]:w-5" aria-hidden="true">
+                                                {formStep.icon}
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block font-semibold leading-tight text-foreground">
+                                                    {formStep.label}
+                                                </span>
+                                                <span className="mt-1 block text-sm leading-snug text-muted-foreground">
+                                                    {descriptions[formStep.label] ?? `Open the ${formStep.label.toLowerCase()} form`}
+                                                </span>
+                                            </span>
+                                            <ChevronRight className="mt-2.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+                                        </button>
                                     );
                                 })}
                             </div>
-                        </>
+                        </div>
                     )}
 
-                    {/* Show active form with back button */}
+                    {/* The open form */}
                     {activeForm && (
-                        <>
+                        <div className="mx-auto max-w-7xl">
                             {/* Only show back button if user has access to multiple forms */}
                             {steps.length > 1 && (
-                                <div className="mb-4">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setActiveForm(null)}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <ArrowLeft size={16} />
-                                        Back to Form Selection
-                                    </Button>
-                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setActiveForm(null)}
+                                    className="-ml-3 mb-3 min-h-11 text-muted-foreground hover:text-foreground sm:min-h-9"
+                                >
+                                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                                    All forms
+                                </Button>
                             )}
-                            <Card className="shadow-lg rounded-2xl border">
-                                <CardContent className="p-4 sm:p-6">
-                                    <Suspense fallback={<FormLoader />}>
-                                        {renderForm(activeForm)}
-                                    </Suspense>
-                                </CardContent>
-                            </Card>
-                        </>
+                            <FormPanel>
+                                <Suspense fallback={<FormLoader />}>
+                                    {renderForm(activeForm)}
+                                </Suspense>
+                            </FormPanel>
+                        </div>
                     )}
                 </main>
             </SidebarInset>

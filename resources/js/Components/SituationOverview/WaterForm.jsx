@@ -1,367 +1,78 @@
 // resources/js/Components/SituationOverview/WaterForm.jsx
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
+import { useCallback, useMemo } from "react";
 import { usePage } from "@inertiajs/react";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
+import { Droplet } from "lucide-react";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor, { isNewRow } from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
+import asOfNow from "@/Components/forms/asOfNow";
 
-import { Droplet, Loader2, Save, AlertCircle, CheckCircle2 } from "lucide-react";
-import { savedMessage } from "@/lib/offline/queue";
+const blankRow = () => ({ source_of_water: "", barangays_served: "", status: "", remarks: "" });
 
 export default function WaterForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { typhoon, auth } = usePage().props; // Added auth
-    const [isSaving, setIsSaving] = useState(false);
-    const [originalData, setOriginalData] = useState(null);
-    const [currentDateTime, setCurrentDateTime] = useState(new Date());
-    const [formData, setFormData] = useState({
-        source_of_water: "",
-        barangays_served: "",
-        status: "",
-        remarks: ""
-    });
-    
-    // Track previous disabled state to detect resume
-    const [previousDisabled, setPreviousDisabled] = useState(disabled);
-    
-    // Fetch modification history
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["water-service-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(`${APP_URL}/modifications/water-service`);
-            return data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+    const { auth } = usePage().props;
+    // Every entry is listed: the form used to show only the first and hide the rest.
+    const services = data?.waterServices ?? [];
+    const setRows = useCallback((rows) => setData("waterServices", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.water-service");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: services,
+        setRows,
+        blankRow,
+        url: route("water-service-reports.store"),
+        key: "waterServices",
+        historyKey,
+        successMessage: "Water services saved.",
+        disabled,
     });
 
-    // Helper function to get field modification history
-    const getFieldHistory = (recordId, fieldName) => {
-        if (!modificationData?.history) return [];
-        const historyKey = `${recordId}_${fieldName}`;
-        return modificationData.history[historyKey] || [];
-    };
-    
-    // Update current date/time every second for real-time display
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentDateTime(new Date());
-        }, 1000);
-        
-        return () => clearInterval(timer);
-    }, []);
-    
-    // Load existing data on mount and when data changes
-    useEffect(() => {
-        const services = data.waterServices ?? [];
-        if (services.length > 0) {
-            const firstService = services[0];
-            const loadedData = {
-                source_of_water: firstService.source_of_water || "",
-                barangays_served: firstService.barangays_served || "",
-                status: firstService.status || "",
-                remarks: firstService.remarks || ""
-            };
-            
-            setFormData(loadedData);
-            setOriginalData(JSON.parse(JSON.stringify(loadedData)));
-        }
-    }, [data.waterServices]);
-    
-    // Detect when typhoon is resumed (disabled changes from true to false)
-    useEffect(() => {
-        // If it was disabled and now it's enabled (resumed)
-        if (previousDisabled === true && disabled === false) {
-            // Clear the form for new report (silently, no toast notification)
-            if (formData.source_of_water || formData.barangays_served || formData.status || formData.remarks) {
-                const emptyData = {
-                    source_of_water: "",
-                    barangays_served: "",
-                    status: "",
-                    remarks: ""
-                };
-                setFormData(emptyData);
-                setOriginalData(null);
-                // No toast here - the Index.jsx already shows a resume notification
-            }
-        }
-        
-        // Update previous disabled state
-        setPreviousDisabled(disabled);
-    }, [disabled]);
-    
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleRemarksFocus = () => {
-        // Auto-fill timestamp if remarks field is empty
-        if (!formData.remarks || formData.remarks.trim() === '') {
-            const dateTimeString = currentDateTime.toLocaleString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-            
-            setFormData(prev => ({
-                ...prev,
-                remarks: `As of ${dateTimeString}: `
-            }));
-        }
-    };
-
-    // Check if form has any data
-    const hasData = useMemo(() => {
-        return formData.source_of_water.trim() !== '' || 
-               formData.barangays_served.trim() !== '' || 
-               formData.status.trim() !== '' ||
-               formData.remarks.trim() !== '';
-    }, [formData]);
-
-    // Check if data has changed
-    const hasChanges = useMemo(() => {
-        if (!originalData) {
-            // If no original data, check if form has any content
-            return hasData;
-        }
-        return JSON.stringify(originalData) !== JSON.stringify(formData);
-    }, [originalData, formData, hasData]);
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-
-        if (!hasChanges) {
-            toast.info("No changes to save");
-            return;
-        }
-        
-        setIsSaving(true);
-        
-        try {
-            const serviceData = {
-                id: data.waterServices?.[0]?.id, // Include ID if updating
-                source_of_water: formData.source_of_water,
-                barangays_served: formData.barangays_served,
-                status: formData.status,
-                remarks: formData.remarks,
-                user_id: data.waterServices?.[0]?.user_id || auth.user.id, // Preserve original creator
-            };
-
-            const response = await axios.post(`${APP_URL}/water-service-reports`, {
-                waterServices: [serviceData],
-            });
-            
-            if (response.data && Array.isArray(response.data.waterServices) && response.data.waterServices.length > 0) {
-                setData("waterServices", response.data.waterServices);
-                setOriginalData(JSON.parse(JSON.stringify(formData)));
-            } else {
-                setOriginalData(JSON.parse(JSON.stringify(formData)));
-            }
-            
-            // Invalidate modification history
-            await queryClient.invalidateQueries(['water-service-modifications']);
-            
-            toast.success(savedMessage(response, "Water service report saved successfully!"));
-        } catch (err) {
-            console.error(err);
-            const errorMessage = err.response?.data?.message || 
-                                err.response?.data?.error ||
-                                "Failed to save water service report. Please try again.";
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    const columns = useMemo(
+        () => [
+            {
+                name: "created_by",
+                label: "Created by",
+                type: "computed",
+                className: "w-36",
+                compute: (row) => {
+                    if (isNewRow(row)) return "You (not saved yet)";
+                    const name = row.user?.name ?? "Unknown";
+                    return row.user_id === auth.user.id ? `${name} (you)` : name;
+                },
+            },
+            { name: "source_of_water", label: "Source of water", placeholder: "e.g. Deep well, spring, water district", className: "w-56" },
+            { name: "barangays_served", label: "Barangays served", type: "textarea" },
+            { name: "status", label: "Status", type: "textarea", placeholder: "e.g. Fully operational, intermittent supply" },
+            { name: "remarks", label: "Remarks", type: "textarea", placeholder: "Starts with today's date and time", prefillOnFocus: asOfNow },
+        ],
+        [auth.user.id],
+    );
 
     return (
-        <div className="space-y-6">
-            {/* Info Banner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 flex items-start gap-4 shadow-md">
-                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
-                    <Droplet className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                    <h4 className="font-semibold text-blue-900 mb-1 text-lg">Water Services Status</h4>
-                    <p className="text-blue-700 text-sm">
-                        One report per typhoon — update anytime to keep information current. All changes are tracked in History.
-                    </p>
-                </div>
-            </div>
+        <div className="space-y-5">
+            <FormHeader
+                icon={Droplet}
+                title="Water services"
+                description="Shared with the water district: anyone with access can update any entry. Every change is kept in the history."
+            />
 
-            {/* Created By Info - Show if record exists */}
-            {data.waterServices?.[0]?.user && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-gray-700">Created By:</span>
-                        <span className="text-gray-900 font-semibold">{data.waterServices[0].user.name}</span>
-                        <span className="text-gray-500">•</span>
-                        <span className="text-gray-600">Both IWD and CDRRMO can edit this record</span>
-                    </div>
-                </div>
-            )}
+            <ReportTable
+                caption="Water services"
+                columns={columns}
+                rows={services}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                emptyIcon={Droplet}
+                emptyText="No water services recorded."
+                minWidth="md:min-w-[64rem]"
+            />
+            {errors?.waterServices && <p className="text-sm text-destructive">{errors.waterServices}</p>}
 
-            {/* Form Fields */}
-            <div className="space-y-5">
-                {/* Source of Water */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Source of Water
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            name="source_of_water"
-                            value={formData.source_of_water}
-                            onChange={handleInputChange}
-                            disabled={disabled}
-                            placeholder="e.g., Deep well, Spring, Water district..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
-                        />
-                        <ModificationIndicator 
-                            recordId={data.waterServices?.[0]?.id} 
-                            fieldName="source_of_water"
-                            getFieldHistory={getFieldHistory}
-                            currentValue={formData.source_of_water}
-                            showLastModified={false}
-                        />
-                    </div>
-                </div>
-
-                {/* Barangays Served */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Barangays Served
-                    </label>
-                    <div className="relative">
-                        <textarea
-                            name="barangays_served"
-                            value={formData.barangays_served}
-                            onChange={handleInputChange}
-                            rows="4"
-                            disabled={disabled}
-                            placeholder="List the barangays served by this water source..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                        />
-                        <ModificationIndicator 
-                            recordId={data.waterServices?.[0]?.id} 
-                            fieldName="barangays_served"
-                            getFieldHistory={getFieldHistory}
-                            currentValue={formData.barangays_served}
-                            showLastModified={false}
-                        />
-                    </div>
-                </div>
-
-                {/* Status */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Status
-                    </label>
-                    <div className="relative">
-                        <textarea
-                            name="status"
-                            value={formData.status}
-                            onChange={handleInputChange}
-                            rows="4"
-                            disabled={disabled}
-                            placeholder="e.g., Fully operational, Intermittent supply, Temporarily unavailable due to maintenance..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                        />
-                        <ModificationIndicator 
-                            recordId={data.waterServices?.[0]?.id} 
-                            fieldName="status"
-                            getFieldHistory={getFieldHistory}
-                            currentValue={formData.status}
-                            showLastModified={false}
-                        />
-                    </div>
-                </div>
-
-                {/* Remarks */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Additional Details
-                    </label>
-                    <div className="relative">
-                        <textarea
-                            name="remarks"
-                            value={formData.remarks}
-                            onChange={handleInputChange}
-                            onFocus={handleRemarksFocus}
-                            rows="5"
-                            disabled={disabled}
-                            placeholder="Click to auto-fill date and time, then add your remarks..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed resize-none"
-                        />
-                        <ModificationIndicator 
-                            recordId={data.waterServices?.[0]?.id} 
-                            fieldName="remarks"
-                            getFieldHistory={getFieldHistory}
-                            currentValue={formData.remarks}
-                            showLastModified={false}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end pt-5 border-t border-gray-200">
-                <button
-                    onClick={handleSubmit}
-                    disabled={isSaving || !hasChanges || !hasData || disabled}
-                    className="w-full sm:w-auto justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
-                >
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Submitting...</span>
-                        </>
-                    ) : (
-                        <>
-                            {!hasData ? (
-                                <>
-                                    <AlertCircle className="w-5 h-5" />
-                                    <span>Fill in the form</span>
-                                </>
-                            ) : hasChanges ? (
-                                <>
-                                    <Save className="w-5 h-5" />
-                                    <span>Submit Report</span>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <span>No Changes</span>
-                                </>
-                            )}
-                        </>
-                    )}
-                </button>
-            </div>
-
-            {errors.waterServices && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm px-4 py-3 rounded flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.waterServices}
-                </div>
-            )}
+            <FormActions onAdd={addRow} addLabel="Add water source" onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save water services" />
         </div>
     );
 }

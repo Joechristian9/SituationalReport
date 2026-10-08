@@ -1,324 +1,71 @@
 // resources/js/Components/Effects/AffectedTouristsForm.jsx
-import SearchBar from "../ui/SearchBar";
+
+import { useCallback } from "react";
+import { Plane } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-
-import React, { useState, useRef, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
-import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import {
-    Plane,
-    History,
-    Loader2,
-    PlusCircle,
-    Save,
-} from "lucide-react";
-import AddRowButton from "../ui/AddRowButton";
-import { savedMessage } from "@/lib/offline/queue";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-import {
-    TooltipProvider,
-} from "@/components/ui/tooltip";
+const COLUMNS = [
+    { name: "province_city_municipality", label: "Province / city / municipality" },
+    { name: "location", label: "Location" },
+    { name: "local_tourists", label: "Local tourists", type: "number", min: 0, step: 1, align: "right", className: "w-36" },
+    { name: "foreign_tourists", label: "Foreign tourists", type: "number", min: 0, step: 1, align: "right", className: "w-36" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const blankRow = () => ({ province_city_municipality: "", location: "", local_tourists: "", foreign_tourists: "", remarks: "" });
 
 export default function AffectedTouristsForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { auth } = usePage().props;
-    const [isSaving, setIsSaving] = useState(false);
-    
-    // Manages the 'affected_tourists' array in the main form's state
     const touristsList = data?.affected_tourists ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedTourists,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(touristsList, ['province_city_municipality', 'location'], 5);
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["affected-tourists-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(
-                `${APP_URL}/modifications/affected-tourists`
-            );
-            return data;
-        },
-        staleTime: 1000 * 60 * 5,
+    const setRows = useCallback((rows) => setData("affected_tourists", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.affected-tourists");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: touristsList,
+        setRows,
+        blankRow,
+        url: route("affected-tourists-reports.store"),
+        key: "affected_tourists",
+        historyKey,
+        successMessage: "Affected tourists saved.",
+        disabled,
     });
-
-    const getFieldHistory = (recordId, fieldName) =>
-        modificationData?.history?.[`${recordId}_${fieldName}`] || [];
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const updatedTourists = [...touristsList];
-        updatedTourists[index][name] = value;
-        setData("affected_tourists", updatedTourists);
-    };
-
-    const handleAddRow = () => {
-        setData("affected_tourists", [
-            ...touristsList,
-            {
-                id: `new-${Date.now()}`,
-                province_city_municipality: "",
-                location: "",
-                local_tourists: "",
-                foreign_tourists: "",
-                remarks: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean the data: convert string IDs (like "new-123") to null for new rows
-            const cleanedTourists = touristsList.map(tourist => ({
-                ...tourist,
-                id: typeof tourist.id === 'string' ? null : tourist.id
-            }));
-            
-            console.log("Submitting data:", { affected_tourists: cleanedTourists });
-            
-            const response = await axios.post(`${APP_URL}/affected-tourists-reports`, {
-                affected_tourists: cleanedTourists,
-            });
-            
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['affected-tourists-modifications']);
-            
-            // Update local state with the response data from server
-            if (response.data && response.data.affected_tourists) {
-                setData("affected_tourists", response.data.affected_tourists);
-            }
-            
-            toast.success(savedMessage(response, "Affected tourists saved successfully!"));
-        } catch (err) {
-            console.error("Full error:", err);
-            console.error("Error response:", err.response?.data);
-            
-            // Show specific validation errors if available
-            if (err.response?.data?.errors) {
-                const errorMessages = Object.values(err.response.data.errors).flat();
-                errorMessages.forEach(msg => toast.error(msg));
-            } else if (err.response?.data?.message) {
-                toast.error(err.response.data.message);
-            } else {
-                toast.error("Failed to save. Please check the console for details.");
-            }
-        } finally {
-            setIsSaving(false);
-            // Force a small delay to ensure state updates
-            setTimeout(() => {
-                queryClient.invalidateQueries(['affected-tourists-modifications']);
-            }, 100);
-        }
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(touristsList, ["province_city_municipality", "location"], 5);
 
     return (
-        <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
-                        <Plane size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            Affected Tourists
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Track tourist information affected by incidents.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={Plane} title="Affected tourists" description="Local and foreign tourists affected, by location." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    {/* Left: Search bar */}
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search location or municipality..."
-                    />
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search location or municipality"
+                excel={{ data: touristsList, fileName: "Affected_Tourists", sheetName: "Affected Tourists" }}
+            />
 
-                    {/* Right: Rows dropdown + download button side-by-side */}
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={touristsList}
-                            fileName="Affected_Tourists"
-                            sheetName="Affected Tourists"
-                        />
-                    </div>
-                </div>
+            <ReportTable
+                caption="Affected tourists"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={Plane}
+                emptyText="No affected tourists recorded."
+            />
+            {errors?.affected_tourists && <p className="text-sm text-destructive">{errors.affected_tourists}</p>}
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Province/City/Municipality</th>
-                                <th className="p-3 border-r">Location</th>
-                                <th className="p-3 border-r">Local Tourists</th>
-                                <th className="p-3 border-r">Foreign Tourists</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedTourists.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <Plane size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No tourist record matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedTourists.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "province_city_municipality",
-                                    "location",
-                                    "local_tourists",
-                                    "foreign_tourists",
-                                    "remarks",
-                                ];
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        <input
-                                                            type={
-                                                                field.includes("tourists")
-                                                                    ? "number"
-                                                                    : "text"
-                                                            }
-                                                            min={
-                                                                field.includes("tourists")
-                                                                    ? 0
-                                                                    : undefined
-                                                            }
-                                                            name={field}
-                                                            value={
-                                                                row[field] ?? ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleInputChange(
-                                                                    actualIndex,
-                                                                    e
-                                                                )
-                                                            }
-                                                            placeholder="Enter value..."
-                                                            disabled={disabled}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                        />
-                                                        <ModificationIndicator recordId={row.id} fieldName={field} getFieldHistory={getFieldHistory} currentValue={row[field]} />
-                                                    </div>
-                                                    
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+            <TablePagination {...pagination} />
 
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save Affected Tourists'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </TooltipProvider>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save affected tourists" />
+        </div>
     );
 }

@@ -1,345 +1,80 @@
 // resources/js/Components/Effects/SuspensionOfClassesForm.jsx
-import SearchBar from "../ui/SearchBar";
+
+import { useCallback } from "react";
+import { School } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
-import DownloadExcelButton from "../ui/DownloadExcelButton";
-
-import React, { useState, useRef, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import useAppUrl from "@/hooks/useAppUrl";
-import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
+import FormHeader from "@/Components/forms/FormHeader";
+import FormToolbar from "@/Components/forms/FormToolbar";
+import FormActions from "@/Components/forms/FormActions";
+import ReportTable from "@/Components/forms/ReportTable";
+import useRowEditor from "@/Components/forms/useRowEditor";
+import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-import {
-    School,
-    History,
-    Loader2,
-    PlusCircle,
-    Save,
-} from "lucide-react";
-import AddRowButton from "../ui/AddRowButton";
-import { savedMessage } from "@/lib/offline/queue";
-import ModificationIndicator from "@/Components/shared/ModificationIndicator";
-import {
-    TooltipProvider,
-} from "@/components/ui/tooltip";
+const LEVELS = [
+    "Pre-school",
+    "Elementary",
+    "Junior High School",
+    "Senior High School",
+    "All Levels (K-12)",
+    "College",
+    "All Levels (including College)",
+];
 
-const formatFieldName = (field) => {
-    return field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+const COLUMNS = [
+    { name: "province_city_municipality", label: "Province / city / municipality" },
+    { name: "level", label: "Level", type: "select", options: LEVELS, placeholder: "Select level…", className: "w-56" },
+    { name: "date_of_suspension", label: "Date of suspension", type: "date", className: "w-44" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+];
+
+const blankRow = () => ({ province_city_municipality: "", level: "", date_of_suspension: "", remarks: "" });
 
 export default function SuspensionOfClassesForm({ data, setData, errors, disabled = false }) {
-    const APP_URL = useAppUrl();
-    const queryClient = useQueryClient();
-    const { auth } = usePage().props;
-    const [isSaving, setIsSaving] = useState(false);
-    
-    // Manages the 'suspension_of_classes' array in the main form's state
     const suspensionList = data?.suspension_of_classes ?? [];
-    
-    // Enhanced search and filtering across multiple fields
-    const {
-        paginatedData: paginatedSuspensions,
-        searchTerm,
-        setSearchTerm,
-        currentPage,
-        setCurrentPage,
-        rowsPerPage,
-        setRowsPerPage,
-        totalPages,
-        pagination,
-    } = useTableFilter(suspensionList, ['province_city_municipality', 'level'], 5);
-
-    // Define the options for the 'Levels' dropdown
-    const suspensionLevels = [
-        "Pre-school",
-        "Elementary",
-        "Junior High School",
-        "Senior High School",
-        "All Levels (K-12)",
-        "College",
-        "All Levels (including College)",
-    ];
-
-    const {
-        data: modificationData,
-        isError,
-        error,
-    } = useQuery({
-        queryKey: ["suspension-classes-modifications"],
-        queryFn: async () => {
-            const { data } = await axios.get(
-                `${APP_URL}/modifications/suspension-classes`
-            );
-            return data;
-        },
-        staleTime: 1000 * 60 * 5,
+    const setRows = useCallback((rows) => setData("suspension_of_classes", rows), [setData]);
+    const { getFieldHistory, historyKey } = useFieldHistory("modifications.suspension-classes");
+    const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
+        rows: suspensionList,
+        setRows,
+        blankRow,
+        url: route("suspension-classes-reports.store"),
+        key: "suspension_of_classes",
+        historyKey,
+        successMessage: "Class suspensions saved.",
+        disabled,
     });
-
-    const getFieldHistory = (recordId, fieldName) =>
-        modificationData?.history?.[`${recordId}_${fieldName}`] || [];
-
-    const handleInputChange = (index, event) => {
-        const { name, value } = event.target;
-        const updatedSuspensions = [...suspensionList];
-        updatedSuspensions[index][name] = value;
-        setData("suspension_of_classes", updatedSuspensions);
-    };
-
-    const handleAddRow = () => {
-        setData("suspension_of_classes", [
-            ...suspensionList,
-            {
-                id: `new-${Date.now()}`,
-                province_city_municipality: "",
-                level: "",
-                date_of_suspension: "",
-                remarks: "",
-            },
-        ]);
-    };
-
-    const handleSubmit = async () => {
-        if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            // Clean the data: convert string IDs (like "new-123") to null for new rows
-            const cleanedSuspensions = suspensionList.map(suspension => ({
-                ...suspension,
-                id: typeof suspension.id === 'string' ? null : suspension.id
-            }));
-            
-            console.log("Submitting data:", { suspension_of_classes: cleanedSuspensions });
-            
-            const response = await axios.post(`${APP_URL}/suspension-classes-reports`, {
-                suspension_of_classes: cleanedSuspensions,
-            });
-            
-            // Invalidate and refetch modification history
-            await queryClient.invalidateQueries(['suspension-classes-modifications']);
-            
-            // Update local state with the response data from server
-            if (response.data && response.data.suspension_of_classes) {
-                setData("suspension_of_classes", response.data.suspension_of_classes);
-            }
-            
-            toast.success(savedMessage(response, "Suspension of classes saved successfully!"));
-        } catch (err) {
-            console.error("Full error:", err);
-            console.error("Error response:", err.response?.data);
-            
-            // Show specific validation errors if available
-            if (err.response?.data?.errors) {
-                const errorMessages = Object.values(err.response.data.errors).flat();
-                errorMessages.forEach(msg => toast.error(msg));
-            } else if (err.response?.data?.message) {
-                toast.error(err.response.data.message);
-            } else {
-                toast.error("Failed to save. Please check the console for details.");
-            }
-        } finally {
-            setIsSaving(false);
-            // Force a small delay to ensure state updates
-            setTimeout(() => {
-                queryClient.invalidateQueries(['suspension-classes-modifications']);
-            }, 100);
-        }
-    };
-
-    if (isError) {
-        return (
-            <div className="text-red-500 p-4">
-                Error fetching modification data: {error.message}
-            </div>
-        );
-    }
+    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(suspensionList, ["province_city_municipality", "level"], 5);
 
     return (
-        <TooltipProvider>
-            <div className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
-                        <School size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-800">
-                            F.1 Suspension of Classes
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                            Track class suspensions per municipality.
-                        </p>
-                    </div>
-                </div>
+        <div className="space-y-5">
+            <FormHeader icon={School} title="F.1 Suspension of classes" description="Class suspensions per municipality and level." />
 
-                {/* Filter Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                    {/* Left: Search bar */}
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search municipality or level..."
-                    />
+            <FormToolbar
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                searchPlaceholder="Search municipality or level"
+                excel={{ data: suspensionList, fileName: "Suspension_Of_Classes", sheetName: "Suspension of Classes" }}
+            />
 
-                    {/* Right: Rows dropdown + download button side-by-side */}
-                    <div className="flex items-center gap-3">
-                        <DownloadExcelButton
-                            data={suspensionList}
-                            fileName="Suspension_Of_Classes"
-                            sheetName="Suspension of Classes"
-                        />
-                    </div>
-                </div>
+            <ReportTable
+                caption="Suspension of classes"
+                columns={COLUMNS}
+                rows={paginatedData}
+                onChange={updateRow}
+                onRemove={removeRow}
+                getFieldHistory={getFieldHistory}
+                disabled={disabled}
+                searchTerm={searchTerm}
+                onClearSearch={setSearchTerm}
+                emptyIcon={School}
+                emptyText="No class suspensions recorded."
+            />
+            {errors?.suspension_of_classes && <p className="text-sm text-destructive">{errors.suspension_of_classes}</p>}
 
-                {/* Table */}
-                <div className="md:overflow-x-auto md:rounded-lg md:border md:border-slate-200">
-                    <table className="w-full text-sm">
-                        <thead className="hidden md:table-header-group bg-blue-500">
-                            <tr className="text-left text-white font-semibold">
-                                <th className="p-3 border-r">Province/City/Municipality</th>
-                                <th className="p-3 border-r">Levels</th>
-                                <th className="p-3 border-r">Date of Suspension</th>
-                                <th className="p-3">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody className="flex flex-col md:table-row-group gap-4 md:gap-0">
-                            {paginatedSuspensions.length === 0 && searchTerm ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                            <div className="bg-slate-100 text-slate-400 p-4 rounded-full">
-                                                <School size={48} />
-                                            </div>
-                                            <p className="text-lg font-semibold text-slate-700">
-                                                No results found
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                No suspension record matches "<strong>{searchTerm}</strong>"
-                                            </p>
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                Clear search
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : paginatedSuspensions.map((row, index) => {
-                                const actualIndex =
-                                    (currentPage - 1) * rowsPerPage + index;
-                                const fields = [
-                                    "province_city_municipality",
-                                    "level",
-                                    "date_of_suspension",
-                                    "remarks",
-                                ];
-                                return (
-                                    <tr
-                                        key={row.id}
-                                        className="block md:table-row border border-slate-200 rounded-lg md:border-0 md:border-t"
-                                    >
-                                        {fields.map((field) => {
-                                            
-                                            return (
-                                                <td
-                                                    key={field}
-                                                    className="block md:table-cell p-3 md:p-3 border-b border-slate-200 last:border-b-0 md:border-b-0"
-                                                >
-                                                    <label className="text-xs font-semibold text-slate-600 md:hidden">
-                                                        {formatFieldName(field)}
-                                                    </label>
-                                                    <div className="relative mt-1 md:mt-0">
-                                                        {field === "level" ? (
-                                                            <select
-                                                                name={field}
-                                                                value={row[field] ?? ""}
-                                                                onChange={(e) =>
-                                                                    handleInputChange(
-                                                                        actualIndex,
-                                                                        e
-                                                                    )
-                                                                }
-                                                                disabled={disabled}
-                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                            >
-                                                                <option value="" disabled>
-                                                                    Select Level
-                                                                </option>
-                                                                {suspensionLevels.map((level) => (
-                                                                    <option key={level} value={level}>
-                                                                        {level}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        ) : (
-                                                            <input
-                                                                type={field === "date_of_suspension" ? "date" : "text"}
-                                                                name={field}
-                                                                value={row[field] ?? ""}
-                                                                onChange={(e) =>
-                                                                    handleInputChange(
-                                                                        actualIndex,
-                                                                        e
-                                                                    )
-                                                                }
-                                                                placeholder="Enter value..."
-                                                                disabled={disabled}
-                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                                            />
-                                                        )}
-                                                        <ModificationIndicator recordId={row.id} fieldName={field} getFieldHistory={getFieldHistory} currentValue={row[field]} />
-                                                    </div>
-                                                    
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+            <TablePagination {...pagination} />
 
-                <TablePagination {...pagination} />
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <AddRowButton
-                            onClick={handleAddRow}
-                            disabled={disabled}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <PlusCircle size={16} /> Add Row
-                        </AddRowButton>
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || disabled}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>{disabled ? 'Forms Disabled' : 'Save Suspension of Classes'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </TooltipProvider>
+            <FormActions onAdd={() => { addRow(); showNewRow(); }} onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save class suspensions" />
+        </div>
     );
 }
