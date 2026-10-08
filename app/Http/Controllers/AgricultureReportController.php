@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\AgricultureReport;
 use App\Models\Modification;
+use App\Services\ReportHistory;
 use App\Traits\ValidatesDisasterStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,27 +25,15 @@ class AgricultureReportController extends Controller
     /**
      * API endpoint for agriculture report history
      */
-    public function apiHistory()
+    public function apiHistory(): JsonResponse
     {
-        $typhoonId = $this->getActiveTyphoonId();
-
-        $agriculture = AgricultureReport::with(['typhoon', 'typhoon.creator'])
-            ->when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId))
+        // One shared crop list per disaster (the form loads every row too).
+        $reports = AgricultureReport::whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
             ->latest()
-            ->limit(200)
             ->get();
 
-        // Group by typhoon
-        $groupedByTyphoon = $agriculture->groupBy('disaster_id')->map(function ($reports, $typhoonId) {
-            $typhoon = $reports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $reports->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['crops_affected', 'standing_crop_ha', 'stage_of_crop', 'total_area_affected_ha', 'total_production_loss', 'remarks']));
     }
 
     /**

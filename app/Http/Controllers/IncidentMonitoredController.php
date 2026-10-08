@@ -2,9 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AffectedTourist;
+use App\Models\Casualty;
+use App\Models\DamagedHouseReport;
 use App\Models\IncidentMonitored;
+use App\Models\Injured;
+use App\Models\Missing;
+use App\Models\Modification;
+use App\Models\SuspensionOfClass;
+use App\Models\SuspensionOfWork;
+use App\Models\Typhoon;
+use App\Services\ReportHistory;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -12,6 +23,7 @@ use Inertia\Inertia;
 class IncidentMonitoredController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Show list of monitored incidents
      * Optimized: Limit records for better performance
@@ -21,50 +33,50 @@ class IncidentMonitoredController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $incidentsQuery = IncidentMonitored::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $incidentsQuery = IncidentMonitored::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $incidentsQuery->where('user_id', $user->id);
         }
         $incidents = $incidentsQuery->latest()->limit(200)->get();
 
-        $casualtiesQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $casualtiesQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $casualtiesQuery->where('user_id', $user->id);
         }
         $casualties = $casualtiesQuery->latest()->limit(200)->get();
 
-        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $injuredQuery->where('user_id', $user->id);
         }
         $injured = $injuredQuery->latest()->limit(200)->get();
 
-        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $missingQuery->where('user_id', $user->id);
         }
         $missing = $missingQuery->latest()->limit(200)->get();
 
-        $affectedTouristsQuery = \App\Models\AffectedTourist::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $affectedTouristsQuery = AffectedTourist::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $affectedTouristsQuery->where('user_id', $user->id);
         }
         $affectedTourists = $affectedTouristsQuery->latest()->limit(200)->get();
 
-        $damagedHousesQuery = \App\Models\DamagedHouseReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $damagedHousesQuery = DamagedHouseReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $damagedHousesQuery->where('user_id', $user->id);
         }
         $damagedHouses = $damagedHousesQuery->latest()->limit(200)->get();
 
-        $suspensionOfClassesQuery = \App\Models\SuspensionOfClass::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $suspensionOfClassesQuery = SuspensionOfClass::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $suspensionOfClassesQuery->where('user_id', $user->id);
         }
         $suspensionOfClasses = $suspensionOfClassesQuery->latest()->limit(200)->get();
 
-        $suspensionOfWorkQuery = \App\Models\SuspensionOfWork::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && !$user->isAdmin()) {
+        $suspensionOfWorkQuery = SuspensionOfWork::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        if ($user && ! $user->isAdmin()) {
             $suspensionOfWorkQuery->where('user_id', $user->id);
         }
         $suspensionOfWork = $suspensionOfWorkQuery->latest()->limit(200)->get();
@@ -92,16 +104,16 @@ class IncidentMonitoredController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'incidents' => 'required|array',
-            'incidents.*.id'                => 'nullable',
+            'incidents.*.id' => 'nullable',
             'incidents.*.kinds_of_incident' => 'nullable|string|max:255',
-            'incidents.*.date_time'         => 'nullable|date',
-            'incidents.*.location'          => 'nullable|string|max:255',
-            'incidents.*.description'       => 'nullable|string',
-            'incidents.*.remarks'           => 'nullable|string|max:500',
+            'incidents.*.date_time' => 'nullable|date',
+            'incidents.*.location' => 'nullable|string|max:255',
+            'incidents.*.description' => 'nullable|string',
+            'incidents.*.remarks' => 'nullable|string|max:500',
         ]);
 
         $savedIncidents = [];
@@ -122,20 +134,20 @@ class IncidentMonitoredController extends Controller
 
             $data = [
                 'kinds_of_incident' => $incident['kinds_of_incident'] ?? null,
-                'date_time'         => $incident['date_time'] ?? null,
-                'location'          => $incident['location'] ?? null,
-                'description'       => $incident['description'] ?? null,
-                'remarks'           => $incident['remarks'] ?? null,
-                'updated_by'        => Auth::id(),
+                'date_time' => $incident['date_time'] ?? null,
+                'location' => $incident['location'] ?? null,
+                'description' => $incident['description'] ?? null,
+                'remarks' => $incident['remarks'] ?? null,
+                'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($incident['id']) && is_numeric($incident['id'])) {
+            if (! empty($incident['id']) && is_numeric($incident['id'])) {
                 // Update existing record (only own records for non-admin users)
                 $incidentQuery = IncidentMonitored::where('id', $incident['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $incidentQuery->where('user_id', $user->id);
                 }
 
@@ -143,7 +155,7 @@ class IncidentMonitoredController extends Controller
                 if ($incidentMonitored) {
                     // Only update fields that have changed
                     $fieldsToUpdate = [];
-                    
+
                     if ($incidentMonitored->kinds_of_incident !== ($incident['kinds_of_incident'] ?? null)) {
                         $fieldsToUpdate['kinds_of_incident'] = $incident['kinds_of_incident'] ?? null;
                     }
@@ -159,10 +171,10 @@ class IncidentMonitoredController extends Controller
                     if ($incidentMonitored->remarks !== ($incident['remarks'] ?? null)) {
                         $fieldsToUpdate['remarks'] = $incident['remarks'] ?? null;
                     }
-                    
+
                     // Always update updated_by
                     $fieldsToUpdate['updated_by'] = Auth::id();
-                    
+
                     // Only call update if there are changes
                     if (count($fieldsToUpdate) > 1) { // More than just updated_by
                         $incidentMonitored->update($fieldsToUpdate);
@@ -198,10 +210,10 @@ class IncidentMonitoredController extends Controller
 
         $validated = $request->validate([
             'kinds_of_incident' => 'nullable|string|max:255',
-            'date_time'         => 'nullable|date',
-            'location'          => 'nullable|string|max:255',
-            'description'       => 'nullable|string',
-            'remarks'           => 'nullable|string|max:500',
+            'date_time' => 'nullable|date',
+            'location' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'remarks' => 'nullable|string|max:500',
         ]);
 
         $incidentMonitored->update(array_merge($validated, [
@@ -216,7 +228,7 @@ class IncidentMonitoredController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'IncidentMonitored')
+        $modifications = Modification::where('model_type', 'IncidentMonitored')
             ->with('user')
             ->latest()
             ->get();
@@ -227,15 +239,15 @@ class IncidentMonitoredController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,
@@ -257,22 +269,14 @@ class IncidentMonitoredController extends Controller
     /**
      * API endpoint for incident history
      */
-    public function apiHistory()
+    public function apiHistory(): JsonResponse
     {
-        $incidents = IncidentMonitored::with(['typhoon', 'user:id,name'])
+        $reports = IncidentMonitored::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
             ->latest()
-            ->limit(200)
             ->get();
 
-        // Group by typhoon
-        $groupedByTyphoon = $incidents->groupBy('disaster_id')->map(function ($reports, $typhoonId) {
-            $typhoon = $reports->first()->typhoon;
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $reports->values()
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['kinds_of_incident', 'date_time', 'location', 'description', 'remarks']));
     }
 }

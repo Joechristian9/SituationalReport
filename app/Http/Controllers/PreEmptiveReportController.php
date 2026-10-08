@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Modification;
 use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
+use App\Services\ReportHistory;
 use App\Traits\ValidatesDisasterStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -293,32 +295,14 @@ class PreEmptiveReportController extends Controller
     /**
      * Get Pre-Emptive Reports History
      */
-    public function getPreEmptiveHistory(Request $request)
+    public function getPreEmptiveHistory(): JsonResponse
     {
-        try {
-            $typhoonId = $request->query('disaster_id');
+        // One shared evacuation list per disaster (the form loads every row too).
+        $reports = PreEmptiveReport::whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
+            ->get();
 
-            $query = PreEmptiveReport::with(['user:id,name', 'typhoon:id,name'])
-                ->orderBy('updated_at', 'desc');
-
-            if ($typhoonId) {
-                $query->where('disaster_id', $typhoonId);
-            }
-
-            $reports = $query->get();
-
-            return response()->json([
-                'reports' => $reports,
-                'success' => true,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching pre-emptive history: '.$e->getMessage());
-
-            return response()->json([
-                'reports' => [],
-                'success' => false,
-                'error' => 'Could not load pre-emptive history.',
-            ], 500);
-        }
+        return response()->json(ReportHistory::byDisaster($reports, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons']));
     }
 }

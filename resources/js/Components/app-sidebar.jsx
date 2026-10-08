@@ -17,10 +17,10 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 import { route } from "ziggy-js";
+import { historyMenuItems } from "@/Components/history/historyTypes";
 import {
     BarChart3,
     FileWarning,
-    ClipboardList,
     MapPin,
     Flame,
     Users,
@@ -30,10 +30,8 @@ import {
     Cloud,
     History,
     UserCircle,
-    Radio,
     Sprout,
     ClipboardCheck,
-    Zap,
     Shield,
 } from "lucide-react";
 import { TbLayoutDashboard } from "react-icons/tb";
@@ -206,6 +204,16 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-pre-positioning-form') &&
         !hasPermission('access-declaration-form');
 
+    // Which report histories each office sees (see Components/history/historyTypes.js).
+    const historyKeys = [...new Set([
+        [isCDRRMO, ["weather", "communication", "pre-emptive", "incident", "agriculture"]],
+        [isBDRRMC, ["electricity", "communication", "pre-emptive"]],
+        [isCEO, ["road", "bridge"]],
+        [isPNP, ["road", "bridge", "incident"]],
+        [isBarangay, ["weather", "communication", "road", "bridge", "pre-emptive", "incident"]],
+        [isCAO, ["agriculture"]],
+    ].flatMap(([applies, keys]) => (applies ? keys : [])))];
+
     const navMain = [
         {
             title: "Main Menu",
@@ -317,214 +325,13 @@ export function AppSidebar({ ...props }) {
                 }] : []),
             ],
         },
-        // Report History dropdown for CDRRMO users
-        ...(isCDRRMO ? [{
+        // Report History: the histories of the forms the user's office files.
+        ...(historyKeys.length > 0 ? [{
             title: "Report History",
             url: "#",
             icon: History,
             roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Weather History",
-                    url: route("weather.history"),
-                    roles: ["user", "admin"],
-                    icon: Cloud,
-                    permission: "access-weather-form",
-                },
-                {
-                    title: "Communication History",
-                    url: route("communication.history"),
-                    roles: ["user", "admin"],
-                    icon: Radio,
-                    permission: "access-communication-form",
-                },
-                {
-                    title: "Pre-Emptive History",
-                    url: route("pre-emptive.history"),
-                    roles: ["user", "admin"],
-                    icon: ClipboardList,
-                    permission: "access-pre-emptive-form",
-                },
-                {
-                    title: "Incident History",
-                    url: route("incident.history"),
-                    roles: ["user", "admin"],
-                    icon: Flame,
-                    permission: "access-incident-form",
-                },
-                {
-                    title: "Agriculture History",
-                    url: route("agriculture.history"),
-                    roles: ["user", "admin"],
-                    icon: Sprout,
-                    permission: "access-agriculture-form",
-                }
-            ]
-        }] : []),
-        // Report History dropdown for BDRRMC users
-        ...(isBDRRMC ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Electricity History",
-                    url: route("electricity.history"),
-                    roles: ["user", "admin"],
-                    icon: Zap,
-                    permission: "access-electricity-form",
-                },
-                {
-                    title: "Communication History",
-                    url: route("communication.history"),
-                    roles: ["user", "admin"],
-                    icon: Radio,
-                    permission: "access-communication-form",
-                },
-                {
-                    title: "Pre-Emptive History",
-                    url: route("pre-emptive.history"),
-                    roles: ["user", "admin"],
-                    icon: ClipboardList,
-                    permission: "access-pre-emptive-form",
-                },
-                // TODO: Add Road and Bridge history routes when they're created
-                // {
-                //     title: "Road History",
-                //     url: route("road.history"),
-                //     roles: ["user", "admin"],
-                //     icon: MapPin,
-                //     permission: "access-road-form",
-                // },
-                // {
-                //     title: "Bridge History",
-                //     url: route("bridge.history"),
-                //     roles: ["user", "admin"],
-                //     icon: MapPin,
-                //     permission: "access-bridge-form",
-                // },
-            ]
-        }] : []),
-        // Report History dropdown for CEO users
-        ...(isCEO ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Road History",
-                    url: route("road.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-road-form",
-                },
-                {
-                    title: "Bridge History",
-                    url: route("bridge.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-bridge-form",
-                },
-            ]
-        }] : []),
-        // Report History dropdown for PNP users
-        ...(isPNP ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Road History",
-                    url: route("road.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-road-form",
-                },
-                {
-                    title: "Bridge History",
-                    url: route("bridge.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-bridge-form",
-                },
-                {
-                    title: "Incident History",
-                    url: route("incident.history"),
-                    roles: ["user", "admin"],
-                    icon: Flame,
-                    permission: "access-incident-form",
-                },
-            ]
-        }] : []),
-        // Report History dropdown for Barangay users
-        ...(isBarangay ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Weather History",
-                    url: route("weather.history"),
-                    roles: ["user", "admin"],
-                    icon: Cloud,
-                    permission: "access-weather-form",
-                },
-                {
-                    title: "Communication History",
-                    url: route("communication.history"),
-                    roles: ["user", "admin"],
-                    icon: Radio,
-                    permission: "access-communication-form",
-                },
-                {
-                    title: "Road History",
-                    url: route("road.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-road-form",
-                },
-                {
-                    title: "Bridge History",
-                    url: route("bridge.history"),
-                    roles: ["user", "admin"],
-                    icon: MapPin,
-                    permission: "access-bridge-form",
-                },
-                {
-                    title: "Pre-Emptive History",
-                    url: route("pre-emptive.history"),
-                    roles: ["user", "admin"],
-                    icon: ClipboardList,
-                    permission: "access-pre-emptive-form",
-                },
-                {
-                    title: "Incident History",
-                    url: route("incident.history"),
-                    roles: ["user", "admin"],
-                    icon: Flame,
-                    permission: "access-incident-form",
-                },
-            ]
-        }] : []),
-        // Report History dropdown for CAO users
-        ...(isCAO ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
-            items: [
-                {
-                    title: "Agriculture History",
-                    url: route("agriculture.history"),
-                    roles: ["user", "admin"],
-                    icon: Sprout,
-                    permission: "access-agriculture-form",
-                }
-            ]
+            items: historyMenuItems(historyKeys),
         }] : []),
         /*
          * Annual Reports menu (temporarily disabled).

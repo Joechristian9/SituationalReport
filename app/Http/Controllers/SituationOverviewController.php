@@ -18,8 +18,10 @@ use App\Models\Typhoon;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\WeatherReport;
+use App\Services\ReportHistory;
 use App\Traits\ValidatesDisasterStatus;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -1082,38 +1084,15 @@ class SituationOverviewController extends Controller
     }
 
     /* ------------------- GET ELECTRICITY HISTORY ------------------- */
-    public function getElectricityHistory()
+    public function getElectricityHistory(): JsonResponse
     {
-        $user = Auth::user();
-
-        // Get all electricity reports for accessible users, grouped by typhoon
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = ElectricityService::whereIn('user_id', $accessibleUserIds)
-            ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
+        $reports = ElectricityService::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
             ->get();
 
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'status' => $report->status,
-                        'barangays_affected' => $report->barangays_affected,
-                        'remarks' => $report->remarks,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['status', 'barangays_affected', 'remarks']));
     }
 
     /* ------------------- VIEW/DOWNLOAD ELECTRICITY PDF ------------------- */
@@ -1201,206 +1180,64 @@ class SituationOverviewController extends Controller
     }
 
     /* ------------------- GET WATER SERVICE HISTORY ------------------- */
-    public function getWaterServiceHistory()
+    public function getWaterServiceHistory(): JsonResponse
     {
-        $user = Auth::user();
-
-        // Get all water service reports for accessible users, grouped by typhoon
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = WaterService::whereIn('user_id', $accessibleUserIds)
-            ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
+        $reports = WaterService::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
             ->get();
 
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'source_of_water' => $report->source_of_water,
-                        'barangays_served' => $report->barangays_served,
-                        'status' => $report->status,
-                        'remarks' => $report->remarks,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['source_of_water', 'barangays_served', 'status', 'remarks']));
     }
 
     /* ------------------- GET WEATHER HISTORY ------------------- */
-    public function getWeatherHistory(Request $request)
+    public function getWeatherHistory(): JsonResponse
     {
-        $user = Auth::user();
-        $perPage = $request->input('per_page', 20); // Default 20 items per page
-        $page = $request->input('page', 1);
+        $reports = WeatherReport::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
+            ->get();
 
-        // Get paginated weather reports for accessible users
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = WeatherReport::whereIn('user_id', $accessibleUserIds)
-            ->whereNotNull('disaster_id')
-            ->whereHas('typhoon') // Only get reports with valid typhoon
-            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->getCollection()->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'municipality' => $report->municipality,
-                        'sky_condition' => $report->sky_condition,
-                        'wind' => $report->wind,
-                        'precipitation' => $report->precipitation,
-                        'sea_condition' => $report->sea_condition,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json([
-            'data' => $groupedByTyphoon,
-            'current_page' => $reports->currentPage(),
-            'last_page' => $reports->lastPage(),
-            'per_page' => $reports->perPage(),
-            'total' => $reports->total(),
-        ]);
+        return response()->json(ReportHistory::byDisaster($reports, ['municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition']));
     }
 
     /* ------------------- GET COMMUNICATION HISTORY ------------------- */
-    public function getCommunicationHistory()
+    public function getCommunicationHistory(): JsonResponse
     {
-        $user = Auth::user();
-
-        // Get all communication reports for accessible users, grouped by typhoon
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = Communication::whereIn('user_id', $accessibleUserIds)
-            ->whereNotNull('disaster_id')
-            ->whereHas('typhoon') // Only get reports with valid typhoon
-            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name', 'serviceValues.service'])
-            ->orderBy('created_at', 'desc')
+        $reports = Communication::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name', 'serviceValues.service:id,name'])
+            ->latest()
             ->get();
 
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'globe' => $report->globe,
-                        'smart' => $report->smart,
-                        'pldt_landline' => $report->pldt_landline,
-                        'pldt_internet' => $report->pldt_internet,
-                        'vhf' => $report->vhf,
-                        'remarks' => $report->remarks,
-                        'service_values' => $report->serviceValues,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['globe', 'smart', 'pldt_landline', 'pldt_internet', 'vhf', 'remarks'], fn ($report) => [
+            'service_values' => $report->serviceValues->map(fn ($value) => ['name' => $value->service?->name, 'status' => $value->status])->values(),
+        ]));
     }
 
     /* ------------------- GET ROAD HISTORY ------------------- */
-    public function getRoadHistory()
+    public function getRoadHistory(): JsonResponse
     {
-        $user = Auth::user();
-
-        // Get all road reports for accessible users, grouped by typhoon
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = Road::whereIn('user_id', $accessibleUserIds)
-            ->whereNotNull('disaster_id')
-            ->whereHas('typhoon') // Only get reports with valid typhoon
-            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
+        $reports = Road::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
             ->get();
 
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'road_classification' => $report->road_classification,
-                        'name_of_road' => $report->name_of_road,
-                        'status' => $report->status,
-                        'areas_barangays_affected' => $report->areas_barangays_affected,
-                        're_routing' => $report->re_routing,
-                        'remarks' => $report->remarks,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['road_classification', 'name_of_road', 'status', 'areas_affected', 're_routing', 'remarks']));
     }
 
     /* ------------------- GET BRIDGE HISTORY ------------------- */
-    public function getBridgeHistory()
+    public function getBridgeHistory(): JsonResponse
     {
-        $user = Auth::user();
-
-        // Get all bridge reports for accessible users, grouped by typhoon
-        $accessibleUserIds = $user->getAccessibleUserIds('read');
-        $reports = Bridge::whereIn('user_id', $accessibleUserIds)
-            ->whereNotNull('disaster_id')
-            ->whereHas('typhoon') // Only get reports with valid typhoon
-            ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
+        $reports = Bridge::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
+            ->whereHas('typhoon')
+            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
+            ->latest()
             ->get();
 
-        // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
-            $typhoon = $typhoonReports->first()->typhoon;
-
-            return [
-                'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function ($report) {
-                    return [
-                        'id' => $report->id,
-                        'bridge_classification' => $report->bridge_classification,
-                        'name_of_bridge' => $report->name_of_bridge,
-                        'status' => $report->status,
-                        'areas_barangays_affected' => $report->areas_barangays_affected,
-                        're_routing' => $report->re_routing,
-                        'remarks' => $report->remarks,
-                        'created_at' => $report->created_at,
-                        'updated_at' => $report->updated_at,
-                        'user' => $report->user,
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json($groupedByTyphoon);
+        return response()->json(ReportHistory::byDisaster($reports, ['road_classification', 'name_of_bridge', 'status', 'areas_affected', 're_routing', 'remarks']));
     }
 }
