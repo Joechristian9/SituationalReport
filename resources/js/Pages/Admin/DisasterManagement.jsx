@@ -11,7 +11,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { AlertCircle, CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
+import { CheckCircle, Download, FileText, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import TablePagination from '@/Components/ui/TablePagination';
 import useMediaQuery from '@/hooks/useMediaQuery';
+import DisasterLifecycleDialog from '@/Components/DisasterLifecycleDialog';
 
 // Helper function to get icon and color for each disaster type
 const getDisasterIcon = (disasterType) => {
@@ -68,9 +69,7 @@ const getDisasterIcon = (disasterType) => {
 
 export default function DisasterManagement({ typhoons, activeTyphoon, disasterStats, statusCounts }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEndModalOpen, setIsEndModalOpen] = useState(false);
-    const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
-    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+    const [lifecycleAction, setLifecycleAction] = useState(null); // 'pause' | 'resume' | 'end'
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
@@ -224,71 +223,6 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             setIsSubmitting(false);
         }
     }, [formData]);
-
-    const handleEndTyphoon = useCallback(async () => {
-        if (!selectedTyphoon) return;
-        
-        setIsSubmitting(true);
-        const loadingToast = toast.loading('Ending disaster report and generating PDF...');
-
-        try {
-            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/end`);
-            toast.success(response.data.message, { id: loadingToast });
-            setIsEndModalOpen(false);
-            setSelectedTyphoon(null);
-            router.reload({ only: ['typhoons', 'activeTyphoon'] });
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to end disaster report', { id: loadingToast });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [selectedTyphoon]);
-
-    const handlePauseTyphoon = useCallback(async () => {
-        if (!selectedTyphoon) return;
-        
-        setIsSubmitting(true);
-        const loadingToast = toast.loading('Pausing disaster report...');
-
-        try {
-            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/pause`);
-            setIsPauseModalOpen(false);
-            setSelectedTyphoon(null);
-            router.reload({ 
-                only: ['typhoons', 'activeTyphoon'],
-                onSuccess: () => {
-                    toast.success(response.data.message, { id: loadingToast });
-                }
-            });
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to pause disaster report', { id: loadingToast });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [selectedTyphoon]);
-
-    const handleResumeTyphoon = useCallback(async () => {
-        if (!selectedTyphoon) return;
-        
-        setIsSubmitting(true);
-        const loadingToast = toast.loading('Resuming disaster report...');
-
-        try {
-            const response = await axios.post(`/admin/disasters/${selectedTyphoon.id}/resume`);
-            setIsResumeModalOpen(false);
-            setSelectedTyphoon(null);
-            router.reload({ 
-                only: ['typhoons', 'activeTyphoon'],
-                onSuccess: () => {
-                    toast.success(response.data.message, { id: loadingToast });
-                }
-            });
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to resume disaster report', { id: loadingToast });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [selectedTyphoon]);
 
     const handleDownloadSnapshot = async (typhoon) => {
         window.open(`/admin/disasters/${typhoon.id}/snapshot`, '_blank');
@@ -499,59 +433,44 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                     </div>
                                                 </div>
 
-                                                {/* Action Buttons Footer - Compact */}
+                                                {/* Lifecycle actions: pause or resume, end, and a snapshot while paused */}
                                                 <div className="px-4 py-3 bg-white/5 backdrop-blur-sm border-t border-white/10">
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {activeTyphoon.status === 'active' && (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {activeTyphoon.status === 'paused' ? (
                                                             <Button
-                                                                onClick={() => {
-                                                                    setSelectedTyphoon(activeTyphoon);
-                                                                    setIsPauseModalOpen(true);
-                                                                }}
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="flex-1 flex items-center justify-center gap-1.5 bg-white/90 border-0 text-amber-700 hover:bg-white hover:scale-105 font-bold shadow-md transition-all text-xs py-1.5"
+                                                                onClick={() => setLifecycleAction('resume')}
+                                                                className="min-h-11 gap-2 border-0 bg-white text-sm font-semibold text-success shadow-sm hover:bg-white/90"
                                                             >
-                                                                <Pause className="w-3 h-3" />
+                                                                <Play className="h-4 w-4" aria-hidden="true" />
+                                                                Resume
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                onClick={() => setLifecycleAction('pause')}
+                                                                className="min-h-11 gap-2 border-0 bg-white text-sm font-semibold text-warning shadow-sm hover:bg-white/90"
+                                                            >
+                                                                <Pause className="h-4 w-4" aria-hidden="true" />
                                                                 Pause
                                                             </Button>
                                                         )}
-                                                        {activeTyphoon.status === 'paused' && (
-                                                            <>
-                                                                <Button
-                                                                    onClick={() => {
-                                                                        setSelectedTyphoon(activeTyphoon);
-                                                                        setIsResumeModalOpen(true);
-                                                                    }}
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-white/90 border-0 text-green-700 hover:bg-white hover:scale-105 font-bold shadow-md transition-all text-xs py-1.5"
-                                                                >
-                                                                    <Play className="w-3 h-3" />
-                                                                    Resume
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => handleDownloadSnapshot(activeTyphoon)}
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="flex items-center justify-center gap-1.5 bg-white/20 border-0 text-white hover:bg-white/30 hover:scale-105 font-bold shadow-md transition-all text-xs py-1.5"
-                                                                >
-                                                                    <FileDown className="w-3 h-3" />
-                                                                    Snapshot
-                                                                </Button>
-                                                            </>
-                                                        )}
                                                         <Button
-                                                            onClick={() => {
-                                                                setSelectedTyphoon(activeTyphoon);
-                                                                setIsEndModalOpen(true);
-                                                            }}
-                                                            size="sm"
-                                                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 hover:scale-105 text-white font-bold shadow-lg transition-all text-xs py-1.5"
+                                                            variant="destructive"
+                                                            onClick={() => setLifecycleAction('end')}
+                                                            className="min-h-11 gap-2 text-sm font-semibold"
                                                         >
-                                                            <StopCircle className="w-3 h-3" />
-                                                            End
+                                                            <StopCircle className="h-4 w-4" aria-hidden="true" />
+                                                            End disaster
                                                         </Button>
+                                                        {activeTyphoon.status === 'paused' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => handleDownloadSnapshot(activeTyphoon)}
+                                                                className="col-span-2 min-h-11 gap-2 border-white/60 bg-transparent text-sm font-semibold text-white hover:bg-white/10 hover:text-white"
+                                                            >
+                                                                <FileDown className="h-4 w-4" aria-hidden="true" />
+                                                                Download snapshot PDF
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -1277,228 +1196,11 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                 </DialogContent>
             </Dialog>
 
-            {/* End Typhoon Modal */}
-            <Dialog open={isEndModalOpen} onOpenChange={setIsEndModalOpen}>
-                <DialogContent className="sm:max-w-[550px]">
-                    <DialogHeader>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 bg-red-100 rounded-full">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
-                            </div>
-                            <DialogTitle className="text-xl text-red-900">End Disaster Report</DialogTitle>
-                        </div>
-                        <DialogDescription className="text-base">
-                            Are you sure you want to end <strong className="text-slate-900">{selectedTyphoon?.name}</strong>? This action will:
-                        </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-3 py-2">
-                        <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
-                            <StopCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-red-900">Disable all forms</p>
-                                <p className="text-xs text-red-700">Users will no longer be able to input data</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-blue-900">Generate PDF report</p>
-                                <p className="text-xs text-blue-700">Automatically creates a downloadable PDF with all data</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <CheckCircle className="w-5 h-5 text-slate-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-slate-900">Mark as ended</p>
-                                <p className="text-xs text-slate-700">Typhoon status will change from Active to Ended</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                        <div className="flex gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-amber-900">
-                                <p className="font-semibold mb-1">Important</p>
-                                <p className="text-xs text-amber-800">This action cannot be undone. Make sure all data has been collected before proceeding.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                                setIsEndModalOpen(false);
-                                setSelectedTyphoon(null);
-                            }}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleEndTyphoon}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Ending & Generating PDF...
-                                </>
-                            ) : (
-                                <>
-                                    <StopCircle className="w-4 h-4 mr-2" />
-                                    End Disaster Report
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Pause Typhoon Modal */}
-            <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
-                <DialogContent className="sm:max-w-[550px]">
-                    <DialogHeader>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 bg-amber-100 rounded-full">
-                                <Pause className="w-5 h-5 text-amber-600" />
-                            </div>
-                            <DialogTitle className="text-xl text-amber-900">Pause Disaster Report</DialogTitle>
-                        </div>
-                        <DialogDescription className="text-base">
-                            Temporarily pause <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
-                        </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-3 py-2">
-                        <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                            <StopCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-amber-900">Temporarily disable forms</p>
-                                <p className="text-xs text-amber-700">Users cannot input data while paused</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <FileDown className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-blue-900">Download current snapshot</p>
-                                <p className="text-xs text-blue-700">You can download a PDF of current data</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                            <Play className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-green-900">Can be resumed later</p>
-                                <p className="text-xs text-green-700">Resume anytime to continue data collection</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                                setIsPauseModalOpen(false);
-                                setSelectedTyphoon(null);
-                            }}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handlePauseTyphoon}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Pausing...
-                                </>
-                            ) : (
-                                <>
-                                    <Pause className="w-4 h-4 mr-2" />
-                                    Pause Report
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Resume Typhoon Modal */}
-            <Dialog open={isResumeModalOpen} onOpenChange={setIsResumeModalOpen}>
-                <DialogContent className="sm:max-w-[550px]">
-                    <DialogHeader>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 bg-green-100 rounded-full">
-                                <Play className="w-5 h-5 text-green-600" />
-                            </div>
-                            <DialogTitle className="text-xl text-green-900">Resume Disaster Report</DialogTitle>
-                        </div>
-                        <DialogDescription className="text-base">
-                            Resume <strong className="text-slate-900">{selectedTyphoon?.name}</strong>. This will:
-                        </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-3 py-2">
-                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-green-900">Re-enable all forms</p>
-                                <p className="text-xs text-green-700">Users can continue inputting data</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm text-blue-900">Continue same report</p>
-                                <p className="text-xs text-blue-700">All existing data will be preserved</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                                setIsResumeModalOpen(false);
-                                setSelectedTyphoon(null);
-                            }}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleResumeTyphoon}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Resuming...
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="w-4 h-4 mr-2" />
-                                    Resume Report
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <DisasterLifecycleDialog
+                action={lifecycleAction}
+                disaster={activeTyphoon}
+                onActionChange={setLifecycleAction}
+            />
 
             {/* Delete Typhoon Modal */}
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
