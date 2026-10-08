@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WeatherReport;
-use App\Models\WaterLevel;
-use App\Models\ElectricityService;
-use App\Models\WaterService;
-use App\Models\Communication;
-use App\Models\Road;
+use App\Events\UserTyping;
+use App\Models\AgricultureReport;
 use App\Models\Bridge;
 use App\Models\Casualty;
+use App\Models\Communication;
+use App\Models\CommunicationServiceValue;
+use App\Models\ElectricityService;
 use App\Models\Injured;
 use App\Models\Missing;
 use App\Models\Modification;
+use App\Models\PreEmptiveReport;
+use App\Models\Road;
 use App\Models\Typhoon;
-use App\Events\UserTyping;
+use App\Models\WaterLevel;
+use App\Models\WaterService;
+use App\Models\WeatherReport;
 use App\Traits\ValidatesDisasterStatus;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -24,28 +28,29 @@ use Inertia\Inertia;
 class SituationOverviewController extends Controller
 {
     use ValidatesDisasterStatus;
+
     /* ------------------- INDEX ------------------- */
     public function index()
     {
         // Optimized: Limit to last 100 records for performance
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
-        
-        $weatherQuery = WeatherReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $waterLevelQuery = WaterLevel::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $electricityQuery = ElectricityService::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $waterServiceQuery = WaterService::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $communicationQuery = Communication::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $roadQuery = Road::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $bridgeQuery = Bridge::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $preEmptiveQuery = \App\Models\PreEmptiveReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $casualtyQuery = \App\Models\Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $injuredQuery = \App\Models\Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        $missingQuery = \App\Models\Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
-        
+
+        $weatherQuery = WeatherReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $waterLevelQuery = WaterLevel::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $electricityQuery = ElectricityService::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $waterServiceQuery = WaterService::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $communicationQuery = Communication::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $roadQuery = Road::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $bridgeQuery = Bridge::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $preEmptiveQuery = PreEmptiveReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $casualtyQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+
         // Pausing/resuming a disaster only blocks submissions; it never hides records.
         // Forms always show everything for the active disaster, matching the admin views.
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             // Get all user IDs whose data this user can access (including their own)
             $accessibleUserIds = $user->getAccessibleUserIds('read');
 
@@ -67,38 +72,39 @@ class SituationOverviewController extends Controller
         return Inertia::render('SituationReports/Index', [
             'weatherReports' => $weatherQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterLevels'    => $waterLevelQuery
+            'waterLevels' => $waterLevelQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'electricity'    => $electricityQuery
+            'electricity' => $electricityQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterServices'  => $waterServiceQuery
+            'waterServices' => $waterServiceQuery
                 ->with('user:id,name') // Load user relationship
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'communications' => $communicationQuery
+                ->with('serviceValues:id,communication_id,service_id,status')
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'roads'          => $roadQuery
+            'roads' => $roadQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'bridges'        => $bridgeQuery
-                ->where(function($query) {
+            'bridges' => $bridgeQuery
+                ->where(function ($query) {
                     // Filter out completely empty rows
-                    $query->where(function($q) {
+                    $query->where(function ($q) {
                         $q->whereNotNull('road_classification')->where('road_classification', '!=', '');
                     })
-                    ->orWhere(function($q) {
-                        $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
-                    })
-                    ->orWhere(function($q) {
-                        $q->whereNotNull('status')->where('status', '!=', '');
-                    })
-                    ->orWhere(function($q) {
-                        $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
-                    })
-                    ->orWhere(function($q) {
-                        $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
-                    })
-                    ->orWhere(function($q) {
-                        $q->whereNotNull('remarks')->where('remarks', '!=', '');
-                    });
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('status')->where('status', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('remarks')->where('remarks', '!=', '');
+                        });
                 })
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'preEmptiveReports' => $preEmptiveQuery
@@ -109,6 +115,11 @@ class SituationOverviewController extends Controller
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
             'missing' => $missingQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get(),
+            // One shared list per disaster, and saving removes crops left out of it, so the
+            // form must get every row of the active disaster: no limit, no other disasters.
+            'agriculture' => $typhoonId
+                ? AgricultureReport::where('disaster_id', $typhoonId)->orderBy('created_at')->get()
+                : [],
         ]);
     }
 
@@ -116,7 +127,7 @@ class SituationOverviewController extends Controller
     public function storeWeather(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-weather-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-weather-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to weather form');
         }
 
@@ -126,7 +137,7 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         // 1. Stricter Validation Rules
         $validated = $request->validate([
@@ -135,13 +146,13 @@ class SituationOverviewController extends Controller
             'reports.*.id' => [
                 'nullable',
                 'integer',
-                Rule::exists('weather_reports', 'id')
+                Rule::exists('weather_reports', 'id'),
             ],
             // Municipality is now required to create a new record.
             // It can be null only if other fields are also null (which we handle below).
-            'reports.*.municipality'  => 'required|string|max:255',
+            'reports.*.municipality' => 'required|string|max:255',
             'reports.*.sky_condition' => 'nullable|string|max:255',
-            'reports.*.wind'          => 'nullable|string|max:255',
+            'reports.*.wind' => 'nullable|string|max:255',
             'reports.*.precipitation' => 'nullable|string|max:255',
             'reports.*.sea_condition' => 'nullable|string|max:255',
         ]);
@@ -150,12 +161,12 @@ class SituationOverviewController extends Controller
             // 2. More Robust Saving Logic
 
             // If an ID exists, we find and update that specific record.
-            if (!empty($reportData['id'])) {
+            if (! empty($reportData['id'])) {
                 $weatherReport = WeatherReport::find($reportData['id']);
                 if ($weatherReport) {
                     // Only update fields that have actually changed
                     $fieldsToUpdate = [];
-                    
+
                     if ($weatherReport->municipality !== $reportData['municipality']) {
                         $fieldsToUpdate['municipality'] = $reportData['municipality'];
                     }
@@ -171,9 +182,9 @@ class SituationOverviewController extends Controller
                     if ($weatherReport->sea_condition !== ($reportData['sea_condition'] ?? null)) {
                         $fieldsToUpdate['sea_condition'] = $reportData['sea_condition'] ?? null;
                     }
-                    
+
                     // Only save if there are actual changes
-                    if (!empty($fieldsToUpdate)) {
+                    if (! empty($fieldsToUpdate)) {
                         $fieldsToUpdate['updated_by'] = Auth::id();
                         $weatherReport->update($fieldsToUpdate);
                     }
@@ -187,14 +198,14 @@ class SituationOverviewController extends Controller
                 }
 
                 WeatherReport::create([
-                    'municipality'  => $reportData['municipality'],
+                    'municipality' => $reportData['municipality'],
                     'sky_condition' => $reportData['sky_condition'],
-                    'wind'          => $reportData['wind'],
+                    'wind' => $reportData['wind'],
                     'precipitation' => $reportData['precipitation'],
                     'sea_condition' => $reportData['sea_condition'],
-                    'user_id'       => Auth::id(),
-                    'updated_by'    => Auth::id(),
-                    'disaster_id'    => $activeTyphoon->id,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -205,7 +216,7 @@ class SituationOverviewController extends Controller
         $updatedQuery = WeatherReport::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -214,19 +225,17 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Weather reports saved successfully!',
-            'reports' => $updatedReports
+            'reports' => $updatedReports,
         ]);
     }
-
-
 
     public function storeWaterLevel(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-water-level-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-water-level-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to water level form');
         }
 
@@ -236,7 +245,7 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'reports' => ['required', 'array'],
@@ -250,17 +259,17 @@ class SituationOverviewController extends Controller
 
         foreach ($validated['reports'] as $reportData) {
             // If ID is numeric, update existing record
-            if (!empty($reportData['id']) && is_numeric($reportData['id'])) {
+            if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
                 $waterLevel = WaterLevel::find($reportData['id']);
                 if ($waterLevel) {
                     $waterLevel->update([
                         'gauging_station' => $reportData['gauging_station'],
-                        'current_level'   => $reportData['current_level'],
-                        'alarm_level'     => $reportData['alarm_level'],
-                        'critical_level'  => $reportData['critical_level'],
-                        'affected_areas'  => $reportData['affected_areas'],
-                        'disaster_id'      => $activeTyphoon->id,
-                        'updated_by'      => Auth::id(),
+                        'current_level' => $reportData['current_level'],
+                        'alarm_level' => $reportData['alarm_level'],
+                        'critical_level' => $reportData['critical_level'],
+                        'affected_areas' => $reportData['affected_areas'],
+                        'disaster_id' => $activeTyphoon->id,
+                        'updated_by' => Auth::id(),
                     ]);
                 }
             } else {
@@ -271,13 +280,13 @@ class SituationOverviewController extends Controller
 
                 WaterLevel::create([
                     'gauging_station' => $reportData['gauging_station'],
-                    'current_level'   => $reportData['current_level'],
-                    'alarm_level'     => $reportData['alarm_level'],
-                    'critical_level'  => $reportData['critical_level'],
-                    'affected_areas'  => $reportData['affected_areas'],
-                    'user_id'         => Auth::id(),
-                    'updated_by'      => Auth::id(),
-                    'disaster_id'      => $activeTyphoon->id,
+                    'current_level' => $reportData['current_level'],
+                    'alarm_level' => $reportData['alarm_level'],
+                    'critical_level' => $reportData['critical_level'],
+                    'affected_areas' => $reportData['affected_areas'],
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -288,7 +297,7 @@ class SituationOverviewController extends Controller
         $updatedQuery = WaterLevel::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -297,18 +306,17 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Water level reports saved successfully!',
-            'reports' => $updatedReports
+            'reports' => $updatedReports,
         ]);
     }
-
 
     public function storeElectricity(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-electricity-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-electricity-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to electricity form');
         }
 
@@ -318,19 +326,18 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'electricityServices' => 'required|array',
             'electricityServices.*.id' => ['nullable', 'integer'],
-            'electricityServices.*.user_id' => ['nullable', 'integer'], // Allow user_id to be passed
             'electricityServices.*.status' => 'nullable|string',
             'electricityServices.*.barangays_affected' => 'nullable|string',
             'electricityServices.*.remarks' => 'nullable|string',
         ]);
 
         $user = Auth::user();
-        
+
         // Get ALL existing record IDs for this typhoon (not just current user's)
         $existingIds = ElectricityService::where('disaster_id', $activeTyphoon->id)
             ->pluck('id')
@@ -338,17 +345,17 @@ class SituationOverviewController extends Controller
 
         $processedIds = [];
         $savedServices = [];
-        
+
         // Update existing or create new reports
         foreach ($validated['electricityServices'] as $serviceData) {
             // Skip empty rows
-            if (empty($serviceData['status']) && 
-                empty($serviceData['barangays_affected']) && 
+            if (empty($serviceData['status']) &&
+                empty($serviceData['barangays_affected']) &&
                 empty($serviceData['remarks'])) {
                 continue;
             }
 
-            if (!empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
+            if (! empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
                 // Update existing record (anyone can update any record)
                 $service = ElectricityService::find($serviceData['id']);
                 if ($service) {
@@ -362,13 +369,10 @@ class SituationOverviewController extends Controller
                     $savedServices[] = $service;
                 }
             } else {
-                // Create new record
-                // If user_id is provided (from existing record), keep it; otherwise use current user
-                $recordUserId = $serviceData['user_id'] ?? $user->id;
-                
+                // The creator is always the signed-in account, never a value from the request.
                 $service = ElectricityService::create([
                     'disaster_id' => $activeTyphoon->id,
-                    'user_id' => $recordUserId, // Preserve original creator
+                    'user_id' => $user->id,
                     'status' => $serviceData['status'] ?? null,
                     'barangays_affected' => $serviceData['barangays_affected'] ?? null,
                     'remarks' => $serviceData['remarks'] ?? null,
@@ -379,17 +383,20 @@ class SituationOverviewController extends Controller
             }
         }
 
-        // Delete records that were not included in the submission (user removed rows)
-        $idsToDelete = array_diff($existingIds, $processedIds);
-        if (!empty($idsToDelete)) {
-            ElectricityService::whereIn('id', $idsToDelete)->delete();
+        // Rows left out of the submission were removed, but only among records this
+        // account can write: the form never shows the others, so their absence means nothing.
+        // Deleted one by one through Eloquent so the audit observer records it.
+        $deletable = ElectricityService::whereIn('id', array_diff($existingIds, $processedIds));
+        if (! $user->isAdmin()) {
+            $deletable->whereIn('user_id', $user->getAccessibleUserIds('write'));
         }
+        $deletable->get()->each->delete();
 
         // Return all reports for this typhoon
         $updatedQuery = ElectricityService::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -397,17 +404,17 @@ class SituationOverviewController extends Controller
         $updatedServices = $updatedQuery
             ->orderBy('created_at', 'asc')
             ->get();
-        
+
         return response()->json([
             'message' => 'Electricity service report saved successfully',
-            'electricityServices' => $updatedServices
+            'electricityServices' => $updatedServices,
         ]);
     }
 
     public function storeWaterService(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-water-service-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-water-service-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to water service form');
         }
 
@@ -417,16 +424,15 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'waterServices' => 'required|array',
             'waterServices.*.id' => ['nullable', 'integer'],
-            'waterServices.*.source_of_water'  => 'nullable|string|max:255',
+            'waterServices.*.source_of_water' => 'nullable|string|max:255',
             'waterServices.*.barangays_served' => 'nullable|string|max:500',
-            'waterServices.*.status'           => 'nullable|string|max:255',
-            'waterServices.*.remarks'          => 'nullable|string|max:500',
-            'waterServices.*.user_id'          => 'nullable|integer|exists:users,id', // Validate user_id
+            'waterServices.*.status' => 'nullable|string|max:255',
+            'waterServices.*.remarks' => 'nullable|string|max:500',
         ]);
 
         $user = Auth::user();
@@ -440,19 +446,18 @@ class SituationOverviewController extends Controller
             // Update the existing record when it has one; otherwise create a new record
             $shouldCreateNew = false;
 
-            if (!empty($waterData['id']) && is_numeric($waterData['id'])) {
+            if (! empty($waterData['id']) && is_numeric($waterData['id'])) {
                 $existingService = WaterService::find($waterData['id']);
 
                 if ($existingService) {
                     // Update existing record - allow ANY user to update ANY record
                     $existingService->update([
-                        'source_of_water'  => $waterData['source_of_water'] ?? null,
+                        'source_of_water' => $waterData['source_of_water'] ?? null,
                         'barangays_served' => $waterData['barangays_served'] ?? null,
-                        'status'           => $waterData['status'] ?? null,
-                        'remarks'          => $waterData['remarks'] ?? null,
-                        'disaster_id'       => $activeTyphoon->id,
-                        'user_id'          => $waterData['user_id'] ?? $existingService->user_id, // Preserve original creator
-                        'updated_by'       => Auth::id(),
+                        'status' => $waterData['status'] ?? null,
+                        'remarks' => $waterData['remarks'] ?? null,
+                        'disaster_id' => $activeTyphoon->id,
+                        'updated_by' => Auth::id(),
                     ]);
                 } else {
                     // No existing record with that ID: create it
@@ -462,17 +467,17 @@ class SituationOverviewController extends Controller
                 // No ID, create new record
                 $shouldCreateNew = true;
             }
-            
+
             if ($shouldCreateNew) {
                 // Create new record
                 WaterService::create([
-                    'source_of_water'  => $waterData['source_of_water'] ?? null,
+                    'source_of_water' => $waterData['source_of_water'] ?? null,
                     'barangays_served' => $waterData['barangays_served'] ?? null,
-                    'status'           => $waterData['status'] ?? null,
-                    'remarks'          => $waterData['remarks'] ?? null,
-                    'user_id'          => $waterData['user_id'] ?? $user->id, // Use provided user_id or current user
-                    'updated_by'       => Auth::id(),
-                    'disaster_id'       => $activeTyphoon->id,
+                    'status' => $waterData['status'] ?? null,
+                    'remarks' => $waterData['remarks'] ?? null,
+                    'user_id' => $user->id, // The creator is always the signed-in account
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -483,18 +488,17 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Water service reports saved successfully',
-            'waterServices' => $updatedServices
+            'waterServices' => $updatedServices,
         ]);
     }
-
 
     public function storeCommunication(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-communication-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to communication form');
         }
 
@@ -504,7 +508,7 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'communications' => 'required|array',
@@ -527,12 +531,12 @@ class SituationOverviewController extends Controller
             }
 
             // If ID exists and is numeric, update existing record
-            if (!empty($commData['id']) && is_numeric($commData['id'])) {
+            if (! empty($commData['id']) && is_numeric($commData['id'])) {
                 $communication = Communication::find($commData['id']);
                 if ($communication) {
                     // Only update fields that have changed
                     $fieldsToUpdate = [];
-                    
+
                     if ($communication->globe !== ($commData['globe'] ?? null)) {
                         $fieldsToUpdate['globe'] = $commData['globe'] ?? null;
                     }
@@ -551,26 +555,26 @@ class SituationOverviewController extends Controller
                     if ($communication->remarks !== ($commData['remarks'] ?? null)) {
                         $fieldsToUpdate['remarks'] = $commData['remarks'] ?? null;
                     }
-                    
+
                     // Always update disaster_id and updated_by
                     $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
                     $fieldsToUpdate['updated_by'] = Auth::id();
-                    
+
                     // Only call update if there are changes
                     if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
                         $communication->update($fieldsToUpdate);
                     }
-                    
+
                     // Handle dynamic service values
                     if (isset($commData['service_values']) && is_array($commData['service_values'])) {
                         foreach ($commData['service_values'] as $serviceValue) {
-                            \App\Models\CommunicationServiceValue::updateOrCreate(
+                            CommunicationServiceValue::updateOrCreate(
                                 [
                                     'communication_id' => $communication->id,
-                                    'service_id' => $serviceValue['service_id']
+                                    'service_id' => $serviceValue['service_id'],
                                 ],
                                 [
-                                    'status' => $serviceValue['status'] ?? null
+                                    'status' => $serviceValue['status'] ?? null,
                                 ]
                             );
                         }
@@ -589,14 +593,14 @@ class SituationOverviewController extends Controller
                     'updated_by' => Auth::id(),
                     'disaster_id' => $activeTyphoon->id,
                 ]);
-                
+
                 // Handle dynamic service values
                 if (isset($commData['service_values']) && is_array($commData['service_values'])) {
                     foreach ($commData['service_values'] as $serviceValue) {
-                        \App\Models\CommunicationServiceValue::create([
+                        CommunicationServiceValue::create([
                             'communication_id' => $communication->id,
                             'service_id' => $serviceValue['service_id'],
-                            'status' => $serviceValue['status'] ?? null
+                            'status' => $serviceValue['status'] ?? null,
                         ]);
                     }
                 }
@@ -609,7 +613,7 @@ class SituationOverviewController extends Controller
         $updatedQuery = Communication::with(['user:id,name', 'serviceValues.service'])
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -618,17 +622,17 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Communication reports saved successfully',
-            'communications' => $updatedCommunications
+            'communications' => $updatedCommunications,
         ]);
     }
 
     public function storeRoad(Request $request)
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-road-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-road-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to road form');
         }
 
@@ -638,17 +642,17 @@ class SituationOverviewController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'roads' => 'required|array',
             'roads.*.id' => ['nullable', 'integer'],
             'roads.*.road_classification' => 'nullable|string|max:255',
-            'roads.*.name_of_road'        => 'nullable|string|max:255',
-            'roads.*.status'              => 'nullable|string|max:255',
-            'roads.*.areas_affected'      => 'nullable|string|max:500',
-            'roads.*.re_routing'          => 'nullable|string|max:500',
-            'roads.*.remarks'             => 'nullable|string|max:500',
+            'roads.*.name_of_road' => 'nullable|string|max:255',
+            'roads.*.status' => 'nullable|string|max:255',
+            'roads.*.areas_affected' => 'nullable|string|max:500',
+            'roads.*.re_routing' => 'nullable|string|max:500',
+            'roads.*.remarks' => 'nullable|string|max:500',
         ]);
 
         foreach ($validated['roads'] as $roadData) {
@@ -658,7 +662,7 @@ class SituationOverviewController extends Controller
             }
 
             // If ID exists and is numeric, update existing record
-            if (!empty($roadData['id']) && is_numeric($roadData['id'])) {
+            if (! empty($roadData['id']) && is_numeric($roadData['id'])) {
                 $road = Road::find($roadData['id']);
                 if ($road) {
                     $road->update([
@@ -694,7 +698,7 @@ class SituationOverviewController extends Controller
         $updatedQuery = Road::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -703,10 +707,10 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Road reports saved successfully',
-            'roads' => $updatedRoads
+            'roads' => $updatedRoads,
         ]);
     }
 
@@ -714,7 +718,7 @@ class SituationOverviewController extends Controller
     {
         try {
             // Check permission
-            if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
+            if (! Auth::user()->hasPermissionTo('access-bridge-form') && ! Auth::user()->hasRole('admin')) {
                 abort(403, 'Unauthorized access to bridge form');
             }
 
@@ -724,104 +728,104 @@ class SituationOverviewController extends Controller
             }
 
             // Get active typhoon
-            $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+            $activeTyphoon = Typhoon::getActiveTyphoon();
 
             $validated = $request->validate([
                 'bridges' => 'required|array',
                 'bridges.*.id' => ['nullable', 'integer'],
                 'bridges.*.road_classification' => 'nullable|string|max:255',
-                'bridges.*.name_of_bridge'     => 'nullable|string|max:255',
-                'bridges.*.status'             => 'nullable|string|max:255',
-                'bridges.*.areas_affected'     => 'nullable|string|max:500',
-                'bridges.*.re_routing'         => 'nullable|string|max:500',
-                'bridges.*.remarks'            => 'nullable|string|max:500',
+                'bridges.*.name_of_bridge' => 'nullable|string|max:255',
+                'bridges.*.status' => 'nullable|string|max:255',
+                'bridges.*.areas_affected' => 'nullable|string|max:500',
+                'bridges.*.re_routing' => 'nullable|string|max:500',
+                'bridges.*.remarks' => 'nullable|string|max:500',
             ]);
 
             foreach ($validated['bridges'] as $bridgeData) {
-            // Skip empty rows - check all fields except 'id'
-            $fieldsToCheck = array_diff_key($bridgeData, ['id' => '']);
-            $hasData = !empty(array_filter($fieldsToCheck, function($value) {
-                return $value !== null && $value !== '';
-            }));
-            
-            if (!$hasData) {
-                continue;
-            }
+                // Skip empty rows - check all fields except 'id'
+                $fieldsToCheck = array_diff_key($bridgeData, ['id' => '']);
+                $hasData = ! empty(array_filter($fieldsToCheck, function ($value) {
+                    return $value !== null && $value !== '';
+                }));
 
-            // If ID exists and is numeric, update existing record
-            if (!empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
-                $bridge = Bridge::find($bridgeData['id']);
-                if ($bridge) {
-                    $bridge->update([
+                if (! $hasData) {
+                    continue;
+                }
+
+                // If ID exists and is numeric, update existing record
+                if (! empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
+                    $bridge = Bridge::find($bridgeData['id']);
+                    if ($bridge) {
+                        $bridge->update([
+                            'road_classification' => $bridgeData['road_classification'] ?? null,
+                            'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
+                            'status' => $bridgeData['status'] ?? null,
+                            'areas_affected' => $bridgeData['areas_affected'] ?? null,
+                            're_routing' => $bridgeData['re_routing'] ?? null,
+                            'remarks' => $bridgeData['remarks'] ?? null,
+                            'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
+                } else {
+                    // Create new record
+                    Bridge::create([
                         'road_classification' => $bridgeData['road_classification'] ?? null,
                         'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
                         'status' => $bridgeData['status'] ?? null,
                         'areas_affected' => $bridgeData['areas_affected'] ?? null,
                         're_routing' => $bridgeData['re_routing'] ?? null,
                         'remarks' => $bridgeData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
+                        'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
                 }
-            } else {
-                // Create new record
-                Bridge::create([
-                    'road_classification' => $bridgeData['road_classification'] ?? null,
-                    'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
-                    'status' => $bridgeData['status'] ?? null,
-                    'areas_affected' => $bridgeData['areas_affected'] ?? null,
-                    're_routing' => $bridgeData['re_routing'] ?? null,
-                    'remarks' => $bridgeData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
 
-        // Return fresh data after save (limit to recent 100 records)
-        $user = Auth::user();
+            // Return fresh data after save (limit to recent 100 records)
+            $user = Auth::user();
 
-        $updatedQuery = Bridge::with('user:id,name')
-            ->where('disaster_id', $activeTyphoon->id)
-            ->where(function($query) {
-                // Filter out completely empty rows
-                $query->where(function($q) {
-                    $q->whereNotNull('road_classification')->where('road_classification', '!=', '');
-                })
-                ->orWhere(function($q) {
-                    $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
-                })
-                ->orWhere(function($q) {
-                    $q->whereNotNull('status')->where('status', '!=', '');
-                })
-                ->orWhere(function($q) {
-                    $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
-                })
-                ->orWhere(function($q) {
-                    $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
-                })
-                ->orWhere(function($q) {
-                    $q->whereNotNull('remarks')->where('remarks', '!=', '');
+            $updatedQuery = Bridge::with('user:id,name')
+                ->where('disaster_id', $activeTyphoon->id)
+                ->where(function ($query) {
+                    // Filter out completely empty rows
+                    $query->where(function ($q) {
+                        $q->whereNotNull('road_classification')->where('road_classification', '!=', '');
+                    })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('name_of_bridge')->where('name_of_bridge', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('status')->where('status', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('areas_affected')->where('areas_affected', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('re_routing')->where('re_routing', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('remarks')->where('remarks', '!=', '');
+                        });
                 });
-            });
 
-        if ($user && !$user->isAdmin()) {
-            $accessibleUserIds = $user->getAccessibleUserIds('read');
-            $updatedQuery->whereIn('user_id', $accessibleUserIds);
-        }
+            if ($user && ! $user->isAdmin()) {
+                $accessibleUserIds = $user->getAccessibleUserIds('read');
+                $updatedQuery->whereIn('user_id', $accessibleUserIds);
+            }
 
-        $updatedBridges = $updatedQuery
-            ->orderBy('updated_at', 'desc')
-            ->limit(100)
-            ->get();
-        
+            $updatedBridges = $updatedQuery
+                ->orderBy('updated_at', 'desc')
+                ->limit(100)
+                ->get();
+
             return response()->json([
                 'message' => 'Bridge reports saved successfully',
-                'bridges' => $updatedBridges
+                'bridges' => $updatedBridges,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Bridge form submission error: ' . $e->getMessage(), [
+            \Log::error('Bridge form submission error: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => Auth::id(),
             ]);
@@ -848,11 +852,11 @@ class SituationOverviewController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -864,8 +868,8 @@ class SituationOverviewController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -874,7 +878,7 @@ class SituationOverviewController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 
@@ -883,66 +887,79 @@ class SituationOverviewController extends Controller
         // Temporarily disabled permission check for debugging
         // TODO: Re-enable after fixing permission cache issue
         return $this->buildModificationResponse('WeatherReport');
-        
+
         // Check permission
         $user = Auth::user();
-        if (!$user->hasPermissionTo('access-weather-form') && !$user->hasRole('admin')) {
+        if (! $user->hasPermissionTo('access-weather-form') && ! $user->hasRole('admin')) {
             \Log::error('Weather modification 403', [
                 'user_email' => $user->email,
                 'user_permissions' => $user->permissions->pluck('name')->toArray(),
                 'has_weather_permission' => $user->hasPermissionTo('access-weather-form'),
                 'is_admin' => $user->hasRole('admin'),
             ]);
-            abort(403, 'Unauthorized access to weather modifications. User: ' . $user->email);
+            abort(403, 'Unauthorized access to weather modifications. User: '.$user->email);
         }
+
         return $this->buildModificationResponse('WeatherReport');
     }
+
     public function waterLevelModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-water-level-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-water-level-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to water level modifications');
         }
+
         return $this->buildModificationResponse('WaterLevel');
     }
+
     public function electricityModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-electricity-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-electricity-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to electricity modifications');
         }
+
         return $this->buildModificationResponse('ElectricityService');
     }
+
     public function waterServiceModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-water-service-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-water-service-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to water service modifications');
         }
+
         return $this->buildModificationResponse('WaterService');
     }
+
     public function communicationModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-communication-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to communication modifications');
         }
+
         return $this->buildModificationResponse('Communication');
     }
+
     public function roadModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-road-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-road-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to road modifications');
         }
+
         return $this->buildModificationResponse('Road');
     }
+
     public function bridgeModification()
     {
         // Check permission
-        if (!Auth::user()->hasPermissionTo('access-bridge-form') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermissionTo('access-bridge-form') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access to bridge modifications');
         }
+
         return $this->buildModificationResponse('Bridge');
     }
 
@@ -954,9 +971,9 @@ class SituationOverviewController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(200)
             ->get();
-        
+
         return response()->json([
-            'reports' => $weatherReports
+            'reports' => $weatherReports,
         ]);
     }
 
@@ -977,9 +994,9 @@ class SituationOverviewController extends Controller
         $index = 0;
         foreach ($modifications as $mod) {
             $modelId = $mod->model_id;
-            
+
             // Initialize state for this model if not exists
-            if (!isset($stateByModel[$modelId])) {
+            if (! isset($stateByModel[$modelId])) {
                 $stateByModel[$modelId] = [
                     'municipality' => null,
                     'sky_condition' => null,
@@ -997,9 +1014,9 @@ class SituationOverviewController extends Controller
             // Snapshot this state at this point in time
             // Add microseconds to ensure unique timestamps for same-second modifications
             $timestamp = $mod->created_at;
-            $carbonTime = \Carbon\Carbon::parse($timestamp);
+            $carbonTime = Carbon::parse($timestamp);
             $carbonTime->addMicroseconds($index * 1000); // Add milliseconds based on index
-            
+
             $allStates[] = [
                 'municipality' => $stateByModel[$modelId]['municipality'],
                 'sky_condition' => $stateByModel[$modelId]['sky_condition'],
@@ -1010,7 +1027,7 @@ class SituationOverviewController extends Controller
                 'user' => $mod->user,
                 'modification_id' => $mod->id, // Add unique identifier
             ];
-            
+
             $index++;
         }
 
@@ -1018,7 +1035,7 @@ class SituationOverviewController extends Controller
         $currentReports = WeatherReport::with('user:id,name')->get();
         foreach ($currentReports as $report) {
             // Only add if this report hasn't been tracked in modifications
-            if (!isset($stateByModel[$report->id])) {
+            if (! isset($stateByModel[$report->id])) {
                 $allStates[] = [
                     'municipality' => $report->municipality,
                     'sky_condition' => $report->sky_condition,
@@ -1032,12 +1049,12 @@ class SituationOverviewController extends Controller
         }
 
         // Sort by timestamp
-        usort($allStates, function($a, $b) {
+        usort($allStates, function ($a, $b) {
             return strtotime($a['updated_at']) - strtotime($b['updated_at']);
         });
 
         return response()->json([
-            'timeline' => $allStates
+            'timeline' => $allStates,
         ]);
     }
 
@@ -1068,21 +1085,21 @@ class SituationOverviewController extends Controller
     public function getElectricityHistory()
     {
         $user = Auth::user();
-        
+
         // Get all electricity reports for accessible users, grouped by typhoon
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = ElectricityService::whereIn('user_id', $accessibleUserIds)
             ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'status' => $report->status,
@@ -1092,10 +1109,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json($groupedByTyphoon);
     }
 
@@ -1103,10 +1120,10 @@ class SituationOverviewController extends Controller
     public function viewElectricityPdf($typhoonId)
     {
         $user = Auth::user();
-        
+
         // Get the typhoon
         $typhoon = Typhoon::findOrFail($typhoonId);
-        
+
         // Get all electricity reports for this typhoon by accessible users
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = ElectricityService::where('disaster_id', $typhoonId)
@@ -1114,11 +1131,11 @@ class SituationOverviewController extends Controller
             ->with(['user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         if ($reports->isEmpty()) {
             abort(404, 'No electricity reports found for this disaster.');
         }
-        
+
         // Prepare data for PDF
         $data = [
             'typhoon' => $typhoon,
@@ -1126,39 +1143,40 @@ class SituationOverviewController extends Controller
             'user' => $user,
             'generatedAt' => now()->format('F d, Y h:i A'),
         ];
-        
+
         // Generate PDF
         $pdf = \PDF::loadView('reports.electricity_service', $data);
         $pdf->setPaper('a4', 'portrait');
-        
+
         // Check if download is requested
         if (request()->has('download')) {
-            $filename = 'Electricity_Report_' . str_replace(' ', '_', $typhoon->name) . '_' . now()->format('Y-m-d') . '.pdf';
+            $filename = 'Electricity_Report_'.str_replace(' ', '_', $typhoon->name).'_'.now()->format('Y-m-d').'.pdf';
+
             return $pdf->download($filename);
         }
-        
+
         // Otherwise, stream for viewing
-        return $pdf->stream('Electricity_Report_' . str_replace(' ', '_', $typhoon->name) . '.pdf');
+        return $pdf->stream('Electricity_Report_'.str_replace(' ', '_', $typhoon->name).'.pdf');
     }
 
     /* ------------------- VIEW/DOWNLOAD WATER SERVICE PDF ------------------- */
     public function viewWaterServicePdf($typhoonId)
     {
         $user = Auth::user();
-        
+
         // Get the typhoon
         $typhoon = Typhoon::findOrFail($typhoonId);
-        
+
         // Get all water service reports for this typhoon (no user filtering due to collaborative editing)
         $reports = WaterService::where('disaster_id', $typhoonId)
             ->with(['user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         if ($reports->isEmpty()) {
             abort(404, 'No water service reports found for this disaster.');
         }
-        
+
         // Prepare data for PDF
         $data = [
             'typhoon' => $typhoon,
@@ -1166,40 +1184,41 @@ class SituationOverviewController extends Controller
             'user' => $user,
             'generatedAt' => now()->format('F d, Y h:i A'),
         ];
-        
+
         // Generate PDF
         $pdf = \PDF::loadView('reports.water_service', $data);
         $pdf->setPaper('a4', 'portrait');
-        
+
         // Check if download is requested
         if (request()->has('download')) {
-            $filename = 'Water_Service_Report_' . str_replace(' ', '_', $typhoon->name) . '_' . now()->format('Y-m-d') . '.pdf';
+            $filename = 'Water_Service_Report_'.str_replace(' ', '_', $typhoon->name).'_'.now()->format('Y-m-d').'.pdf';
+
             return $pdf->download($filename);
         }
-        
+
         // Otherwise, stream for viewing
-        return $pdf->stream('Water_Service_Report_' . str_replace(' ', '_', $typhoon->name) . '.pdf');
+        return $pdf->stream('Water_Service_Report_'.str_replace(' ', '_', $typhoon->name).'.pdf');
     }
 
     /* ------------------- GET WATER SERVICE HISTORY ------------------- */
     public function getWaterServiceHistory()
     {
         $user = Auth::user();
-        
+
         // Get all water service reports for accessible users, grouped by typhoon
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = WaterService::whereIn('user_id', $accessibleUserIds)
             ->with(['typhoon:id,name,status,started_at,ended_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'source_of_water' => $report->source_of_water,
@@ -1210,10 +1229,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json($groupedByTyphoon);
     }
 
@@ -1223,7 +1242,7 @@ class SituationOverviewController extends Controller
         $user = Auth::user();
         $perPage = $request->input('per_page', 20); // Default 20 items per page
         $page = $request->input('page', 1);
-        
+
         // Get paginated weather reports for accessible users
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = WeatherReport::whereIn('user_id', $accessibleUserIds)
@@ -1232,14 +1251,14 @@ class SituationOverviewController extends Controller
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->getCollection()->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->getCollection()->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'municipality' => $report->municipality,
@@ -1251,10 +1270,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json([
             'data' => $groupedByTyphoon,
             'current_page' => $reports->currentPage(),
@@ -1268,7 +1287,7 @@ class SituationOverviewController extends Controller
     public function getCommunicationHistory()
     {
         $user = Auth::user();
-        
+
         // Get all communication reports for accessible users, grouped by typhoon
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = Communication::whereIn('user_id', $accessibleUserIds)
@@ -1277,14 +1296,14 @@ class SituationOverviewController extends Controller
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name', 'serviceValues.service'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'globe' => $report->globe,
@@ -1298,10 +1317,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json($groupedByTyphoon);
     }
 
@@ -1309,7 +1328,7 @@ class SituationOverviewController extends Controller
     public function getRoadHistory()
     {
         $user = Auth::user();
-        
+
         // Get all road reports for accessible users, grouped by typhoon
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = Road::whereIn('user_id', $accessibleUserIds)
@@ -1318,14 +1337,14 @@ class SituationOverviewController extends Controller
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'road_classification' => $report->road_classification,
@@ -1338,10 +1357,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json($groupedByTyphoon);
     }
 
@@ -1349,7 +1368,7 @@ class SituationOverviewController extends Controller
     public function getBridgeHistory()
     {
         $user = Auth::user();
-        
+
         // Get all bridge reports for accessible users, grouped by typhoon
         $accessibleUserIds = $user->getAccessibleUserIds('read');
         $reports = Bridge::whereIn('user_id', $accessibleUserIds)
@@ -1358,14 +1377,14 @@ class SituationOverviewController extends Controller
             ->with(['typhoon:id,name,status,started_at,ended_at,resumed_at', 'user:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Group reports by typhoon
-        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function($typhoonReports, $typhoonId) {
+        $groupedByTyphoon = $reports->groupBy('disaster_id')->map(function ($typhoonReports, $typhoonId) {
             $typhoon = $typhoonReports->first()->typhoon;
-            
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $typhoonReports->map(function($report) {
+                'reports' => $typhoonReports->map(function ($report) {
                     return [
                         'id' => $report->id,
                         'bridge_classification' => $report->bridge_classification,
@@ -1378,10 +1397,10 @@ class SituationOverviewController extends Controller
                         'updated_at' => $report->updated_at,
                         'user' => $report->user,
                     ];
-                })->values()
+                })->values(),
             ];
         })->values();
-        
+
         return response()->json($groupedByTyphoon);
     }
 }

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgricultureReport;
+use App\Models\Modification;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AgricultureReportController extends Controller
@@ -26,9 +26,9 @@ class AgricultureReportController extends Controller
     public function apiHistory()
     {
         $typhoonId = $this->getActiveTyphoonId();
-        
+
         $agriculture = AgricultureReport::with(['typhoon', 'typhoon.creator'])
-            ->when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId))
+            ->when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId))
             ->latest()
             ->limit(200)
             ->get();
@@ -36,9 +36,10 @@ class AgricultureReportController extends Controller
         // Group by typhoon
         $groupedByTyphoon = $agriculture->groupBy('disaster_id')->map(function ($reports, $typhoonId) {
             $typhoon = $reports->first()->typhoon;
+
             return [
                 'typhoon' => $typhoon,
-                'reports' => $reports->values()
+                'reports' => $reports->values(),
             ];
         })->values();
 
@@ -58,6 +59,7 @@ class AgricultureReportController extends Controller
 
         $validated = $request->validate([
             'crops' => 'required|array',
+            'crops.*.id' => 'nullable|integer',
             'crops.*.crops_affected' => 'nullable|string|max:255',
             'crops.*.standing_crop_ha' => 'nullable|numeric|min:0',
             'crops.*.stage_of_crop' => 'nullable|string|max:255',
@@ -67,43 +69,43 @@ class AgricultureReportController extends Controller
         ]);
 
         $typhoonId = $this->getActiveTyphoonId();
-        $userId = Auth::id();
+        $fields = ['crops_affected', 'standing_crop_ha', 'stage_of_crop', 'total_area_affected_ha', 'total_production_loss', 'remarks'];
 
         DB::beginTransaction();
         try {
-            // Delete existing reports for this typhoon and user
-            AgricultureReport::where('disaster_id', $typhoonId)->delete();
-
-            // Create new reports
+            // Update saved crops in place (keeps their ids, so the change history and
+            // audit trail stay attached) and create the new ones.
             $savedCrops = [];
             foreach ($validated['crops'] as $cropData) {
-                // Skip empty rows
-                if (empty($cropData['crops_affected']) && 
-                    empty($cropData['standing_crop_ha']) && 
-                    empty($cropData['stage_of_crop']) &&
-                    empty($cropData['total_area_affected_ha']) &&
-                    empty($cropData['total_production_loss'])) {
-                    continue;
+                $values = array_map(fn ($field) => $cropData[$field] ?? null, array_combine($fields, $fields));
+                if (array_filter($values, fn ($value) => $value !== null && $value !== '') === []) {
+                    continue; // a cleared row is removed below
                 }
 
-                $crop = AgricultureReport::create([
-                    'disaster_id' => $typhoonId,
-                    'crops_affected' => $cropData['crops_affected'] ?? null,
-                    'standing_crop_ha' => $cropData['standing_crop_ha'] ?? null,
-                    'stage_of_crop' => $cropData['stage_of_crop'] ?? null,
-                    'total_area_affected_ha' => $cropData['total_area_affected_ha'] ?? null,
-                    'total_production_loss' => $cropData['total_production_loss'] ?? null,
-                    'remarks' => $cropData['remarks'] ?? null,
-                ]);
+                $crop = empty($cropData['id'])
+                    ? null
+                    : AgricultureReport::where('disaster_id', $typhoonId)->find($cropData['id']);
 
+                if ($crop) {
+                    $crop->update($values);
+                } else {
+                    $crop = AgricultureReport::create(['disaster_id' => $typhoonId] + $values);
+                }
                 $savedCrops[] = $crop;
             }
+
+            // One shared list per disaster: crops left out or cleared were removed in the form.
+            // Deleted through Eloquent so the audit observer records each one.
+            AgricultureReport::where('disaster_id', $typhoonId)
+                ->whereNotIn('id', array_map(fn ($crop) => $crop->id, $savedCrops))
+                ->get()
+                ->each->delete();
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Agriculture reports saved successfully',
-                'agriculture' => $savedCrops
+                'agriculture' => $savedCrops,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -120,7 +122,7 @@ class AgricultureReportController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'AgricultureReport')
+        $modifications = Modification::where('model_type', 'AgricultureReport')
             ->with('user:id,name')
             ->latest()
             ->get();
@@ -128,21 +130,21 @@ class AgricultureReportController extends Controller
         $history = [];
 
         foreach ($modifications as $mod) {
-            $changedFields = is_string($mod->changed_fields) 
-                ? json_decode($mod->changed_fields, true) 
+            $changedFields = is_string($mod->changed_fields)
+                ? json_decode($mod->changed_fields, true)
                 : $mod->changed_fields;
-            
-            if (!is_array($changedFields)) {
+
+            if (! is_array($changedFields)) {
                 continue;
             }
-            
+
             foreach ($changedFields as $fieldName => $fieldData) {
                 $key = "{$mod->model_id}_{$fieldName}";
-                
-                if (!isset($history[$key])) {
+
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
-                
+
                 $history[$key][] = [
                     'user' => $mod->user ?? ['name' => $fieldData['user']['name'] ?? 'Unknown'],
                     'field' => $fieldName,
@@ -154,7 +156,7 @@ class AgricultureReportController extends Controller
         }
 
         return response()->json([
-            'history' => (object)$history,
+            'history' => (object) $history,
         ]);
     }
 }

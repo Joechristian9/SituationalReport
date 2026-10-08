@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PreEmptiveReport;
 use App\Models\Modification;
+use App\Models\PreEmptiveReport;
+use App\Models\Typhoon;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class PreEmptiveReportController extends Controller
 {
@@ -24,26 +24,26 @@ class PreEmptiveReportController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'reports' => 'required|array',
 
-            'reports.*.barangay'          => 'nullable|string|max:255',
+            'reports.*.barangay' => 'nullable|string|max:255',
             'reports.*.evacuation_center' => 'nullable|string|max:255',
-            'reports.*.families'          => 'nullable|integer|min:0',
-            'reports.*.persons'           => 'nullable|integer|min:0',
-            'reports.*.outside_center'    => 'nullable|string|max:255',
-            'reports.*.outside_families'  => 'nullable|integer|min:0',
-            'reports.*.outside_persons'   => 'nullable|integer|min:0',
-            'reports.*.total_families'    => 'nullable|integer|min:0',
-            'reports.*.total_persons'     => 'nullable|integer|min:0',
+            'reports.*.families' => 'nullable|integer|min:0',
+            'reports.*.persons' => 'nullable|integer|min:0',
+            'reports.*.outside_center' => 'nullable|string|max:255',
+            'reports.*.outside_families' => 'nullable|integer|min:0',
+            'reports.*.outside_persons' => 'nullable|integer|min:0',
+            'reports.*.total_families' => 'nullable|integer|min:0',
+            'reports.*.total_persons' => 'nullable|integer|min:0',
         ]);
 
         foreach ($validated['reports'] as $report) {
             // ✅ Skip rows where all values are null, empty, or 0
             $isEmpty = empty(array_filter($report, function ($value) {
-                return !is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
+                return ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
             }));
 
             if ($isEmpty) {
@@ -51,18 +51,18 @@ class PreEmptiveReportController extends Controller
             }
 
             PreEmptiveReport::create([
-                'barangay'          => $report['barangay'] ?? null,
+                'barangay' => $report['barangay'] ?? null,
                 'evacuation_center' => $report['evacuation_center'] ?? null,
-                'families'          => $report['families'] ?? null,
-                'persons'           => $report['persons'] ?? null,
-                'outside_center'    => $report['outside_center'] ?? null,
-                'outside_families'  => $report['outside_families'] ?? null,
-                'outside_persons'   => $report['outside_persons'] ?? null,
-                'total_families'    => $report['total_families'] ?? null,
-                'total_persons'     => $report['total_persons'] ?? null,
-                'user_id'           => Auth::id(),
-                'updated_by'        => Auth::id(),
-                'disaster_id'        => $activeTyphoon->id,
+                'families' => $report['families'] ?? null,
+                'persons' => $report['persons'] ?? null,
+                'outside_center' => $report['outside_center'] ?? null,
+                'outside_families' => $report['outside_families'] ?? null,
+                'outside_persons' => $report['outside_persons'] ?? null,
+                'total_families' => $report['total_families'] ?? null,
+                'total_persons' => $report['total_persons'] ?? null,
+                'user_id' => Auth::id(),
+                'updated_by' => Auth::id(),
+                'disaster_id' => $activeTyphoon->id,
             ]);
         }
 
@@ -75,15 +75,15 @@ class PreEmptiveReportController extends Controller
     public function update(Request $request, PreEmptiveReport $preEmptiveReport)
     {
         $validated = $request->validate([
-            'barangay'          => 'nullable|string|max:255',
+            'barangay' => 'nullable|string|max:255',
             'evacuation_center' => 'nullable|string|max:255',
-            'families'          => 'nullable|integer|min:0',
-            'persons'           => 'nullable|integer|min:0',
-            'outside_center'    => 'nullable|string|max:255',
-            'outside_families'  => 'nullable|integer|min:0',
-            'outside_persons'   => 'nullable|integer|min:0',
-            'total_families'    => 'nullable|integer|min:0',
-            'total_persons'     => 'nullable|integer|min:0',
+            'families' => 'nullable|integer|min:0',
+            'persons' => 'nullable|integer|min:0',
+            'outside_center' => 'nullable|string|max:255',
+            'outside_families' => 'nullable|integer|min:0',
+            'outside_persons' => 'nullable|integer|min:0',
+            'total_families' => 'nullable|integer|min:0',
+            'total_persons' => 'nullable|integer|min:0',
         ]);
 
         $preEmptiveReport->update(array_merge($validated, [
@@ -98,13 +98,18 @@ class PreEmptiveReportController extends Controller
      */
     public function saveReports(Request $request)
     {
+        $user = Auth::user();
+        if (! $user->hasRole('admin') && ! $user->hasPermissionTo('access-pre-emptive-form')) {
+            abort(403, 'Unauthorized access to pre-emptive evacuation form');
+        }
+
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
             return $error;
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'reports' => 'required|array',
@@ -125,21 +130,25 @@ class PreEmptiveReportController extends Controller
         foreach ($validated['reports'] as $reportData) {
             // Skip empty rows
             $isEmpty = empty(array_filter($reportData, function ($value, $key) {
-                return $key !== 'id' && !is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
+                return $key !== 'id' && ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
             }, ARRAY_FILTER_USE_BOTH));
 
             if ($isEmpty) {
                 continue;
             }
 
+            // Totals are always the sum of inside and outside counts, computed here only.
+            $reportData['total_families'] = (int) ($reportData['families'] ?? 0) + (int) ($reportData['outside_families'] ?? 0);
+            $reportData['total_persons'] = (int) ($reportData['persons'] ?? 0) + (int) ($reportData['outside_persons'] ?? 0);
+
             $reportId = $reportData['id'] ?? null;
-            
+
             if ($reportId && is_numeric($reportId)) {
                 // Update existing report
                 $reportQuery = PreEmptiveReport::where('id', $reportId);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $reportQuery->where('user_id', $user->id);
                 }
 
@@ -148,7 +157,7 @@ class PreEmptiveReportController extends Controller
                 if ($report) {
                     // Only update fields that have changed
                     $fieldsToUpdate = [];
-                    
+
                     if ($report->barangay !== ($reportData['barangay'] ?? null)) {
                         $fieldsToUpdate['barangay'] = $reportData['barangay'] ?? null;
                     }
@@ -176,11 +185,11 @@ class PreEmptiveReportController extends Controller
                     if ($report->total_persons != ($reportData['total_persons'] ?? null)) {
                         $fieldsToUpdate['total_persons'] = $reportData['total_persons'] ?? null;
                     }
-                    
+
                     // Always update disaster_id and updated_by
                     $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
                     $fieldsToUpdate['updated_by'] = Auth::id();
-                    
+
                     // Only call update if there are changes
                     if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
                         $report->update($fieldsToUpdate);
@@ -211,7 +220,7 @@ class PreEmptiveReportController extends Controller
         $reloadedQuery = PreEmptiveReport::where('disaster_id', $activeTyphoon->id);
 
         $user = Auth::user();
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $reloadedQuery->where('user_id', $user->id);
         }
 
@@ -237,25 +246,25 @@ class PreEmptiveReportController extends Controller
 
             // Group by row ID and field
             $history = [];
-            
+
             foreach ($modifications as $mod) {
                 // Parse the changed_fields JSON
-                $changedFields = is_string($mod->changed_fields) 
-                    ? json_decode($mod->changed_fields, true) 
+                $changedFields = is_string($mod->changed_fields)
+                    ? json_decode($mod->changed_fields, true)
                     : $mod->changed_fields;
-                
-                if (!is_array($changedFields)) {
+
+                if (! is_array($changedFields)) {
                     continue;
                 }
-                
+
                 // Each modification can have multiple field changes
                 foreach ($changedFields as $fieldName => $fieldData) {
                     $key = "{$mod->model_id}_{$fieldName}";
-                    
-                    if (!isset($history[$key])) {
+
+                    if (! isset($history[$key])) {
                         $history[$key] = [];
                     }
-                    
+
                     $history[$key][] = [
                         'user' => $mod->user ?? ['name' => $fieldData['user']['name'] ?? 'Unknown'],
                         'field' => $fieldName,
@@ -268,14 +277,15 @@ class PreEmptiveReportController extends Controller
 
             // Force JSON to return an object, not an array, even when empty
             return response()->json([
-                'history' => (object)$history,
+                'history' => (object) $history,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error fetching PreEmptive modifications: ' . $e->getMessage());
+            \Log::error('Error fetching PreEmptive modifications: '.$e->getMessage());
             \Log::error($e->getTraceAsString());
+
             return response()->json([
-                'history' => (object)[],
-                'error' => 'Could not load the modification history.'
+                'history' => (object) [],
+                'error' => 'Could not load the modification history.',
             ]);
         }
     }
@@ -287,26 +297,27 @@ class PreEmptiveReportController extends Controller
     {
         try {
             $typhoonId = $request->query('disaster_id');
-            
+
             $query = PreEmptiveReport::with(['user:id,name', 'typhoon:id,name'])
                 ->orderBy('updated_at', 'desc');
-            
+
             if ($typhoonId) {
                 $query->where('disaster_id', $typhoonId);
             }
-            
+
             $reports = $query->get();
-            
+
             return response()->json([
                 'reports' => $reports,
-                'success' => true
+                'success' => true,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error fetching pre-emptive history: ' . $e->getMessage());
+            \Log::error('Error fetching pre-emptive history: '.$e->getMessage());
+
             return response()->json([
                 'reports' => [],
                 'success' => false,
-                'error' => 'Could not load pre-emptive history.'
+                'error' => 'Could not load pre-emptive history.',
             ], 500);
         }
     }
