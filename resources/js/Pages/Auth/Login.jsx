@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertTriangle, ArrowRight, CheckCircle2, CloudOff, Eye, EyeOff, LifeBuoy, Loader2, Lock, Mail } from 'lucide-react';
+import EmailAutocompleteInput from '@/Components/EmailAutocompleteInput';
 import InputError from '@/Components/InputError';
 import InstallAppButton from '@/Components/InstallAppButton';
 import { Button } from '@/Components/ui/button';
@@ -65,20 +66,19 @@ export default function Login({ status, canResetPassword }) {
                     <Label htmlFor="email" className="text-base">Email address</Label>
                     <div className="group relative">
                         <Mail className={fieldIcon} aria-hidden="true" />
-                        <Input
+                        <EmailAutocompleteInput
                             ref={emailRef}
                             id="email"
-                            type="email"
                             name="email"
                             value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
+                            onValueChange={(email) => setData('email', email)}
                             autoComplete="username"
                             inputMode="email"
                             autoCapitalize="none"
                             spellCheck={false}
                             autoFocus
                             required
-                            placeholder="Barangay name@barangay.local"
+                            placeholder="BarangayName@barangay.local"
                             aria-invalid={errors.email ? true : undefined}
                             aria-describedby={errors.email ? 'email-error' : undefined}
                             className={cn(fieldInput, errors.email && 'border-destructive focus-visible:ring-destructive')}

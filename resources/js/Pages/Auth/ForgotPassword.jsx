@@ -1,6 +1,6 @@
+import EmailAutocompleteInput from '@/Components/EmailAutocompleteInput';
 import InputError from '@/Components/InputError';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -36,21 +36,22 @@ export default function ForgotPassword({ status }) {
             <form onSubmit={submit} className="mt-6 space-y-5">
                 <div className="space-y-2">
                     <Label htmlFor="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        autoComplete="username"
-                        inputMode="email"
-                        autoCapitalize="none"
-                        autoFocus
-                        required
-                        aria-invalid={errors.email ? true : undefined}
-                        aria-describedby={errors.email ? 'email-error' : undefined}
-                        className="h-11 bg-background text-base md:text-base focus-visible:ring-2"
-                    />
+                    <div className="relative">
+                        <EmailAutocompleteInput
+                            id="email"
+                            name="email"
+                            value={data.email}
+                            onValueChange={(email) => setData('email', email)}
+                            autoComplete="username"
+                            inputMode="email"
+                            autoCapitalize="none"
+                            autoFocus
+                            required
+                            aria-invalid={errors.email ? true : undefined}
+                            aria-describedby={errors.email ? 'email-error' : undefined}
+                            className="h-11 bg-background text-base md:text-base focus-visible:ring-2"
+                        />
+                    </div>
                     <InputError id="email-error" message={errors.email} />
                 </div>
 
