@@ -1,0 +1,1 @@
+import{t as e,j as n}from"./refresh-cw-C3HNF2nP.js";function i(r,t,a){const s=e(r,a?.in);return isNaN(t)?n(r,NaN):(t&&s.setDate(s.getDate()+t),s)}function u(r,t,a){return i(r,-t,a)}export{i as a,u as s};
