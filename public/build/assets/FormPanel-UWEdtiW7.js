@@ -1,0 +1,1 @@
+import{j as e,h as s}from"./button-BhsWT-s5.js";function t({className:r,children:o}){return e.jsx("section",{className:s("mx-auto max-w-7xl rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6",r),children:o})}export{t as F};

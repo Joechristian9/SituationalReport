@@ -1,0 +1,11 @@
+import{c as s,j as e}from"./button-BhsWT-s5.js";import{D as n,a as r,b as i,c as l,d as o}from"./dialog-DrKim46F.js";import"./index-DmrYRin3.js";import"./index-B1IShicT.js";import"./index-BWpu35-o.js";/**
+ * @license lucide-react v0.542.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const c=[["path",{d:"M12 2v13",key:"1km8f5"}],["path",{d:"m16 6-4-4-4 4",key:"13yo43"}],["path",{d:"M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8",key:"1b2hhj"}]],d=s("share",c);/**
+ * @license lucide-react v0.542.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const h=[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",key:"afitv7"}],["path",{d:"M8 12h8",key:"1wcyev"}],["path",{d:"M12 8v8",key:"napkw2"}]],m=s("square-plus",h);function g({open:a,onOpenChange:t}){return e.jsx(n,{open:a,onOpenChange:t,children:e.jsxs(r,{className:"max-w-sm",children:[e.jsxs(i,{children:[e.jsx(l,{children:"Add Situational Report to your phone"}),e.jsx(o,{children:"On iPhone, install it from Safari's Share menu."})]}),e.jsxs("ol",{className:"space-y-3 text-sm text-foreground",children:[e.jsxs("li",{className:"flex items-center gap-3",children:[e.jsx("span",{className:"flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted font-semibold tabular-nums",children:"1"}),e.jsxs("span",{children:["Tap ",e.jsx(d,{className:"inline h-4 w-4 align-text-bottom","aria-label":"Share"})," ",e.jsx("strong",{children:"Share"})," at the bottom of Safari."]})]}),e.jsxs("li",{className:"flex items-center gap-3",children:[e.jsx("span",{className:"flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted font-semibold tabular-nums",children:"2"}),e.jsxs("span",{children:["Choose ",e.jsx(m,{className:"inline h-4 w-4 align-text-bottom","aria-hidden":"true"})," ",e.jsx("strong",{children:"Add to Home Screen"}),"."]})]}),e.jsxs("li",{className:"flex items-center gap-3",children:[e.jsx("span",{className:"flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted font-semibold tabular-nums",children:"3"}),e.jsxs("span",{children:["Tap ",e.jsx("strong",{children:"Add"}),". The app icon appears on your home screen."]})]})]})]})})}export{g as default};
