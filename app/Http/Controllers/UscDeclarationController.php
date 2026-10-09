@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Modification;
+use App\Models\Typhoon;
 use App\Models\UscDeclaration;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
@@ -12,6 +14,7 @@ use Inertia\Inertia;
 class UscDeclarationController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Show list of USC Declarations
      * Optimized: Limit records for better performance
@@ -36,14 +39,14 @@ class UscDeclarationController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'usc_declarations' => 'required|array',
-            'usc_declarations.*.id'                => 'nullable',
-            'usc_declarations.*.declared_by'       => 'nullable|string|max:255',
+            'usc_declarations.*.id' => 'nullable',
+            'usc_declarations.*.declared_by' => 'nullable|string|max:255',
             'usc_declarations.*.resolution_number' => 'nullable|string|max:255',
-            'usc_declarations.*.date_approved'     => 'nullable|date',
+            'usc_declarations.*.date_approved' => 'nullable|date',
         ]);
 
         $savedDeclarations = [];
@@ -61,16 +64,16 @@ class UscDeclarationController extends Controller
             }
 
             $data = [
-                'declared_by'       => $declaration['declared_by'] ?? null,
+                'declared_by' => $declaration['declared_by'] ?? null,
                 'resolution_number' => $declaration['resolution_number'] ?? null,
-                'date_approved'     => $declaration['date_approved'] ?? null,
-                'updated_by'        => Auth::id(),
+                'date_approved' => $declaration['date_approved'] ?? null,
+                'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($declaration['id']) && is_numeric($declaration['id'])) {
+            if (! empty($declaration['id']) && is_numeric($declaration['id'])) {
                 // Update existing record
-                $uscDeclaration = UscDeclaration::find($declaration['id']);
+                $uscDeclaration = $this->findWritableRecord(UscDeclaration::class, $declaration['id']);
                 if ($uscDeclaration) {
                     $uscDeclaration->update($data);
                     $savedDeclarations[] = $uscDeclaration->fresh();
@@ -103,9 +106,9 @@ class UscDeclarationController extends Controller
         $this->authorizeRecordWrite($uscDeclaration);
 
         $validated = $request->validate([
-            'declared_by'       => 'nullable|string|max:255',
+            'declared_by' => 'nullable|string|max:255',
             'resolution_number' => 'nullable|string|max:255',
-            'date_approved'     => 'nullable|date',
+            'date_approved' => 'nullable|date',
         ]);
 
         $uscDeclaration->update(array_merge($validated, [
@@ -120,7 +123,7 @@ class UscDeclarationController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'UscDeclaration')
+        $modifications = Modification::where('model_type', 'UscDeclaration')
             ->with('user')
             ->latest()
             ->get();
@@ -131,15 +134,15 @@ class UscDeclarationController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,

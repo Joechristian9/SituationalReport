@@ -1,5 +1,11 @@
 <?php
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,8 +17,8 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -41,11 +47,23 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function userWithRole(string $role = 'user'): App\Models\User
+function userWithRole(string $role = 'user'): User
 {
-    Spatie\Permission\Models\Role::findOrCreate($role);
-    $user = App\Models\User::factory()->create();
+    Role::findOrCreate($role);
+    $user = User::factory()->create();
     $user->assignRole($role);
+
+    return $user;
+}
+
+/** A field account (role "user") holding the given form permissions. */
+function userWithPermissions(string ...$permissions): User
+{
+    $user = userWithRole('user');
+    foreach ($permissions as $permission) {
+        Permission::findOrCreate($permission);
+    }
+    $user->givePermissionTo($permissions);
 
     return $user;
 }

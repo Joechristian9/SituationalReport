@@ -111,7 +111,8 @@ export async function syncNow() {
                     state.loginNeeded = true;
                     break;
                 }
-                if (response.status >= 500) break; // server trouble; keep it and retry later
+                // Server trouble or too many saves at once: keep it and retry later.
+                if (response.status >= 500 || response.status === 429) break;
                 if (response.status === 403 && response.data?.isPaused) {
                     await putItem({ ...item, status: 'waiting', message: response.data.message });
                     continue;

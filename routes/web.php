@@ -71,12 +71,12 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     // Route to display the HTML overview of the report for a specific year
     Route::get('/reports/view', [ReportController::class, 'view'])
         ->name('reports.view')
-        ->middleware(['auth']); // Or your preferred auth middleware
+        ->middleware(['auth', 'throttle:pdf']);
 
     // Route to handle the PDF download for a specific year
     Route::get('/reports/download', [ReportController::class, 'download'])
         ->name('reports.download')
-        ->middleware(['auth']);
+        ->middleware(['auth', 'throttle:pdf']);
 
     // Situation Reports Index - accessible even without active typhoon
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
@@ -139,7 +139,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
     // ============= FORM ROUTES (Requires Active Typhoon) =============
     // offline.sync only acts on saves sent later from a device's offline queue.
-    Route::middleware(['typhoon.active', 'offline.sync'])->group(function () {
+    // Each form below is gated by the same permission the UI uses to show it; admins pass.
+    Route::middleware(['typhoon.active', 'offline.sync', 'throttle:report-writes'])->group(function () {
 
         /* ---------------- Weather Reports (new API routes) ---------------- */
         Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
@@ -190,141 +191,162 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications'])->name('modifications.pre-emptive');
 
         // Declaration under State of Calamity
-        Route::resource('declaration-usc', UscDeclarationController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])
-            ->name('declaration-usc.store');
-        Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
-            ->name('declaration-usc.index');
-        Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
-            ->name('modifications.usc-declaration');
+        Route::middleware('role_or_permission:admin|access-declaration-form')->group(function () {
+            Route::resource('declaration-usc', UscDeclarationController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/declaration-usc', [UscDeclarationController::class, 'store'])
+                ->name('declaration-usc.store');
+            Route::get('/declaration-usc', [UscDeclarationController::class, 'index'])
+                ->name('declaration-usc.index');
+            Route::get('/modifications/usc-declaration', [UscDeclarationController::class, 'getModifications'])
+                ->name('modifications.usc-declaration');
+        });
 
         /* ---------------- Response Operations (API routes) ---------------- */
-        Route::get('/response-operations', [ResponseOperationController::class, 'index'])
-            ->name('response-operations.index');
-        Route::post('/response-operations-reports', [ResponseOperationController::class, 'store'])
-            ->name('response-operations-reports.store');
-        Route::get('/modifications/response-operations', [ResponseOperationController::class, 'getModifications'])
-            ->name('modifications.response-operations');
+        Route::middleware('role_or_permission:admin|access-response-operations')->group(function () {
+            Route::get('/response-operations', [ResponseOperationController::class, 'index'])
+                ->name('response-operations.index');
+            Route::post('/response-operations-reports', [ResponseOperationController::class, 'store'])
+                ->name('response-operations-reports.store');
+            Route::get('/modifications/response-operations', [ResponseOperationController::class, 'getModifications'])
+                ->name('modifications.response-operations');
+        });
 
         // Deployment of Response Assets
-        Route::resource('pre-positioning', PrePositioningController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/pre-positioning', [PrePositioningController::class, 'store'])
-            ->name('pre-positioning.store');
-        Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
-            ->name('pre-positioning.index');
-        Route::get('/modifications/pre-positioning', [PrePositioningController::class, 'getModifications'])
-            ->name('modifications.pre-positioning');
+        Route::middleware('role_or_permission:admin|access-pre-positioning-form')->group(function () {
+            Route::resource('pre-positioning', PrePositioningController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/pre-positioning', [PrePositioningController::class, 'store'])
+                ->name('pre-positioning.store');
+            Route::get('/pre-positioning', [PrePositioningController::class, 'index'])
+                ->name('pre-positioning.index');
+            Route::get('/modifications/pre-positioning', [PrePositioningController::class, 'getModifications'])
+                ->name('modifications.pre-positioning');
+        });
 
-        // Effects of Incident Monitored
-        Route::resource('incident-monitored', IncidentMonitoredController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
-            ->name('incident-monitored.store');
-        Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
-            ->name('incident-monitored.index');
-        Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
-            ->name('modifications.incident-monitored');
+        // Effects of Incident Monitored. The Incidents page holds every tab below, so
+        // access-incident-form opens all of them; the narrower permissions open one each.
+        Route::middleware('role_or_permission:admin|access-incident-form')->group(function () {
+            Route::resource('incident-monitored', IncidentMonitoredController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
+                ->name('incident-monitored.store');
+            Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
+                ->name('incident-monitored.index');
+            Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
+                ->name('modifications.incident-monitored');
+
+            /* ---------------- Suspension of Classes (API routes) ---------------- */
+            Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
+                ->name('suspension-classes-reports.store');
+            Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
+                ->name('modifications.suspension-classes');
+
+            /* ---------------- Suspension of Work (API routes) ---------------- */
+            Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
+                ->name('suspension-work-reports.store');
+            Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
+                ->name('modifications.suspension-work');
+        });
 
         // Agriculture Reports
-        Route::post('/agriculture-reports', [AgricultureReportController::class, 'store'])
-            ->middleware('permission:access-agriculture-form')
-            ->name('agriculture-reports.store');
-        Route::get('/modifications/agriculture', [AgricultureReportController::class, 'getModifications'])
-            ->name('modifications.agriculture');
+        Route::middleware('permission:access-agriculture-form')->group(function () {
+            Route::post('/agriculture-reports', [AgricultureReportController::class, 'store'])
+                ->name('agriculture-reports.store');
+            Route::get('/modifications/agriculture', [AgricultureReportController::class, 'getModifications'])
+                ->name('modifications.agriculture');
+        });
 
         // Casualties Dead
-        Route::resource('casualties', CasualtyController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/casualties', [CasualtyController::class, 'store'])
-            ->name('casualties.store');
-        Route::get('/casualties', [CasualtyController::class, 'index'])
-            ->name('casualties.index');
-        Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
-            ->name('modifications.casualties');
+        Route::middleware('role_or_permission:admin|access-incident-form|access-casualty-form')->group(function () {
+            Route::resource('casualties', CasualtyController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/casualties', [CasualtyController::class, 'store'])
+                ->name('casualties.store');
+            Route::get('/casualties', [CasualtyController::class, 'index'])
+                ->name('casualties.index');
+            Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
+                ->name('modifications.casualties');
+        });
 
         // Injured
-        Route::resource('injured', InjuredController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/injured', [InjuredController::class, 'store'])
-            ->name('injured.store');
-        Route::get('/injured', [InjuredController::class, 'index'])
-            ->name('injured.index');
-        Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
-            ->name('modifications.injured');
+        Route::middleware('role_or_permission:admin|access-incident-form|access-injured-form')->group(function () {
+            Route::resource('injured', InjuredController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/injured', [InjuredController::class, 'store'])
+                ->name('injured.store');
+            Route::get('/injured', [InjuredController::class, 'index'])
+                ->name('injured.index');
+            Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
+                ->name('modifications.injured');
+        });
 
         // Missing Persons
-        Route::resource('missing', MissingController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/missing', [MissingController::class, 'store'])
-            ->name('missing.store');
-        Route::get('/missing', [MissingController::class, 'index'])
-            ->name('missing.index');
-        Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
-            ->name('modifications.missing');
+        Route::middleware('role_or_permission:admin|access-incident-form|access-missing-form')->group(function () {
+            Route::resource('missing', MissingController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/missing', [MissingController::class, 'store'])
+                ->name('missing.store');
+            Route::get('/missing', [MissingController::class, 'index'])
+                ->name('missing.index');
+            Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
+                ->name('modifications.missing');
+        });
 
         // Affected Tourists
-        Route::resource('affected-tourists', AffectedTouristController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
-            ->name('affected-tourists.store');
-        Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
-            ->name('affected-tourists.index');
+        Route::middleware('role_or_permission:admin|access-incident-form|access-tourist-form')->group(function () {
+            Route::resource('affected-tourists', AffectedTouristController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
+                ->name('affected-tourists.store');
+            Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
+                ->name('affected-tourists.index');
 
-        /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
-        Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
-            ->name('affected-tourists-reports.store');
-        Route::get('/modifications/affected-tourists', [AffectedTouristController::class, 'getModifications'])
-            ->name('modifications.affected-tourists');
+            /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
+            Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
+                ->name('affected-tourists-reports.store');
+            Route::get('/modifications/affected-tourists', [AffectedTouristController::class, 'getModifications'])
+                ->name('modifications.affected-tourists');
+        });
 
         // Damaged Houses
-        Route::resource('damaged-houses', DamagedHouseReportController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
-            ->name('damaged-houses.store');
-        Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
-            ->name('damaged-houses.index');
+        Route::middleware('role_or_permission:admin|access-incident-form|access-damaged-houses-form')->group(function () {
+            Route::resource('damaged-houses', DamagedHouseReportController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
+                ->name('damaged-houses.store');
+            Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
+                ->name('damaged-houses.index');
 
-        /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
-        Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])
-            ->name('damaged-houses-reports.store');
-        Route::get('/modifications/damaged-houses', [DamagedHouseReportController::class, 'getModifications'])
-            ->name('modifications.damaged-houses');
+            /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
+            Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])
+                ->name('damaged-houses-reports.store');
+            Route::get('/modifications/damaged-houses', [DamagedHouseReportController::class, 'getModifications'])
+                ->name('modifications.damaged-houses');
+        });
 
-        // Assistance Extended
-        Route::resource('assistance-extendeds', AssistanceExtendedController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/assistance-extendeds', [AssistanceExtendedController::class, 'store'])
-            ->name('assistance-extendeds.store');
-        Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
-            ->name('assistance-extendeds.index');
-        Route::get('/modifications/assistance-extended', [AssistanceExtendedController::class, 'getModifications'])
-            ->name('modifications.assistance-extended');
+        // Assistance Extended and Assistance Provided LGUs share one page
+        Route::middleware('role_or_permission:admin|access-assistance-extended')->group(function () {
+            Route::resource('assistance-extendeds', AssistanceExtendedController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/assistance-extendeds', [AssistanceExtendedController::class, 'store'])
+                ->name('assistance-extendeds.store');
+            Route::get('/assistance-extendeds', [AssistanceExtendedController::class, 'index'])
+                ->name('assistance-extendeds.index');
+            Route::get('/modifications/assistance-extended', [AssistanceExtendedController::class, 'getModifications'])
+                ->name('modifications.assistance-extended');
 
-        /* ---------------- Suspension of Classes (API routes) ---------------- */
-        Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
-            ->name('suspension-classes-reports.store');
-        Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
-            ->name('modifications.suspension-classes');
+            Route::get('/assistance', function () {
+                return inertia('AssistanceExtended/AssistanceIndex');
+            })->name('assistance.index');
 
-        /* ---------------- Suspension of Work (API routes) ---------------- */
-        Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
-            ->name('suspension-work-reports.store');
-        Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
-            ->name('modifications.suspension-work');
-
-        Route::get('/assistance', function () {
-            return inertia('AssistanceExtended/AssistanceIndex');
-        })->name('assistance.index');
-
-        // Assistance Provided LGUs
-        Route::resource('assistance-provided-lgus', AssistanceProvidedLguController::class)
-            ->only(['index', 'store', 'update']);
-        Route::post('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'store'])
-            ->name('assistance-provided-lgus.store');
-        Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
-            ->name('assistance-provided-lgus.index');
+            Route::resource('assistance-provided-lgus', AssistanceProvidedLguController::class)
+                ->only(['index', 'store', 'update']);
+            Route::post('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'store'])
+                ->name('assistance-provided-lgus.store');
+            Route::get('/assistance-provided-lgus', [AssistanceProvidedLguController::class, 'index'])
+                ->name('assistance-provided-lgus.index');
+        });
 
     }); // End of typhoon.active middleware group
 });
@@ -435,11 +457,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         Route::patch('/{disaster}', [DisasterController::class, 'update'])->name('disasters.update');
         Route::post('/{disaster}/pause', [DisasterController::class, 'pause'])->name('disasters.pause');
         Route::post('/{disaster}/resume', [DisasterController::class, 'resume'])->name('disasters.resume');
-        Route::get('/{disaster}/snapshot', [DisasterController::class, 'downloadSnapshot'])->name('disasters.snapshot');
+        Route::get('/{disaster}/snapshot', [DisasterController::class, 'downloadSnapshot'])->middleware('throttle:pdf')->name('disasters.snapshot');
         Route::post('/{disaster}/end', [DisasterController::class, 'end'])->name('disasters.end');
-        Route::post('/{disaster}/regenerate-pdf', [DisasterController::class, 'regeneratePdf'])->name('disasters.regenerate-pdf');
+        Route::post('/{disaster}/regenerate-pdf', [DisasterController::class, 'regeneratePdf'])->middleware('throttle:pdf')->name('disasters.regenerate-pdf');
         Route::delete('/{disaster}', [DisasterController::class, 'destroy'])->name('disasters.destroy');
-        Route::get('/{disaster}/download', [DisasterController::class, 'downloadPdf'])->name('disasters.download');
+        Route::get('/{disaster}/download', [DisasterController::class, 'downloadPdf'])->middleware('throttle:pdf')->name('disasters.download');
     });
 });
 
@@ -448,9 +470,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/api/disaster/active', [DisasterController::class, 'getActiveTyphoon'])->name('api.disaster.active');
     Route::get('/api/electricity-history', [SituationOverviewController::class, 'getElectricityHistory'])->name('api.electricity-history');
-    Route::get('/api/electricity-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewElectricityPdf'])->name('api.electricity-history.pdf');
+    Route::get('/api/electricity-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewElectricityPdf'])->middleware('throttle:pdf')->name('api.electricity-history.pdf');
     Route::get('/api/water-service-history', [SituationOverviewController::class, 'getWaterServiceHistory'])->name('api.water-service-history');
-    Route::get('/api/water-service-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewWaterServicePdf'])->name('api.water-service-history.pdf');
+    Route::get('/api/water-service-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewWaterServicePdf'])->middleware('throttle:pdf')->name('api.water-service-history.pdf');
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
     Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');

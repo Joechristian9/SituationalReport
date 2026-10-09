@@ -12,7 +12,7 @@ class CheckDisasterStatus
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -37,12 +37,18 @@ class CheckDisasterStatus
             return redirect()->route($request->user()->homeRoute())->with('error', 'No active disaster report. Forms are currently disabled.');
         }
 
-        // If typhoon is paused, allow page to load but forms will be disabled
-        // The frontend will handle showing disabled state based on typhoon status
-        // Only block API requests (form submissions)
-        if ($typhoon->status === 'paused' && $request->expectsJson()) {
+        // A paused disaster still lets pages load (the forms show as disabled), but nothing
+        // may be saved. Inertia form posts don't ask for JSON, so writes are blocked by
+        // method rather than by expectsJson().
+        if ($typhoon->status === 'paused' && ($request->expectsJson() || ! $request->isMethodSafe())) {
+            $message = 'Typhoon report is currently paused. Forms are temporarily disabled.';
+
+            if (! $request->expectsJson()) {
+                return back()->with('error', $message);
+            }
+
             return response()->json([
-                'message' => 'Typhoon report is currently paused. Forms are temporarily disabled.',
+                'message' => $message,
                 'hasActiveTyphoon' => false,
                 'isPaused' => true,
             ], 403);

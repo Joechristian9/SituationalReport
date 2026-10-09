@@ -22,6 +22,7 @@ class SuspensionOfWork extends Model
         'remarks',
         'user_id',
         'updated_by',
+        'disaster_id',
     ];
 
     /**

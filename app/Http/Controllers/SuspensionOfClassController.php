@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SuspensionOfClass;
 use App\Models\Modification;
+use App\Models\SuspensionOfClass;
+use App\Models\Typhoon;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +13,8 @@ use Inertia\Inertia;
 
 class SuspensionOfClassController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Display a listing of the suspension of class records.
      * Optimized: Limit records for better performance
@@ -19,7 +22,7 @@ class SuspensionOfClassController extends Controller
     public function index()
     {
         $typhoonId = $this->getActiveTyphoonId();
-        $suspensionList = SuspensionOfClass::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId))
+        $suspensionList = SuspensionOfClass::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId))
             ->latest()->limit(200)->get();
 
         return Inertia::render('IncidentMonitored/Index', [
@@ -39,7 +42,7 @@ class SuspensionOfClassController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         // Stricter Validation Rules
         $validated = $request->validate([
@@ -53,33 +56,33 @@ class SuspensionOfClassController extends Controller
 
         foreach ($validated['suspension_of_classes'] as $suspensionData) {
             // If an ID exists and is numeric, try to find and update that specific record
-            if (!empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
-                $suspension = SuspensionOfClass::find($suspensionData['id']);
+            if (! empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
+                $suspension = $this->findWritableRecord(SuspensionOfClass::class, $suspensionData['id']);
                 if ($suspension) {
                     // Update existing record
                     $suspension->update([
                         'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                        'level'                      => $suspensionData['level'] ?? null,
-                        'date_of_suspension'         => $suspensionData['date_of_suspension'] ?? null,
-                        'remarks'                    => $suspensionData['remarks'] ?? null,
-                        'updated_by'                 => Auth::id(),
+                        'level' => $suspensionData['level'] ?? null,
+                        'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                        'remarks' => $suspensionData['remarks'] ?? null,
+                        'updated_by' => Auth::id(),
                     ]);
                 } else {
                     // ID provided but doesn't exist in DB - treat as new record
                     // Skip empty rows
                     $isEmpty = empty(array_filter($suspensionData, function ($value) {
-                        return !is_null($value) && trim((string)$value) !== '';
+                        return ! is_null($value) && trim((string) $value) !== '';
                     }));
 
-                    if (!$isEmpty) {
+                    if (! $isEmpty) {
                         SuspensionOfClass::create([
                             'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                            'level'                      => $suspensionData['level'] ?? null,
-                            'date_of_suspension'         => $suspensionData['date_of_suspension'] ?? null,
-                            'remarks'                    => $suspensionData['remarks'] ?? null,
-                            'user_id'                    => Auth::id(),
-                            'updated_by'                 => Auth::id(),
-                            'disaster_id'                 => $activeTyphoon->id,
+                            'level' => $suspensionData['level'] ?? null,
+                            'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                            'remarks' => $suspensionData['remarks'] ?? null,
+                            'user_id' => Auth::id(),
+                            'updated_by' => Auth::id(),
+                            'disaster_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
@@ -88,7 +91,7 @@ class SuspensionOfClassController extends Controller
             else {
                 // Skip rows where all values are null or empty
                 $isEmpty = empty(array_filter($suspensionData, function ($value) {
-                    return !is_null($value) && trim((string)$value) !== '';
+                    return ! is_null($value) && trim((string) $value) !== '';
                 }));
 
                 if ($isEmpty) {
@@ -97,12 +100,12 @@ class SuspensionOfClassController extends Controller
 
                 SuspensionOfClass::create([
                     'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                    'level'                      => $suspensionData['level'] ?? null,
-                    'date_of_suspension'         => $suspensionData['date_of_suspension'] ?? null,
-                    'remarks'                    => $suspensionData['remarks'] ?? null,
-                    'user_id'                    => Auth::id(),
-                    'updated_by'                 => Auth::id(),
-                    'disaster_id'                 => $activeTyphoon->id,
+                    'level' => $suspensionData['level'] ?? null,
+                    'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                    'remarks' => $suspensionData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -118,9 +121,9 @@ class SuspensionOfClassController extends Controller
     {
         $validated = $request->validate([
             'province_city_municipality' => 'nullable|string|max:255',
-            'level'                      => 'nullable|string|max:255',
-            'date_of_suspension'         => 'nullable|date',
-            'remarks'                    => 'nullable|string',
+            'level' => 'nullable|string|max:255',
+            'date_of_suspension' => 'nullable|date',
+            'remarks' => 'nullable|string',
         ]);
 
         $suspensionOfClass->update(array_merge($validated, [
@@ -156,11 +159,11 @@ class SuspensionOfClassController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -172,8 +175,8 @@ class SuspensionOfClassController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -182,7 +185,7 @@ class SuspensionOfClassController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 }

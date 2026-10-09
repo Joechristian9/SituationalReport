@@ -24,7 +24,7 @@ function shareWith(User $owner, User $grantee, string $type): void
 }
 
 it('lets a barangay edit its own record', function () {
-    $owner = userWithRole('user');
+    $owner = userWithPermissions('access-injured-form');
     $record = injuredFor($owner, disasterWithStatus());
 
     $this->actingAs($owner)->patch(route('injured.update', $record), ['name' => 'Edited'])->assertRedirect();
@@ -33,17 +33,17 @@ it('lets a barangay edit its own record', function () {
 });
 
 it('stops a barangay editing another barangay\'s record', function () {
-    $record = injuredFor(userWithRole('user'), disasterWithStatus());
+    $record = injuredFor(userWithPermissions('access-injured-form'), disasterWithStatus());
 
-    $this->actingAs(userWithRole('user'))->patch(route('injured.update', $record), ['name' => 'Tampered'])->assertForbidden();
+    $this->actingAs(userWithPermissions('access-injured-form'))->patch(route('injured.update', $record), ['name' => 'Tampered'])->assertForbidden();
 
     expect($record->fresh()->name)->toBe('Original');
 });
 
 it('allows edits through a write share but not a read share', function () {
-    $owner = userWithRole('user');
-    $writer = userWithRole('user');
-    $reader = userWithRole('user');
+    $owner = userWithPermissions('access-injured-form');
+    $writer = userWithPermissions('access-injured-form');
+    $reader = userWithPermissions('access-injured-form');
     shareWith($owner, $writer, 'write');
     shareWith($owner, $reader, 'read');
     $record = injuredFor($owner, disasterWithStatus());
@@ -55,7 +55,7 @@ it('allows edits through a write share but not a read share', function () {
 });
 
 it('stops a barangay editing its record from a disaster that has ended', function () {
-    $owner = userWithRole('user');
+    $owner = userWithPermissions('access-injured-form');
     $old = injuredFor($owner, disasterWithStatus('ended'));
     disasterWithStatus('active');
 
@@ -65,7 +65,7 @@ it('stops a barangay editing its record from a disaster that has ended', functio
 });
 
 it('lets an admin edit any record', function () {
-    $record = injuredFor(userWithRole('user'), disasterWithStatus());
+    $record = injuredFor(userWithPermissions('access-injured-form'), disasterWithStatus());
 
     $this->actingAs(userWithRole('admin'))->patch(route('injured.update', $record), ['name' => 'Corrected'])->assertRedirect();
 
@@ -73,7 +73,7 @@ it('lets an admin edit any record', function () {
 });
 
 it('saves nothing when no disaster is active', function () {
-    $owner = userWithRole('user');
+    $owner = userWithPermissions('access-injured-form');
     $record = injuredFor($owner, disasterWithStatus('ended'));
 
     $this->actingAs($owner)->patch(route('injured.update', $record), ['name' => 'Late edit']);

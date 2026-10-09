@@ -16,16 +16,39 @@ trait AuthorizesRecordWrites
      */
     protected function authorizeRecordWrite(Model $record): void
     {
+        abort_unless($this->canWriteRecord($record), 403);
+    }
+
+    /**
+     * The record behind an id sent in a bulk save, or null when the user may not change it.
+     *
+     * Bulk saves take row ids from the request, so a plain find() would let a user
+     * overwrite another account's rows or rows of an ended disaster.
+     *
+     * @param  class-string<Model>  $modelClass
+     */
+    protected function findWritableRecord(string $modelClass, mixed $id): ?Model
+    {
+        $record = $modelClass::find($id);
+
+        return $record && $this->canWriteRecord($record) ? $record : null;
+    }
+
+    protected function canWriteRecord(Model $record): bool
+    {
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            return;
+            return true;
         }
 
         $writableUserIds = array_map('intval', $user->getAccessibleUserIds('write'));
-        abort_unless(in_array((int) $record->user_id, $writableUserIds, true), 403);
+        if (! in_array((int) $record->user_id, $writableUserIds, true)) {
+            return false;
+        }
 
         $activeDisaster = Typhoon::getActiveTyphoon();
-        abort_unless($activeDisaster && (int) $record->disaster_id === $activeDisaster->id, 403);
+
+        return $activeDisaster && (int) $record->disaster_id === $activeDisaster->id;
     }
 }

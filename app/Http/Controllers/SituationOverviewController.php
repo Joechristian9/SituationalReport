@@ -19,6 +19,7 @@ use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\WeatherReport;
 use App\Services\ReportHistory;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -29,7 +30,7 @@ use Inertia\Inertia;
 
 class SituationOverviewController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
 
     /* ------------------- INDEX ------------------- */
     public function index()
@@ -164,7 +165,7 @@ class SituationOverviewController extends Controller
 
             // If an ID exists, we find and update that specific record.
             if (! empty($reportData['id'])) {
-                $weatherReport = WeatherReport::find($reportData['id']);
+                $weatherReport = $this->findWritableRecord(WeatherReport::class, $reportData['id']);
                 if ($weatherReport) {
                     // Only update fields that have actually changed
                     $fieldsToUpdate = [];
@@ -262,7 +263,7 @@ class SituationOverviewController extends Controller
         foreach ($validated['reports'] as $reportData) {
             // If ID is numeric, update existing record
             if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
-                $waterLevel = WaterLevel::find($reportData['id']);
+                $waterLevel = $this->findWritableRecord(WaterLevel::class, $reportData['id']);
                 if ($waterLevel) {
                     $waterLevel->update([
                         'gauging_station' => $reportData['gauging_station'],
@@ -358,8 +359,8 @@ class SituationOverviewController extends Controller
             }
 
             if (! empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
-                // Update existing record (anyone can update any record)
-                $service = ElectricityService::find($serviceData['id']);
+                // Update the record when this account may change it
+                $service = $this->findWritableRecord(ElectricityService::class, $serviceData['id']);
                 if ($service) {
                     $service->update([
                         'status' => $serviceData['status'] ?? null,
@@ -449,16 +450,16 @@ class SituationOverviewController extends Controller
             $shouldCreateNew = false;
 
             if (! empty($waterData['id']) && is_numeric($waterData['id'])) {
-                $existingService = WaterService::find($waterData['id']);
+                // Water services is one shared list: any account with the form may edit any
+                // row, but only rows of the current disaster, never an ended one's.
+                $existingService = WaterService::where('disaster_id', $activeTyphoon->id)->find($waterData['id']);
 
                 if ($existingService) {
-                    // Update existing record - allow ANY user to update ANY record
                     $existingService->update([
                         'source_of_water' => $waterData['source_of_water'] ?? null,
                         'barangays_served' => $waterData['barangays_served'] ?? null,
                         'status' => $waterData['status'] ?? null,
                         'remarks' => $waterData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
@@ -534,7 +535,7 @@ class SituationOverviewController extends Controller
 
             // If ID exists and is numeric, update existing record
             if (! empty($commData['id']) && is_numeric($commData['id'])) {
-                $communication = Communication::find($commData['id']);
+                $communication = $this->findWritableRecord(Communication::class, $commData['id']);
                 if ($communication) {
                     // Only update fields that have changed
                     $fieldsToUpdate = [];
@@ -665,7 +666,7 @@ class SituationOverviewController extends Controller
 
             // If ID exists and is numeric, update existing record
             if (! empty($roadData['id']) && is_numeric($roadData['id'])) {
-                $road = Road::find($roadData['id']);
+                $road = $this->findWritableRecord(Road::class, $roadData['id']);
                 if ($road) {
                     $road->update([
                         'road_classification' => $roadData['road_classification'] ?? null,
@@ -756,7 +757,7 @@ class SituationOverviewController extends Controller
 
                 // If ID exists and is numeric, update existing record
                 if (! empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
-                    $bridge = Bridge::find($bridgeData['id']);
+                    $bridge = $this->findWritableRecord(Bridge::class, $bridgeData['id']);
                     if ($bridge) {
                         $bridge->update([
                             'road_classification' => $bridgeData['road_classification'] ?? null,
