@@ -29,7 +29,11 @@ use App\Models\WaterService;
 use App\Models\WeatherReport;
 use App\Observers\AuditableObserver;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -64,6 +68,13 @@ class AppServiceProvider extends ServiceProvider
         $this->registerAuditObservers();
 
         $this->registerRateLimiters();
+
+        // /up only proves PHP boots; an uptime monitor must also see the database go down.
+        Event::listen(DiagnosingHealth::class, fn () => DB::select('select 1'));
+
+        if ($proxies = config('app.trusted_proxies')) {
+            TrustProxies::at(array_map('trim', explode(',', $proxies)));
+        }
     }
 
     private function registerRateLimiters(): void

@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ResponseOperation;
 use App\Models\Modification;
+use App\Models\ResponseOperation;
+use App\Models\Typhoon;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class ResponseOperationController extends Controller
 {
     use ValidatesDisasterStatus;
+
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
@@ -20,9 +22,9 @@ class ResponseOperationController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $operationsQuery = ResponseOperation::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $operationsQuery = ResponseOperation::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $operationsQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -46,26 +48,26 @@ class ResponseOperationController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'responses' => 'required|array',
             'responses.*.id' => 'nullable|integer',
             'responses.*.team_unit' => 'nullable|string|max:255',
-            'responses.*.incident'  => 'nullable|string|max:255',
-            'responses.*.datetime'  => 'nullable|date',
-            'responses.*.location'  => 'nullable|string|max:255',
-            'responses.*.actions'   => 'nullable|string',
-            'responses.*.remarks'   => 'nullable|string',
+            'responses.*.incident' => 'nullable|string|max:255',
+            'responses.*.datetime' => 'nullable|date',
+            'responses.*.location' => 'nullable|string|max:255',
+            'responses.*.actions' => 'nullable|string',
+            'responses.*.remarks' => 'nullable|string',
         ]);
 
         foreach ($validated['responses'] as $responseData) {
             // If an ID exists and is numeric, try to find and update that specific record
-            if (!empty($responseData['id']) && is_numeric($responseData['id'])) {
+            if (! empty($responseData['id']) && is_numeric($responseData['id'])) {
                 $operationQuery = ResponseOperation::where('id', $responseData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $accessibleUserIds = $user->getAccessibleUserIds('write');
                     $operationQuery->whereIn('user_id', $accessibleUserIds);
                 }
@@ -75,29 +77,29 @@ class ResponseOperationController extends Controller
                     // Update existing record
                     $operation->update([
                         'team_unit' => $responseData['team_unit'] ?? null,
-                        'incident'  => $responseData['incident'] ?? null,
-                        'datetime'  => $responseData['datetime'] ?? null,
-                        'location'  => $responseData['location'] ?? null,
-                        'actions'   => $responseData['actions'] ?? null,
-                        'remarks'   => $responseData['remarks'] ?? null,
+                        'incident' => $responseData['incident'] ?? null,
+                        'datetime' => $responseData['datetime'] ?? null,
+                        'location' => $responseData['location'] ?? null,
+                        'actions' => $responseData['actions'] ?? null,
+                        'remarks' => $responseData['remarks'] ?? null,
                         'disaster_id' => $activeTyphoon->id,
                         'updated_by' => Auth::id(),
                     ]);
                 } else {
                     // ID provided but doesn't exist in DB - treat as new record
                     $isEmpty = empty(array_filter($responseData, function ($value) {
-                        return !is_null($value) && $value !== '';
+                        return ! is_null($value) && $value !== '';
                     }));
 
-                    if (!$isEmpty) {
+                    if (! $isEmpty) {
                         ResponseOperation::create([
                             'team_unit' => $responseData['team_unit'] ?? null,
-                            'incident'  => $responseData['incident'] ?? null,
-                            'datetime'  => $responseData['datetime'] ?? null,
-                            'location'  => $responseData['location'] ?? null,
-                            'actions'   => $responseData['actions'] ?? null,
-                            'remarks'   => $responseData['remarks'] ?? null,
-                            'user_id'   => Auth::id(),
+                            'incident' => $responseData['incident'] ?? null,
+                            'datetime' => $responseData['datetime'] ?? null,
+                            'location' => $responseData['location'] ?? null,
+                            'actions' => $responseData['actions'] ?? null,
+                            'remarks' => $responseData['remarks'] ?? null,
+                            'user_id' => Auth::id(),
                             'updated_by' => Auth::id(),
                             'disaster_id' => $activeTyphoon->id,
                         ]);
@@ -108,7 +110,7 @@ class ResponseOperationController extends Controller
             else {
                 // Skip rows if all values are null/empty
                 $isEmpty = empty(array_filter($responseData, function ($value) {
-                    return !is_null($value) && $value !== '';
+                    return ! is_null($value) && $value !== '';
                 }));
 
                 if ($isEmpty) {
@@ -117,12 +119,12 @@ class ResponseOperationController extends Controller
 
                 ResponseOperation::create([
                     'team_unit' => $responseData['team_unit'] ?? null,
-                    'incident'  => $responseData['incident'] ?? null,
-                    'datetime'  => $responseData['datetime'] ?? null,
-                    'location'  => $responseData['location'] ?? null,
-                    'actions'   => $responseData['actions'] ?? null,
-                    'remarks'   => $responseData['remarks'] ?? null,
-                    'user_id'   => Auth::id(),
+                    'incident' => $responseData['incident'] ?? null,
+                    'datetime' => $responseData['datetime'] ?? null,
+                    'location' => $responseData['location'] ?? null,
+                    'actions' => $responseData['actions'] ?? null,
+                    'remarks' => $responseData['remarks'] ?? null,
+                    'user_id' => Auth::id(),
                     'updated_by' => Auth::id(),
                     'disaster_id' => $activeTyphoon->id,
                 ]);
@@ -135,7 +137,7 @@ class ResponseOperationController extends Controller
         $updatedQuery = ResponseOperation::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $updatedQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -143,14 +145,12 @@ class ResponseOperationController extends Controller
         $updatedOperations = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
-        
+
         return response()->json([
             'message' => 'Response operations saved successfully!',
-            'responses' => $updatedOperations
+            'responses' => $updatedOperations,
         ]);
     }
-
-
 
     /**
      * Update the specified resource in storage.
@@ -189,7 +189,7 @@ class ResponseOperationController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'ResponseOperation')
+        $modifications = Modification::forActiveDisaster(ResponseOperation::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -200,11 +200,11 @@ class ResponseOperationController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -216,8 +216,8 @@ class ResponseOperationController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -226,7 +226,7 @@ class ResponseOperationController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 }

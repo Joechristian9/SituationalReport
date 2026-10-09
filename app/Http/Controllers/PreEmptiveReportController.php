@@ -241,7 +241,7 @@ class PreEmptiveReportController extends Controller
     {
         try {
             // Fetch modifications for pre-emptive reports
-            $modifications = Modification::where('model_type', 'PreEmptiveReport')
+            $modifications = Modification::forActiveDisaster(PreEmptiveReport::class)
                 ->with('user:id,name')
                 ->latest()
                 ->get();

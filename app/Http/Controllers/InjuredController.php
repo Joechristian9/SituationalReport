@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Injured;
+use App\Models\Modification;
+use App\Models\ReportView;
 use App\Models\Typhoon;
-use App\Traits\BuildsSubmissionList;
+use App\Models\User;
 use App\Traits\AuthorizesRecordWrites;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +17,7 @@ use Inertia\Inertia;
 class InjuredController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
+
     /**
      * Display a listing of the injured records.
      * Optimized: Limit records for better performance
@@ -23,9 +27,9 @@ class InjuredController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $injuredQuery = Injured::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $injuredQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -49,19 +53,19 @@ class InjuredController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'injured' => 'required|array',
-            'injured.*.id'              => 'nullable',
-            'injured.*.name'            => 'nullable|string|max:255',
-            'injured.*.age'             => 'nullable|integer',
-            'injured.*.sex'             => 'nullable|string|max:255',
-            'injured.*.address'         => 'nullable|string',
-            'injured.*.diagnosis'       => 'nullable|string',
-            'injured.*.date_admitted'   => 'nullable|date',
+            'injured.*.id' => 'nullable',
+            'injured.*.name' => 'nullable|string|max:255',
+            'injured.*.age' => 'nullable|integer',
+            'injured.*.sex' => 'nullable|string|max:255',
+            'injured.*.address' => 'nullable|string',
+            'injured.*.diagnosis' => 'nullable|string',
+            'injured.*.date_admitted' => 'nullable|date',
             'injured.*.place_of_incident' => 'nullable|string|max:255',
-            'injured.*.remarks'         => 'nullable|string',
+            'injured.*.remarks' => 'nullable|string',
         ]);
 
         $savedInjured = [];
@@ -74,8 +78,8 @@ class InjuredController extends Controller
 
             // Remove empty values (null, '', whitespace, 0, '0')
             $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return !is_null($value)
-                    && trim((string)$value) !== ''
+                return ! is_null($value)
+                    && trim((string) $value) !== ''
                     && $value !== 0
                     && $value !== '0';
             });
@@ -86,24 +90,24 @@ class InjuredController extends Controller
             }
 
             $data = [
-                'name'              => $injuredData['name'] ?? null,
-                'age'               => $injuredData['age'] ?? null,
-                'sex'               => $injuredData['sex'] ?? null,
-                'address'           => $injuredData['address'] ?? null,
-                'diagnosis'         => $injuredData['diagnosis'] ?? null,
-                'date_admitted'     => $injuredData['date_admitted'] ?? null,
+                'name' => $injuredData['name'] ?? null,
+                'age' => $injuredData['age'] ?? null,
+                'sex' => $injuredData['sex'] ?? null,
+                'address' => $injuredData['address'] ?? null,
+                'diagnosis' => $injuredData['diagnosis'] ?? null,
+                'date_admitted' => $injuredData['date_admitted'] ?? null,
                 'place_of_incident' => $injuredData['place_of_incident'] ?? null,
-                'remarks'           => $injuredData['remarks'] ?? null,
-                'updated_by'        => Auth::id(),
+                'remarks' => $injuredData['remarks'] ?? null,
+                'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($injuredData['id']) && is_numeric($injuredData['id'])) {
+            if (! empty($injuredData['id']) && is_numeric($injuredData['id'])) {
                 // Update existing record (only own records for non-admin users)
                 $injuredQuery = Injured::where('id', $injuredData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $accessibleUserIds = $user->getAccessibleUserIds('write');
                     $injuredQuery->whereIn('user_id', $accessibleUserIds);
                 }
@@ -141,14 +145,14 @@ class InjuredController extends Controller
         $this->authorizeRecordWrite($injured);
 
         $validated = $request->validate([
-            'name'              => 'nullable|string|max:255',
-            'age'               => 'nullable|integer',
-            'sex'               => 'nullable|string|max:255',
-            'address'           => 'nullable|string',
-            'diagnosis'         => 'nullable|string',
-            'date_admitted'     => 'nullable|date',
+            'name' => 'nullable|string|max:255',
+            'age' => 'nullable|integer',
+            'sex' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'date_admitted' => 'nullable|date',
             'place_of_incident' => 'nullable|string|max:255',
-            'remarks'           => 'nullable|string',
+            'remarks' => 'nullable|string',
         ]);
 
         $injured->update(array_merge($validated, [
@@ -173,7 +177,7 @@ class InjuredController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'Injured')
+        $modifications = Modification::forActiveDisaster(Injured::class)
             ->with('user')
             ->latest()
             ->get();
@@ -184,15 +188,15 @@ class InjuredController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,
@@ -209,12 +213,12 @@ class InjuredController extends Controller
     public function submissions(Request $request)
     {
         // Clear the "new reports" badge for this admin
-        \App\Models\ReportView::markSeen('injured');
+        ReportView::markSeen('injured');
 
         $query = Injured::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists
-        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        $activeTyphoon = Typhoon::where('status', 'active')->first();
         if ($activeTyphoon) {
             $query->where('disaster_id', $activeTyphoon->id);
         }
@@ -247,7 +251,7 @@ class InjuredController extends Controller
         $injured = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
-        $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
+        $users = User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/InjuredSubmissions', [
             'injured' => $injured,

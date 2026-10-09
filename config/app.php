@@ -123,4 +123,19 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted Proxies
+    |--------------------------------------------------------------------------
+    |
+    | Behind a CDN such as Cloudflare every request arrives from the CDN's
+    | address. List the CDN's ranges (comma separated) so the visitor's real
+    | IP is used, which the login and save rate limits depend on. Leave empty
+    | when the site is not behind a proxy: trusting one that isn't there lets
+    | anyone fake their IP with an X-Forwarded-For header.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
 ];

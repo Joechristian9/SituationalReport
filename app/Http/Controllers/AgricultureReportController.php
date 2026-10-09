@@ -112,7 +112,7 @@ class AgricultureReportController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'AgricultureReport')
+        $modifications = Modification::forActiveDisaster(AgricultureReport::class)
             ->with('user:id,name')
             ->latest()
             ->get();

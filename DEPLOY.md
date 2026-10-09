@@ -10,18 +10,28 @@ ssh -p 65002 u988863428@156.67.222.18
 ```
 Enter your password when prompted.
 
-### Step 2: Pull Latest Changes
-Once connected to the server, run these commands:
+### Step 2: Run the deploy script
+Once connected to the server, run:
 ```bash
 cd /home/u988863428/domains/pitonmain.com/public_html
-git pull origin main
-composer install --no-dev --optimize-autoloader --no-interaction
-php artisan cache:clear
-php artisan view:clear
+bash deploy-production.sh
 exit
 ```
 
-`vendor/` is not stored in Git, so `composer install` must run after every pull.
+The script, in order:
+1. Backs up the database and report PDFs (`php artisan backup:create`). If that fails it stops
+   and nothing has changed. `SKIP_BACKUP=1 bash deploy-production.sh` skips it in an emergency.
+2. Puts the site in maintenance mode, so visitors see a "back shortly" page instead of errors
+   while new code and old `vendor/` are mixed.
+3. `git pull`, `composer install` (`vendor/` is not in Git), `migrate --force`, then rebuilds the
+   config, route and view caches.
+4. Takes the site out of maintenance mode, also when a step failed (it then prints
+   `DEPLOYMENT FAILED`).
+
+**First deploy of this script:** the copy on the server is still the old one, so run
+`git pull --ff-only origin main` once before `bash deploy-production.sh`.
+
+After changing `.env`, run `php artisan config:cache` again, because a cached config ignores `.env`.
 
 ### Step 3: Clear Browser Cache
 - Visit: https://pitonmain.com/history
@@ -102,5 +112,46 @@ git log -1 --oneline
 ## Alternative: One-Line Deployment
 Copy and paste this entire command (requires password):
 ```bash
-ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com/public_html && git pull origin main && composer install --no-dev --optimize-autoloader --no-interaction && php artisan cache:clear && php artisan view:clear && echo 'Deployment complete!'"
+ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com/public_html && bash deploy-production.sh"
 ```
+
+---
+
+## Backups and Restore
+
+### What is backed up
+`php artisan backup:create` writes one zip to `storage/app/private/backups/` with the full
+database (`database.sql`) and the stored files (`storage/`: the disaster report PDFs).
+The newest 14 are kept (`BACKUP_KEEP`). It runs nightly at 01:00 and before every deploy.
+
+### One-time setup on the server
+1. **Turn on the scheduler.** hPanel → Advanced → Cron Jobs, every minute:
+   ```
+   cd /home/u988863428/domains/pitonmain.com/public_html && php artisan schedule:run >> /dev/null 2>&1
+   ```
+   Without it the nightly backup never runs. Check with `php artisan schedule:list`.
+2. **Check it works once:** `php artisan backup:create`. If it says mysqldump was not found,
+   set `MYSQLDUMP_PATH` in `.env` to the output of `which mysqldump`, then `php artisan config:cache`.
+3. **Optional encryption:** set `BACKUP_PASSWORD` in `.env`. The dump contains names of
+   casualties. Store that password outside the server, or the backups can't be opened.
+
+### Keep a copy off the server
+Backups on the server are lost with the server. At least weekly (and after each disaster
+ends), download the newest zip, for example from your PC:
+```bash
+scp -P 65002 "u988863428@156.67.222.18:domains/pitonmain.com/public_html/storage/app/private/backups/backup-*.zip" .
+```
+Keep the copies private: they hold the same personal data as the app.
+
+### Restore
+1. Unzip the backup on the server:
+   `cd ~ && unzip domains/pitonmain.com/public_html/storage/app/private/backups/backup-YYYY-MM-DD_HHMMSS.zip -d restore`
+   (an encrypted zip asks for `BACKUP_PASSWORD`; if the server is gone, upload your off-site copy first).
+2. Maintenance mode: `php artisan down`
+3. Database (replaces current data):
+   `mysql -u <DB_USERNAME> -p <DB_DATABASE> < ~/restore/database.sql`
+   (or hPanel → Databases → phpMyAdmin → Import `database.sql`).
+4. Files: `cp -r ~/restore/storage/. domains/pitonmain.com/public_html/storage/app/public/`
+5. `php artisan optimize:clear && php artisan config:cache && php artisan up`
+
+Practise a restore into a spare database once, before you need it for real.

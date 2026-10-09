@@ -16,10 +16,8 @@ Write-Host "User: $ServerUser" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Commands to run on server:" -ForegroundColor Green
 Write-Host "1. cd $RemotePath" -ForegroundColor White
-Write-Host "2. git pull origin main" -ForegroundColor White
-Write-Host "3. composer install --no-dev --optimize-autoloader --no-interaction" -ForegroundColor White
-Write-Host "4. php artisan cache:clear" -ForegroundColor White
-Write-Host "5. php artisan view:clear" -ForegroundColor White
+Write-Host "2. bash deploy-production.sh" -ForegroundColor White
+Write-Host "   (backup, maintenance mode, pull, composer, migrate, caches; see DEPLOY.md)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Press any key to connect to server..." -ForegroundColor Cyan
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

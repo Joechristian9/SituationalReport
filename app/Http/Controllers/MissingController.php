@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Missing; // 1. Use the Missing model
+use App\Models\Modification;
+use App\Models\ReportView;
 use App\Models\Typhoon;
-use App\Traits\BuildsSubmissionList;
+use App\Models\User;
 use App\Traits\AuthorizesRecordWrites;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,6 +18,7 @@ use Inertia\Inertia;
 class MissingController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
+
     /**
      * Display a listing of the missing person records.
      * Optimized: Limit records for better performance
@@ -23,9 +28,9 @@ class MissingController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $missingQuery = Missing::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -50,16 +55,16 @@ class MissingController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'missing' => 'required|array',
-            'missing.*.id'      => 'nullable',
-            'missing.*.name'    => 'nullable|string|max:255',
-            'missing.*.age'     => 'nullable|integer',
-            'missing.*.sex'     => 'nullable|string|max:255',
+            'missing.*.id' => 'nullable',
+            'missing.*.name' => 'nullable|string|max:255',
+            'missing.*.age' => 'nullable|integer',
+            'missing.*.sex' => 'nullable|string|max:255',
             'missing.*.address' => 'nullable|string',
-            'missing.*.cause'   => 'nullable|string',
+            'missing.*.cause' => 'nullable|string',
             'missing.*.remarks' => 'nullable|string',
         ]);
 
@@ -73,8 +78,8 @@ class MissingController extends Controller
 
             // Remove empty values (null, '', whitespace, 0, '0')
             $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return !is_null($value)
-                    && trim((string)$value) !== ''
+                return ! is_null($value)
+                    && trim((string) $value) !== ''
                     && $value !== 0
                     && $value !== '0';
             });
@@ -85,22 +90,22 @@ class MissingController extends Controller
             }
 
             $data = [
-                'name'       => $missingData['name'] ?? null,
-                'age'        => $missingData['age'] ?? null,
-                'sex'        => $missingData['sex'] ?? null,
-                'address'    => $missingData['address'] ?? null,
-                'cause'      => $missingData['cause'] ?? null,
-                'remarks'    => $missingData['remarks'] ?? null,
+                'name' => $missingData['name'] ?? null,
+                'age' => $missingData['age'] ?? null,
+                'sex' => $missingData['sex'] ?? null,
+                'address' => $missingData['address'] ?? null,
+                'cause' => $missingData['cause'] ?? null,
+                'remarks' => $missingData['remarks'] ?? null,
                 'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($missingData['id']) && is_numeric($missingData['id'])) {
+            if (! empty($missingData['id']) && is_numeric($missingData['id'])) {
                 // Update existing record (only own records for non-admin users)
                 $missingQuery = Missing::where('id', $missingData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $accessibleUserIds = $user->getAccessibleUserIds('write');
                     $missingQuery->whereIn('user_id', $accessibleUserIds);
                 }
@@ -133,9 +138,8 @@ class MissingController extends Controller
     /**
      * Update the specified missing person record in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Missing  $missing // 4. Use route-model binding for Missing
-     * @return \Illuminate\Http\RedirectResponse
+     * @param  Missing  $missing  // 4. Use route-model binding for Missing
+     * @return RedirectResponse
      */
     public function update(Request $request, Missing $missing)
     {
@@ -161,8 +165,7 @@ class MissingController extends Controller
     /**
      * Remove the specified missing person record from storage.
      *
-     * @param  \App\Models\Missing  $missing
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function destroy(Missing $missing)
     {
@@ -176,7 +179,7 @@ class MissingController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'Missing')
+        $modifications = Modification::forActiveDisaster(Missing::class)
             ->with('user')
             ->latest()
             ->get();
@@ -187,15 +190,15 @@ class MissingController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,
@@ -212,12 +215,12 @@ class MissingController extends Controller
     public function submissions(Request $request)
     {
         // Clear the "new reports" badge for this admin
-        \App\Models\ReportView::markSeen('missing');
+        ReportView::markSeen('missing');
 
         $query = Missing::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists
-        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        $activeTyphoon = Typhoon::where('status', 'active')->first();
         if ($activeTyphoon) {
             $query->where('disaster_id', $activeTyphoon->id);
         }
@@ -250,7 +253,7 @@ class MissingController extends Controller
         $missing = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
-        $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
+        $users = User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/MissingSubmissions', [
             'missing' => $missing,

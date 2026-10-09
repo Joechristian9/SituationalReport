@@ -228,7 +228,7 @@ class IncidentMonitoredController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'IncidentMonitored')
+        $modifications = Modification::forActiveDisaster(IncidentMonitored::class)
             ->with('user')
             ->latest()
             ->get();

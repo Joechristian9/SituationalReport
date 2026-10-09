@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Casualty;
+use App\Models\Modification;
+use App\Models\ReportView;
 use App\Models\Typhoon;
-use App\Traits\BuildsSubmissionList;
+use App\Models\User;
 use App\Traits\AuthorizesRecordWrites;
+use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +17,7 @@ use Inertia\Inertia;
 class CasualtyController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
+
     /**
      * Show list of casualties
      * Optimized: Limit records for better performance
@@ -23,9 +27,9 @@ class CasualtyController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $casualtiesQuery = Casualty::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $casualtiesQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $casualtiesQuery->whereIn('user_id', $accessibleUserIds);
         }
@@ -48,7 +52,7 @@ class CasualtyController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'casualties' => 'required|array',
@@ -72,7 +76,7 @@ class CasualtyController extends Controller
 
             // Remove empty values (null, '', whitespace, 0)
             $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return !is_null($value) && trim((string)$value) !== '' && $value !== 0 && $value !== '0';
+                return ! is_null($value) && trim((string) $value) !== '' && $value !== 0 && $value !== '0';
             });
 
             // If nothing left → means only sex was filled OR everything else empty/zero → skip
@@ -81,23 +85,23 @@ class CasualtyController extends Controller
             }
 
             $data = [
-                'name'              => $casualty['name'] ?? null,
-                'age'               => $casualty['age'] ?? null,
-                'sex'               => $casualty['sex'] ?? null,
-                'address'           => $casualty['address'] ?? null,
-                'cause_of_death'    => $casualty['cause_of_death'] ?? null,
-                'date_died'         => $casualty['date_died'] ?? null,
+                'name' => $casualty['name'] ?? null,
+                'age' => $casualty['age'] ?? null,
+                'sex' => $casualty['sex'] ?? null,
+                'address' => $casualty['address'] ?? null,
+                'cause_of_death' => $casualty['cause_of_death'] ?? null,
+                'date_died' => $casualty['date_died'] ?? null,
                 'place_of_incident' => $casualty['place_of_incident'] ?? null,
-                'updated_by'        => Auth::id(),
+                'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($casualty['id']) && is_numeric($casualty['id'])) {
+            if (! empty($casualty['id']) && is_numeric($casualty['id'])) {
                 // Update existing record (only own records for non-admin users)
                 $casualtyQuery = Casualty::where('id', $casualty['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $accessibleUserIds = $user->getAccessibleUserIds('write');
                     $casualtyQuery->whereIn('user_id', $accessibleUserIds);
                 }
@@ -127,6 +131,7 @@ class CasualtyController extends Controller
 
         return back()->with('success', 'Casualties report saved successfully.');
     }
+
     /**
      * Update specific casualty
      */
@@ -156,7 +161,7 @@ class CasualtyController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'Casualty')
+        $modifications = Modification::forActiveDisaster(Casualty::class)
             ->with('user')
             ->latest()
             ->get();
@@ -167,15 +172,15 @@ class CasualtyController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,
@@ -192,12 +197,12 @@ class CasualtyController extends Controller
     public function submissions(Request $request)
     {
         // Clear the "new reports" badge for this admin
-        \App\Models\ReportView::markSeen('casualties');
+        ReportView::markSeen('casualties');
 
         $query = Casualty::with(['user:id,name', 'updater:id,name']);
 
         // Filter by active disaster if exists
-        $activeTyphoon = \App\Models\Typhoon::where('status', 'active')->first();
+        $activeTyphoon = Typhoon::where('status', 'active')->first();
         if ($activeTyphoon) {
             $query->where('disaster_id', $activeTyphoon->id);
         }
@@ -230,7 +235,7 @@ class CasualtyController extends Controller
         $casualties = $query->latest('created_at')->paginate($perPage)->withQueryString();
 
         // Get all users for filter dropdown
-        $users = \App\Models\User::select('id', 'name')->orderBy('name')->get();
+        $users = User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/CasualtySubmissions', [
             'casualties' => $casualties,

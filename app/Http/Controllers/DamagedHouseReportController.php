@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DamagedHouseReport;
 use App\Models\Modification;
+use App\Models\Typhoon;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Inertia\Inertia;
 class DamagedHouseReportController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Display a listing of the resource.
      * Optimized: Limit records for better performance
@@ -22,9 +24,9 @@ class DamagedHouseReportController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $damagedQuery = DamagedHouseReport::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $damagedQuery = DamagedHouseReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $damagedQuery->where('user_id', $user->id);
         }
 
@@ -47,7 +49,7 @@ class DamagedHouseReportController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         // Stricter Validation Rules
         $validated = $request->validate([
@@ -60,11 +62,11 @@ class DamagedHouseReportController extends Controller
 
         foreach ($validated['damaged_houses'] as $reportData) {
             // If an ID exists and is numeric, try to find and update that specific record
-            if (!empty($reportData['id']) && is_numeric($reportData['id'])) {
+            if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
                 $reportQuery = DamagedHouseReport::where('id', $reportData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $reportQuery->where('user_id', $user->id);
                 }
 
@@ -123,19 +125,20 @@ class DamagedHouseReportController extends Controller
         $updatedQuery = DamagedHouseReport::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);
         }
 
         $updatedReports = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
-        
+
         return response()->json([
             'message' => 'Damaged houses saved successfully!',
-            'damaged_houses' => $updatedReports
+            'damaged_houses' => $updatedReports,
         ]);
     }
+
     /**
      * Update the specified resource in storage.
      */
@@ -175,7 +178,7 @@ class DamagedHouseReportController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'DamagedHouseReport')
+        $modifications = Modification::forActiveDisaster(DamagedHouseReport::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -186,11 +189,11 @@ class DamagedHouseReportController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -202,8 +205,8 @@ class DamagedHouseReportController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -212,7 +215,7 @@ class DamagedHouseReportController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 }

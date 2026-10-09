@@ -123,7 +123,7 @@ class UscDeclarationController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'UscDeclaration')
+        $modifications = Modification::forActiveDisaster(UscDeclaration::class)
             ->with('user')
             ->latest()
             ->get();

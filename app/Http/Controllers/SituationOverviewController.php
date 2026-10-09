@@ -22,6 +22,7 @@ use App\Services\ReportHistory;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -842,9 +843,10 @@ class SituationOverviewController extends Controller
     }
 
     /* ------------------- MODIFICATIONS ------------------- */
-    private function buildModificationResponse($modelType)
+    /** @param  class-string<Model>  $modelClass */
+    private function buildModificationResponse(string $modelClass): JsonResponse
     {
-        $modifications = Modification::where('model_type', $modelType)
+        $modifications = Modification::forActiveDisaster($modelClass)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -889,7 +891,7 @@ class SituationOverviewController extends Controller
     {
         // Temporarily disabled permission check for debugging
         // TODO: Re-enable after fixing permission cache issue
-        return $this->buildModificationResponse('WeatherReport');
+        return $this->buildModificationResponse(WeatherReport::class);
 
         // Check permission
         $user = Auth::user();
@@ -903,7 +905,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to weather modifications. User: '.$user->email);
         }
 
-        return $this->buildModificationResponse('WeatherReport');
+        return $this->buildModificationResponse(WeatherReport::class);
     }
 
     public function waterLevelModification()
@@ -913,7 +915,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to water level modifications');
         }
 
-        return $this->buildModificationResponse('WaterLevel');
+        return $this->buildModificationResponse(WaterLevel::class);
     }
 
     public function electricityModification()
@@ -923,7 +925,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to electricity modifications');
         }
 
-        return $this->buildModificationResponse('ElectricityService');
+        return $this->buildModificationResponse(ElectricityService::class);
     }
 
     public function waterServiceModification()
@@ -933,7 +935,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to water service modifications');
         }
 
-        return $this->buildModificationResponse('WaterService');
+        return $this->buildModificationResponse(WaterService::class);
     }
 
     public function communicationModification()
@@ -943,7 +945,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to communication modifications');
         }
 
-        return $this->buildModificationResponse('Communication');
+        return $this->buildModificationResponse(Communication::class);
     }
 
     public function roadModification()
@@ -953,7 +955,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to road modifications');
         }
 
-        return $this->buildModificationResponse('Road');
+        return $this->buildModificationResponse(Road::class);
     }
 
     public function bridgeModification()
@@ -963,7 +965,7 @@ class SituationOverviewController extends Controller
             abort(403, 'Unauthorized access to bridge modifications');
         }
 
-        return $this->buildModificationResponse('Bridge');
+        return $this->buildModificationResponse(Bridge::class);
     }
 
     /* ------------------- API: GET WEATHER REPORTS ------------------- */

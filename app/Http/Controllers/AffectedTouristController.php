@@ -4,16 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\AffectedTourist;
 use App\Models\Modification;
+use App\Models\Typhoon;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class AffectedTouristController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Display a listing of the affected tourist records.
      * Optimized: Limit records for better performance
@@ -23,9 +25,9 @@ class AffectedTouristController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $touristsQuery = AffectedTourist::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $touristsQuery = AffectedTourist::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $touristsQuery->where('user_id', $user->id);
         }
 
@@ -49,7 +51,7 @@ class AffectedTouristController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         // Stricter Validation Rules
         $validated = $request->validate([
@@ -64,11 +66,11 @@ class AffectedTouristController extends Controller
 
         foreach ($validated['affected_tourists'] as $touristData) {
             // If an ID exists and is numeric, try to find and update that specific record
-            if (!empty($touristData['id']) && is_numeric($touristData['id'])) {
+            if (! empty($touristData['id']) && is_numeric($touristData['id'])) {
                 $touristQuery = AffectedTourist::where('id', $touristData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $touristQuery->where('user_id', $user->id);
                 }
 
@@ -88,10 +90,10 @@ class AffectedTouristController extends Controller
                     // ID provided but doesn't exist in DB - treat as new record
                     // Skip empty rows
                     $isEmpty = empty(array_filter($touristData, function ($value) {
-                        return !is_null($value) && $value !== '';
+                        return ! is_null($value) && $value !== '';
                     }));
 
-                    if (!$isEmpty) {
+                    if (! $isEmpty) {
                         AffectedTourist::create([
                             'province_city_municipality' => $touristData['province_city_municipality'] ?? null,
                             'location' => $touristData['location'] ?? null,
@@ -109,7 +111,7 @@ class AffectedTouristController extends Controller
             else {
                 // Skip rows where all values are null or empty
                 $isEmpty = empty(array_filter($touristData, function ($value) {
-                    return !is_null($value) && $value !== '';
+                    return ! is_null($value) && $value !== '';
                 }));
 
                 if ($isEmpty) {
@@ -135,26 +137,25 @@ class AffectedTouristController extends Controller
         $updatedQuery = AffectedTourist::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);
         }
 
         $updatedTourists = $updatedQuery
             ->orderBy('updated_at', 'desc')
             ->get();
-        
+
         return response()->json([
             'message' => 'Affected tourists saved successfully!',
-            'affected_tourists' => $updatedTourists
+            'affected_tourists' => $updatedTourists,
         ]);
     }
 
     /**
      * Update the specified affected tourist record in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\AffectedTourist  $affectedTourist // 4. Use route-model binding for AffectedTourist
-     * @return \Illuminate\Http\RedirectResponse
+     * @param  AffectedTourist  $affectedTourist  // 4. Use route-model binding for AffectedTourist
+     * @return RedirectResponse
      */
     public function update(Request $request, AffectedTourist $affectedTourist)
     {
@@ -179,8 +180,8 @@ class AffectedTouristController extends Controller
     /**
      * Remove the specified affected tourist record from storage.
      *
-     * @param  \App\Models\AffectedTourist  $affectedTourist
-     * @return \Illuminate\Http\RedirectResponse
+     * @param  AffectedTourist  $affectedTourist
+     * @return RedirectResponse
      */
     /* public function destroy(AffectedTourist $affectedTourist)
     {
@@ -194,7 +195,7 @@ class AffectedTouristController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'AffectedTourist')
+        $modifications = Modification::forActiveDisaster(AffectedTourist::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -205,11 +206,11 @@ class AffectedTouristController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -221,8 +222,8 @@ class AffectedTouristController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -231,7 +232,7 @@ class AffectedTouristController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 }

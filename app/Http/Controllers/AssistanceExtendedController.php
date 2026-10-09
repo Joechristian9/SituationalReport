@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AssistanceExtended;
 use App\Models\Modification;
+use App\Models\Typhoon;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class AssistanceExtendedController extends Controller
 {
@@ -23,14 +23,15 @@ class AssistanceExtendedController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $assistancesQuery = AssistanceExtended::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $assistancesQuery = AssistanceExtended::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $accessibleUserIds = $user->getAccessibleUserIds('read');
             $assistancesQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         $assistances = $assistancesQuery->latest()->limit(100)->get();
+
         return inertia('AssistanceExtended/AssistanceIndex', [
             'assistances' => $assistances,
         ]);
@@ -48,15 +49,15 @@ class AssistanceExtendedController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'assistances' => 'required|array',
             'assistances.*.id' => ['nullable', 'integer'],
             'assistances.*.agency_officials_groups' => 'nullable|string|max:255',
             'assistances.*.type_kind_of_assistance' => 'nullable|string|max:255',
-            'assistances.*.amount'                  => 'nullable|numeric|min:0',
-            'assistances.*.beneficiaries'           => 'nullable|string|max:255',
+            'assistances.*.amount' => 'nullable|numeric|min:0',
+            'assistances.*.beneficiaries' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated['assistances'] as $assistanceData) {
@@ -66,11 +67,11 @@ class AssistanceExtendedController extends Controller
             }
 
             // If ID exists and is numeric, update existing record
-            if (!empty($assistanceData['id']) && is_numeric($assistanceData['id'])) {
+            if (! empty($assistanceData['id']) && is_numeric($assistanceData['id'])) {
                 $assistanceQuery = AssistanceExtended::where('id', $assistanceData['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $assistanceQuery->where('user_id', $user->id);
                 }
 
@@ -79,10 +80,10 @@ class AssistanceExtendedController extends Controller
                     $assistance->update([
                         'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
                         'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
-                        'amount'                  => $assistanceData['amount'] ?? null,
-                        'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
-                        'disaster_id'              => $activeTyphoon->id,
-                        'updated_by'              => Auth::id(),
+                        'amount' => $assistanceData['amount'] ?? null,
+                        'beneficiaries' => $assistanceData['beneficiaries'] ?? null,
+                        'disaster_id' => $activeTyphoon->id,
+                        'updated_by' => Auth::id(),
                     ]);
                 }
             } else {
@@ -90,11 +91,11 @@ class AssistanceExtendedController extends Controller
                 AssistanceExtended::create([
                     'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
                     'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
-                    'amount'                  => $assistanceData['amount'] ?? null,
-                    'beneficiaries'           => $assistanceData['beneficiaries'] ?? null,
-                    'user_id'                 => Auth::id(),
-                    'updated_by'              => Auth::id(),
-                    'disaster_id'              => $activeTyphoon->id,
+                    'amount' => $assistanceData['amount'] ?? null,
+                    'beneficiaries' => $assistanceData['beneficiaries'] ?? null,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
                 ]);
             }
         }
@@ -105,7 +106,7 @@ class AssistanceExtendedController extends Controller
         $updatedQuery = AssistanceExtended::with('user:id,name')
             ->where('disaster_id', $activeTyphoon->id);
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $updatedQuery->where('user_id', $user->id);
         }
 
@@ -113,10 +114,10 @@ class AssistanceExtendedController extends Controller
             ->orderBy('updated_at', 'desc')
             ->limit(100)
             ->get();
-        
+
         return response()->json([
             'message' => 'Assistances saved successfully',
-            'assistances' => $updatedAssistances
+            'assistances' => $updatedAssistances,
         ]);
     }
 
@@ -130,8 +131,8 @@ class AssistanceExtendedController extends Controller
         $validated = $request->validate([
             'agency_officials_groups' => 'nullable|string|max:255',
             'type_kind_of_assistance' => 'nullable|string|max:255',
-            'amount'                  => 'nullable|numeric|min:0',
-            'beneficiaries'           => 'nullable|string|max:255', // ✅ FIXED (string)
+            'amount' => 'nullable|numeric|min:0',
+            'beneficiaries' => 'nullable|string|max:255', // ✅ FIXED (string)
         ]);
 
         $assistanceExtended->update([
@@ -157,7 +158,7 @@ class AssistanceExtendedController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'AssistanceExtended')
+        $modifications = Modification::forActiveDisaster(AssistanceExtended::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -168,11 +169,11 @@ class AssistanceExtendedController extends Controller
             $modelId = $mod->model_id;
             foreach ($mod->changed_fields as $field => $change) {
                 // Key format: "modelId_field" to track each row+field combination
-                $key = $modelId . '_' . $field;
+                $key = $modelId.'_'.$field;
                 $history[$key][] = [
                     'user' => $change['user'] ?? ['id' => $mod->user->id, 'name' => $mod->user->name],
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'date' => $mod->created_at,
                     'model_id' => $modelId,
                 ];
@@ -184,8 +185,8 @@ class AssistanceExtendedController extends Controller
             $latestChangedFields = [];
             foreach ($latest->changed_fields as $field => $change) {
                 $latestChangedFields[$field] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => $change['user'] ?? ['id' => $latest->user->id, 'name' => $latest->user->name],
                 ];
             }
@@ -194,7 +195,7 @@ class AssistanceExtendedController extends Controller
 
         return response()->json([
             'history' => $history,
-            'latest'  => $latest,
+            'latest' => $latest,
         ]);
     }
 }

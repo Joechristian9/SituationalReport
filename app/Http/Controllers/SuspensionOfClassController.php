@@ -148,7 +148,7 @@ class SuspensionOfClassController extends Controller
      */
     public function getModifications()
     {
-        $modifications = Modification::where('model_type', 'SuspensionOfClass')
+        $modifications = Modification::forActiveDisaster(SuspensionOfClass::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

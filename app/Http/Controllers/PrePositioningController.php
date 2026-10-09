@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Modification;
 use App\Models\PrePositioning;
+use App\Models\Typhoon;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
@@ -12,6 +14,7 @@ use Inertia\Inertia;
 class PrePositioningController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
+
     /**
      * Show list of Pre-Positionings
      * Optimized: Limit records for better performance
@@ -21,9 +24,9 @@ class PrePositioningController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $prePositioningsQuery = PrePositioning::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $prePositioningsQuery = PrePositioning::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $prePositioningsQuery->where('user_id', $user->id);
         }
 
@@ -45,16 +48,16 @@ class PrePositioningController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'pre_positionings' => 'required|array',
-            'pre_positionings.*.id'                 => 'nullable',
-            'pre_positionings.*.team_units'         => 'nullable|string|max:255',
-            'pre_positionings.*.team_leader'        => 'nullable|string|max:255',
+            'pre_positionings.*.id' => 'nullable',
+            'pre_positionings.*.team_units' => 'nullable|string|max:255',
+            'pre_positionings.*.team_leader' => 'nullable|string|max:255',
             'pre_positionings.*.personnel_deployed' => 'nullable|integer|min:0',
-            'pre_positionings.*.response_assets'    => 'nullable|string|max:255',
-            'pre_positionings.*.capability'         => 'nullable|string|max:255',
+            'pre_positionings.*.response_assets' => 'nullable|string|max:255',
+            'pre_positionings.*.capability' => 'nullable|string|max:255',
             'pre_positionings.*.area_of_deployment' => 'nullable|string|max:255',
         ]);
 
@@ -76,22 +79,22 @@ class PrePositioningController extends Controller
             }
 
             $data = [
-                'team_units'         => $row['team_units'] ?? null,
-                'team_leader'        => $row['team_leader'] ?? null,
+                'team_units' => $row['team_units'] ?? null,
+                'team_leader' => $row['team_leader'] ?? null,
                 'personnel_deployed' => $row['personnel_deployed'] ?? null,
-                'response_assets'    => $row['response_assets'] ?? null,
-                'capability'         => $row['capability'] ?? null,
+                'response_assets' => $row['response_assets'] ?? null,
+                'capability' => $row['capability'] ?? null,
                 'area_of_deployment' => $row['area_of_deployment'] ?? null,
-                'updated_by'         => Auth::id(),
+                'updated_by' => Auth::id(),
             ];
 
             // Check if this is an update or create
-            if (!empty($row['id']) && is_numeric($row['id'])) {
+            if (! empty($row['id']) && is_numeric($row['id'])) {
                 // Update existing record (only own records for non-admin users)
                 $prePositioningQuery = PrePositioning::where('id', $row['id']);
 
                 $user = Auth::user();
-                if ($user && !$user->isAdmin()) {
+                if ($user && ! $user->isAdmin()) {
                     $prePositioningQuery->where('user_id', $user->id);
                 }
 
@@ -128,11 +131,11 @@ class PrePositioningController extends Controller
         $this->authorizeRecordWrite($prePositioning);
 
         $validated = $request->validate([
-            'team_units'         => 'nullable|string|max:255',
-            'team_leader'        => 'nullable|string|max:255',
+            'team_units' => 'nullable|string|max:255',
+            'team_leader' => 'nullable|string|max:255',
             'personnel_deployed' => 'nullable|integer|min:0',
-            'response_assets'    => 'nullable|string|max:255',
-            'capability'         => 'nullable|string|max:255',
+            'response_assets' => 'nullable|string|max:255',
+            'capability' => 'nullable|string|max:255',
             'area_of_deployment' => 'nullable|string|max:255',
         ]);
 
@@ -148,7 +151,7 @@ class PrePositioningController extends Controller
      */
     public function getModifications()
     {
-        $modifications = \App\Models\Modification::where('model_type', 'PrePositioning')
+        $modifications = Modification::forActiveDisaster(PrePositioning::class)
             ->with('user')
             ->latest()
             ->get();
@@ -159,15 +162,15 @@ class PrePositioningController extends Controller
             foreach ($mod->changed_fields as $field => $change) {
                 $key = "{$mod->model_id}_{$field}";
 
-                if (!isset($history[$key])) {
+                if (! isset($history[$key])) {
                     $history[$key] = [];
                 }
 
                 $history[$key][] = [
-                    'old'  => $change['old'] ?? null,
-                    'new'  => $change['new'] ?? null,
+                    'old' => $change['old'] ?? null,
+                    'new' => $change['new'] ?? null,
                     'user' => [
-                        'id'   => $change['user']['id'] ?? null,
+                        'id' => $change['user']['id'] ?? null,
                         'name' => $change['user']['name'] ?? 'Unknown',
                     ],
                     'date' => $mod->created_at,

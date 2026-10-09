@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -41,6 +42,25 @@ class Modification extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Edit history of one report type, limited to rows of the active disaster.
+     *
+     * The forms only show the current disaster's rows, and the table grows with every
+     * edited field of every past disaster, so loading it whole slows each form open.
+     *
+     * @param  class-string<Model>  $modelClass
+     */
+    public function scopeForActiveDisaster(Builder $query, string $modelClass): Builder
+    {
+        $disaster = Typhoon::getActiveTyphoon();
+        if (! $disaster) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('model_type', class_basename($modelClass))
+            ->whereIn('model_id', $modelClass::query()->select('id')->where('disaster_id', $disaster->id));
     }
 
     /**
