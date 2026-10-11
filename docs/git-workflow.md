@@ -22,6 +22,26 @@ Common types: `feat`, `fix`, `refactor`, `redesign`, `build`, `docs`.
 
 Never commit `.env`, deploy zips, `node_modules`, or `vendor`.
 
+### Commit on `testing`
+
+Do your daily commits on `testing`, never straight on `main`.
+
+```powershell
+git switch testing                  # make sure you're on testing
+git pull                            # get the latest first
+# ...make your changes...
+npm run build                       # only if you changed anything in resources/js
+git status -sb                      # review what changed
+git add -A
+git commit -m "redesign: welcome page header"
+git push origin testing
+```
+
+- Check the branch name in `git status -sb` before committing. A commit made on `main` by mistake can be moved with `git switch testing` + `git cherry-pick <hash>`, so ask before fixing it.
+- Frontend changes also change `public/build/`. Commit those together (or as a separate `build: rebuild frontend assets` commit, as in the history).
+- Small commits: one change per commit, so it's easy to undo.
+- When `testing` is tested and ready, release it to `main` (see "Merge `testing` into `main`").
+
 ## Fetch vs pull
 
 | Command | What it does |

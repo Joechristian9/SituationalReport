@@ -54,7 +54,7 @@ export default function Welcome({ auth }) {
 
                 {/* Header */}
                 <header className="relative z-10">
-                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:h-20 sm:px-8">
+                    <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-5 sm:h-20 sm:px-8">
                         <div className="flex min-w-0 items-center gap-3">
                             <img src="/images/cdrrmo_logo_192.jpg" alt="" width="36" height="36" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
                             <p className="min-w-0 truncate text-sm font-semibold sm:text-base">
@@ -63,12 +63,6 @@ export default function Welcome({ auth }) {
                                 <span className="font-medium text-white/75">CDRRMO Ilagan</span>
                             </p>
                         </div>
-                        <Link
-                            href={signedIn ? route('dashboard') : route('login')}
-                            className="shrink-0 rounded-md border border-white/30 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                        >
-                            {signedIn ? 'Dashboard' : 'Sign in'}
-                        </Link>
                     </div>
                 </header>
 
