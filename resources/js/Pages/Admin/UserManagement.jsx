@@ -725,9 +725,9 @@ export default function UserManagement({ users, roles, permissions }) {
 
             {/* Create / edit */}
             <Dialog open={formMode !== null} onOpenChange={(open) => !open && closeForm()}>
-                <DialogContent className="flex max-h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
+                <DialogContent className="flex max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:p-0">
                     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-                        <DialogHeader className="border-b px-6 py-4 text-left">
+                        <DialogHeader className="border-b py-4 pl-4 pr-14 sm:pl-6 sm:pr-12">
                             <DialogTitle>{formMode === 'create' ? 'Add user' : `Edit ${selectedUser?.name ?? 'user'}`}</DialogTitle>
                             <DialogDescription>
                                 {formMode === 'create'
@@ -736,7 +736,7 @@ export default function UserManagement({ users, roles, permissions }) {
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
+                        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
                             {/* Account */}
                             <section className="space-y-3">
                                 <div className="flex items-baseline justify-between gap-2">
@@ -887,7 +887,7 @@ export default function UserManagement({ users, roles, permissions }) {
                             </section>
                         </div>
 
-                        <DialogFooter className="gap-2 border-t bg-gray-50 px-6 py-3 sm:gap-0">
+                        <DialogFooter className="border-t bg-gray-50 px-4 py-3 sm:px-6">
                             <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>
                                 Cancel
                             </Button>
@@ -920,7 +920,7 @@ export default function UserManagement({ users, roles, permissions }) {
                             signing in without losing their reports, change their password instead.
                         </p>
                     </div>
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isSubmitting}>
                             Cancel
                         </Button>

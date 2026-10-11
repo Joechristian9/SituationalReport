@@ -140,7 +140,7 @@ export default function DisasterLifecycleDialog({ action, disaster, onActionChan
                     </div>
                 )}
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter>
                     {canPauseInstead && (
                         <Button
                             type="button"

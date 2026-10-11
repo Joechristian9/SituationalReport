@@ -67,14 +67,16 @@ async function networkFirst(request, isPage) {
         const response = await fetch(request);
         if (cacheable(response)) cache.put(request, response.clone());
         return response;
-    } catch (error) {
+    } catch {
         const cached = await cache.match(request);
         if (cached) return cached;
         if (isPage) {
             const offline = await caches.match(OFFLINE_URL);
             if (offline) return offline;
         }
-        throw error;
+        // Same failure the page would see with no service worker, without the
+        // "Uncaught (in promise)" console error from rethrowing inside the worker.
+        return Response.error();
     }
 }
 

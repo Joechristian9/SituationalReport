@@ -32,8 +32,46 @@ import {
     UserX,
     UserRound,
     UserSearch,
+    CheckCircle2,
+    Circle,
+    Pause,
+    CloudOff,
 } from "lucide-react";
+import { format } from "date-fns";
 import { SkeletonForm } from "@/Components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+// Sections of the form list. Each has its own icon colour so a form is easy to find again.
+const FORM_GROUPS = [
+    { key: "overview", title: "Situation overview", tile: "bg-primary/10 text-primary" },
+    { key: "response", title: "Evacuation & response", tile: "bg-chart-2/10 text-chart-2" },
+    { key: "effects", title: "Effects", tile: "bg-warning/10 text-warning" },
+    { key: "casualties", title: "Casualties", tile: "bg-destructive/10 text-destructive" },
+];
+
+const FORM_DESCRIPTIONS = {
+    Weather: "Submit weather conditions and forecasts",
+    Electricity: "Report electricity service status and outages",
+    "Water Services": "Report water service status and disruptions",
+    Communications: "Report communication network status",
+    Roads: "Report road conditions and accessibility",
+    Bridges: "Report bridge conditions and accessibility",
+    "Pre-Emptive Reports": "Submit pre-emptive evacuation reports",
+    "Pre-positioning": "Report deployment of response assets",
+    "Incident Monitored": "Record details of incidents being monitored",
+    Agriculture: "Report agricultural damage and crop losses",
+    "Casualties - Dead": "Record the details for each deceased individual",
+    "Casualties - Injured": "Record the details for each injured person",
+    "Casualties - Missing": "Record the details for each missing individual",
+};
+
+// The page loads at most 100 records per form.
+const RECORD_CAP = 100;
+
+function greeting() {
+    const hour = new Date().getHours();
+    return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
 
 // Lazy load form components for better performance
 const WeatherForm = lazy(() =>
@@ -225,84 +263,32 @@ export default function Index() {
         return isAdmin || userPermissions.includes(permission);
     };
 
-    // Define all possible steps with their permissions
+    // Define all possible steps with their permissions. `records` is what this page
+    // loaded for the form (undefined when it loads none), used for the saved count.
     const allSteps = [
-        {
-            label: "Weather",
-            icon: <Cloud size={18} />,
-            permission: "access-weather-form",
-        },
-        // {
-        //     label: "Water Level",
-        //     icon: <Waves size={18} />,
-        //     permission: "access-water-level-form",
-        // },
-        {
-            label: "Electricity",
-            icon: <Zap size={18} />,
-            permission: "access-electricity-form",
-        },
-        {
-            label: "Water Services",
-            icon: <Droplet size={18} />,
-            permission: "access-water-service-form",
-        },
-        {
-            label: "Communications",
-            icon: <Phone size={18} />,
-            permission: "access-communication-form",
-        },
-        {
-            label: "Roads",
-            icon: <Route size={18} />,
-            permission: "access-road-form",
-        },
-        {
-            label: "Bridges",
-            icon: <Landmark size={18} />,
-            permission: "access-bridge-form",
-        },
-        {
-            label: "Pre-Emptive Reports",
-            icon: <ClipboardList size={18} />,
-            permission: "access-pre-emptive-form",
-        },
-        {
-            label: "Pre-positioning",
-            icon: <MapPin size={18} />,
-            permission: "access-pre-positioning-form",
-            // Has its own page with the saved records; this page does not load them.
-            href: "pre-positioning.index",
-        },
-        {
-            label: "Incident Monitored",
-            icon: <Flame size={18} />,
-            permission: "access-incident-form",
-        },
-        {
-            label: "Agriculture",
-            icon: <Sprout size={18} />,
-            permission: "access-agriculture-form",
-        },
-        {
-            label: "Casualties - Dead",
-            icon: <UserX size={18} />,
-            permission: "access-casualty-form",
-        },
-        {
-            label: "Casualties - Injured",
-            icon: <UserRound size={18} />,
-            permission: "access-injured-form",
-        },
-        {
-            label: "Casualties - Missing",
-            icon: <UserSearch size={18} />,
-            permission: "access-missing-form",
-        },
+        { label: "Weather", icon: <Cloud size={18} />, permission: "access-weather-form", group: "overview", records: weatherReports },
+        { label: "Electricity", icon: <Zap size={18} />, permission: "access-electricity-form", group: "overview", records: electricity },
+        { label: "Water Services", icon: <Droplet size={18} />, permission: "access-water-service-form", group: "overview", records: waterServices },
+        { label: "Communications", icon: <Phone size={18} />, permission: "access-communication-form", group: "overview", records: communications },
+        { label: "Roads", icon: <Route size={18} />, permission: "access-road-form", group: "overview", records: roads },
+        { label: "Bridges", icon: <Landmark size={18} />, permission: "access-bridge-form", group: "overview", records: bridges },
+        { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form", group: "response", records: preEmptiveReports },
+        // Has its own page with the saved records; this page does not load them.
+        { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form", group: "response", href: "pre-positioning.index" },
+        { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form", group: "effects" },
+        { label: "Agriculture", icon: <Sprout size={18} />, permission: "access-agriculture-form", group: "effects", records: agriculture },
+        { label: "Casualties - Dead", icon: <UserX size={18} />, permission: "access-casualty-form", group: "casualties", records: casualties },
+        { label: "Casualties - Injured", icon: <UserRound size={18} />, permission: "access-injured-form", group: "casualties", records: injured },
+        { label: "Casualties - Missing", icon: <UserSearch size={18} />, permission: "access-missing-form", group: "casualties", records: missing },
     ];
 
     // Filter steps based on user permissions
     const steps = allSteps.filter((step) => hasPermission(step.permission));
+
+    // Without an active disaster the records are not scoped to one, so counts would mislead.
+    const disaster = typhoon?.hasActive ? typhoon?.active : null;
+    const tracked = disaster ? steps.filter((step) => step.records !== undefined) : [];
+    const withEntries = tracked.filter((step) => step.records?.length > 0).length;
 
     // No stepper - show all forms directly
     // Auto-select the form if user only has access to one form
@@ -699,10 +685,12 @@ export default function Index() {
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
                     <div className="flex min-w-0 items-center gap-2">
                         <SidebarTrigger className="-ml-2" />
+                        {/* Phones: the page title already says where you are; leave the room to the disaster name. */}
                         <Separator
                             orientation="vertical"
-                            className="h-6 mx-2"
+                            className="mx-2 hidden h-6 sm:block"
                         />
+                        <div className="hidden min-w-0 sm:block">
                         {(() => {
                             const user = usePage().props.auth.user;
                             const isAdmin = user.roles?.some(
@@ -746,6 +734,7 @@ export default function Index() {
 
                             return <Breadcrumbs crumbs={crumbs} />;
                         })()}
+                        </div>
                     </div>
                     <div className="flex min-w-0 items-center gap-3">
                         <NoActiveTyphoonNotification
@@ -765,75 +754,163 @@ export default function Index() {
                 <main className="h-full w-full bg-background p-4 sm:p-6">
                     {/* Form selection */}
                     {!activeForm && (
-                        <div className="mx-auto max-w-7xl">
-                            <div className="mb-6">
-                                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                                    Welcome, {auth.user.name}
-                                </h1>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    Choose a form. What you save goes into the consolidated situational report.
-                                </p>
-                            </div>
+                        <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+                            {/* Who is reporting, for which disaster, and how far along */}
+                            <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                                <div className="p-4 sm:p-6">
+                                    <p className="text-sm font-medium text-muted-foreground">{greeting()},</p>
+                                    <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground [overflow-wrap:anywhere] sm:text-3xl">
+                                        {auth.user.name}
+                                    </h1>
+                                    <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+                                        Choose a form. What you save goes into the consolidated situational report.
+                                    </p>
+                                </div>
 
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                {steps.map((formStep) => {
-                                    const descriptions = {
-                                        Weather:
-                                            "Submit weather conditions and forecasts",
-                                        // "Water Level":
-                                        //     "Report water level readings from gauging stations",
-                                        Electricity:
-                                            "Report electricity service status and outages",
-                                        "Water Services":
-                                            "Report water service status and disruptions",
-                                        Communications:
-                                            "Report communication network status",
-                                        Roads: "Report road conditions and accessibility",
-                                        Bridges:
-                                            "Report bridge conditions and accessibility",
-                                        "Pre-Emptive Reports":
-                                            "Submit pre-emptive evacuation reports",
-                                        "Pre-positioning":
-                                            "Report deployment of response assets",
-                                        "Incident Monitored":
-                                            "Record details of incidents being monitored",
-                                        Agriculture:
-                                            "Report agricultural damage and crop losses",
-                                        "Casualties - Dead":
-                                            "Record the details for each deceased individual",
-                                        "Casualties - Injured":
-                                            "Record the details for each injured person",
-                                        "Casualties - Missing":
-                                            "Record the details for each missing individual",
-                                    };
+                                <div className="border-t border-border bg-muted/40 p-4 sm:px-6">
+                                    {disaster ? (
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
+                                                    <Cloud className="h-5 w-5" />
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Reporting for</p>
+                                                    <p className="font-semibold leading-tight text-foreground [overflow-wrap:anywhere]">{disaster.name}</p>
+                                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                                        {disaster.status === "paused" ? (
+                                                            <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 font-medium text-warning">
+                                                                <Pause className="h-3 w-3" aria-hidden="true" />
+                                                                Paused, view only
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 font-medium text-success">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+                                                                Active
+                                                            </span>
+                                                        )}
+                                                        {disaster.started_at && (
+                                                            <span className="tabular-nums">
+                                                                Since {format(new Date(disaster.started_at), "MMM d, h:mm a")}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    return (
-                                        <button
-                                            key={formStep.label}
-                                            type="button"
-                                            onClick={() =>
-                                                formStep.href
-                                                    ? router.visit(route(formStep.href))
-                                                    : setActiveForm(formStep.label)
-                                            }
-                                            className="group flex min-h-11 items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
+                                            {tracked.length > 0 && (
+                                                <div className="w-full sm:w-56">
+                                                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                                                        <span className="text-muted-foreground">Forms with entries</span>
+                                                        <span className="font-semibold tabular-nums text-foreground">
+                                                            {withEntries} of {tracked.length}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className="mt-2 h-2 overflow-hidden rounded-full bg-border"
+                                                        role="progressbar"
+                                                        aria-label="Forms with entries"
+                                                        aria-valuemin={0}
+                                                        aria-valuemax={tracked.length}
+                                                        aria-valuenow={withEntries}
+                                                    >
+                                                        <div
+                                                            className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
+                                                            style={{ width: `${(withEntries / tracked.length) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground" aria-hidden="true">
+                                                <CloudOff className="h-5 w-5" />
+                                            </span>
+                                            <div>
+                                                <p className="font-semibold text-foreground">No active disaster</p>
+                                                <p className="text-sm text-muted-foreground">Forms open for saving once CDRRMO starts a disaster report.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
+                            {FORM_GROUPS.map((group) => {
+                                const groupSteps = steps.filter((step) => step.group === group.key);
+                                if (groupSteps.length === 0) return null;
+
+                                return (
+                                    <section key={group.key} aria-labelledby={`forms-${group.key}`}>
+                                        <h2
+                                            id={`forms-${group.key}`}
+                                            className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                                         >
-                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:h-5 [&_svg]:w-5" aria-hidden="true">
-                                                {formStep.icon}
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block font-semibold leading-tight text-foreground">
-                                                    {formStep.label}
-                                                </span>
-                                                <span className="mt-1 block text-sm leading-snug text-muted-foreground">
-                                                    {descriptions[formStep.label] ?? `Open the ${formStep.label.toLowerCase()} form`}
-                                                </span>
-                                            </span>
-                                            <ChevronRight className="mt-2.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                            {group.title}
+                                            <span className="rounded-full bg-muted px-2 py-0.5 tabular-nums">{groupSteps.length}</span>
+                                        </h2>
+
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                            {groupSteps.map((formStep) => {
+                                                const count = formStep.records?.length ?? 0;
+                                                const showCount = disaster && formStep.records !== undefined;
+
+                                                return (
+                                                    <button
+                                                        key={formStep.label}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            formStep.href
+                                                                ? router.visit(route(formStep.href))
+                                                                : setActiveForm(formStep.label)
+                                                        }
+                                                        className="group flex min-h-11 items-center gap-3 rounded-xl border border-border bg-card p-3.5 text-left shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:active:scale-[0.99] motion-reduce:transition-none sm:p-4"
+                                                    >
+                                                        <span
+                                                            className={cn(
+                                                                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl [&_svg]:h-5 [&_svg]:w-5",
+                                                                group.tile,
+                                                            )}
+                                                            aria-hidden="true"
+                                                        >
+                                                            {formStep.icon}
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block font-semibold leading-tight text-foreground">
+                                                                {formStep.label}
+                                                            </span>
+                                                            <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">
+                                                                {FORM_DESCRIPTIONS[formStep.label] ?? `Open the ${formStep.label.toLowerCase()} form`}
+                                                            </span>
+                                                            {showCount && (
+                                                                <span
+                                                                    className={cn(
+                                                                        "mt-2 inline-flex items-center gap-1 text-xs font-medium tabular-nums",
+                                                                        count > 0 ? "text-success" : "text-muted-foreground",
+                                                                    )}
+                                                                >
+                                                                    {count > 0 ? (
+                                                                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    ) : (
+                                                                        <Circle className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    )}
+                                                                    {count > 0
+                                                                        ? `${count >= RECORD_CAP ? `${RECORD_CAP}+` : count} ${count === 1 ? "entry" : "entries"} saved`
+                                                                        : "No entries yet"}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <ChevronRight
+                                                            className="h-5 w-5 shrink-0 text-muted-foreground transition-[color,transform] duration-200 group-hover:text-primary motion-safe:group-hover:translate-x-0.5"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </section>
+                                );
+                            })}
                         </div>
                     )}
 

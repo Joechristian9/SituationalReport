@@ -1,0 +1,1 @@
+import{t as e,f as n}from"./circle-check-DBC6LCHg.js";function i(r,t,a){const s=e(r,a?.in);return isNaN(t)?n(r,NaN):(t&&s.setDate(s.getDate()+t),s)}function f(r,t,a){return i(r,-t,a)}export{i as a,f as s};

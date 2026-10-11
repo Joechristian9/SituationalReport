@@ -69,7 +69,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
                     </p>
                 )}
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter>
                     <Button type="button" variant="outline" className="min-h-11 md:min-h-9" onClick={() => onOpenChange(false)}>
                         Stay logged in
                     </Button>

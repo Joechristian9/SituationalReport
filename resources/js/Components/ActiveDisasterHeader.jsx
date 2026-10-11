@@ -48,7 +48,7 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`flex min-w-0 max-w-[11rem] items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-md sm:max-w-xs sm:gap-2 sm:px-3 ${
+                className={`flex min-w-0 max-w-[min(18rem,calc(100vw-6rem))] items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-md sm:max-w-xs sm:gap-2 sm:px-3 ${
                     isPaused
                         ? 'bg-amber-500 text-white'
                         : 'bg-blue-500 text-white'

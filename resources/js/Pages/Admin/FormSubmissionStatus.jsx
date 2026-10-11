@@ -206,7 +206,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                         View Forms ({totalForms})
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[420px]" align="start">
+                <PopoverContent className="w-[min(420px,calc(100vw-2rem))]" align="start">
                     <div className="space-y-3">
                         <div>
                             <h4 className="font-semibold text-sm text-gray-900">Assigned Forms</h4>
@@ -484,11 +484,11 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                     side="right" 
                     className="w-full sm:max-w-4xl p-0 flex flex-col bg-white border-l border-gray-200 shadow-2xl"
                 >
-                    <SheetHeader className="px-8 pt-8 pb-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+                    <SheetHeader className="pl-4 pr-14 pt-5 pb-4 sm:px-8 sm:pt-8 sm:pb-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
                         <div className="flex items-start justify-between">
                             <div>
-                                <SheetTitle className="text-2xl font-bold text-gray-900 mb-2">{selectedUser?.name}</SheetTitle>
-                                <SheetDescription className="text-sm text-gray-600 flex items-center gap-2">
+                                <SheetTitle className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{selectedUser?.name}</SheetTitle>
+                                <SheetDescription className="text-sm text-gray-600 flex flex-wrap items-center gap-2">
                                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                         {activeTyphoon?.name}
                                     </span>
@@ -499,14 +499,14 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                         </div>
                     </SheetHeader>
 
-                    <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-gray-50 to-white">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gradient-to-b from-gray-50 to-white">
                         {selectedUser?.submitted_forms && selectedUser.submitted_forms.length > 0 ? (
                             <div className="space-y-4">
                                 {selectedUser.submitted_forms.map((form, idx) => (
                                     <div key={idx} className="group">
                                         <button
                                             onClick={() => handleViewFormData(selectedUser.id, form.table, form.name)}
-                                            className={`w-full text-left p-5 rounded-2xl transition-all duration-300 flex items-center justify-between border-2 ${
+                                            className={`w-full text-left p-4 sm:p-5 rounded-2xl transition-all duration-300 flex items-center justify-between border-2 ${
                                                 selectedFormData?.form_name === form.name 
                                                     ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-lg scale-[1.02]' 
                                                     : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md hover:scale-[1.01]'

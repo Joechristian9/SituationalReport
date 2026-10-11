@@ -5,7 +5,8 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { usePage } from "@inertiajs/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Radio, X } from "lucide-react";
+import { Check, Loader2, Plus, Radio, Smartphone, Wifi, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
@@ -24,6 +25,7 @@ const GROUPS = [
     { key: "radio", title: "Radio", placeholder: "e.g. Functional", fixed: [["vhf", "VHF"]] },
 ];
 const CATEGORY_LABEL = { cellphone: "Cellphone (SMS & call)", internet: "Internet", radio: "Radio" };
+const CATEGORY_ICON = { cellphone: Smartphone, internet: Wifi, radio: Radio };
 
 const REMARKS = { name: "remarks", label: "Remarks", type: "textarea", placeholder: "Starts with today's date and time", prefillOnFocus: asOfNow };
 const SERVICES_KEY = ["communication-services"];
@@ -223,24 +225,48 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                                 className={FIELD}
                             />
                         </div>
-                        <div>
-                            <label htmlFor="new-service-category" className="mb-1.5 block text-sm font-medium text-foreground">
-                                Category
-                            </label>
-                            <select
-                                id="new-service-category"
-                                value={adding?.category ?? "cellphone"}
-                                onChange={(e) => setAdding((prev) => ({ ...prev, category: e.target.value }))}
-                                className={FIELD}
-                            >
-                                {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <DialogFooter className="gap-2 sm:gap-0">
+                        {/* Three choices: shown as options instead of a native dropdown, whose list
+                            can spill outside the dialog and looks different on every phone. */}
+                        <fieldset>
+                            <legend className="mb-1.5 block text-sm font-medium text-foreground">Category</legend>
+                            <div className="grid gap-2">
+                                {Object.entries(CATEGORY_LABEL).map(([value, label]) => {
+                                    const Icon = CATEGORY_ICON[value];
+                                    const checked = (adding?.category ?? "cellphone") === value;
+                                    return (
+                                        <label
+                                            key={value}
+                                            className={cn(
+                                                "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-base transition-colors md:text-sm",
+                                                "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                                                checked ? "border-primary bg-primary/5 text-foreground" : "border-input text-foreground hover:bg-muted/60",
+                                            )}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="new-service-category"
+                                                value={value}
+                                                checked={checked}
+                                                onChange={() => setAdding((prev) => ({ ...prev, category: value }))}
+                                                className="sr-only"
+                                            />
+                                            <span
+                                                className={cn(
+                                                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+                                                    checked ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                                                )}
+                                                aria-hidden="true"
+                                            >
+                                                <Icon className="h-4 w-4" />
+                                            </span>
+                                            <span className="flex-1 font-medium">{label}</span>
+                                            <Check className={cn("h-4 w-4 shrink-0 text-primary", !checked && "invisible")} aria-hidden="true" />
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </fieldset>
+                        <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setAdding(null)} disabled={busy} className="min-h-11 sm:min-h-9">
                                 Cancel
                             </Button>
@@ -261,7 +287,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
                             The field disappears from the form. Statuses already recorded for it are kept in past reports.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setRemoving(null)} disabled={busy} className="min-h-11 sm:min-h-9">
                             Cancel
                         </Button>
