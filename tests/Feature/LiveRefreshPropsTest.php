@@ -8,7 +8,7 @@ use Spatie\Permission\Models\Role;
 // The useLiveRefresh hook re-fetches only these props, so each page must keep
 // returning them eagerly and under the same names.
 dataset('live pages', [
-    'dashboard' => ['admin.dashboard', 'Admin/Dashboard', ['casualties', 'injured', 'missing', 'impactSummary', 'recentImpact', 'newReportCounts'], 'weatherReports'],
+    'dashboard' => ['dashboard', 'Admin/Dashboard', ['casualties', 'injured', 'missing', 'impactSummary', 'recentImpact', 'newReportCounts'], 'weatherReports'],
     'casualty submissions' => ['admin.casualties.submissions', 'Admin/CasualtySubmissions', ['casualties', 'stats', 'disaster'], 'users'],
     'injured submissions' => ['admin.injured.submissions', 'Admin/InjuredSubmissions', ['injured', 'stats', 'disaster'], 'users'],
     'missing submissions' => ['admin.missing.submissions', 'Admin/MissingSubmissions', ['missing', 'stats', 'disaster'], 'users'],
@@ -50,5 +50,4 @@ it('keeps live pages admin-only', function (string $route) {
     'casualty submissions' => ['admin.casualties.submissions'],
     'audit logs' => ['admin.audit-logs'],
     'form submission status' => ['admin.form-submission-status'],
-    'dashboard' => ['admin.dashboard'],
 ]);

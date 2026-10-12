@@ -6,16 +6,15 @@ it('sends regular users to their reports page instead of a dashboard', function 
         ->assertRedirect(route('situation-reports.index'));
 });
 
-it('sends admins to the admin dashboard', function () {
+it('shows admins the dashboard at the same URL', function () {
     $this->actingAs(userWithRole('admin'))
         ->get(route('dashboard'))
-        ->assertRedirect(route('admin.dashboard'));
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('Admin/Dashboard'));
 });
 
-it('keeps regular users out of the admin dashboard', function () {
-    $this->actingAs(userWithRole('user'))
-        ->get(route('admin.dashboard'))
-        ->assertForbidden();
+it('serves the dashboard without an admin prefix in the URL', function () {
+    expect(route('dashboard', absolute: false))->toBe('/dashboard');
 });
 
 it('requires login', function () {

@@ -67,7 +67,7 @@ export default function BatchHistory({ batches, availableYears }) {
 
         setIsSubmitting(true);
         try {
-            const response = await axios.post('/admin/years', { year: yearNumber });
+            const response = await axios.post(route('admin.years.store'), { year: yearNumber });
             toast.success(response.data.message);
             setYears([...years, response.data.year].sort((a, b) => b.year - a.year));
             setIsAddYearModalOpen(false);

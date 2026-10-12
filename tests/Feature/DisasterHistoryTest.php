@@ -44,7 +44,7 @@ function housesDamaged(User $user, Typhoon $event, int $total): void
 function historyFor($test, array $query = []): array
 {
     return $test->actingAs(userWithRole('admin'))
-        ->get(route('admin.dashboard', $query))
+        ->get(route('dashboard', $query))
         ->assertOk()
         ->inertiaProps('history');
 }
@@ -162,10 +162,12 @@ it('is not sent while a disaster is active', function () {
     Typhoon::create(['name' => 'Now', 'status' => 'active', 'created_by' => userWithRole('admin')->id]);
 
     $this->actingAs(userWithRole('admin'))
-        ->get(route('admin.dashboard'))
+        ->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page->component('Admin/Dashboard')->missing('history'));
 });
 
 it('is admin only', function () {
-    $this->actingAs(userWithRole('user'))->get(route('admin.dashboard'))->assertForbidden();
+    $this->actingAs(userWithRole('user'))
+        ->get(route('dashboard'))
+        ->assertRedirect(route('situation-reports.index'));
 });

@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Injured;
 use App\Models\Typhoon;
 use App\Models\User;
 use App\Services\HumanImpactStats;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 function insertPeople(string $table, int $userId, int $disasterId, string $createdAt, int $count): void
 {
@@ -28,7 +30,7 @@ it('aggregates dead, injured and missing for one disaster from the database', fu
 
     insertPeople('casualties', $alibagu->id, $disaster->id, '2026-09-18 08:00:00', 2);
     insertPeople('casualties', $office->id, $disaster->id, '2026-09-20 09:00:00', 1);
-    insertPeople((new \App\Models\Injured)->getTable(), $alibagu->id, $disaster->id, '2026-09-20 10:00:00', 3);
+    insertPeople((new Injured)->getTable(), $alibagu->id, $disaster->id, '2026-09-20 10:00:00', 3);
     insertPeople('missing', $office->id, $disaster->id, '2026-09-18 11:00:00', 1);
     insertPeople('casualties', $alibagu->id, $older->id, '2026-09-19 08:00:00', 5); // other disaster: ignored
 
@@ -56,7 +58,7 @@ it('counts reports per hour over the last 24 hours', function () {
     $office = User::factory()->create();
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $office->id]);
 
-    insertPeople((new \App\Models\Injured)->getTable(), $office->id, $disaster->id, '2026-09-20 12:05:00', 1); // current hour
+    insertPeople((new Injured)->getTable(), $office->id, $disaster->id, '2026-09-20 12:05:00', 1); // current hour
     insertPeople('casualties', $office->id, $disaster->id, '2026-09-20 10:15:00', 2);
     insertPeople('casualties', $office->id, $disaster->id, '2026-09-19 13:00:00', 1); // first hour of the window
     insertPeople('missing', $office->id, $disaster->id, '2026-09-19 12:59:00', 1); // just outside: ignored
@@ -79,7 +81,7 @@ it('ranks every barangay over the last 24 hours with its own hourly line', funct
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $accounts['Alibagu'][0]->id]);
 
     foreach ($accounts as [$user, $count]) {
-        insertPeople((new \App\Models\Injured)->getTable(), $user->id, $disaster->id, '2026-09-20 11:10:00', $count);
+        insertPeople((new Injured)->getTable(), $user->id, $disaster->id, '2026-09-20 11:10:00', $count);
     }
     insertPeople('casualties', $accounts['Rugao'][0]->id, $disaster->id, '2026-09-18 08:00:00', 9); // older than 24h: ignored
 
@@ -112,7 +114,7 @@ it('lists the newest reports across all three types for the live feed', function
     $older = Typhoon::create(['name' => 'Old Storm', 'status' => 'ended', 'created_by' => $office->id]);
 
     insertPeople('casualties', $office->id, $disaster->id, '2026-09-20 08:00:00', 1);
-    insertPeople((new \App\Models\Injured)->getTable(), $alibagu->id, $disaster->id, '2026-09-20 10:00:00', 2);
+    insertPeople((new Injured)->getTable(), $alibagu->id, $disaster->id, '2026-09-20 10:00:00', 2);
     insertPeople('missing', $alibagu->id, $disaster->id, '2026-09-20 09:00:00', 1);
     insertPeople('casualties', $alibagu->id, $older->id, '2026-09-20 11:00:00', 3); // other disaster: ignored
 
@@ -132,13 +134,13 @@ it('lists the newest reports across all three types for the live feed', function
 
 it('sends the summary to the admin dashboard', function () {
     $admin = User::factory()->create();
-    \Spatie\Permission\Models\Role::findOrCreate('admin');
+    Role::findOrCreate('admin');
     $admin->assignRole('admin');
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $admin->id]);
     insertPeople('casualties', $admin->id, $disaster->id, now()->toDateTimeString(), 2);
 
     $this->actingAs($admin)
-        ->get(route('admin.dashboard'))
+        ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Admin/Dashboard')

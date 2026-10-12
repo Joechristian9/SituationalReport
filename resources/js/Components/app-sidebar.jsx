@@ -216,7 +216,7 @@ export function AppSidebar({ ...props }) {
             items: [
                 {
                     title: "Dashboard",
-                    url: route("admin.dashboard"),
+                    url: route("dashboard"),
                     // The casualty drill-downs are opened from the dashboard.
                     alsoActiveOn: [
                         route("admin.casualties.submissions"),

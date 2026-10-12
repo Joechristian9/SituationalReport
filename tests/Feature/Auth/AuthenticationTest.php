@@ -28,7 +28,7 @@ test('admins land on the admin dashboard after login', function () {
         'password' => 'password',
     ]);
 
-    $response->assertRedirect(route('admin.dashboard', absolute: false));
+    $response->assertRedirect(route('dashboard', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {

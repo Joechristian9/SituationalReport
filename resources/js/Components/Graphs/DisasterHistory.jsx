@@ -76,7 +76,7 @@ export default function DisasterHistory({ history }) {
     const apply = (changes) => {
         const next = { ...filters, ...changes };
         const query = Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== null && !(key === "metric" && value === "affected")));
-        router.get(route("admin.dashboard"), query, {
+        router.get(route("dashboard"), query, {
             only: ["history"],
             preserveState: true,
             preserveScroll: true,

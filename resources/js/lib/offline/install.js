@@ -16,7 +16,6 @@ const OFFLINE_PAGES = [
     'pre-positioning.index',
     'response-operations.index',
     'assistance.index',
-    'admin.dashboard',
 ];
 
 const isInertia = (config) => Boolean(config?.headers?.['X-Inertia'] ?? config?.headers?.get?.('X-Inertia'));

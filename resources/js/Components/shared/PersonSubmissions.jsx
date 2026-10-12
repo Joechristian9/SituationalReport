@@ -352,7 +352,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                     <Icon className={`h-5 w-5 shrink-0 ${accent.icon}`} aria-hidden="true" />
                     <Breadcrumbs
                         crumbs={[
-                            { href: route('admin.dashboard'), label: 'Dashboard' },
+                            { href: route('dashboard'), label: 'Dashboard' },
                             { label: config.title },
                         ]}
                     />
@@ -366,7 +366,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                         {/* Title row */}
                         <div className="space-y-1 sm:space-y-3">
                             <Link
-                                href={route('admin.dashboard')}
+                                href={route('dashboard')}
                                 className="-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:text-base"
                             >
                                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />

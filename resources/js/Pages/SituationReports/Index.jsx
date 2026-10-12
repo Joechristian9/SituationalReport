@@ -668,7 +668,7 @@ export default function Index() {
     };
 
     const crumbs = [
-        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+        ...(isAdmin ? [{ href: route("dashboard"), label: "Dashboard" }] : []),
         activeForm
             ? { href: route("situation-reports.index"), label: "Situational Report" }
             : { label: "Situational Report" },

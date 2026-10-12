@@ -305,7 +305,7 @@ export default function Index() {
 
     const crumbs = isAdmin
         ? [
-              { href: route("admin.dashboard"), label: "Dashboard" },
+              { href: route("dashboard"), label: "Dashboard" },
               { label: "Effects Report" },
               { label: currentStepLabel },
               ...(subLabel ? [{ label: subLabel }] : []),

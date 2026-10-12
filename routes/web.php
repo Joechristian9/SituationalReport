@@ -25,18 +25,7 @@ use App\Http\Controllers\SuspensionOfWorkController;
 use App\Http\Controllers\UscDeclarationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\YearController;
-use App\Models\Casualty;
-use App\Models\Injured;
-use App\Models\Missing;
-use App\Models\PreEmptiveReport;
-use App\Models\ReportView;
-use App\Models\Typhoon;
-use App\Models\WaterLevel;
-use App\Models\WeatherReport;
-use App\Services\DisasterHistory;
-use App\Services\HumanImpactStats;
 use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -351,75 +340,8 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     }); // End of typhoon.active middleware group
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    // Admin Dashboard - show data for both active and paused disasters
-    Route::get('dashboard', function (Request $request) {
-        // Show data for active or paused disasters (graphs should show historical data).
-        // latest() matches the shared `typhoon.active` prop, so the header and the data agree.
-        $activeTyphoon = Typhoon::whereIn('status', ['active', 'paused'])->latest()->first();
-
-        if (! $activeTyphoon) {
-            // No disaster at all - return empty data
-            return Inertia::render('Admin/Dashboard', [
-                'weatherReports' => [],
-                'waterLevels' => [],
-                'preEmptiveReports' => [],
-                'casualties' => [],
-                'injured' => [],
-                'missing' => [],
-                'impactSummary' => HumanImpactStats::forDisaster(null),
-                'recentImpact' => [],
-                'newReportCounts' => ReportView::newCountsFor(null),
-                // Nothing to monitor: show the history of past disasters instead.
-                'history' => fn () => DisasterHistory::for($request->only(['type', 'barangay', 'metric'])),
-            ]);
-        }
-
-        // Fetch data for the disaster (whether active or paused)
-        $weatherReports = WeatherReport::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        $waterLevels = WaterLevel::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        $preEmptiveReports = PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(100)
-            ->get();
-
-        // All records (no limit) but only the columns the graphs use, so totals stay correct.
-        $casualties = Casualty::where('disaster_id', $activeTyphoon->id)
-            ->latest()
-            ->get(['id', 'sex', 'age', 'cause_of_death', 'created_at']);
-
-        $injured = Injured::where('disaster_id', $activeTyphoon->id)
-            ->latest()
-            ->get(['id', 'sex', 'age', 'diagnosis', 'created_at']);
-
-        $missing = Missing::where('disaster_id', $activeTyphoon->id)
-            ->latest()
-            ->get(['id', 'sex', 'age', 'cause', 'created_at']);
-
-        return Inertia::render('Admin/Dashboard', [
-            'weatherReports' => $weatherReports,
-            'waterLevels' => $waterLevels,
-            'preEmptiveReports' => $preEmptiveReports,
-            'casualties' => $casualties,
-            'injured' => $injured,
-            'missing' => $missing,
-            'impactSummary' => HumanImpactStats::forDisaster($activeTyphoon),
-            'recentImpact' => HumanImpactStats::recent($activeTyphoon, 50),
-            'newReportCounts' => ReportView::newCountsFor($activeTyphoon->id),
-        ]);
-    })->name('admin.dashboard');
-
+// Admin-only pages. They have no URL prefix: the role middleware is what keeps others out.
+Route::middleware(['auth', 'role:admin'])->group(function () {
     // PAGASA alerts for the dashboard's PAGASA tab (cached server-side)
     Route::get('pagasa-alerts', [PagasaAlertController::class, 'index'])->name('admin.pagasa-alerts');
 

@@ -57,7 +57,7 @@ export default function Index() {
             header={
                 <Breadcrumbs
                     crumbs={[
-                        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+                        ...(isAdmin ? [{ href: route("dashboard"), label: "Dashboard" }] : []),
                         { label: "USC Declarations" },
                     ]}
                 />
