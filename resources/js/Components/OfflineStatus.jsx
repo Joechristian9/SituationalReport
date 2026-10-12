@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, Loader2, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { allItems, removeItem, subscribe } from '@/lib/offline/store';
+import { allItems, putItem, removeItem, subscribe } from '@/lib/offline/store';
 import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,12 @@ function QueuedItem({ item }) {
         }
     };
 
+    // Put it back in line: it is sent again right away, or when the connection returns.
+    const retry = async () => {
+        await putItem({ ...item, status: 'pending', message: null });
+        syncNow();
+    };
+
     return (
         <li className="space-y-1.5 py-3">
             <div className="flex items-start justify-between gap-2">
@@ -77,6 +83,10 @@ function QueuedItem({ item }) {
             {item.message && <p className="text-xs text-muted-foreground">{item.message}</p>}
             {item.status === 'failed' && (
                 <div className="flex flex-wrap gap-2 pt-1">
+                    <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={retry}>
+                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                        Retry
+                    </Button>
                     <Button type="button" variant="outline" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={copy}>
                         <Copy className="h-4 w-4" aria-hidden="true" />
                         {copied ? 'Copied' : 'Copy details'}
@@ -108,6 +118,7 @@ export default function OfflineStatus() {
     const [items, setItems] = useState([]);
     const [sync, setSync] = useState(syncState);
     const [notice, setNotice] = useState(null);
+    const [ready, setReady] = useState(false); // pages are saved on this device: it will open offline
     const [announcement, setAnnouncement] = useState('');
     const [askRefresh, setAskRefresh] = useState(false);
     const [open, setOpen] = useState(false);
@@ -146,18 +157,30 @@ export default function OfflineStatus() {
             }, 4000);
         };
         const onReload = () => setAskRefresh(true);
+        let readyTimer;
+        const onReady = (event) => {
+            // Nothing saved (e.g. the account can't open any of the pages): say nothing rather than promise it.
+            if (!event.detail?.pages) return;
+            setReady(true);
+            setAnnouncement('Ready to work offline.');
+            clearTimeout(readyTimer);
+            readyTimer = setTimeout(() => setReady(false), 5000);
+        };
         window.addEventListener('offline:queued', onQueued);
         window.addEventListener('offline:sent', onSent);
         window.addEventListener('offline:reload-required', onReload);
+        window.addEventListener('offline:ready', onReady);
 
         return () => {
             stopStore();
             stopSync();
             stopNavigate();
             clearTimeout(timer);
+            clearTimeout(readyTimer);
             window.removeEventListener('offline:queued', onQueued);
             window.removeEventListener('offline:sent', onSent);
             window.removeEventListener('offline:reload-required', onReload);
+            window.removeEventListener('offline:ready', onReady);
         };
     }, []);
 
@@ -182,6 +205,8 @@ export default function OfflineStatus() {
         pill = { tone: 'success', icon: CheckCircle2, text: notice };
     } else if (waiting) {
         pill = { tone: 'neutral', icon: UploadCloud, text: `${waiting} waiting to send` };
+    } else if (ready) {
+        pill = { tone: 'success', icon: CheckCircle2, text: 'Ready to work offline' };
     }
 
     const liveRegion = (

@@ -7,23 +7,102 @@
     <title>Offline - Situational Report</title>
     <!-- Static fallback served by the service worker; the app's CSS may not be cached, so styles are inline. -->
     <style>
-        :root { color-scheme: light dark; --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #475569; --border: #e2e8f0; --primary: #2563eb; }
-        @media (prefers-color-scheme: dark) { :root { --bg: #0b1120; --card: #111827; --text: #f8fafc; --muted: #cbd5e1; --border: #1f2937; --primary: #60a5fa; } }
+        :root { color-scheme: light dark; --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #475569; --border: #e2e8f0; --primary: #2563eb; --soft: #eff6ff; --warn: #b45309; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #0b1120; --card: #111827; --text: #f8fafc; --muted: #cbd5e1; --border: #1f2937; --primary: #60a5fa; --soft: #172554; --warn: #fbbf24; } }
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
         main { width: 100%; max-width: 28rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
         h1 { margin: 0 0 8px; font-size: 1.25rem; }
+        h2 { margin: 20px 0 8px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
         p { margin: 0 0 12px; color: var(--muted); }
-        button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--primary); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-        button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+        a.page { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); color: var(--text); font-weight: 600; text-decoration: none; }
+        a.page::after { content: "\203A"; color: var(--primary); font-size: 1.25rem; }
+        a.page:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .pending { margin-top: 16px; padding: 10px 12px; border: 1px solid var(--warn); border-radius: 8px; color: var(--text); font-size: 0.9375rem; }
+        .actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+        button { flex: 1; min-height: 44px; padding: 0 16px; border: 1px solid var(--primary); border-radius: 8px; background: var(--primary); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+        button.secondary { background: transparent; color: var(--primary); }
+        [hidden] { display: none !important; }
     </style>
 </head>
 <body>
     <main>
         <h1>You're offline</h1>
         <p>This page hasn't been saved on this device yet, so it can't open without internet.</p>
-        <p>Pages you have opened before while online (like Situation Reports) still work offline. Reports you save offline are kept on this device and sent automatically when you're back online.</p>
-        <button type="button" onclick="history.length > 1 ? history.back() : location.reload()">Go back</button>
+
+        <section id="available" hidden>
+            <h2>Open offline</h2>
+            <ul id="pages"></ul>
+        </section>
+
+        <p id="pending" class="pending" hidden></p>
+
+        <p style="margin-top:16px">Reports you save offline are kept on this device and sent automatically when you're back online.</p>
+
+        <div class="actions">
+            <button type="button" onclick="location.reload()">Try again</button>
+            <button type="button" class="secondary" onclick="history.length > 1 ? history.back() : location.reload()">Go back</button>
+        </div>
     </main>
+
+    <script>
+        // Nice-to-have: list the pages this device can open offline, and how many saved reports are waiting.
+        // Everything above already works without it.
+        (function () {
+            var NAMES = {
+                'situation-reports': 'Situation Reports',
+                'incident-monitored': 'Incident Monitored',
+                'declaration-usc': 'Declaration of USC',
+                'pre-positioning': 'Pre-positioning',
+                'response-operations': 'Response Operations',
+                'assistance': 'Assistance',
+                'dashboard': 'Dashboard'
+            };
+            var label = function (segment) {
+                return NAMES[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+            };
+
+            if (window.caches) {
+                caches.keys().then(function (keys) {
+                    // Full pages only: the "-data-" cache holds page data, which can't be opened directly.
+                    var key = keys.filter(function (k) { return k.indexOf('sitrep-pages-') === 0 && k.indexOf('-data-') === -1; })[0];
+                    return key ? caches.open(key).then(function (c) { return c.keys(); }) : [];
+                }).then(function (requests) {
+                    var seen = {};
+                    var list = document.getElementById('pages');
+                    requests.forEach(function (request) {
+                        var url = new URL(request.url);
+                        var segment = url.pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
+                        if (!segment || segment === 'login' || segment === 'offline.html' || seen[segment]) return;
+                        seen[segment] = true;
+                        var item = document.createElement('li');
+                        var link = document.createElement('a');
+                        link.className = 'page';
+                        link.href = url.pathname;
+                        link.textContent = label(segment);
+                        item.appendChild(link);
+                        list.appendChild(item);
+                    });
+                    if (list.children.length) document.getElementById('available').hidden = false;
+                }).catch(function () {});
+            }
+
+            if (window.indexedDB) {
+                var open = indexedDB.open('sitrep-offline');
+                open.onsuccess = function () {
+                    var db = open.result;
+                    if (!db.objectStoreNames.contains('queue')) return;
+                    var count = db.transaction('queue', 'readonly').objectStore('queue').count();
+                    count.onsuccess = function () {
+                        if (!count.result) return;
+                        var note = document.getElementById('pending');
+                        note.textContent = count.result + (count.result === 1 ? ' report is' : ' reports are') + ' saved on this device and will be sent when you are back online.';
+                        note.hidden = false;
+                    };
+                };
+            }
+        })();
+    </script>
 </body>
 </html>

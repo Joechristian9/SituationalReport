@@ -9,13 +9,22 @@ const PAGE_CACHE_PREFIX = 'sitrep-pages';
 const WARM_EVERY_MS = 30 * 60 * 1000;
 // Pages to keep ready for offline use; ones the user can't open are simply skipped.
 const OFFLINE_PAGES = [
-    'dashboard',
     'situation-reports.index',
     'incident-monitored.index',
     'declaration-usc.index',
     'pre-positioning.index',
     'response-operations.index',
     'assistance.index',
+];
+// JSON the forms load when they open (field suggestions and the like), so they work offline too.
+const OFFLINE_JSON = [
+    'api.disaster.active',
+    'communication-services.index',
+    ...[
+        'weather', 'water-level', 'electricity', 'water-service', 'communication', 'road', 'bridge', 'pre-emptive',
+        'pre-positioning', 'incident-monitored', 'casualties', 'injured', 'missing', 'affected-tourists', 'damaged-houses',
+        'usc-declaration', 'response-operations', 'assistance-extended', 'agriculture', 'suspension-classes', 'suspension-work',
+    ].map((form) => `modifications.${form}`),
 ];
 
 const isInertia = (config) => Boolean(config?.headers?.['X-Inertia'] ?? config?.headers?.get?.('X-Inertia'));
@@ -125,7 +134,24 @@ function appBase() {
 }
 
 function offlinePageUrls() {
-    return OFFLINE_PAGES.filter((name) => route().has(name)).map((name) => route(name));
+    // Only admins have a dashboard page; for everyone else that URL just redirects.
+    const isAdmin = currentUser()?.roles?.some((role) => role.name === 'admin');
+    return [...(isAdmin ? ['dashboard'] : []), ...OFFLINE_PAGES].filter((name) => route().has(name)).map((name) => route(name));
+}
+
+const offlineJsonUrls = () => OFFLINE_JSON.filter((name) => route().has(name)).map((name) => route(name));
+
+/** The worker says when the pages are saved, so the app can tell the user it is ready for offline use. */
+function listenForWarmed() {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type !== 'warmed') return;
+        try {
+            localStorage.setItem('offline-ready', JSON.stringify({ userId: currentUser()?.id ?? null, at: event.data.at, pages: event.data.pages }));
+        } catch {
+            // Storage blocked: the message below is still shown this time.
+        }
+        window.dispatchEvent(new CustomEvent('offline:ready', { detail: event.data }));
+    });
 }
 
 function lastWarmed() {
@@ -139,7 +165,7 @@ function lastWarmed() {
 async function warmPages(registration) {
     if (!navigator.onLine || !currentUser() || Date.now() - lastWarmed() < WARM_EVERY_MS) return;
     const worker = registration.active || (await navigator.serviceWorker.ready).active;
-    worker?.postMessage({ type: 'warm', urls: offlinePageUrls(), inertiaVersion: currentPage()?.version ?? '' });
+    worker?.postMessage({ type: 'warm', urls: offlinePageUrls(), jsonUrls: offlineJsonUrls(), inertiaVersion: currentPage()?.version ?? '' });
     try {
         sessionStorage.setItem('offline-warmed-at', String(Date.now()));
     } catch {
@@ -187,6 +213,7 @@ async function registerServiceWorker() {
     try {
         const base = appBase();
         const registration = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base });
+        listenForWarmed();
         warmPages(registration);
         router.on('navigate', () => warmPages(registration));
     } catch {
