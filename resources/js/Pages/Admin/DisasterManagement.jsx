@@ -10,7 +10,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { CheckCircle, Download, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, User, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
+import { Clock, Download, FileCheck, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,7 +19,8 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { toast, Toaster } from 'sonner';
 import axios from 'axios';
-import { format } from 'date-fns';
+import { differenceInCalendarDays, format, formatDuration, intervalToDuration } from 'date-fns';
+import { Skeleton } from '@/Components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import TablePagination from '@/Components/ui/TablePagination';
 import { SortableHead, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
@@ -107,12 +108,157 @@ function StatusChip({ status }) {
     );
 }
 
+/** "9 days 2 hours" from start to end (or now while it is still running). */
+const durationLabel = (startedAt, endedAt) => {
+    const start = new Date(startedAt);
+    const end = endedAt ? new Date(endedAt) : new Date();
+    const parts = intervalToDuration({ start, end });
+    const label = formatDuration(parts, { format: ['years', 'months', 'days', 'hours'], delimiter: ' ' });
+    return label || formatDuration(parts, { format: ['minutes'] }) || 'Less than a minute';
+};
+
+// Impact series colors match the dashboard charts; each tile is also labelled in text.
+const SUMMARY_IMPACT = [
+    { key: 'dead', label: 'Dead', color: 'var(--viz-dead)' },
+    { key: 'injured', label: 'Injured', color: 'var(--viz-injured)' },
+    { key: 'missing', label: 'Missing', color: 'var(--viz-missing)' },
+];
+
+function SummaryTile({ label, value, sub, color }) {
+    return (
+        <div className="min-w-0 rounded-lg border border-border bg-card px-2.5 py-2">
+            <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                {color && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />}
+                {label}
+            </p>
+            <p className="text-lg font-semibold leading-tight tabular-nums text-foreground">{value.toLocaleString()}</p>
+            {sub && <p className="truncate text-xs text-muted-foreground">{sub}</p>}
+        </div>
+    );
+}
+
+/** Totals for one disaster, loaded by the View details dialog (see DisasterSummary on the server). */
+function DisasterTotals({ state, onRetry }) {
+    if (state?.error) {
+        return (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-foreground" role="alert">
+                Couldn't load the totals.
+                <Button type="button" variant="outline" size="sm" className="h-9" onClick={onRetry}>
+                    Retry
+                </Button>
+            </div>
+        );
+    }
+    if (!state?.data) {
+        return (
+            <div className="grid grid-cols-3 gap-2" aria-busy="true">
+                {Array.from({ length: 6 }, (_, i) => (
+                    <Skeleton key={i} className="h-[60px] rounded-lg" />
+                ))}
+                <span className="sr-only">Loading totals…</span>
+            </div>
+        );
+    }
+
+    const { impact, evacuation, reports } = state.data;
+    return (
+        <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2" aria-label="Human impact">
+                {SUMMARY_IMPACT.map((s) => (
+                    <SummaryTile key={s.key} label={s.label} value={impact[s.key]} color={s.color} />
+                ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                <SummaryTile label="Evacuated" value={evacuation.persons} sub={`${evacuation.families.toLocaleString()} families`} />
+                <SummaryTile label="Houses damaged" value={impact.housesDamaged} />
+                <SummaryTile
+                    label="Reports filed"
+                    value={reports.total}
+                    sub={`from ${reports.accounts} ${reports.accounts === 1 ? 'account' : 'accounts'}`}
+                />
+            </div>
+        </div>
+    );
+}
+
+const TILE_LIMIT = 4;
+
+/**
+ * Phones and tablets: disaster types as a compact 2-column grid (top four, then "Show all")
+ * instead of the one-card carousel. `featureFirst` makes the most recorded type a wide tile.
+ */
+function TypeTiles({ stats, total, featureFirst = false }) {
+    const [showAll, setShowAll] = useState(false);
+    const limit = TILE_LIMIT + (featureFirst ? 1 : 0);
+    const shown = showAll ? stats : stats.slice(0, limit);
+
+    return (
+        <div>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                {shown.map((stat, index) => {
+                    const { icon: Icon } = getDisasterIcon(stat.disaster_type);
+                    const pct = total ? (stat.count / total) * 100 : 0;
+                    const wide = featureFirst && index === 0;
+                    return (
+                        <div
+                            key={stat.disaster_type}
+                            className={`rounded-xl border border-border bg-card p-3 shadow-sm ${wide ? 'col-span-2' : ''}`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <Icon className="h-4 w-4" aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0">
+                                    {wide && (
+                                        <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                            Most recorded
+                                        </span>
+                                    )}
+                                    <span className="block truncate text-sm font-medium text-foreground">{stat.disaster_type}</span>
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-baseline justify-between gap-2">
+                                <span className="text-2xl font-semibold tabular-nums text-foreground">{stat.count}</span>
+                                <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                                    {pct.toFixed(0)}%<span className="sr-only"> of all disasters</span>
+                                </span>
+                            </div>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            {stats.length > limit && (
+                <button
+                    type="button"
+                    onClick={() => setShowAll((v) => !v)}
+                    aria-expanded={showAll}
+                    className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-border bg-card text-sm font-medium text-primary shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    {showAll ? 'Show fewer' : `Show all ${stats.length} types`}
+                </button>
+            )}
+        </div>
+    );
+}
+
 export default function DisasterManagement({ typhoons, activeTyphoon, disasterStats, statusCounts }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [lifecycleAction, setLifecycleAction] = useState(null); // 'pause' | 'resume' | 'end'
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
+    // View details totals, per disaster id: { data } once loaded, { error: true } on failure.
+    const [summaries, setSummaries] = useState({});
+    const loadSummary = useCallback((id) => {
+        setSummaries((prev) => ({ ...prev, [id]: undefined }));
+        axios
+            .get(route('disasters.summary', id))
+            .then(({ data }) => setSummaries((prev) => ({ ...prev, [id]: { data } })))
+            .catch(() => setSummaries((prev) => ({ ...prev, [id]: { error: true } })));
+    }, []);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedYear, setSelectedYear] = useState('all');
@@ -300,6 +446,50 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         }
     };
 
+    const openView = (typhoon) => {
+        setSelectedTyphoon(typhoon);
+        setIsViewModalOpen(true);
+        // Ended disasters no longer change, so their totals are fetched once.
+        if (typhoon.status !== 'ended' || !summaries[typhoon.id]?.data) loadSummary(typhoon.id);
+    };
+
+    // One actions menu for the phone cards and the table rows.
+    const renderRowMenu = (typhoon) => (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 w-11 p-0 md:h-8 md:w-8"
+                    aria-label={`Actions for ${typhoon.name}`}
+                >
+                    <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => openView(typhoon)} className="cursor-pointer max-md:min-h-11">
+                    <Eye className="w-4 h-4 mr-2" aria-hidden="true" />
+                    View Details
+                </DropdownMenuItem>
+                {typhoon.status === 'ended' && (
+                    <>
+                        <DropdownMenuItem onClick={() => handleDownloadPdf(typhoon)} className="cursor-pointer max-md:min-h-11">
+                            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
+                            Download PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => openDeleteModal(typhoon)}
+                            className="cursor-pointer text-destructive focus:text-destructive max-md:min-h-11"
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
+                            Delete Report
+                        </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+
     return (
         <AppLayout
             title="Disaster Management"
@@ -329,26 +519,27 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: 0.1 }}
                         >
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h2 className="text-xl font-bold text-blue-700 flex items-center gap-2">
-                                        <AlertTriangle className="w-5 h-5" />
+                            <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                                <div className="min-w-0">
+                                    <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground sm:text-xl">
+                                        <AlertTriangle className="h-5 w-5 text-primary" aria-hidden="true" />
                                         Disaster Overview
                                     </h2>
-                                    <p className="text-sm text-slate-600 mt-1">
-                                        {activeTyphoon 
-                                            ? 'Active disaster report and statistics by type' 
-                                            : showAllTypes 
-                                                ? `Showing all ${disasterStats.length} disaster types` 
+                                    <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">
+                                        {activeTyphoon
+                                            ? 'Active disaster report and statistics by type'
+                                            : showAllTypes
+                                                ? `Showing all ${disasterStats.length} disaster types`
                                                 : `Showing top ${Math.min(4, disasterStats.length)} disaster types`}
                                     </p>
                                 </div>
+                                {/* Phones and tablets expand the type tiles instead (see TypeTiles). */}
                                 {!activeTyphoon && disasterStats.length > 4 && (
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setShowAllTypes(!showAllTypes)}
-                                        className="flex items-center gap-2"
+                                        className="hidden items-center gap-2 lg:flex"
                                     >
                                         {showAllTypes ? (
                                             <>
@@ -375,119 +566,88 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                         transition={{ duration: 0.3 }}
                                         className="lg:col-span-1"
                                     >
-                                        <Card className="border-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                                            <CardContent className="p-0">
-                                                {/* Header Section with Status */}
-                                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2.5 border-b border-white/20">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                                                            <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">
-                                                                Active Disaster Report
-                                                            </p>
-                                                        </div>
-                                                        {activeTyphoon.status === 'paused' ? (
-                                                            <Badge className="bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-lg font-semibold text-[10px]">
-                                                                <Pause className="w-2.5 h-2.5 mr-0.5" />
-                                                                Paused
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge className="bg-green-500 text-white px-2 py-0.5 rounded-full shadow-lg font-semibold text-[10px]">
-                                                                <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
-                                                                Active
-                                                            </Badge>
-                                                        )}
-                                                    </div>
+                                        {/* Theme card; the left bar and chip carry the status (green active, amber paused). */}
+                                        <Card className="relative h-full overflow-hidden border-border shadow-sm">
+                                            <span
+                                                aria-hidden="true"
+                                                className={`absolute inset-y-0 left-0 w-1 ${activeTyphoon.status === 'paused' ? 'bg-warning' : 'bg-success'}`}
+                                            />
+                                            <CardContent className="flex h-full flex-col gap-3 p-4 pl-5 sm:p-5 sm:pl-6">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                        Active disaster report
+                                                    </p>
+                                                    <StatusChip status={activeTyphoon.status} />
                                                 </div>
 
-                                                {/* Main Content - Compact */}
-                                                <div className="px-4 py-4 space-y-3">
-                                                    {/* Disaster Name */}
-                                                    <div>
-                                                        <h3 className="text-xl font-black text-white mb-2 leading-tight line-clamp-2 drop-shadow-md">
-                                                            {activeTyphoon.name}
-                                                        </h3>
+                                                <div className="min-w-0">
+                                                    <h3 className="line-clamp-2 text-xl font-semibold leading-tight text-foreground">
+                                                        {activeTyphoon.name}
+                                                    </h3>
+                                                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
                                                         {activeTyphoon.disaster_type && (
-                                                            <Badge className="bg-white/90 text-blue-700 px-2.5 py-0.5 rounded-md font-bold shadow-md text-xs">
-                                                                {activeTyphoon.disaster_type}
-                                                            </Badge>
+                                                            <span className="font-medium text-foreground">{activeTyphoon.disaster_type}</span>
                                                         )}
-                                                    </div>
-
-                                                    {/* Description */}
-                                                    {activeTyphoon.description && (
-                                                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2.5 border border-white/20">
-                                                            <p className="text-xs text-white leading-relaxed line-clamp-2">
-                                                                {activeTyphoon.description}
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Date Info */}
-                                                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2.5 border border-white/20">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="p-1.5 bg-white/20 rounded-md">
-                                                                <Calendar className="w-3.5 h-3.5 text-white" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] font-semibold text-blue-100 uppercase tracking-wide">
-                                                                    Started
-                                                                </p>
-                                                                <p className="text-xs font-bold text-white">
-                                                                    {format(new Date(activeTyphoon.started_at), 'MMM d, yyyy')}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                                                            Day {differenceInCalendarDays(new Date(), new Date(activeTyphoon.started_at)) + 1}
+                                                            {' · '}
+                                                            Started {format(new Date(activeTyphoon.started_at), 'MMM d, yyyy')}
+                                                        </span>
+                                                    </p>
                                                 </div>
+
+                                                {activeTyphoon.description && (
+                                                    <p className="line-clamp-2 text-sm text-muted-foreground">{activeTyphoon.description}</p>
+                                                )}
 
                                                 {/* Lifecycle actions: pause or resume, end, and a snapshot while paused */}
-                                                <div className="px-4 py-3 bg-white/5 backdrop-blur-sm border-t border-white/10">
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {activeTyphoon.status === 'paused' ? (
-                                                            <Button
-                                                                onClick={() => setLifecycleAction('resume')}
-                                                                className="min-h-11 gap-2 border-0 bg-white text-sm font-semibold text-success shadow-sm hover:bg-white/90"
-                                                            >
-                                                                <Play className="h-4 w-4" aria-hidden="true" />
-                                                                Resume
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                onClick={() => setLifecycleAction('pause')}
-                                                                className="min-h-11 gap-2 border-0 bg-white text-sm font-semibold text-warning shadow-sm hover:bg-white/90"
-                                                            >
-                                                                <Pause className="h-4 w-4" aria-hidden="true" />
-                                                                Pause
-                                                            </Button>
-                                                        )}
+                                                <div className="mt-auto grid grid-cols-2 gap-2 pt-1">
+                                                    {activeTyphoon.status === 'paused' ? (
                                                         <Button
-                                                            variant="destructive"
-                                                            onClick={() => setLifecycleAction('end')}
-                                                            className="min-h-11 gap-2 text-sm font-semibold"
+                                                            variant="outline"
+                                                            onClick={() => setLifecycleAction('resume')}
+                                                            className="min-h-11 gap-2 border-success/40 text-sm font-semibold text-success hover:bg-success/10 hover:text-success"
                                                         >
-                                                            <StopCircle className="h-4 w-4" aria-hidden="true" />
-                                                            End disaster
+                                                            <Play className="h-4 w-4" aria-hidden="true" />
+                                                            Resume
                                                         </Button>
-                                                        {activeTyphoon.status === 'paused' && (
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={() => handleDownloadSnapshot(activeTyphoon)}
-                                                                className="col-span-2 min-h-11 gap-2 border-white/60 bg-transparent text-sm font-semibold text-white hover:bg-white/10 hover:text-white"
-                                                            >
-                                                                <FileDown className="h-4 w-4" aria-hidden="true" />
-                                                                Download snapshot PDF
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                                    ) : (
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => setLifecycleAction('pause')}
+                                                            className="min-h-11 gap-2 border-warning/40 text-sm font-semibold text-warning hover:bg-warning/10 hover:text-warning"
+                                                        >
+                                                            <Pause className="h-4 w-4" aria-hidden="true" />
+                                                            Pause
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        variant="destructive"
+                                                        onClick={() => setLifecycleAction('end')}
+                                                        className="min-h-11 gap-2 text-sm font-semibold"
+                                                    >
+                                                        <StopCircle className="h-4 w-4" aria-hidden="true" />
+                                                        End disaster
+                                                    </Button>
+                                                    {activeTyphoon.status === 'paused' && (
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => handleDownloadSnapshot(activeTyphoon)}
+                                                            className="col-span-2 min-h-11 gap-2 text-sm font-semibold"
+                                                        >
+                                                            <FileDown className="h-4 w-4" aria-hidden="true" />
+                                                            Download snapshot PDF
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </CardContent>
                                         </Card>
                                     </motion.div>
 
-                                    {/* Carousel of disaster types: one card per slide on phones and tablets
-                                        (swipe or use the arrows), a 2x2 grid of four on desktop. */}
-                                    <div className="lg:col-span-2 relative">
+                                    {/* Desktop: carousel of disaster types, a 2x2 grid of four per slide.
+                                        Phones and tablets get the TypeTiles grid below instead. */}
+                                    <div className="relative hidden lg:col-span-2 lg:block">
                                         <div className="flex items-center gap-2 sm:gap-4">
                                             <Button
                                                 variant="outline"
@@ -592,7 +752,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
 
                             {/* When NO Active Disaster: Show Featured + Grid Layout for Stats */}
                             {!showAllTypes && !activeTyphoon && disasterStats.length > 0 && (
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                                <div className="mb-4 hidden grid-cols-3 gap-4 lg:grid">
                                     {/* Large Featured Card - Top Disaster Type */}
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
@@ -671,9 +831,19 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                 </div>
                             )}
 
+                            {/* Phones and tablets: every type at a glance instead of the carousel / featured grid. */}
+                            {disasterStats.length > 0 && (
+                                <div className="lg:hidden">
+                                    {activeTyphoon && (
+                                        <h3 className="mb-2 text-sm font-semibold text-foreground">By disaster type</h3>
+                                    )}
+                                    <TypeTiles stats={disasterStats} total={statusCounts.total} featureFirst={!activeTyphoon} />
+                                </div>
+                            )}
+
                             {/* Show All View - Regular Grid */}
                             {showAllTypes && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="hidden grid-cols-3 gap-4 lg:grid">
                                     {disasterStats.map((stat, index) => (
                                         <motion.div
                                             key={stat.disaster_type}
@@ -779,7 +949,49 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                         action={<Button variant="outline" onClick={clearFilters}>Clear filters</Button>}
                                     />
                                 ) : (
-                                    <Table stacked>
+                                    <>
+                                    {/* Phones: compact cards; the card opens the details, ⋯ holds the other actions. */}
+                                    <ul className="divide-y divide-border md:hidden">
+                                        {paginationData.paginatedTyphoons.map((typhoon) => {
+                                            const { icon: TypeIcon } = getDisasterIcon(typhoon.disaster_type);
+                                            return (
+                                                <li key={typhoon.id} className="flex items-start">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openView(typhoon)}
+                                                        className="flex min-w-0 flex-1 items-start gap-3 py-3.5 pl-4 pr-1 text-left transition-colors active:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                                                    >
+                                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                            <TypeIcon className="h-5 w-5" aria-hidden="true" />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                                <span className="min-w-0 truncate text-base font-semibold text-foreground">{typhoon.name}</span>
+                                                                <StatusChip status={typhoon.status} />
+                                                            </span>
+                                                            <span className="mt-1 block text-sm text-muted-foreground">
+                                                                {typhoon.disaster_type || 'Not specified'}
+                                                                {' · '}
+                                                                <span className="tabular-nums">
+                                                                    {format(new Date(typhoon.started_at), 'MMM d')}
+                                                                    {' – '}
+                                                                    {typhoon.ended_at ? format(new Date(typhoon.ended_at), 'MMM d, yyyy') : 'ongoing'}
+                                                                </span>
+                                                            </span>
+                                                            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                                                Created by {typhoon.creator?.name || 'Unknown'}
+                                                                {typhoon.ender?.name ? ` · Ended by ${typhoon.ender.name}` : ''}
+                                                            </span>
+                                                        </span>
+                                                    </button>
+                                                    <div className="py-2.5 pr-2">{renderRowMenu(typhoon)}</div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+
+                                    <div className="hidden md:block">
+                                    <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <SortableHead sortKey="name" sort={sort} onSort={toggleSort}>Name</SortableHead>
@@ -803,19 +1015,19 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                             <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{typhoon.description}</div>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell label="Type">
+                                                    <TableCell>
                                                         <Badge variant="outline" className="font-medium">
                                                             {typhoon.disaster_type || 'Not specified'}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell label="Status" className="whitespace-nowrap">
+                                                    <TableCell className="whitespace-nowrap">
                                                         <StatusChip status={typhoon.status} />
                                                     </TableCell>
-                                                    <TableCell label="Started" className="whitespace-nowrap tabular-nums text-muted-foreground">
+                                                    <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                                                         <div className="text-foreground">{format(new Date(typhoon.started_at), 'MMM d, yyyy')}</div>
                                                         <div className="text-xs">{format(new Date(typhoon.started_at), 'h:mm a')}</div>
                                                     </TableCell>
-                                                    <TableCell label="Ended" className="whitespace-nowrap tabular-nums text-muted-foreground">
+                                                    <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                                                         {typhoon.ended_at ? (
                                                             <>
                                                                 <div className="text-foreground">{format(new Date(typhoon.ended_at), 'MMM d, yyyy')}</div>
@@ -825,62 +1037,21 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                                             '-'
                                                         )}
                                                     </TableCell>
-                                                    <TableCell label="Created by" className="text-muted-foreground lg:table-cell md:hidden">
+                                                    <TableCell className="hidden text-muted-foreground lg:table-cell">
                                                         {typhoon.creator?.name || 'Unknown'}
                                                     </TableCell>
-                                                    <TableCell label="Ended by" className="text-muted-foreground xl:table-cell md:hidden">
+                                                    <TableCell className="hidden text-muted-foreground xl:table-cell">
                                                         {typhoon.ender?.name || '-'}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="flex items-center justify-end">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="h-11 w-11 p-0 md:h-8 md:w-8"
-                                                                        aria-label={`Actions for ${typhoon.name}`}
-                                                                    >
-                                                                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-48">
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => {
-                                                                            setSelectedTyphoon(typhoon);
-                                                                            setIsViewModalOpen(true);
-                                                                        }}
-                                                                        className="cursor-pointer"
-                                                                    >
-                                                                        <Eye className="w-4 h-4 mr-2" />
-                                                                        View Details
-                                                                    </DropdownMenuItem>
-                                                                    {typhoon.status === 'ended' && (
-                                                                        <>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => handleDownloadPdf(typhoon)}
-                                                                                className="cursor-pointer"
-                                                                            >
-                                                                                <Download className="w-4 h-4 mr-2" />
-                                                                                Download PDF
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => openDeleteModal(typhoon)}
-                                                                                className="cursor-pointer text-destructive focus:text-destructive"
-                                                                            >
-                                                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                                                Delete Report
-                                                                            </DropdownMenuItem>
-                                                                        </>
-                                                                    )}
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        </div>
+                                                        <div className="flex items-center justify-end">{renderRowMenu(typhoon)}</div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
+                                    </div>
+                                    </>
                                 )}
 
                                 <TablePagination
@@ -906,13 +1077,13 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 bg-blue-100 rounded-full">
-                                <Cloud className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <DialogTitle className="text-xl">Create New Disaster Report</DialogTitle>
+                        <div className="mb-1 flex items-center gap-3 pr-8">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <Cloud className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <DialogTitle className="text-lg sm:text-xl">Create New Disaster Report</DialogTitle>
                         </div>
-                        <DialogDescription className="text-base">
+                        <DialogDescription className="text-sm sm:text-base">
                             Enter the disaster details. Once created, all forms will be enabled for users to input data.
                         </DialogDescription>
                     </DialogHeader>
@@ -920,7 +1091,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                         <div className="space-y-5 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-sm font-semibold">
-                                    Disaster Name <span className="text-red-500">*</span>
+                                    Disaster Name <span className="text-destructive" aria-hidden="true">*</span>
                                 </Label>
                                 <Input
                                     id="name"
@@ -934,7 +1105,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="disaster_type" className="text-sm font-semibold">
-                                    Disaster Type <span className="text-red-500">*</span>
+                                    Disaster Type <span className="text-destructive" aria-hidden="true">*</span>
                                 </Label>
                                 <Select
                                     value={formData.disaster_type}
@@ -942,7 +1113,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                     disabled={isSubmitting}
                                     required
                                 >
-                                    <SelectTrigger className="h-11">
+                                    <SelectTrigger id="disaster_type" className="h-11">
                                         <SelectValue placeholder="Select disaster type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -965,7 +1136,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description" className="text-sm font-semibold">
-                                    Description <span className="text-slate-400 font-normal">(Optional)</span>
+                                    Description <span className="font-normal text-muted-foreground">(Optional)</span>
                                 </Label>
                                 <Textarea
                                     id="description"
@@ -991,10 +1162,10 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                             >
                                 Cancel
                             </Button>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 disabled={isSubmitting}
-                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                                className="w-full sm:w-auto"
                             >
                                 {isSubmitting ? (
                                     <>
@@ -1023,12 +1194,12 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-red-100 rounded-full">
-                                <AlertTriangle className="w-6 h-6 text-red-600" />
-                            </div>
+                        <div className="flex items-center gap-3 pr-8">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+                            </span>
                             <div>
-                                <DialogTitle className="text-xl">Delete Disaster Report</DialogTitle>
+                                <DialogTitle className="text-lg sm:text-xl">Delete Disaster Report</DialogTitle>
                                 <DialogDescription className="mt-1">
                                     This action cannot be undone
                                 </DialogDescription>
@@ -1036,12 +1207,12 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                         </div>
                     </DialogHeader>
                     
-                    <div className="py-4">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <p className="text-sm text-red-900 font-medium mb-2">
+                    <div className="py-2 sm:py-4">
+                        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                            <p className="mb-2 text-sm font-medium text-foreground">
                                 Are you sure you want to delete the disaster report "{selectedTyphoon?.name}"?
                             </p>
-                            <p className="text-sm text-red-700">
+                            <p className="text-sm text-muted-foreground">
                                 All associated data including weather reports, evacuation records, casualties, and other related information will be permanently removed.
                             </p>
                         </div>
@@ -1063,7 +1234,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                             variant="destructive"
                             onClick={handleDeleteTyphoon}
                             disabled={isSubmitting}
-                            className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                            className="w-full sm:w-auto"
                         >
                             {isSubmitting ? (
                                 <>
@@ -1083,132 +1254,113 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
 
             {/* View Typhoon Details Modal */}
             <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-blue-100 rounded-full">
-                                <Cloud className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-xl">Disaster Report Details</DialogTitle>
-                                <DialogDescription className="mt-1">
-                                    Complete information about this disaster report
-                                </DialogDescription>
-                            </div>
+                <DialogContent className="max-h-[90dvh] gap-3 overflow-y-auto p-4 sm:max-w-[560px] sm:gap-4 sm:p-6">
+                    <DialogHeader className="pr-8 text-left">
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <Cloud className="h-[18px] w-[18px]" aria-hidden="true" />
+                            </span>
+                            <DialogTitle className="text-base font-semibold sm:text-lg">Disaster details</DialogTitle>
                         </div>
+                        <DialogDescription className="sr-only sm:not-sr-only sm:pt-1">
+                            Complete information about this disaster report
+                        </DialogDescription>
                     </DialogHeader>
-                    
+
                     {selectedTyphoon && (
-                        <div className="py-4 space-y-4">
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-bold text-slate-900">{selectedTyphoon.name}</h3>
-                                    <Badge 
-                                        className={
-                                            selectedTyphoon.status === 'active' 
-                                                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                                                : selectedTyphoon.status === 'paused'
-                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                                : 'bg-slate-600 hover:bg-slate-700 text-white'
-                                        }
-                                    >
-                                        {selectedTyphoon.status === 'active' ? (
-                                            <span className="flex items-center gap-1">
-                                                <CheckCircle className="w-3 h-3" />
-                                                Active
-                                            </span>
-                                        ) : selectedTyphoon.status === 'paused' ? (
-                                            <span className="flex items-center gap-1">
-                                                <Pause className="w-3 h-3" />
-                                                Paused
-                                            </span>
+                        <div className="space-y-3">
+                            <div>
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <h3 className="min-w-0 break-words text-base font-semibold text-foreground sm:text-lg">{selectedTyphoon.name}</h3>
+                                    <StatusChip status={selectedTyphoon.status} />
+                                </div>
+                                {/* Duration, and for ended disasters whether the final PDF exists yet. */}
+                                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Clock className="h-4 w-4" aria-hidden="true" />
+                                        {selectedTyphoon.ended_at ? 'Lasted' : 'Running for'}{' '}
+                                        <span className="font-medium text-foreground">
+                                            {durationLabel(selectedTyphoon.started_at, selectedTyphoon.ended_at)}
+                                        </span>
+                                    </span>
+                                    {selectedTyphoon.status === 'ended' && (
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 font-medium ${
+                                                selectedTyphoon.pdf_path ? 'text-success' : 'text-warning'
+                                            }`}
+                                        >
+                                            {selectedTyphoon.pdf_path ? (
+                                                <FileCheck className="h-4 w-4" aria-hidden="true" />
+                                            ) : (
+                                                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                                            )}
+                                            {selectedTyphoon.pdf_path ? 'PDF ready' : 'PDF being prepared'}
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+
+                            <DisasterTotals
+                                state={summaries[selectedTyphoon.id]}
+                                onRetry={() => loadSummary(selectedTyphoon.id)}
+                            />
+
+                            {/* Two columns even on a phone; short dates keep each value to one or two lines. */}
+                            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
+                                <div className="min-w-0">
+                                    <dt className="text-xs font-medium text-muted-foreground">Type</dt>
+                                    <dd className="mt-0.5 break-words text-sm font-medium text-foreground">{selectedTyphoon.disaster_type || 'Not specified'}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                    <dt className="text-xs font-medium text-muted-foreground">Created by</dt>
+                                    <dd className="mt-0.5 break-words text-sm font-medium text-foreground">{selectedTyphoon.creator?.name || 'Unknown'}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                    <dt className="text-xs font-medium text-muted-foreground">Started</dt>
+                                    <dd className="mt-0.5 text-sm font-medium tabular-nums text-foreground">
+                                        {format(new Date(selectedTyphoon.started_at), 'MMM d, yyyy')}
+                                        <span className="block text-xs font-normal text-muted-foreground">{format(new Date(selectedTyphoon.started_at), 'h:mm a')}</span>
+                                    </dd>
+                                </div>
+                                <div className="min-w-0">
+                                    <dt className="text-xs font-medium text-muted-foreground">Ended</dt>
+                                    <dd className="mt-0.5 text-sm font-medium tabular-nums text-foreground">
+                                        {selectedTyphoon.ended_at ? (
+                                            <>
+                                                {format(new Date(selectedTyphoon.ended_at), 'MMM d, yyyy')}
+                                                <span className="block truncate text-xs font-normal text-muted-foreground">
+                                                    {format(new Date(selectedTyphoon.ended_at), 'h:mm a')}
+                                                    {selectedTyphoon.ender?.name ? ` · ${selectedTyphoon.ender.name}` : ''}
+                                                </span>
+                                            </>
                                         ) : (
-                                            'Ended'
+                                            <span className="font-normal text-muted-foreground">Ongoing</span>
                                         )}
-                                    </Badge>
+                                    </dd>
                                 </div>
-                                
-                                {selectedTyphoon.disaster_type && (
-                                    <div>
-                                        <p className="text-xs font-semibold text-slate-600 mb-1">Disaster Type:</p>
-                                        <Badge variant="outline" className="font-medium text-sm">
-                                            {selectedTyphoon.disaster_type}
-                                        </Badge>
-                                    </div>
-                                )}
-                                
                                 {selectedTyphoon.description && (
-                                    <div>
-                                        <p className="text-xs font-semibold text-slate-600 mb-1">Description:</p>
-                                        <p className="text-sm text-slate-700 bg-white p-2 rounded border border-slate-200">
+                                    <div className="col-span-2 border-t border-border pt-3">
+                                        <dt className="text-xs font-medium text-muted-foreground">Description</dt>
+                                        <dd className="mt-0.5 line-clamp-6 whitespace-pre-line break-words text-sm text-foreground">
                                             {selectedTyphoon.description}
-                                        </p>
+                                        </dd>
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Calendar className="w-4 h-4 text-slate-500" />
-                                        <p className="text-xs font-semibold text-slate-600">Started</p>
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-900">
-                                        {format(new Date(selectedTyphoon.started_at), 'PPP')}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                        {format(new Date(selectedTyphoon.started_at), 'p')}
-                                    </p>
-                                </div>
-
-                                {selectedTyphoon.ended_at && (
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Calendar className="w-4 h-4 text-slate-500" />
-                                            <p className="text-xs font-semibold text-slate-600">Ended</p>
-                                        </div>
-                                        <p className="text-sm font-medium text-slate-900">
-                                            {format(new Date(selectedTyphoon.ended_at), 'PPP')}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            {format(new Date(selectedTyphoon.ended_at), 'p')}
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <User className="w-4 h-4 text-slate-500" />
-                                        <p className="text-xs font-semibold text-slate-600">Created By</p>
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-900">
-                                        {selectedTyphoon.creator?.name || 'Unknown'}
-                                    </p>
-                                </div>
-
-                                {selectedTyphoon.ender && (
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <User className="w-4 h-4 text-slate-500" />
-                                            <p className="text-xs font-semibold text-slate-600">Ended By</p>
-                                        </div>
-                                        <p className="text-sm font-medium text-slate-900">
-                                            {selectedTyphoon.ender.name}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                            </dl>
                         </div>
                     )}
 
-                    <DialogFooter>
+                    {/* Phones: one row; Download only for ended disasters. */}
+                    <DialogFooter
+                        className={`grid gap-2 pt-1 sm:flex sm:flex-row ${selectedTyphoon?.status === 'ended' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                    >
                         <Button
                             variant="outline"
                             onClick={() => {
                                 setIsViewModalOpen(false);
                                 setSelectedTyphoon(null);
                             }}
-                            className="w-full sm:w-auto"
+                            className="min-h-11 w-full sm:min-h-9 sm:w-auto"
                         >
                             Close
                         </Button>
@@ -1218,9 +1370,9 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                     handleDownloadPdf(selectedTyphoon);
                                     setIsViewModalOpen(false);
                                 }}
-                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                                className="min-h-11 w-full px-3 sm:min-h-9 sm:w-auto sm:px-4"
                             >
-                                <Download className="w-4 h-4 mr-2" />
+                                <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
                                 Download PDF
                             </Button>
                         )}
