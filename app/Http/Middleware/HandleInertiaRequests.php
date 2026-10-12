@@ -24,6 +24,33 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * The signed-in user as the browser sees it. Inertia prints shared props into every page's
+     * HTML, so send only what the UI reads, never the whole model with its pivot rows.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function sharedUser(Request $request): ?array
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $user->loadMissing('roles:id,name', 'permissions:id,name');
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            // The profile form checks this to decide whether to show the verify-email notice.
+            'email_verified_at' => $user->email_verified_at,
+            'roles' => $user->roles->map(fn ($role) => ['name' => $role->name])->values(),
+            'permissions' => $user->permissions->map(fn ($permission) => ['name' => $permission->name])->values(),
+        ];
+    }
+
+    /**
      * Define the props that are shared by default.
      * Optimized: Eager load roles for better performance
      *
@@ -34,15 +61,15 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? $request->user()->load('roles:id,name', 'permissions:id,name') : null,
+                'user' => $this->sharedUser($request),
             ],
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error' => fn() => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
             'typhoon' => [
-                'active' => fn() => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
-                'hasActive' => fn() => Typhoon::hasActiveTyphoon(),
+                'active' => fn () => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
+                'hasActive' => fn () => Typhoon::hasActiveTyphoon(),
             ],
         ];
     }
