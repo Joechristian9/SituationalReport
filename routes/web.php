@@ -455,6 +455,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         Route::get('/', [DisasterController::class, 'index'])->name('disasters.index');
         Route::post('/', [DisasterController::class, 'store'])->name('disasters.store');
         Route::patch('/{disaster}', [DisasterController::class, 'update'])->name('disasters.update');
+        Route::get('/{disaster}/summary', [DisasterController::class, 'summary'])->name('disasters.summary');
         Route::post('/{disaster}/pause', [DisasterController::class, 'pause'])->name('disasters.pause');
         Route::post('/{disaster}/resume', [DisasterController::class, 'resume'])->name('disasters.resume');
         Route::get('/{disaster}/snapshot', [DisasterController::class, 'downloadSnapshot'])->middleware('throttle:pdf')->name('disasters.snapshot');

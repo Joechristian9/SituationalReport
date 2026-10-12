@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Typhoon;
 use App\Models\User;
+use App\Services\DisasterSummary;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -180,6 +181,14 @@ class DisasterController extends Controller
     /**
      * Pause a typhoon report temporarily
      */
+    /**
+     * Totals for the "View details" dialog, loaded when it opens instead of for every row.
+     */
+    public function summary(Typhoon $disaster): JsonResponse
+    {
+        return response()->json(DisasterSummary::for($disaster));
+    }
+
     public function pause(Typhoon $disaster)
     {
         if ($disaster->status === 'ended') {
