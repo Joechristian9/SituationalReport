@@ -1,14 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { usePage, Head, useForm } from "@inertiajs/react";
+import { usePage, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import FormPanel from "@/Components/forms/FormPanel";
 import { cn } from "@/lib/utils";
@@ -323,26 +317,17 @@ export default function Index() {
           ];
 
     return (
-        <SidebarProvider>
+        <AppLayout
+            title="Effects Report"
+            header={<Breadcrumbs crumbs={crumbs} />}
+            actions={
+                <ActiveTyphoonHeader
+                    typhoon={typhoon?.active}
+                    hasActive={typhoon?.hasActive}
+                />
+            }
+        >
             <Toaster position="top-right" />
-            <AppSidebar />
-            <Head>
-                <title>Effects Report</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-                        <Breadcrumbs crumbs={crumbs} />
-                    </div>
-                    <ActiveTyphoonHeader 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                </header>
 
                 <main className="h-full w-full bg-background p-4 sm:p-6">
                     <FormPanel className="p-0 sm:p-0">
@@ -603,7 +588,6 @@ export default function Index() {
                         </div>
                     </FormPanel>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

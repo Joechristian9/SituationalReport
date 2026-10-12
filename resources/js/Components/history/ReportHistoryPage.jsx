@@ -1,17 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Head } from '@inertiajs/react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { CheckCircle2, ChevronRight, Download, FileText, History, Pause, RefreshCw } from 'lucide-react';
-import { AppSidebar } from '@/Components/app-sidebar';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 import FormPanel from '@/Components/forms/FormPanel';
 import { Button } from '@/Components/ui/button';
 import DownloadExcelButton from '@/Components/ui/DownloadExcelButton';
 import SearchBar from '@/Components/ui/SearchBar';
-import { Separator } from '@/Components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/Components/ui/sidebar';
 import { SkeletonTable } from '@/Components/ui/skeleton';
+import AppLayout from '@/Layouts/AppLayout';
 import { CELL_LABEL, STACKED_TABLE } from '@/lib/responsiveTable';
 import { cn } from '@/lib/utils';
 import { HISTORY_TYPES, TRAILING_COLUMNS, cellText, formatDate } from './historyTypes';
@@ -44,17 +41,10 @@ export default function ReportHistoryPage({ type }) {
     const isOpen = (id, index) => open[id] ?? index === 0;
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title={config.title} />
-            <SidebarInset>
-                <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-white/80 px-4 backdrop-blur-sm sm:px-6">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="mx-2 h-6" />
-                        <Breadcrumbs crumbs={[{ label: 'Report history' }, { label: config.title }]} />
-                    </div>
-                </header>
+        <AppLayout
+            title={config.title}
+            header={<Breadcrumbs crumbs={[{ label: 'Report history' }, { label: config.title }]} />}
+        >
 
                 <main className="h-full w-full bg-background p-4 sm:p-6">
                     <FormPanel className="overflow-hidden p-0 sm:p-0">
@@ -104,8 +94,7 @@ export default function ReportHistoryPage({ type }) {
                         )}
                     </FormPanel>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }
 

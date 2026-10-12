@@ -25,21 +25,14 @@ export function NavUser({ user }) {
     const [logoutOpen, setLogoutOpen] = useState(false);
 
     return (
-        // ✅ MODIFICATION: Glassmorphism classes applied to the root element.
-        <SidebarMenu
-            className="
-                rounded-lg border border-white/20
-                bg-white/10 shadow-lg backdrop-blur-lg
-            "
-        >
+        <SidebarMenu>
             <SidebarMenuItem>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            // ✅ MODIFICATION: Button is now transparent to show the glass effect.
-                            // We use semi-transparent white for hover and open states.
-                            className="bg-transparent hover:bg-white/10 data-[state=open]:bg-white/20"
+                            tooltip={user.name}
+                            className="bg-sidebar-accent/40 transition-colors duration-150 hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
                         >
                             <Avatar className="h-8 w-8 rounded-lg">
                                 <AvatarImage
@@ -51,19 +44,14 @@ export function NavUser({ user }) {
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold text-white">
-                                    {" "}
-                                    {/* Ensure text is white */}
+                                <span className="truncate font-semibold text-sidebar-accent-foreground">
                                     {user.name}
                                 </span>
-                                <span className="truncate text-xs text-white/80">
-                                    {" "}
-                                    {/* Lighter text for email */}
+                                <span className="truncate text-xs text-sidebar-foreground/80">
                                     {user.email}
                                 </span>
                             </div>
-                            <ChevronsUpDown className="ml-auto size-4 text-white/80" />{" "}
-                            {/* Lighter chevron */}
+                            <ChevronsUpDown className="ml-auto size-4 text-sidebar-foreground/80" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent

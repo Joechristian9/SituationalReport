@@ -6,7 +6,9 @@ Built by hand from the existing stack (shadcn "new-york", Tailwind 3, Figtree, l
 
 ## 1. Product & direction
 - **Product:** disaster situational reporting for CDRRMO staff and barangay accounts. Operational, data-dense, used under stress and often on phones in the field.
-- **Style:** clean, flat, high-clarity "operations console". Light mode default, dark mode supported. No glassmorphism, gradients, or decorative motion.
+- **Style:** clean, flat, high-clarity "operations console" in **civic deep blue**: deep royal-blue sidebar (#1e3a8a), white cards on a soft blue-gray page (#f4f7fb), primary actions #2563eb. Light mode default, dark mode supported. No glassmorphism, gradients, or decorative motion.
+- **App frame:** every signed-in page renders inside `Layouts/AppLayout.jsx` (sidebar + sticky header). Pass `title`, `header` (`PageTitle` or `Breadcrumbs`) and `actions`; never rebuild the sidebar/header in a page.
+- **Admin lists:** one layout from `Components/data/DataView.jsx`: `DataPanel` (icon tile, title, count pill, description, actions; provides the comfortable/compact row toggle) → `DataToolbar` on a tinted band (search, `FilterSelect`/`FilterDate` pill filters, removable `chips`, "Clear all"; filters move to a bottom sheet on phones) → `<Table stacked>` from `ui/table.jsx` (soft-blue header, blue hover bar, `SortableHead` + `useTableSort` for client-side lists, `TableSkeletonRows` + `useDelayedFlag` for server-side loading; cards below 768px, give each cell a `label`) or `EmptyState` → `TablePagination className={PANEL_PAGINATION}`. Status chips use a dot + text. No custom table headers, zebra rows or gradients.
 - **Principles:** status first (disaster state always visible), clarity over decoration, one primary action per screen, never rely on color alone.
 
 ## 2. Current-state findings (why this exists)
@@ -19,7 +21,7 @@ Drop-in replacement for `:root` / `.dark` in `resources/css/app.css` (HSL triple
 
 ```css
 :root {
-  --background: 210 20% 98%;          /* #f8fafc page */
+  --background: 214 50% 97%;          /* #f4f7fb soft blue-gray page */
   --foreground: 222 47% 11%;          /* #0f172a  16:1 */
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -48,11 +50,11 @@ Drop-in replacement for `:root` / `.dark` in `resources/css/app.css` (HSL triple
   /* charts: colorblind-safe, distinct hue AND lightness */
   --chart-1: 221 83% 53%;  --chart-2: 173 80% 30%;  --chart-3: 38 92% 50%;
   --chart-4: 280 60% 50%;  --chart-5: 0 72% 51%;
-  /* sidebar */
-  --sidebar-background: 222 47% 11%;  --sidebar-foreground: 214 32% 91%;
-  --sidebar-primary: 217 91% 60%;     --sidebar-primary-foreground: 222 47% 11%;
-  --sidebar-accent: 217 33% 17%;      --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 17%;      --sidebar-ring: 217 91% 60%;
+  /* sidebar: civic deep blue. text 8.5:1, active item 7.6:1, group labels 5:1, active marker 4.1:1 */
+  --sidebar-background: 224 64% 33%;  --sidebar-foreground: 214 95% 93%;   /* #1e3a8a / #dbeafe */
+  --sidebar-primary: 212 96% 78%;     --sidebar-primary-foreground: 224 64% 33%;  /* #93c5fd marker */
+  --sidebar-accent: 224 58% 42%;      --sidebar-accent-foreground: 0 0% 100%;     /* active/hover row */
+  --sidebar-border: 224 50% 41%;      --sidebar-ring: 212 96% 78%;
 }
 .dark {
   --background: 222 47% 7%;           --foreground: 210 40% 98%;
@@ -70,7 +72,8 @@ Drop-in replacement for `:root` / `.dark` in `resources/css/app.css` (HSL triple
   --ring: 217 91% 60%;
   --chart-1: 217 91% 60%;  --chart-2: 173 70% 45%;  --chart-3: 43 96% 56%;
   --chart-4: 270 80% 70%;  --chart-5: 0 91% 71%;
-  --sidebar-background: 222 47% 7%;
+  --sidebar-background: 226 57% 21%;  --sidebar-primary-foreground: 226 57% 21%;
+  --sidebar-accent: 224 50% 30%;      --sidebar-border: 224 45% 28%;
 }
 ```
 Note: the current dark `--destructive` (30.6% lightness) fails contrast as text; the value above replaces it.
@@ -143,7 +146,7 @@ Status chips: `bg-<token>/10 text-<token> border-<token>/30` + icon + text.
 - Duplicate layout files (`AuthenticatedLayout copy.jsx` already removed).
 
 ### Migration plan (incremental, one PR per step)
-1. ✅ Applied §3 tokens to `app.css` and `tailwind.config.js`. **Exception:** the `--sidebar-*` tokens were left as-is, because `app-sidebar.jsx` paints the sidebar with a hard-coded `bg-blue-600`; switching only the tokens would make the mobile sidebar sheet navy while desktop stays blue. Migrate the sidebar component and its tokens together.
+1. ✅ Applied §3 tokens (civic deep blue) to `app.css` and `tailwind.config.js`. Sidebar rebuilt on `sidebar-*` tokens with labeled groups (Overview / Administration / Reports / Report History), Inertia links, and active state from the page URL. All signed-in pages use `AppLayout` + `PageTitle`/`Breadcrumbs`.
 2. Update `Components/ui` (button focus ring, touch sizes, add `success`/`warning` badge variants, status chip).
 3. Build shared `StatusChip` and `StatTile`; use in dashboard and banners.
 4. Migrate pages by area (Dashboard → Situation Reports → Incident Monitored → Admin), replacing raw palette classes with tokens. Do not mix old and new styling inside one page.

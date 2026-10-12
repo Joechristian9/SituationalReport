@@ -1,29 +1,32 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, AlertCircle, Search, ChevronRight, Eye, FileText } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, ChevronRight, Eye, FileText } from "lucide-react";
 import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
+import {
+    DataPanel,
+    DataToolbar,
+    EmptyState,
+    FilterSelect,
+    PANEL_PAGINATION,
+    useTableSort,
+} from '@/Components/data/DataView';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+    SortableHead,
     Table,
     TableBody,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
+} from "@/Components/ui/table";
 import {
     Sheet,
     SheetContent,
@@ -35,10 +38,18 @@ import axios from 'axios';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import LiveIndicator from '@/Components/LiveIndicator';
 
+const SUBMISSION_SORT = {
+    name: (u) => u.name.toLowerCase(),
+    email: (u) => u.email.toLowerCase(),
+    status: (u) => (u.has_submitted ? 0 : 1),
+    last: (u) => (u.last_submission ? new Date(u.last_submission).getTime() : null),
+};
+
 export default function FormSubmissionStatus({ users, activeTyphoon }) {
     // Slower than the other pages: this page runs about 20 grouped queries per refresh.
     const live = useLiveRefresh({ only: ['users', 'activeTyphoon'], interval: 30000, enabled: Boolean(activeTyphoon) });
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,10 +92,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const renderFormData = (data) => {
         if (!data || data.length === 0) {
             return (
-                <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 text-sm font-medium">No data available</p>
-                </div>
+                <EmptyState icon={AlertCircle} title="No data available" />
             );
         }
 
@@ -97,10 +105,10 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
             <div className="overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                            <TableHead className="text-xs font-bold text-gray-700 py-4 px-6">#</TableHead>
+                        <TableRow>
+                            <TableHead className="text-right">#</TableHead>
                             {keys.map(key => (
-                                <TableHead key={key} className="text-xs font-bold text-gray-700 py-4 px-6 whitespace-nowrap">
+                                <TableHead key={key}>
                                     {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </TableHead>
                             ))}
@@ -108,17 +116,12 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                     </TableHeader>
                     <TableBody>
                         {data.map((row, idx) => (
-                            <TableRow 
-                                key={idx} 
-                                className={`transition-colors hover:bg-blue-50 ${
-                                    idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                                }`}
-                            >
-                                <TableCell className="text-xs py-4 px-6 font-semibold text-gray-500">
+                            <TableRow key={idx}>
+                                <TableCell className="text-right tabular-nums text-muted-foreground">
                                     {idx + 1}
                                 </TableCell>
                                 {keys.map(key => (
-                                    <TableCell key={key} className="text-sm py-4 px-6 text-gray-700">
+                                    <TableCell key={key} className="text-foreground">
                                         {row[key] !== null && row[key] !== undefined ? (
                                             <span className="inline-block max-w-xs truncate" title={String(row[key])}>
                                                 {String(row[key])}
@@ -137,19 +140,20 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     };
 
     const getStatusBadge = (hasSubmitted) => {
-        if (hasSubmitted) {
-            return (
-                <Badge className="bg-green-100 text-green-700 hover:bg-green-100 flex items-center gap-1 w-fit">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Submitted
-                </Badge>
-            );
-        }
         return (
-            <Badge className="bg-red-100 text-red-700 hover:bg-red-100 flex items-center gap-1 w-fit">
-                <XCircle className="w-4 h-4" />
-                Not Submitted
-            </Badge>
+            <span
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                    hasSubmitted
+                        ? 'border-success/30 bg-success/10 text-success'
+                        : 'border-destructive/30 bg-destructive/10 text-destructive'
+                }`}
+            >
+                <span
+                    className={`h-1.5 w-1.5 rounded-full ${hasSubmitted ? 'bg-success' : 'bg-destructive'}`}
+                    aria-hidden="true"
+                />
+                {hasSubmitted ? 'Submitted' : 'Not submitted'}
+            </span>
         );
     };
 
@@ -267,145 +271,148 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         });
     }, [users]);
 
-    // Filter users based on search query
     const filteredUsers = useMemo(() => {
-        if (!searchQuery.trim()) return sortedUsers;
-        
-        const query = searchQuery.toLowerCase();
-        return sortedUsers.filter(user => 
-            user.name.toLowerCase().includes(query) ||
-            user.email.toLowerCase().includes(query) ||
-            formatPermissions(user.permissions).toLowerCase().includes(query)
+        const query = searchQuery.trim().toLowerCase();
+        return sortedUsers.filter((user) =>
+            (statusFilter === 'all' || user.has_submitted === (statusFilter === 'submitted')) &&
+            (!query ||
+                user.name.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query) ||
+                formatPermissions(user.permissions).toLowerCase().includes(query))
         );
-    }, [sortedUsers, searchQuery]);
+    }, [sortedUsers, searchQuery, statusFilter]);
 
-    // Memoized pagination calculations
+    // Column sorts; until one is picked the list keeps its "recent submitters first" order.
+    const { sorted: tableUsers, sort, toggle: toggleSort } = useTableSort(filteredUsers, SUBMISSION_SORT);
+
     const paginationData = useMemo(() => {
-        const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+        const totalPages = Math.ceil(tableUsers.length / itemsPerPage);
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-        
-        return { totalPages, startIndex, endIndex, paginatedUsers };
-    }, [filteredUsers, currentPage, itemsPerPage]);
+        const paginatedUsers = tableUsers.slice(startIndex, endIndex);
 
-    // Reset to page 1 when search query or items per page changes
+        return { totalPages, startIndex, endIndex, paginatedUsers };
+    }, [tableUsers, currentPage, itemsPerPage]);
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, itemsPerPage]);
+    }, [searchQuery, statusFilter, itemsPerPage, sort]);
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setStatusFilter('all');
+    };
+
+    const chips =
+        statusFilter === 'all'
+            ? []
+            : [
+                  {
+                      key: 'status',
+                      label: `Status: ${statusFilter === 'submitted' ? 'Submitted' : 'Not yet submitted'}`,
+                      onRemove: () => setStatusFilter('all'),
+                  },
+              ];
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head>
-                <title>Form Submission Status</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-                        <Breadcrumbs
-                            crumbs={[
-                                { label: "Admin" },
-                                { label: "Form Submission Status" },
-                            ]}
-                        />
-                    </div>
-                    <LiveIndicator live={live} className="ml-auto" />
-                </header>
+        <AppLayout
+            title="Form Submission Status"
+            header={
+                <Breadcrumbs
+                    crumbs={[
+                        { label: "Admin" },
+                        { label: "Form Submission Status" },
+                    ]}
+                />
+            }
+            actions={<LiveIndicator live={live} />}
+        >
 
-                <main className="w-full p-6 bg-gray-50">
+                <main className="w-full p-4 sm:p-6">
                     <div className="max-w-7xl mx-auto space-y-6">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-md">
-                            <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0">
-                                    <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                                        <FileText className="w-7 h-7" />
-                                    </div>
-                                </div>
-                                <div className="flex-1">
-                                    <h1 className="text-2xl font-bold text-blue-900 mb-2">Form Submission Status</h1>
-                                    {activeTyphoon ? (
-                                        <p className="text-blue-700">
-                                            Monitoring form submissions for <span className="font-semibold text-blue-800">{activeTyphoon.name}</span>
-                                        </p>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-amber-800 bg-amber-100 px-3 py-2 rounded-lg inline-flex border border-amber-200">
-                                            <AlertCircle className="w-5 h-5" />
-                                            <span className="font-medium">No active disaster - showing all users</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Search Bar */}
-                        {users.length > 0 && (
-                            <div className="flex items-center gap-3">
-                                <div className="relative flex-1 max-w-md">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                    <Input
-                                        type="text"
-                                        placeholder="Search by name, email, or assigned forms..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 pr-4 py-2 w-full"
+                        <DataPanel
+                            icon={FileText}
+                            title="Form submissions"
+                            count={users.length > 0 ? filteredUsers.length : undefined}
+                            description={
+                                activeTyphoon ? (
+                                    <>
+                                        Monitoring form submissions for{' '}
+                                        <span className="font-semibold text-foreground">{activeTyphoon.name}</span>
+                                    </>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 font-medium text-warning">
+                                        <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                        No active disaster - showing all users
+                                    </span>
+                                )
+                            }
+                        >
+                            {users.length > 0 ? (
+                                <>
+                                    <DataToolbar
+                                        search={{
+                                            id: 'submission-search',
+                                            value: searchQuery,
+                                            onChange: setSearchQuery,
+                                            placeholder: 'Search name, email or assigned form',
+                                        }}
+                                        filters={
+                                            <FilterSelect
+                                                id="submission-status"
+                                                label="Status"
+                                                value={statusFilter}
+                                                onChange={setStatusFilter}
+                                                options={[
+                                                    { value: 'submitted', label: 'Submitted' },
+                                                    { value: 'pending', label: 'Not yet submitted' },
+                                                ]}
+                                            />
+                                        }
+                                        chips={chips}
+                                        onClearAll={clearFilters}
                                     />
-                                </div>
-                                {searchQuery && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setSearchQuery('')}
-                                        className="whitespace-nowrap"
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
-                            </div>
-                        )}
 
-                        {/* Users Table */}
-                        {users.length > 0 ? (
-                            <>
-                                <Card className="border-2 border-blue-200 shadow-md rounded-xl overflow-hidden">
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="bg-blue-50 border-b border-blue-200">
-                                                    <TableHead className="w-12 font-semibold text-blue-900">#</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900">Name</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900">Email</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900">Status</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900">Assigned Forms</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900">Last Submission</TableHead>
-                                                    <TableHead className="font-semibold text-blue-900 text-center">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {paginationData.paginatedUsers.length > 0 ? (
-                                                    paginationData.paginatedUsers.map((user, index) => (
-                                                        <TableRow key={user.id} className="hover:bg-blue-50 border-b border-blue-100">
-                                                            <TableCell className="font-medium text-gray-500">
+                                    {paginationData.paginatedUsers.length > 0 ? (
+                                        <>
+                                            <Table stacked>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-12 text-right">
+                                                            <span aria-hidden="true">#</span>
+                                                            <span className="sr-only">Row</span>
+                                                        </TableHead>
+                                                        <SortableHead sortKey="name" sort={sort} onSort={toggleSort}>Name</SortableHead>
+                                                        <SortableHead sortKey="email" sort={sort} onSort={toggleSort}>Email</SortableHead>
+                                                        <SortableHead sortKey="status" sort={sort} onSort={toggleSort}>Status</SortableHead>
+                                                        <TableHead>Assigned forms</TableHead>
+                                                        <SortableHead sortKey="last" sort={sort} onSort={toggleSort}>Last submission</SortableHead>
+                                                        <TableHead className="text-right">
+                                                            <span className="sr-only">Actions</span>
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {paginationData.paginatedUsers.map((user, index) => (
+                                                        <TableRow key={user.id}>
+                                                            <TableCell className="text-right tabular-nums text-muted-foreground max-md:!hidden">
                                                                 {paginationData.startIndex + index + 1}
                                                             </TableCell>
-                                                            <TableCell className="font-medium">
+                                                            <TableCell className="font-medium text-foreground">
                                                                 {user.name}
                                                             </TableCell>
-                                                            <TableCell className="text-gray-600">
+                                                            <TableCell label="Email" className="text-muted-foreground">
                                                                 {user.email}
                                                             </TableCell>
-                                                            <TableCell>
+                                                            <TableCell label="Status">
                                                                 {getStatusBadge(user.has_submitted)}
                                                             </TableCell>
-                                                            <TableCell>
+                                                            <TableCell label="Assigned forms">
                                                                 {renderAssignedForms(user)}
                                                             </TableCell>
-                                                            <TableCell>
+                                                            <TableCell label="Last submission" className="whitespace-nowrap tabular-nums">
                                                                 {user.last_submission ? (
-                                                                    <span className="text-sm text-gray-600">
+                                                                    <span className="text-muted-foreground">
                                                                         {new Date(user.last_submission).toLocaleString('en-US', {
                                                                             month: 'short',
                                                                             day: 'numeric',
@@ -415,68 +422,62 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                         })}
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-sm text-gray-400 italic">No submissions yet</span>
+                                                                    <span className="italic text-muted-foreground">No submissions yet</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="text-center">
+                                                            <TableCell className="text-right">
                                                                 {user.has_submitted ? (
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
                                                                         onClick={() => handleViewDetails(user)}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 font-medium"
+                                                                        className="h-11 gap-1 font-medium text-primary hover:bg-accent hover:text-primary md:h-8"
+                                                                        aria-label={`View submissions from ${user.name}`}
                                                                     >
-                                                                        <Eye className="w-4 h-4 mr-1" />
+                                                                        <Eye className="h-4 w-4" aria-hidden="true" />
                                                                         View
                                                                     </Button>
                                                                 ) : (
-                                                                    <span className="text-xs text-gray-400">-</span>
+                                                                    <span className="text-muted-foreground" aria-label="Nothing to view">-</span>
                                                                 )}
                                                             </TableCell>
                                                         </TableRow>
-                                                    ))
-                                                ) : (
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                                                            No users found matching "{searchQuery}"
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
 
-                                {/* Pagination */}
-                                <TablePagination
-                                    currentPage={currentPage}
-                                    totalPages={paginationData.totalPages}
-                                    totalItems={filteredUsers.length}
-                                    perPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onPerPageChange={(value) => {
-                                        setItemsPerPage(value);
-                                        setCurrentPage(1);
-                                    }}
-                                    className="mt-4 px-2"
+                                            <TablePagination
+                                                currentPage={currentPage}
+                                                totalPages={paginationData.totalPages}
+                                                totalItems={filteredUsers.length}
+                                                perPage={itemsPerPage}
+                                                onPageChange={setCurrentPage}
+                                                onPerPageChange={(value) => {
+                                                    setItemsPerPage(value);
+                                                    setCurrentPage(1);
+                                                }}
+                                                itemLabel="users"
+                                                className={PANEL_PAGINATION}
+                                            />
+                                        </>
+                                    ) : (
+                                        <EmptyState
+                                            title="No users match"
+                                            description="Try another search or clear the filters."
+                                            action={<Button variant="outline" onClick={clearFilters}>Clear filters</Button>}
+                                        />
+                                    )}
+                                </>
+                            ) : (
+                                <EmptyState
+                                    icon={AlertCircle}
+                                    title="No users found"
+                                    description="There are no users with form access permissions."
                                 />
-                            </>
-                        ) : (
-                            <Card>
-                                <CardContent className="py-16 text-center">
-                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <AlertCircle className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="font-medium text-gray-700 mb-1">No Users Found</h3>
-                                    <p className="text-sm text-gray-500">
-                                        There are no users with form access permissions
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
+                            )}
+                        </DataPanel>
                     </div>
                 </main>
-            </SidebarInset>
 
             {/* User Details Sheet */}
             <Sheet open={isModalOpen} onOpenChange={closeModal}>
@@ -591,6 +592,6 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                     </div>
                 </SheetContent>
             </Sheet>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

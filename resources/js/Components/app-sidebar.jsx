@@ -2,10 +2,7 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 
-import { RiMenuFold2Fill } from "react-icons/ri";
-
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import InstallAppSidebarButton from "@/Components/InstallAppSidebarButton";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -25,20 +22,17 @@ import {
     Flame,
     Users,
     HeartHandshake,
-    Download,
-    Calendar, // Import a calendar or year icon
+    Calendar,
     Cloud,
     History,
+    LayoutDashboard,
     UserCircle,
     Sprout,
     ClipboardCheck,
     Shield,
 } from "lucide-react";
-import { TbLayoutDashboard } from "react-icons/tb";
 
-// Static
 const staticTeams = [{ name: "SitReps", logo: "/images/ilagan.jpeg" }];
-const staticProjects = [];
 
 export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
@@ -104,8 +98,9 @@ export function AppSidebar({ ...props }) {
         url: route("reports.view", { year: year }),
         roles: ["user", "admin"],
         icon: Calendar,
-        isCustom: customYears.includes(year),
-        onRemove: () => removeYear(year),
+        // Opens the PDF view in a new tab.
+        external: true,
+        onRemove: customYears.includes(year) ? () => removeYear(year) : undefined,
     }));
 
     // Helper function to check if user has permission
@@ -214,57 +209,62 @@ export function AppSidebar({ ...props }) {
         [isCAO, ["agriculture"]],
     ].flatMap(([applies, keys]) => (applies ? keys : [])))];
 
-    const navMain = [
+    // Each group's items are filtered by role and permission below; empty groups drop out.
+    const navGroups = [
         {
-            title: "Main Menu",
-            url: "#",
-            icon: RiMenuFold2Fill,
-            isActive: route().current("situation-reports.*"),
-            roles: ["user", "admin"],
+            label: "Overview",
             items: [
                 {
                     title: "Dashboard",
                     url: route("admin.dashboard"),
+                    // The casualty drill-downs are opened from the dashboard.
+                    alsoActiveOn: [
+                        route("admin.casualties.submissions"),
+                        route("admin.injured.submissions"),
+                        route("admin.missing.submissions"),
+                    ],
                     roles: ["admin"],
-                    icon: TbLayoutDashboard,
-                    permission: null,
+                    icon: LayoutDashboard,
                 },
+            ],
+        },
+        {
+            label: "Administration",
+            items: [
                 {
                     title: "Disaster Management",
                     url: route("disasters.index"),
                     roles: ["admin"],
                     icon: Cloud,
-                    permission: null,
-                    badge: true,
                 },
                 {
                     title: "Form Submission Status",
                     url: route("admin.form-submission-status"),
                     roles: ["admin"],
                     icon: ClipboardCheck,
-                    permission: null,
                 },
                 {
                     title: "User Management",
                     url: route("admin.users.index"),
                     roles: ["admin"],
                     icon: UserCircle,
-                    permission: null,
-                    badge: true, // Add indicator badge
                 },
                 {
                     title: "Audit Logs",
                     url: route("admin.audit-logs"),
                     roles: ["admin"],
                     icon: Shield,
-                    permission: null,
                 },
+            ],
+        },
+        {
+            label: "Reports",
+            items: [
                 ...(!isAdmin ? [{
                     title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP || isBarangay) ? "Reports" : "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
-                    permission: null, // Will be checked separately
                     requiresAnyPermission: true,
                 }] : []),
                 ...(isElectricityOnly ? [{
@@ -327,86 +327,49 @@ export function AppSidebar({ ...props }) {
         },
         // Report History: the histories of the forms the user's office files.
         ...(historyKeys.length > 0 ? [{
-            title: "Report History",
-            url: "#",
-            icon: History,
-            roles: ["user", "admin"],
+            label: "Report History",
+            collapsible: true,
             items: historyMenuItems(historyKeys),
         }] : []),
         /*
-         * Annual Reports menu (temporarily disabled).
-         * Re-enable this block when annual reports are needed again.
-         {
-             title: "Annual Reports", // Changed title for clarity
-             url: "#",
-             icon: Download, // The main icon for the group
-             isActive: route().current("reports.*"),
-             roles: ["user", "admin"],
-             items: reportItems, // Assign the dynamically generated year links here
-             addYear: addYear, // Pass the addYear function
-         },
+         * Annual Reports (temporarily disabled). Re-enable by restoring this group:
+         * { label: "Annual Reports", collapsible: true, items: reportItems, addYear },
          */
     ];
 
-    // --- Filter menus & submenus based on roles AND permissions ---
-    const filteredNavMain = navMain
-        .filter((item) => item.roles?.some((r) => userRoles.includes(r)))
-        .map((item) => ({
-            ...item,
-            items: item.items?.filter((sub) => {
-                // Check role first
-                if (!sub.roles?.some((r) => userRoles.includes(r))) {
-                    return false;
-                }
-                
-                // If admin, show everything
-                if (isAdmin) {
-                    return true;
-                }
-                
-                // Special case for Situation Overview - show if user has ANY form permission
-                if (sub.requiresAnyPermission) {
-                    return hasSituationOverviewAccess;
-                }
-                
-                // If no permission specified, show it (for items that don't need permission check)
-                if (!sub.permission) {
-                    return true;
-                }
-                
-                // Check if user has the required permission
-                return hasPermission(sub.permission);
-            }),
-        }))
-        .filter((item) => item.items && item.items.length > 0); // Remove empty groups
+    const canSee = (item) => {
+        if (!item.roles?.some((r) => userRoles.includes(r))) return false;
+        if (isAdmin) return true;
+        // Situation Overview shows for any of the situation forms.
+        if (item.requiresAnyPermission) return hasSituationOverviewAccess;
+        return !item.permission || hasPermission(item.permission);
+    };
 
-    const data = {
-        teams: staticTeams,
-        projects: staticProjects,
-        navMain: filteredNavMain,
-        user: {
-            name: auth.user.name,
-            email: auth.user.email,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                auth.user.name
-            )}&background=random&color=fff`,
-        },
+    const visibleGroups = navGroups
+        .map((group) => ({ ...group, items: group.items.filter(canSee) }))
+        .filter((group) => group.items.length > 0);
+
+    const user = {
+        name: auth.user.name,
+        email: auth.user.email,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            auth.user.name
+        )}&background=2563eb&color=fff`,
     };
 
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="bg-blue-600 text-white border-b border-blue-400">
-                <TeamSwitcher teams={data.teams} />
+            <SidebarHeader className="border-b border-sidebar-border">
+                <TeamSwitcher teams={staticTeams} />
             </SidebarHeader>
 
-            <SidebarContent className="bg-blue-600 text-white">
-                <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
+            <SidebarContent className="gap-1 py-2">
+                <NavMain groups={visibleGroups} />
             </SidebarContent>
 
-            <SidebarFooter className="bg-blue-600 text-white border-t border-blue-500">
+            <SidebarFooter className="border-t border-sidebar-border">
                 <InstallAppSidebarButton />
-                <NavUser user={data.user} />
+                <NavUser user={user} />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

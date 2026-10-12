@@ -11,7 +11,7 @@ export default function InstallAppSidebarButton() {
     return (
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton onClick={install} tooltip="Download app" className="text-white hover:bg-white/10 hover:text-white">
+                <SidebarMenuButton onClick={install} tooltip="Download app" className="text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground">
                     <Download aria-hidden="true" />
                     <span>Download app</span>
                 </SidebarMenuButton>

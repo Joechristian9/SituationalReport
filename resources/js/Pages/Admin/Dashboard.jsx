@@ -1,17 +1,12 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
-import { AppSidebar } from "@/Components/app-sidebar";
-import {
-    SidebarInset,
-    SidebarProvider,
-    SidebarTrigger,
-} from "@/Components/ui/sidebar";
-import { Head, router, usePage } from "@inertiajs/react";
+import AppLayout from "@/Layouts/AppLayout";
+import PageTitle from "@/Components/PageTitle";
+import { router, usePage } from "@inertiajs/react";
 import useLiveRefresh from "@/hooks/useLiveRefresh";
 import LiveIndicator from "@/Components/LiveIndicator";
 import LiveImpactFeed from "@/Components/LiveImpactFeed";
 import useNewImpactReports from "@/hooks/useNewImpactReports";
 import { Toaster } from "sonner";
-import { Separator } from "@/Components/ui/separator";
 import { m as motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Users, Sun, CloudSun, Radio } from "lucide-react";
 import { SkeletonChart } from "@/Components/ui/skeleton";
@@ -125,43 +120,30 @@ export default function Dashboard({
 
     return (
         <MotionConfig reducedMotion="user">
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title="Dashboard" />
-            <SidebarInset>
+        <AppLayout
+            title="Dashboard"
+            header={
+                // Phones get a short title; the greeting was always cut to "Welcome, Ad…".
+                <PageTitle subtitle="Glad to have you back! Here’s what’s happening right now.">
+                    <span className="sm:hidden">Dashboard</span>
+                    <span className="hidden sm:inline">Welcome, {auth.user.name}!</span>
+                </PageTitle>
+            }
+            actions={
+                <>
+                    <ActiveTyphoonHeader
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
+                    <NoActiveTyphoonBadge
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
+                    <LiveIndicator live={live} />
+                </>
+            }
+        >
                 <Toaster position="top-right" richColors />
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2 shrink-0" />
-                        <Separator
-                            orientation="vertical"
-                            className="mx-1 h-6 shrink-0 sm:mx-2"
-                        />
-                        <div className="min-w-0">
-                            {/* Phones get a short title; the greeting was always cut to "Welcome, Ad…". */}
-                            <h1 className="truncate text-base font-semibold text-blue-700 sm:text-xl">
-                                <span className="sm:hidden">Dashboard</span>
-                                <span className="hidden sm:inline">Welcome, {auth.user.name}!</span>
-                            </h1>
-                            <p className="hidden truncate text-xs text-gray-500 sm:block">
-                                Glad to have you back! Here’s what’s happening
-                                right now.
-                            </p>
-                        </div>
-                    </div>
-                    {/* Status on the right, together; the title truncates first on narrow screens. */}
-                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                        <ActiveTyphoonHeader
-                            typhoon={typhoon?.active}
-                            hasActive={typhoon?.hasActive}
-                        />
-                        <NoActiveTyphoonBadge
-                            typhoon={typhoon?.active}
-                            hasActive={typhoon?.hasActive}
-                        />
-                        <LiveIndicator live={live} />
-                    </div>
-                </header>
 
                 <main className="w-full p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
                     <DisasterContextBar disaster={typhoon?.active} updatedAt={impactSummary?.generatedAt} />
@@ -278,8 +260,7 @@ export default function Dashboard({
                         </motion.div>
                     </AnimatePresence>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
         </MotionConfig>
     );
 }

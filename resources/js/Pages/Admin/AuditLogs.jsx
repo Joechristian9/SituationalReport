@@ -1,16 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import { format, isToday, isYesterday } from 'date-fns';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/Components/ui/sidebar';
-import { AppSidebar } from '@/Components/app-sidebar';
-import { Separator } from '@/Components/ui/separator';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
+import AppLayout from '@/Layouts/AppLayout';
+import PageTitle from '@/Components/PageTitle';
 import { Button } from '@/Components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
 import TablePagination, { laravelPagination } from '@/Components/ui/TablePagination';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    TableSkeletonRows,
+} from '@/Components/ui/table';
+import {
+    DataPanel,
+    DataToolbar,
+    EmptyState,
+    FilterDate,
+    FilterSelect,
+    PANEL_PAGINATION,
+    useDelayedFlag,
+} from '@/Components/data/DataView';
 import { toast, Toaster } from 'sonner';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import LiveIndicator from '@/Components/LiveIndicator';
@@ -24,14 +38,11 @@ import {
     LogIn,
     LogOut,
     Plus,
-    Search,
-    SearchX,
     Shield,
     ShieldAlert,
     ShieldCheck,
     Trash2,
     UserCheck,
-    X,
 } from 'lucide-react';
 import { SkeletonList } from '@/Components/ui/skeleton';
 
@@ -51,13 +62,12 @@ const FALLBACK_ACTION = { icon: Activity, verb: null, tone: 'bg-gray-100 text-gr
 const actionStyle = (action) => ACTIONS[action] || FALLBACK_ACTION;
 const RECORD_ACTIONS = ['created', 'updated', 'deleted'];
 
-const dayHeading = (iso) => {
+const dateOf = (iso) => {
     const d = new Date(iso);
     if (isToday(d)) return 'Today';
     if (isYesterday(d)) return 'Yesterday';
-    return format(d, 'EEEE, MMM d, yyyy');
+    return format(d, 'MMM d, yyyy');
 };
-const dayKey = (iso) => format(new Date(iso), 'yyyy-MM-dd');
 const timeOf = (iso) => format(new Date(iso), 'h:mm a');
 
 const isSystem = (log) => !log.user?.id;
@@ -124,42 +134,6 @@ function SummaryTile({ label, value, icon: Icon, tone, warn }) {
     );
 }
 
-function FilterChip({ label, onRemove }) {
-    return (
-        <span className="inline-flex items-center gap-1 rounded-full border bg-gray-50 py-0.5 pl-2.5 pr-1 text-sm text-gray-700">
-            {label}
-            <button
-                type="button"
-                onClick={onRemove}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                aria-label={`Remove filter: ${label}`}
-            >
-                <X className="h-3.5 w-3.5" />
-            </button>
-        </span>
-    );
-}
-
-function FilterSelect({ id, label, value, onChange, allLabel, options }) {
-    return (
-        <div className="min-w-0">
-            <Label htmlFor={id} className="text-sm text-gray-600">{label}</Label>
-            <Select value={value} onValueChange={onChange}>
-                <SelectTrigger id={id} className="mt-1">
-                    <SelectValue placeholder={allLabel} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">{allLabel}</SelectItem>
-                    {options.map((o) => (
-                        <SelectItem key={o.value} value={String(o.value)}>
-                            {o.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
-    );
-}
 
 function EmptyValue() {
     return <span className="italic text-gray-500">empty</span>;
@@ -254,12 +228,17 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
     const clean = (params) =>
         Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined));
 
+    const [loading, setLoading] = useState(false);
+    const showSkeleton = useDelayedFlag(loading);
+    const visitOptions = { onStart: () => setLoading(true), onFinish: () => setLoading(false) };
+
     // Filters apply as soon as they change.
     const applyFilters = (overrides) => {
         router.get(route('admin.audit-logs'), clean({ ...currentParams(), ...overrides }), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            ...visitOptions,
         });
     };
 
@@ -279,36 +258,26 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
 
     const labelFor = (list, value, key = 'value', labelKey = 'label') =>
         list.find((o) => String(o[key]) === String(value))?.[labelKey] || value;
+    const dayLabel = (value) => format(new Date(`${value}T00:00`), 'MMM d, yyyy');
 
     const chips = [
-        filters.search && { label: `“${filters.search}”`, clear: () => { setSearchQuery(''); applyFilters({ search: '' }); } },
-        filters.action && { label: labelFor(filterOptions.actions, filters.action), clear: () => applyFilters({ action: '' }) },
-        filters.user_id && { label: `By ${labelFor(filterOptions.users, filters.user_id, 'id', 'name')}`, clear: () => applyFilters({ user_id: '' }) },
-        filters.module && { label: labelFor(filterOptions.modules, filters.module), clear: () => applyFilters({ module: '' }) },
-        filters.disaster_id && { label: labelFor(filterOptions.disasters, filters.disaster_id, 'id', 'name'), clear: () => applyFilters({ disaster_id: '' }) },
-        filters.start_date && { label: `From ${format(new Date(filters.start_date + 'T00:00'), 'MMM d, yyyy')}`, clear: () => applyFilters({ start_date: '' }) },
-        filters.end_date && { label: `To ${format(new Date(filters.end_date + 'T00:00'), 'MMM d, yyyy')}`, clear: () => applyFilters({ end_date: '' }) },
+        filters.action && { key: 'action', label: `Action: ${labelFor(filterOptions.actions, filters.action)}`, onRemove: () => applyFilters({ action: '' }) },
+        filters.user_id && { key: 'user', label: `Account: ${labelFor(filterOptions.users, filters.user_id, 'id', 'name')}`, onRemove: () => applyFilters({ user_id: '' }) },
+        filters.module && { key: 'module', label: `Report type: ${labelFor(filterOptions.modules, filters.module)}`, onRemove: () => applyFilters({ module: '' }) },
+        filters.disaster_id && { key: 'disaster', label: `Disaster: ${labelFor(filterOptions.disasters, filters.disaster_id, 'id', 'name')}`, onRemove: () => applyFilters({ disaster_id: '' }) },
+        filters.start_date && { key: 'from', label: `From: ${dayLabel(filters.start_date)}`, onRemove: () => applyFilters({ start_date: '' }) },
+        filters.end_date && { key: 'to', label: `To: ${dayLabel(filters.end_date)}`, onRemove: () => applyFilters({ end_date: '' }) },
     ].filter(Boolean);
+    const activeFilterCount = chips.length;
 
     const clearAll = () => {
         setSearchQuery('');
-        router.get(route('admin.audit-logs'), clean({ per_page: perPage === 20 ? '' : perPage }), { preserveScroll: true, replace: true });
-    };
-
-    // Group the page's entries by day.
-    const groups = useMemo(() => {
-        const out = [];
-        logs.data.forEach((log) => {
-            const key = log.created_at_iso ? dayKey(log.created_at_iso) : 'unknown';
-            let group = out[out.length - 1];
-            if (!group || group.key !== key) {
-                group = { key, heading: log.created_at_iso ? dayHeading(log.created_at_iso) : 'Unknown date', items: [] };
-                out.push(group);
-            }
-            group.items.push(log);
+        router.get(route('admin.audit-logs'), clean({ per_page: perPage === 20 ? '' : perPage }), {
+            preserveScroll: true,
+            replace: true,
+            ...visitOptions,
         });
-        return out;
-    }, [logs.data]);
+    };
 
     const openDetails = async (log) => {
         setSelected(log);
@@ -326,37 +295,15 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
     };
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title="Audit Logs" />
-            <SidebarInset>
+        <AppLayout
+            title="Audit Logs"
+            header={<PageTitle icon={Shield}>Audit Logs</PageTitle>}
+            actions={<LiveIndicator live={live} />}
+        >
                 <Toaster position="top-right" richColors />
-                <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-white/80 px-4 backdrop-blur-sm sm:px-6">
-                    <SidebarTrigger className="-ml-2" />
-                    <Separator orientation="vertical" className="mx-2 h-6" />
-                    <Shield className="h-5 w-5 text-blue-600" />
-                    <h1 className="text-lg font-semibold text-blue-700 sm:text-xl">Audit Logs</h1>
-                    <LiveIndicator live={live} className="ml-auto" />
-                </header>
 
-                <div className="flex-1 overflow-auto bg-gray-50/60 p-4 sm:p-6">
+                <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-5">
-                        {/* Title */}
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <div>
-                                <h2 className="text-3xl font-bold text-gray-900">Activity</h2>
-                                <p className="mt-1 text-base text-gray-600">
-                                    Every sign-in and every report added, changed or removed, with who did it and when.
-                                </p>
-                            </div>
-                            <Button asChild variant="outline" className="self-start sm:self-auto">
-                                <a href={exportUrl}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Export CSV
-                                </a>
-                            </Button>
-                        </div>
-
                         {/* Today */}
                         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             <SummaryTile label="Events today" value={stats.events} icon={Activity} tone="bg-blue-50 text-blue-600" />
@@ -371,185 +318,188 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                             />
                         </div>
 
-                        {/* Filters */}
-                        <div className="rounded-lg border bg-white p-4">
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <div className="sm:col-span-2">
-                                    <Label htmlFor="log-search" className="text-sm text-gray-600">Search</Label>
-                                    <div className="relative mt-1">
-                                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                        <Input
-                                            id="log-search"
-                                            type="search"
-                                            placeholder="Name, email, IP address or note"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9"
+                        <DataPanel
+                            icon={Activity}
+                            title="Activity"
+                            count={logs.total}
+                            description="Every sign-in and every report added, changed or removed, with who did it and when."
+                            actions={
+                                <Button asChild variant="outline" className="h-11 gap-2 bg-card shadow-sm md:h-9">
+                                    <a href={exportUrl}>
+                                        <Download className="h-4 w-4" aria-hidden="true" />
+                                        Export CSV
+                                    </a>
+                                </Button>
+                            }
+                        >
+                            <DataToolbar
+                                search={{
+                                    id: 'log-search',
+                                    value: searchQuery,
+                                    onChange: setSearchQuery,
+                                    placeholder: 'Name, email, IP address or note',
+                                }}
+                                filters={
+                                    <>
+                                        <FilterSelect
+                                            id="log-action"
+                                            label="Action"
+                                            value={filters.action || 'all'}
+                                            onChange={(v) => applyFilters({ action: v === 'all' ? '' : v })}
+                                            allLabel="All actions"
+                                            options={filterOptions.actions}
                                         />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="log-from" className="text-sm text-gray-600">From</Label>
-                                    <Input
-                                        id="log-from"
-                                        type="date"
-                                        value={filters.start_date || ''}
-                                        max={filters.end_date || undefined}
-                                        onChange={(e) => applyFilters({ start_date: e.target.value })}
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="log-to" className="text-sm text-gray-600">To</Label>
-                                    <Input
-                                        id="log-to"
-                                        type="date"
-                                        value={filters.end_date || ''}
-                                        min={filters.start_date || undefined}
-                                        onChange={(e) => applyFilters({ end_date: e.target.value })}
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <FilterSelect
-                                    id="log-action"
-                                    label="Action"
-                                    value={filters.action || 'all'}
-                                    onChange={(v) => applyFilters({ action: v === 'all' ? '' : v })}
-                                    allLabel="All actions"
-                                    options={filterOptions.actions}
-                                />
-                                <FilterSelect
-                                    id="log-user"
-                                    label="Account"
-                                    value={filters.user_id ? String(filters.user_id) : 'all'}
-                                    onChange={(v) => applyFilters({ user_id: v === 'all' ? '' : v })}
-                                    allLabel="All accounts"
-                                    options={filterOptions.users.map((u) => ({ value: u.id, label: u.name }))}
-                                />
-                                <FilterSelect
-                                    id="log-module"
-                                    label="Report type"
-                                    value={filters.module || 'all'}
-                                    onChange={(v) => applyFilters({ module: v === 'all' ? '' : v })}
-                                    allLabel="All report types"
-                                    options={filterOptions.modules}
-                                />
-                                <FilterSelect
-                                    id="log-disaster"
-                                    label="Disaster"
-                                    value={filters.disaster_id ? String(filters.disaster_id) : 'all'}
-                                    onChange={(v) => applyFilters({ disaster_id: v === 'all' ? '' : v })}
-                                    allLabel="All disasters"
-                                    options={filterOptions.disasters.map((d) => ({ value: d.id, label: d.name }))}
-                                />
-                            </div>
+                                        <FilterSelect
+                                            id="log-user"
+                                            label="Account"
+                                            value={filters.user_id ? String(filters.user_id) : 'all'}
+                                            onChange={(v) => applyFilters({ user_id: v === 'all' ? '' : v })}
+                                            allLabel="All accounts"
+                                            options={filterOptions.users.map((u) => ({ value: u.id, label: u.name }))}
+                                        />
+                                        <FilterSelect
+                                            id="log-module"
+                                            label="Report type"
+                                            value={filters.module || 'all'}
+                                            onChange={(v) => applyFilters({ module: v === 'all' ? '' : v })}
+                                            allLabel="All report types"
+                                            options={filterOptions.modules}
+                                        />
+                                        <FilterSelect
+                                            id="log-disaster"
+                                            label="Disaster"
+                                            value={filters.disaster_id ? String(filters.disaster_id) : 'all'}
+                                            onChange={(v) => applyFilters({ disaster_id: v === 'all' ? '' : v })}
+                                            allLabel="All disasters"
+                                            options={filterOptions.disasters.map((d) => ({ value: d.id, label: d.name }))}
+                                        />
+                                        <FilterDate
+                                            id="log-from"
+                                            label="From"
+                                            value={filters.start_date || ''}
+                                            max={filters.end_date || undefined}
+                                            onChange={(value) => applyFilters({ start_date: value })}
+                                        />
+                                        <FilterDate
+                                            id="log-to"
+                                            label="To"
+                                            value={filters.end_date || ''}
+                                            min={filters.start_date || undefined}
+                                            onChange={(value) => applyFilters({ end_date: value })}
+                                        />
+                                    </>
+                                }
+                                chips={chips}
+                                onClearAll={clearAll}
+                            />
 
-                            {chips.length > 0 && (
-                                <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
-                                    <span className="text-sm text-gray-500">Filtered by</span>
-                                    {chips.map((chip) => (
-                                        <FilterChip key={chip.label} label={chip.label} onRemove={chip.clear} />
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={clearAll}
-                                        className="ml-1 text-sm font-medium text-gray-600 hover:text-gray-900 hover:underline"
-                                    >
-                                        Clear all
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Feed */}
-                        <section className="overflow-hidden rounded-lg border bg-white">
-                            <div className="flex items-center justify-between border-b px-4 py-3">
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    Entries
-                                    <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-sm font-semibold tabular-nums text-blue-700">
-                                        {logs.total}
-                                    </span>
-                                </h3>
-                                {logs.data.length > 0 && (
-                                    <p className="hidden text-sm text-gray-500 sm:block">Select an entry to see exactly what changed</p>
-                                )}
-                            </div>
-
-                            {groups.length === 0 ? (
-                                <div className="flex flex-col items-center px-4 py-14 text-center">
-                                    <SearchX className="mb-3 h-10 w-10 text-gray-300" />
-                                    <p className="text-base font-medium text-gray-900">No activity matches these filters</p>
-                                    <p className="mt-1 text-sm text-gray-500">Try a wider date range or remove a filter.</p>
-                                    {chips.length > 0 && (
-                                        <Button variant="outline" size="sm" className="mt-4" onClick={clearAll}>
-                                            Clear filters
-                                        </Button>
-                                    )}
-                                </div>
+                            {logs.data.length === 0 && !showSkeleton ? (
+                                <EmptyState
+                                    title="No activity matches these filters"
+                                    description="Try a wider date range or remove a filter."
+                                    action={
+                                        (filters.search || activeFilterCount > 0) && (
+                                            <Button variant="outline" onClick={clearAll}>
+                                                Clear filters
+                                            </Button>
+                                        )
+                                    }
+                                />
                             ) : (
-                                groups.map((group) => (
-                                    <div key={group.key}>
-                                        <h4 className="border-b bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600">
-                                            {group.heading}
-                                        </h4>
-                                        <ul className="divide-y">
-                                            {group.items.map((log) => (
-                                                <li key={log.id}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openDetails(log)}
-                                                        className="grid w-full grid-cols-[auto_1fr_auto] items-start gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 md:grid-cols-[5rem_auto_1fr_auto_auto] md:items-center"
-                                                    >
-                                                        <span className="hidden text-sm tabular-nums text-gray-500 md:block">
-                                                            {log.created_at_iso ? timeOf(log.created_at_iso) : ''}
-                                                        </span>
-                                                        <ActionIcon action={log.action} />
-                                                        <span className="min-w-0">
-                                                            <span className="block text-base text-gray-700">
-                                                                <Sentence log={log} />
-                                                                {log.action === 'updated' && log.changes_count > 0 && (
-                                                                    <span className="text-gray-500">
-                                                                        {' '}· {log.changes_count} field{log.changes_count === 1 ? '' : 's'}
-                                                                    </span>
-                                                                )}
-                                                            </span>
-                                                            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-500">
-                                                                <span className="md:hidden tabular-nums">
-                                                                    {log.created_at_iso ? timeOf(log.created_at_iso) : ''}
-                                                                </span>
-                                                                {!isSystem(log) && <span className="truncate">{log.user.email}</span>}
-                                                                {log.disaster?.name && (
-                                                                    <span className="truncate text-gray-600">· {log.disaster.name}</span>
-                                                                )}
-                                                                {!RECORD_ACTIONS.includes(log.action) && log.description && (
-                                                                    <span className="truncate">· {log.description}</span>
-                                                                )}
-                                                            </span>
-                                                        </span>
-                                                        <span className="hidden lg:block">
+                                <>
+                                    <Table stacked>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>When</TableHead>
+                                                <TableHead>Account</TableHead>
+                                                <TableHead>Action</TableHead>
+                                                <TableHead>Record</TableHead>
+                                                <TableHead className="hidden lg:table-cell">IP address</TableHead>
+                                                <TableHead className="text-right">
+                                                    <span className="sr-only">Details</span>
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody aria-busy={loading}>
+                                            {showSkeleton ? (
+                                                <TableSkeletonRows columns={6} rows={Math.min(logs.data.length || 8, 10)} />
+                                            ) : logs.data.map((log) => (
+                                                <TableRow
+                                                    key={log.id}
+                                                    onClick={() => openDetails(log)}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <TableCell label="When" className="whitespace-nowrap tabular-nums">
+                                                        {log.created_at_iso ? (
+                                                            <>
+                                                                <div className="text-foreground">{dateOf(log.created_at_iso)}</div>
+                                                                <div className="text-xs text-muted-foreground">{timeOf(log.created_at_iso)}</div>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">Unknown</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell label="Account">
+                                                        <div className="font-medium text-foreground">{log.user?.name || 'System'}</div>
+                                                        {!isSystem(log) && (
+                                                            <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{log.user.email}</div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell label="Action">
+                                                        <div className="flex flex-wrap items-center gap-1.5">
                                                             <ActionChip log={log} />
-                                                        </span>
-                                                        <span className="hidden font-mono text-sm text-gray-500 md:block md:w-32 md:text-right">
-                                                            {log.ip_address}
-                                                        </span>
-                                                        <ChevronRight className="h-4 w-4 self-center text-gray-400 md:hidden" aria-hidden="true" />
-                                                    </button>
-                                                </li>
+                                                            {log.action === 'updated' && log.changes_count > 0 && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {log.changes_count} field{log.changes_count === 1 ? '' : 's'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell label="Record">
+                                                        <div className="text-foreground">
+                                                            {log.module}
+                                                            {log.auditable_id ? <span className="text-muted-foreground"> #{log.auditable_id}</span> : null}
+                                                        </div>
+                                                        {(log.disaster?.name || (!RECORD_ACTIONS.includes(log.action) && log.description)) && (
+                                                            <div className="max-w-[18rem] truncate text-xs text-muted-foreground">
+                                                                {log.disaster?.name || log.description}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell label="IP address" className="font-mono text-xs text-muted-foreground md:hidden lg:table-cell">
+                                                        {log.ip_address || '—'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openDetails(log);
+                                                            }}
+                                                            className="h-11 gap-1 text-primary hover:bg-accent hover:text-primary md:h-8"
+                                                            aria-label={`View entry: ${log.user?.name || 'System'} ${log.action_name}`}
+                                                        >
+                                                            View
+                                                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
                                             ))}
-                                        </ul>
-                                    </div>
-                                ))
-                            )}
+                                            {showSkeleton && <tr className="sr-only"><td>Loading entries…</td></tr>}
+                                        </TableBody>
+                                    </Table>
 
-                            {logs.data.length > 0 && (
-                                <TablePagination
-                                    {...laravelPagination(logs)}
-                                    onPerPageChange={(n) => applyFilters({ per_page: n === 20 ? '' : n, page: '' })}
-                                    itemLabel="entries"
-                                    className="border-t px-4 py-3"
-                                />
+                                    <TablePagination
+                                        {...laravelPagination(logs)}
+                                        onPerPageChange={(n) => applyFilters({ per_page: n === 20 ? '' : n, page: '' })}
+                                        itemLabel="entries"
+                                        className={PANEL_PAGINATION}
+                                    />
+                                </>
                             )}
-                        </section>
+                        </DataPanel>
                     </div>
                 </div>
 
@@ -583,7 +533,6 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                         )}
                     </SheetContent>
                 </Sheet>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

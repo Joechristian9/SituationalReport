@@ -1,18 +1,12 @@
 // resources/js/Pages/SituationReports/Index.jsx
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import { usePage, Head, useForm, router } from "@inertiajs/react";
+import { usePage, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonNotification from "@/Components/NoActiveDisasterNotification";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import FormPanel from "@/Components/forms/FormPanel";
 import { Button } from "@/components/ui/button";
@@ -673,83 +667,40 @@ export default function Index() {
         }
     };
 
+    const crumbs = [
+        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+        activeForm
+            ? { href: route("situation-reports.index"), label: "Situational Report" }
+            : { label: "Situational Report" },
+        ...(activeForm ? [{ label: activeForm }] : []),
+    ];
+
     return (
-        <SidebarProvider>
+        <AppLayout
+            title="Situational Report"
+            header={
+                // Phones: the page title already says where you are; leave the room to the disaster name.
+                <div className="hidden min-w-0 sm:block">
+                    <Breadcrumbs crumbs={crumbs} />
+                </div>
+            }
+            actions={
+                <>
+                    <NoActiveTyphoonNotification
+                        typhoon={typhoon?.active}
+                        hasActive={typhoon?.hasActive}
+                    />
+                    {typhoon?.hasActive &&
+                        typhoon?.active?.status === "active" && (
+                            <ActiveTyphoonHeader
+                                typhoon={typhoon?.active}
+                                hasActive={typhoon?.hasActive}
+                            />
+                        )}
+                </>
+            }
+        >
             <Toaster position="top-right" />
-            <AppSidebar />
-            <Head>
-                <title>Situational Report</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        {/* Phones: the page title already says where you are; leave the room to the disaster name. */}
-                        <Separator
-                            orientation="vertical"
-                            className="mx-2 hidden h-6 sm:block"
-                        />
-                        <div className="hidden min-w-0 sm:block">
-                        {(() => {
-                            const user = usePage().props.auth.user;
-                            const isAdmin = user.roles?.some(
-                                (r) => r.name?.toLowerCase() === "admin"
-                            );
-
-                            // Build breadcrumbs based on whether a form is selected
-                            const crumbs = isAdmin
-                                ? activeForm
-                                    ? [
-                                          {
-                                              href: route("admin.dashboard"),
-                                              label: "Dashboard",
-                                          },
-                                          {
-                                              href: route(
-                                                  "situation-reports.index"
-                                              ),
-                                              label: "Situational Report",
-                                          },
-                                          { label: activeForm },
-                                      ]
-                                    : [
-                                          {
-                                              href: route("admin.dashboard"),
-                                              label: "Dashboard",
-                                          },
-                                          { label: "Situational Report" },
-                                      ]
-                                : activeForm
-                                  ? [
-                                        {
-                                            href: route(
-                                                "situation-reports.index"
-                                            ),
-                                            label: "Situational Report",
-                                        },
-                                        { label: activeForm },
-                                    ]
-                                  : [{ label: "Situational Report" }];
-
-                            return <Breadcrumbs crumbs={crumbs} />;
-                        })()}
-                        </div>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-3">
-                        <NoActiveTyphoonNotification
-                            typhoon={typhoon?.active}
-                            hasActive={typhoon?.hasActive}
-                        />
-                        {typhoon?.hasActive &&
-                            typhoon?.active?.status === "active" && (
-                                <ActiveTyphoonHeader
-                                    typhoon={typhoon?.active}
-                                    hasActive={typhoon?.hasActive}
-                                />
-                            )}
-                    </div>
-                </header>
 
                 <main className="h-full w-full bg-background p-4 sm:p-6">
                     {/* Form selection */}
@@ -937,7 +888,6 @@ export default function Index() {
                         </div>
                     )}
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

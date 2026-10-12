@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
-import { AppSidebar } from '@/Components/app-sidebar';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/Components/ui/sidebar';
-import { Separator } from '@/Components/ui/separator';
+import { router, usePage } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import PageTitle from '@/Components/PageTitle';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,6 +14,15 @@ import {
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import TablePagination from '@/Components/ui/TablePagination';
+import { SortableHead, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
+import {
+    DataPanel,
+    DataToolbar,
+    EmptyState,
+    FilterSelect,
+    PANEL_PAGINATION,
+    useTableSort,
+} from '@/Components/data/DataView';
 import {
     AlertTriangle,
     Building2,
@@ -24,8 +31,6 @@ import {
     EyeOff,
     Home,
     MoreVertical,
-    Search,
-    SearchX,
     Shield,
     ShieldCheck,
     Trash2,
@@ -99,6 +104,13 @@ const TABS = [
     { key: 'barangays', label: 'Barangays', test: (u) => isBarangay(u) && !isAdmin(u) },
     { key: 'admins', label: 'Admins', test: (u) => isAdmin(u) },
 ];
+
+// Column sorts. Ids grow with creation, so "created" sorts by id (created_at arrives formatted).
+const USER_SORT = {
+    name: (u) => u.name.toLowerCase(),
+    type: (u) => (isAdmin(u) ? 'Admin' : isBarangay(u) ? 'Barangay' : 'Office'),
+    created: (u) => u.id,
+};
 
 const EMPTY_FORM = {
     name: '',
@@ -307,7 +319,6 @@ export default function UserManagement({ users, roles, permissions }) {
 
     const [tab, setTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('name-asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [noAccessOnly, setNoAccessOnly] = useState(false);
@@ -343,21 +354,37 @@ export default function UserManagement({ users, roles, permissions }) {
                     u.permissions.some((p) => permissionLabel(p).toLowerCase().includes(q))
             );
         }
-
-        // Server sends newest first, so "newest" keeps that order.
-        if (sortBy === 'name-asc') result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-        if (sortBy === 'name-desc') result = [...result].sort((a, b) => b.name.localeCompare(a.name));
         return result;
-    }, [users, tab, searchQuery, sortBy, noAccessOnly]);
+    }, [users, tab, searchQuery, noAccessOnly]);
 
-    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+    const { sorted: sortedUsers, sort, toggle: toggleSort } = useTableSort(filteredUsers, USER_SORT, {
+        key: 'name',
+        dir: 'asc',
+    });
+
+    const totalPages = Math.max(1, Math.ceil(sortedUsers.length / itemsPerPage));
     const page = Math.min(currentPage, totalPages);
     const startIndex = (page - 1) * itemsPerPage;
-    const pageUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+    const pageUsers = sortedUsers.slice(startIndex, startIndex + itemsPerPage);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, itemsPerPage, tab, sortBy, noAccessOnly]);
+    }, [searchQuery, itemsPerPage, tab, sort, noAccessOnly]);
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setTab('all');
+        setNoAccessOnly(false);
+    };
+
+    const chips = [
+        tab !== 'all' && {
+            key: 'type',
+            label: `Type: ${TABS.find((t) => t.key === tab)?.label}`,
+            onRemove: () => setTab('all'),
+        },
+        noAccessOnly && { key: 'access', label: 'Access: No forms assigned', onRemove: () => setNoAccessOnly(false) },
+    ].filter(Boolean);
 
     const setField = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -473,35 +500,14 @@ export default function UserManagement({ users, roles, permissions }) {
         ) : null;
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title="User Management" />
-            <SidebarInset>
+        <AppLayout
+            title="User Management"
+            header={<PageTitle icon={Users}>User Management</PageTitle>}
+        >
                 <Toaster position="top-right" richColors />
 
-                <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-white/80 px-4 backdrop-blur-sm sm:px-6">
-                    <SidebarTrigger className="-ml-2" />
-                    <Separator orientation="vertical" className="mx-2 h-6" />
-                    <Users className="h-5 w-5 text-blue-600" />
-                    <h1 className="text-lg font-semibold text-blue-700 sm:text-xl">User Management</h1>
-                </header>
-
-                <div className="flex-1 overflow-auto bg-gray-50/60 p-4 sm:p-6">
+                <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-5">
-                        {/* Title */}
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <div>
-                                <h2 className="text-3xl font-bold text-gray-900">Accounts</h2>
-                                <p className="mt-1 text-base text-gray-600">
-                                    Create accounts for offices and barangays and choose which report forms each one can fill in.
-                                </p>
-                            </div>
-                            <Button onClick={openCreate} className="self-start sm:self-auto">
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Add user
-                            </Button>
-                        </div>
-
                         {/* Summary */}
                         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             {[
@@ -544,148 +550,98 @@ export default function UserManagement({ users, roles, permissions }) {
                             </div>
                         )}
 
-                        {noAccessOnly && (
-                            <div className="flex items-center gap-2 text-base text-gray-600">
-                                Showing only accounts with no forms assigned.
-                                <button
-                                    type="button"
-                                    onClick={() => setNoAccessOnly(false)}
-                                    className="font-medium text-blue-700 hover:underline"
-                                >
-                                    Show everyone
-                                </button>
-                            </div>
-                        )}
-
-                        {/* List */}
-                        <section className="overflow-hidden rounded-lg border bg-white">
-                            {/* Toolbar */}
-                            <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center lg:justify-between">
-                                <nav className="flex overflow-x-auto rounded-lg bg-gray-100 p-1" aria-label="Account type">
-                                    {TABS.map((t) => (
-                                        <button
-                                            key={t.key}
-                                            type="button"
-                                            onClick={() => setTab(t.key)}
-                                            aria-pressed={tab === t.key}
-                                            className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-base font-medium transition-colors ${
-                                                tab === t.key
-                                                    ? 'bg-white text-gray-900 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-900'
-                                            }`}
-                                        >
-                                            {t.label}
-                                            <span
-                                                className={`rounded-full px-1.5 text-sm tabular-nums ${
-                                                    tab === t.key ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
-                                                }`}
-                                            >
-                                                {tabCounts[t.key]}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </nav>
-                                <div className="flex flex-col gap-2 sm:flex-row">
-                                    <div className="relative sm:w-72">
-                                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                        <Input
-                                            id="user-search"
-                                            type="search"
-                                            placeholder="Search name, email or form"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9"
+                        <DataPanel
+                            icon={Users}
+                            title="Accounts"
+                            count={filteredUsers.length}
+                            description="Create accounts for offices and barangays and choose which report forms each one can fill in."
+                            actions={
+                                <Button onClick={openCreate} className="h-11 gap-2 shadow-sm md:h-9">
+                                    <UserPlus className="h-4 w-4" aria-hidden="true" />
+                                    Add user
+                                </Button>
+                            }
+                        >
+                            <DataToolbar
+                                search={{
+                                    id: 'user-search',
+                                    value: searchQuery,
+                                    onChange: setSearchQuery,
+                                    placeholder: 'Search name, email or form',
+                                }}
+                                filters={
+                                    <>
+                                        <FilterSelect
+                                            id="user-type"
+                                            label="Type"
+                                            value={tab}
+                                            onChange={setTab}
+                                            allLabel={`All (${tabCounts.all})`}
+                                            options={TABS.filter((t) => t.key !== 'all').map((t) => ({
+                                                value: t.key,
+                                                label: `${t.label} (${tabCounts[t.key]})`,
+                                            }))}
                                         />
-                                    </div>
-                                    <Select value={sortBy} onValueChange={setSortBy}>
-                                        <SelectTrigger id="user-sort" className="sm:w-40" aria-label="Sort users">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="name-asc">Name A–Z</SelectItem>
-                                            <SelectItem value="name-desc">Name Z–A</SelectItem>
-                                            <SelectItem value="newest">Newest first</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                                        <FilterSelect
+                                            id="user-access"
+                                            label="Access"
+                                            value={noAccessOnly ? 'none' : 'all'}
+                                            onChange={(value) => setNoAccessOnly(value === 'none')}
+                                            allLabel="Any"
+                                            options={[{ value: 'none', label: 'No forms assigned' }]}
+                                        />
+                                    </>
+                                }
+                                chips={chips}
+                                onClearAll={clearFilters}
+                            />
 
                             {pageUsers.length > 0 ? (
                                 <>
-                                    {/* Table: md and up */}
-                                    <div className="hidden overflow-x-auto md:block">
-                                        <table className="w-full text-base">
-                                            <thead className="bg-gray-50 text-left text-sm uppercase tracking-wide text-gray-500">
-                                                <tr>
-                                                    <th className="px-4 py-2.5 font-medium">User</th>
-                                                    <th className="px-4 py-2.5 font-medium">Type</th>
-                                                    <th className="px-4 py-2.5 font-medium">Form access</th>
-                                                    <th className="px-4 py-2.5 font-medium">Created</th>
-                                                    <th className="px-4 py-2.5 text-right font-medium">
-                                                        <span className="sr-only">Actions</span>
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {pageUsers.map((user) => (
-                                                    <tr key={user.id} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar user={user} />
-                                                                <div className="min-w-0">
-                                                                    <p className="flex items-center gap-2 font-medium text-gray-900">
-                                                                        <span className="truncate">{user.name}</span>
-                                                                        <YouTag user={user} />
-                                                                    </p>
-                                                                    <p className="truncate text-sm text-gray-500">{user.email}</p>
-                                                                </div>
+                                    <Table stacked>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <SortableHead sortKey="name" sort={sort} onSort={toggleSort}>User</SortableHead>
+                                                <SortableHead sortKey="type" sort={sort} onSort={toggleSort}>Type</SortableHead>
+                                                <TableHead>Form access</TableHead>
+                                                <SortableHead sortKey="created" sort={sort} onSort={toggleSort}>Created</SortableHead>
+                                                <TableHead className="text-right">
+                                                    <span className="sr-only">Actions</span>
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {pageUsers.map((user) => (
+                                                <TableRow key={user.id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar user={user} />
+                                                            <div className="min-w-0">
+                                                                <p className="flex items-center gap-2 font-medium text-foreground">
+                                                                    <span className="truncate">{user.name}</span>
+                                                                    <YouTag user={user} />
+                                                                </p>
+                                                                <p className="truncate text-muted-foreground">{user.email}</p>
                                                             </div>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <RoleBadge user={user} />
-                                                        </td>
-                                                        <td className="max-w-md px-4 py-3">
-                                                            <AccessSummary user={user} />
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-600">
-                                                            {user.created_at}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <RowActions user={user} />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Cards: below md */}
-                                    <ul className="divide-y md:hidden">
-                                        {pageUsers.map((user) => (
-                                            <li key={user.id} className="flex gap-3 px-4 py-3">
-                                                <Avatar user={user} />
-                                                <div className="min-w-0 flex-1 space-y-1.5">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="min-w-0">
-                                                            <p className="flex items-center gap-2 font-medium text-gray-900">
-                                                                <span className="truncate">{user.name}</span>
-                                                                <YouTag user={user} />
-                                                            </p>
-                                                            <p className="truncate text-sm text-gray-500">{user.email}</p>
                                                         </div>
-                                                        <RowActions user={user} />
-                                                    </div>
-                                                    <div className="flex flex-wrap items-center gap-2">
+                                                    </TableCell>
+                                                    <TableCell label="Type">
                                                         <RoleBadge user={user} />
-                                                        <span className="text-sm text-gray-500">Created {user.created_at}</span>
-                                                    </div>
-                                                    <AccessSummary user={user} max={2} />
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                                    </TableCell>
+                                                    <TableCell label="Form access" className="max-w-md">
+                                                        <AccessSummary user={user} />
+                                                    </TableCell>
+                                                    <TableCell label="Created" className="whitespace-nowrap tabular-nums text-muted-foreground">
+                                                        {user.created_at}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <RowActions user={user} />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
 
-                                    {/* Footer */}
                                     <TablePagination
                                         currentPage={page}
                                         totalPages={totalPages}
@@ -694,34 +650,25 @@ export default function UserManagement({ users, roles, permissions }) {
                                         onPageChange={setCurrentPage}
                                         onPerPageChange={setItemsPerPage}
                                         itemLabel="accounts"
-                                        className="border-t px-4 py-3"
+                                        className={PANEL_PAGINATION}
                                     />
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center px-4 py-14 text-center">
-                                    <SearchX className="mb-3 h-10 w-10 text-gray-300" />
-                                    <p className="font-medium text-gray-900">No accounts match</p>
-                                    <p className="mt-1 text-base text-gray-500">Try another search or switch to the All tab.</p>
-                                    {(searchQuery || tab !== 'all' || noAccessOnly) && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="mt-4"
-                                            onClick={() => {
-                                                setSearchQuery('');
-                                                setTab('all');
-                                                setNoAccessOnly(false);
-                                            }}
-                                        >
-                                            Show all accounts
-                                        </Button>
-                                    )}
-                                </div>
+                                <EmptyState
+                                    title="No accounts match"
+                                    description="Try another search or clear the filters."
+                                    action={
+                                        (searchQuery || tab !== 'all' || noAccessOnly) && (
+                                            <Button variant="outline" onClick={clearFilters}>
+                                                Clear filters
+                                            </Button>
+                                        )
+                                    }
+                                />
                             )}
-                        </section>
+                        </DataPanel>
                     </div>
                 </div>
-            </SidebarInset>
 
             {/* Create / edit */}
             <Dialog open={formMode !== null} onOpenChange={(open) => !open && closeForm()}>
@@ -930,6 +877,6 @@ export default function UserManagement({ users, roles, permissions }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

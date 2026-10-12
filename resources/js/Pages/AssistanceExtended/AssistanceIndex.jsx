@@ -1,14 +1,8 @@
 import { useState, lazy, Suspense } from "react";
-import { Head, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -43,39 +37,23 @@ export default function AssistanceIndex() {
     const isAdmin = user.roles?.some((r) => r.name?.toLowerCase() === "admin");
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head>
-                <title>Assistance Records</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-
-            <SidebarInset>
-                {/* Header with Breadcrumbs */}
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-
-                        {isAdmin ? (
-                            <Breadcrumbs
-                                crumbs={[
-                                    {
-                                        href: route("admin.dashboard"),
-                                        label: "Dashboard",
-                                    },
-                                    { label: "Assistance" },
-                                ]}
-                            />
-                        ) : (
-                            <Breadcrumbs crumbs={[{ label: "Assistance" }]} />
-                        )}
-                    </div>
-                    <ActiveTyphoonHeader 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                </header>
+        <AppLayout
+            title="Assistance Records"
+            header={
+                <Breadcrumbs
+                    crumbs={[
+                        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+                        { label: "Assistance" },
+                    ]}
+                />
+            }
+            actions={
+                <ActiveTyphoonHeader
+                    typhoon={typhoon?.active}
+                    hasActive={typhoon?.hasActive}
+                />
+            }
+        >
 
                 {/* Main Content */}
                 <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
@@ -143,7 +121,6 @@ export default function AssistanceIndex() {
                         </CardContent>
                     </Card>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

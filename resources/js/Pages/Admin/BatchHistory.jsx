@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
+import AppLayout from '@/Layouts/AppLayout';
+import PageTitle from '@/Components/PageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, FileText, AlertCircle, Download, Search, Plus } from 'lucide-react';
@@ -172,20 +170,10 @@ export default function BatchHistory({ batches, availableYears }) {
     };
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title="Reports History" />
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <SidebarTrigger className="-ml-2" />
-                    <Separator orientation="vertical" className="h-6 mx-2" />
-                    <div className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-blue-600" />
-                        <h1 className="text-lg sm:text-xl font-semibold text-blue-700">
-                            Reports History
-                        </h1>
-                    </div>
-                </header>
+        <AppLayout
+            title="Reports History"
+            header={<PageTitle icon={Calendar}>Reports History</PageTitle>}
+        >
 
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-6">
@@ -424,7 +412,6 @@ export default function BatchHistory({ batches, availableYears }) {
 
                     </div>
                 </div>
-            </SidebarInset>
 
             {/* Add Year Modal */}
             <Dialog open={isAddYearModalOpen} onOpenChange={setIsAddYearModalOpen}>
@@ -476,6 +463,6 @@ export default function BatchHistory({ batches, availableYears }) {
             </Dialog>
 
             <Toaster position="top-right" richColors />
-        </SidebarProvider>
+        </AppLayout>
     );
 }

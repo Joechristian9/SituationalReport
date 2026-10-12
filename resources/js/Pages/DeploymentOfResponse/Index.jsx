@@ -1,16 +1,10 @@
 import { useEffect, lazy, Suspense } from "react";
 import FormPanel from "@/Components/forms/FormPanel";
-import { usePage, Head, useForm } from "@inertiajs/react";
+import { usePage, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Loader2 } from "lucide-react";
 
@@ -24,7 +18,8 @@ const FormLoader = () => (
 );
 
 export default function Index() {
-    const { flash, pre_positionings, typhoon } = usePage().props;
+    const { flash, pre_positionings, typhoon, auth } = usePage().props;
+    const isAdmin = auth.user.roles?.some((r) => r.name?.toLowerCase() === "admin");
     
     // Check if forms should be disabled
     const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
@@ -60,49 +55,24 @@ export default function Index() {
     }, [flash]);
 
     return (
-        <SidebarProvider>
+        <AppLayout
+            title="Deployment of Response"
+            header={
+                <Breadcrumbs
+                    crumbs={[
+                        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+                        { label: "Pre-Positioning" },
+                    ]}
+                />
+            }
+            actions={
+                <ActiveTyphoonHeader
+                    typhoon={typhoon?.active}
+                    hasActive={typhoon?.hasActive}
+                />
+            }
+        >
             <Toaster position="top-right" />
-            <AppSidebar />
-            <Head>
-                <title>Deployment of Response</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                {/* ✅ Header with breadcrumbs */}
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-
-                        {(() => {
-                            const user = usePage().props.auth.user;
-                            const isAdmin = user.roles?.some(
-                                (r) => r.name?.toLowerCase() === "admin"
-                            );
-
-                            return isAdmin ? (
-                                <Breadcrumbs
-                                    crumbs={[
-                                        {
-                                            href: route("admin.dashboard"),
-                                            label: "Dashboard",
-                                        },
-                                        { label: "Pre-Positioning" },
-                                    ]}
-                                    Pre-Positioning
-                                />
-                            ) : (
-                                <Breadcrumbs
-                                    crumbs={[{ label: "Pre-Positioning" }]}
-                                />
-                            );
-                        })()}
-                    </div>
-                    <ActiveTyphoonHeader 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                </header>
 
                 <main className="h-full w-full bg-background p-4 sm:p-6">
                     <FormPanel>
@@ -116,7 +86,6 @@ export default function Index() {
                         </Suspense>
                     </FormPanel>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

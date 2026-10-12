@@ -7,19 +7,13 @@ import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import ModificationIndicator from "@/Components/shared/ModificationIndicator";
 
 import { useState, useEffect, useMemo } from "react";
-import { usePage, Head } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
 import useAppUrl from "@/hooks/useAppUrl";
 import useTableFilter from "@/hooks/useTableFilter";
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
+import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +28,8 @@ const formatFieldName = (field) => {
 };
 
 export default function Index() {
-    const { flash, operations, typhoon } = usePage().props;
+    const { flash, operations, typhoon, auth } = usePage().props;
+    const isAdmin = auth.user.roles?.some((r) => r.name?.toLowerCase() === "admin");
     
     // Check if forms should be disabled
     const formsDisabled = !typhoon?.hasActive || typhoon?.active?.status === 'ended';
@@ -189,50 +184,24 @@ export default function Index() {
     }
 
     return (
-        <SidebarProvider>
+        <AppLayout
+            title="Response Operations"
+            header={
+                <Breadcrumbs
+                    crumbs={[
+                        ...(isAdmin ? [{ href: route("admin.dashboard"), label: "Dashboard" }] : []),
+                        { label: "Response Operations" },
+                    ]}
+                />
+            }
+            actions={
+                <ActiveTyphoonHeader
+                    typhoon={typhoon?.active}
+                    hasActive={typhoon?.hasActive}
+                />
+            }
+        >
             <Toaster position="top-right" />
-            <AppSidebar />
-            <Head>
-                <title>Response Operations</title>
-                <link rel="icon" type="image/jpeg" href="/images/ilagan.jpeg" />
-            </Head>
-            <SidebarInset>
-                {/* ✅ Header with breadcrumbs */}
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <SidebarTrigger className="-ml-2" />
-                        <Separator orientation="vertical" className="h-6 mx-2" />
-
-                        {(() => {
-                            const user = usePage().props.auth.user;
-                            const isAdmin = user.roles?.some(
-                                (r) => r.name?.toLowerCase() === "admin"
-                            );
-
-                            return isAdmin ? (
-                                <Breadcrumbs
-                                    crumbs={[
-                                        {
-                                            href: route("admin.dashboard"),
-                                            label: "Dashboard",
-                                        },
-                                        { label: "Response Operations" },
-                                    ]}
-                                    Response
-                                    Operations
-                                />
-                            ) : (
-                                <Breadcrumbs
-                                    crumbs={[{ label: "Response Operations" }]}
-                                />
-                            );
-                        })()}
-                    </div>
-                    <ActiveTyphoonHeader 
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                </header>
 
                 <main className="w-full p-4 sm:p-6 h-full bg-gray-50">
                     
@@ -406,7 +375,6 @@ export default function Index() {
 
                         </Card>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
+import { Link } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import PageTitle from '@/Components/PageTitle';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,27 +19,21 @@ export default function BatchHistoryDetail({ yearRange, disasters }) {
     };
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <Head title={`${yearRange} Disaster History`} />
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-                    <SidebarTrigger className="-ml-2" />
-                    <Separator orientation="vertical" className="h-6 mx-2" />
-                    <div className="flex items-center gap-2 flex-1">
+        <AppLayout
+            title={`${yearRange} Disaster History`}
+            header={
+                <>
+                    <Button asChild variant="ghost" size="sm" className="shrink-0 gap-2">
                         <Link href="/admin/history">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
-                            </Button>
+                            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                            Back
                         </Link>
-                        <Separator orientation="vertical" className="h-6" />
-                        <Calendar className="w-5 h-5 text-blue-600" />
-                        <h1 className="text-lg sm:text-xl font-semibold text-blue-700">
-                            {yearRange} Disaster Records
-                        </h1>
-                    </div>
-                </header>
+                    </Button>
+                    <Separator orientation="vertical" className="h-6 shrink-0" />
+                    <PageTitle icon={Calendar}>{yearRange} Disaster Records</PageTitle>
+                </>
+            }
+        >
 
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-6xl space-y-6">
@@ -143,7 +137,6 @@ export default function BatchHistoryDetail({ yearRange, disasters }) {
 
                     </div>
                 </div>
-            </SidebarInset>
-        </SidebarProvider>
+        </AppLayout>
     );
 }

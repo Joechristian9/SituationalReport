@@ -1,12 +1,12 @@
-"use client";
-
-import * as React from "react";
 import { useState } from "react";
-import { usePage } from "@inertiajs/react";
-import { route } from "ziggy-js";
-import { useSidebar } from "@/components/ui/sidebar";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Link, usePage } from "@inertiajs/react";
+import { ChevronDown, Plus, X } from "lucide-react";
 
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
     Dialog,
     DialogContent,
@@ -15,624 +15,267 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import {
     SidebarGroup,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarMenu,
+    SidebarMenuAction,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
+    useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-export function NavMain({ items = [] }) {
-    const { isCollapsed } = useSidebar();
-    const { url: currentUrl } = usePage();
+const pathOf = (url) => new URL(url, window.location.origin).pathname;
 
-    const [isAddYearDialogOpen, setIsAddYearDialogOpen] = useState(false);
+/*
+ * Active state comes from the page URL Inertia rendered, not window.location: with
+ * client-side visits the address bar can update after the new page renders.
+ */
+function isCurrent(item, currentPath) {
+    return [item.url, ...(item.alsoActiveOn ?? [])].some((url) => {
+        const path = pathOf(url);
+        return currentPath === path || currentPath.startsWith(`${path}/`);
+    });
+}
+
+const groupLabelClass =
+    "h-7 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70";
+
+const itemClass = cn(
+    "relative h-auto min-h-11 gap-3 px-3 py-2 text-sidebar-foreground/85 md:min-h-9",
+    "transition-[width,height,padding,background-color,color] duration-150",
+    "hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+    "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm",
+    "data-[active=true]:[&>svg]:text-sidebar-primary [&>svg]:size-[18px]",
+    // Left marker on the current page, so it never relies on the background tint alone.
+    "before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-sidebar-primary before:opacity-0 data-[active=true]:before:opacity-100"
+);
+
+export function NavMain({ groups = [] }) {
+    const { url } = usePage();
+    const { state, isMobile, setOpenMobile } = useSidebar();
+    const collapsed = state === "collapsed" && !isMobile;
+    const currentPath = url.split("?")[0];
+    const [addYearGroup, setAddYearGroup] = useState(null);
+
+    // The mobile drawer stays open across visits to the same page component.
+    const closeDrawer = () => isMobile && setOpenMobile(false);
+
+    return (
+        <>
+            {groups.map((group) => (
+                <NavGroup
+                    key={group.label}
+                    group={group}
+                    collapsed={collapsed}
+                    currentPath={currentPath}
+                    onNavigate={closeDrawer}
+                    onAddYear={() => setAddYearGroup(group)}
+                />
+            ))}
+
+            <AddYearDialog
+                group={addYearGroup}
+                onClose={() => setAddYearGroup(null)}
+            />
+        </>
+    );
+}
+
+function NavGroup({ group, collapsed, currentPath, onNavigate, onAddYear }) {
+    const [open, setOpen] = useState(true);
+
+    const menu = (
+        <SidebarGroupContent>
+            <SidebarMenu>
+                {group.items.map((item) => (
+                    <NavItem
+                        key={item.title}
+                        item={item}
+                        active={isCurrent(item, currentPath)}
+                        onNavigate={onNavigate}
+                    />
+                ))}
+
+                {group.addYear && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={onAddYear}
+                            tooltip="Add year"
+                            className={itemClass}
+                        >
+                            <Plus aria-hidden="true" />
+                            <span>Add year</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
+            </SidebarMenu>
+        </SidebarGroupContent>
+    );
+
+    if (!group.collapsible) {
+        return (
+            <SidebarGroup className="py-1">
+                <SidebarGroupLabel className={groupLabelClass}>
+                    {group.label}
+                </SidebarGroupLabel>
+                {menu}
+            </SidebarGroup>
+        );
+    }
+
+    // In icon mode the label is hidden, so keep the items reachable.
+    return (
+        <Collapsible open={open || collapsed} onOpenChange={setOpen} asChild>
+            <SidebarGroup className="py-1">
+                <SidebarGroupLabel asChild className={groupLabelClass}>
+                    <CollapsibleTrigger className="w-full cursor-pointer justify-between hover:text-sidebar-accent-foreground">
+                        {group.label}
+                        <ChevronDown
+                            aria-hidden="true"
+                            className={cn(
+                                "transition-transform duration-200 motion-reduce:transition-none",
+                                !open && "-rotate-90"
+                            )}
+                        />
+                    </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>{menu}</CollapsibleContent>
+            </SidebarGroup>
+        </Collapsible>
+    );
+}
+
+function NavItem({ item, active, onNavigate }) {
+    const Icon = item.icon;
+    const content = (
+        <>
+            {Icon && <Icon aria-hidden="true" />}
+            <span className="!whitespace-normal leading-tight">
+                {item.title}
+            </span>
+        </>
+    );
+
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton
+                asChild
+                isActive={active}
+                tooltip={item.title}
+                className={itemClass}
+            >
+                {item.external ? (
+                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                        {content}
+                    </a>
+                ) : (
+                    <Link
+                        href={item.url}
+                        aria-current={active ? "page" : undefined}
+                        onClick={onNavigate}
+                    >
+                        {content}
+                    </Link>
+                )}
+            </SidebarMenuButton>
+
+            {item.onRemove && (
+                <SidebarMenuAction
+                    onClick={item.onRemove}
+                    aria-label={`Remove ${item.title}`}
+                    className="top-2.5 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
+                >
+                    <X />
+                </SidebarMenuAction>
+            )}
+        </SidebarMenuItem>
+    );
+}
+
+function AddYearDialog({ group, onClose }) {
     const [newYear, setNewYear] = useState("");
     const [yearError, setYearError] = useState("");
+    const maxYear = new Date().getFullYear() + 10;
 
-    const [isAnnualReportsOpen, setIsAnnualReportsOpen] = useState(true);
-    const [isReportHistoryOpen, setIsReportHistoryOpen] = useState(true);
+    const close = () => {
+        setNewYear("");
+        setYearError("");
+        onClose();
+    };
 
     const handleAddYear = () => {
-        setYearError("");
-
-        const currentYear = new Date().getFullYear();
         const yearNum = parseInt(newYear, 10);
 
         if (!newYear) {
             setYearError("Please enter a year");
-            return;
-        }
-
-        if (isNaN(yearNum)) {
+        } else if (isNaN(yearNum)) {
             setYearError("Please enter a valid year");
-            return;
-        }
-
-        if (yearNum < 1900 || yearNum > currentYear + 10) {
-            setYearError(
-                `Year must be between 1900 and ${currentYear + 10}`
-            );
-            return;
-        }
-
-        const annualReportsItem = items.find(
-            (item) => item.title === "Annual Reports"
-        );
-
-        if (annualReportsItem && annualReportsItem.addYear) {
-            const success = annualReportsItem.addYear(yearNum);
-
-            if (success) {
-                setNewYear("");
-                setIsAddYearDialogOpen(false);
-            } else {
-                setYearError("This year already exists in the list");
-            }
+        } else if (yearNum < 1900 || yearNum > maxYear) {
+            setYearError(`Year must be between 1900 and ${maxYear}`);
+        } else if (!group.addYear(yearNum)) {
+            setYearError("This year already exists in the list");
+        } else {
+            close();
         }
     };
 
     return (
-        <>
-            <SidebarGroup>
-                <SidebarGroupContent>
-                    <SidebarMenu className="space-y-1">
-                        {items.map((item) => {
-                            const hasSubItems =
-                                Array.isArray(item.items) &&
-                                item.items.length > 0;
+        <Dialog open={!!group} onOpenChange={(open) => !open && close()}>
+            <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                            <Plus className="h-4 w-4 text-primary" aria-hidden="true" />
+                        </span>
+                        Add Year
+                    </DialogTitle>
+                    <DialogDescription>
+                        Enter a year to add to your annual reports list.
+                    </DialogDescription>
+                </DialogHeader>
 
-                            const Icon = item.icon;
+                <div className="space-y-2 py-4">
+                    <Label htmlFor="year">Year</Label>
+                    <Input
+                        id="year"
+                        type="number"
+                        placeholder="e.g., 2020"
+                        value={newYear}
+                        onChange={(e) => {
+                            setNewYear(e.target.value);
+                            setYearError("");
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddYear()}
+                        min="1900"
+                        max={maxYear}
+                        aria-invalid={!!yearError}
+                        aria-describedby="year-help"
+                    />
+                    <p id="year-help" className="text-xs text-muted-foreground">
+                        Valid range: 1900 - {maxYear}
+                    </p>
+                    {yearError && (
+                        <p role="alert" className="text-sm text-destructive">
+                            {yearError}
+                        </p>
+                    )}
+                </div>
 
-                            const renderSubMenu = () => {
-                                const isAnnualReports =
-                                    item.title === "Annual Reports";
-
-                                return (
-                                    <SidebarMenuSub className="mt-1 space-y-1 pl-2">
-                                        {item.items.map((subItem) => {
-                                            const SubIcon = subItem.icon;
-
-                                            let routePattern = null;
-
-                                            if (
-                                                subItem.title === "Dashboard"
-                                            )
-                                                routePattern =
-                                                    "admin.dashboard";
-                                            else if (
-                                                subItem.title ===
-                                                "Disaster Management"
-                                            )
-                                                routePattern = "disasters";
-                                            else if (
-                                                subItem.title ===
-                                                "Form Submission Status"
-                                            )
-                                                routePattern =
-                                                    "admin.form-submission-status";
-                                            else if (
-                                                subItem.title ===
-                                                    "Situation Overview" ||
-                                                subItem.title ===
-                                                    "Electricity Reports" ||
-                                                subItem.title ===
-                                                    "Water Services" ||
-                                                subItem.title === "Reports"
-                                            )
-                                                routePattern =
-                                                    "situation-reports";
-                                            else if (
-                                                subItem.title ===
-                                                "Pre-Emptive Reports"
-                                            )
-                                                routePattern =
-                                                    "preemptive-reports";
-                                            else if (
-                                                subItem.title ===
-                                                "Declaration USC"
-                                            )
-                                                routePattern =
-                                                    "declaration-usc";
-                                            else if (
-                                                subItem.title ===
-                                                "Deployment of Response Assets"
-                                            )
-                                                routePattern =
-                                                    "pre-positioning";
-                                            else if (
-                                                subItem.title ===
-                                                "Incidents Monitored"
-                                            )
-                                                routePattern =
-                                                    "incident-monitored";
-                                            else if (
-                                                subItem.title ===
-                                                "Response Operations"
-                                            )
-                                                routePattern =
-                                                    "response-operations";
-                                            else if (
-                                                subItem.title ===
-                                                "Assistance Extended"
-                                            )
-                                                routePattern = "assistance";
-                                            else if (
-                                                subItem.title === "Agriculture"
-                                            )
-                                                routePattern =
-                                                    "situation-reports";
-                                            else if (
-                                                subItem.title ===
-                                                "Reports History"
-                                            )
-                                                routePattern = "admin.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Audit Logs"
-                                            )
-                                                routePattern = "admin.audit-logs";
-                                            else if (
-                                                subItem.title ===
-                                                "User Management"
-                                            )
-                                                routePattern = "admin.users";
-                                            else if (
-                                                subItem.title ===
-                                                "Weather History"
-                                            )
-                                                routePattern =
-                                                    "weather.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Communication History"
-                                            )
-                                                routePattern =
-                                                    "communication.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Pre-Emptive History"
-                                            )
-                                                routePattern =
-                                                    "pre-emptive.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Incident History"
-                                            )
-                                                routePattern =
-                                                    "incident.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Agriculture History"
-                                            )
-                                                routePattern =
-                                                    "agriculture.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Electricity History"
-                                            )
-                                                routePattern =
-                                                    "electricity.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Road History"
-                                            )
-                                                routePattern = "road.history";
-                                            else if (
-                                                subItem.title ===
-                                                "Bridge History"
-                                            )
-                                                routePattern =
-                                                    "bridge.history";
-
-                                            const isActive = routePattern
-                                                ? route().current(
-                                                      routePattern + ".*"
-                                                  ) ||
-                                                  route().current(routePattern)
-                                                : currentUrl ===
-                                                      subItem.url ||
-                                                  currentUrl.startsWith(
-                                                      subItem.url + "/"
-                                                  ) ||
-                                                  (subItem.url &&
-                                                      currentUrl.startsWith(
-                                                          subItem.url.split(
-                                                              "?"
-                                                          )[0]
-                                                      ));
-
-                                            const isReportLink =
-                                                item.title ===
-                                                "Annual Reports";
-
-                                            return (
-                                                <SidebarMenuSubItem
-                                                    key={subItem.title}
-                                                >
-                                                    <div className="flex items-center gap-1.5">
-                                                        <SidebarMenuSubButton
-                                                            asChild
-                                                            isActive={isActive}
-                                                            className={`flex items-center gap-2 rounded-lg px-3 py-2 min-h-[42px] text-sm font-medium transition-all duration-200 flex-1 relative overflow-hidden
-                                                            ${
-                                                                isActive
-                                                                    ? "bg-white text-blue-700 shadow-lg font-bold border-l-4 border-blue-600"
-                                                                    : "text-white/80 hover:bg-white/10 hover:text-white border-l-4 border-transparent"
-                                                            }`}
-                                                        >
-                                                            <a
-                                                                href={
-                                                                    subItem.url ||
-                                                                    "#"
-                                                                }
-                                                                target={
-                                                                    isReportLink
-                                                                        ? "_blank"
-                                                                        : undefined
-                                                                }
-                                                                rel={
-                                                                    isReportLink
-                                                                        ? "noopener noreferrer"
-                                                                        : undefined
-                                                                }
-                                                                className="flex items-center gap-2 w-full min-w-0"
-                                                            >
-                                                                {SubIcon && (
-                                                                    <SubIcon
-                                                                        className={`h-4 w-4 flex-shrink-0 ${
-                                                                            isActive
-                                                                                ? "text-blue-600"
-                                                                                : ""
-                                                                        }`}
-                                                                        color={
-                                                                            isActive
-                                                                                ? "currentColor"
-                                                                                : "white"
-                                                                        }
-                                                                    />
-                                                                )}
-
-                                                                <span className="flex-1 text-left whitespace-normal break-words leading-tight text-sm">
-                                                                    {
-                                                                        subItem.title
-                                                                    }
-                                                                </span>
-
-                                                                {subItem.badge && isActive && (
-                                                                    <div className="flex items-center justify-center w-4 h-4 bg-white rounded-full flex-shrink-0">
-                                                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                                                    </div>
-                                                                )}
-
-                                                                {!subItem.badge && isActive && (
-                                                                    <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                                                )}
-                                                            </a>
-                                                        </SidebarMenuSubButton>
-
-                                                        {(isAnnualReports &&
-                                                            subItem.isCustom) ||
-                                                        subItem.canRemove ? (
-                                                            <button
-                                                                onClick={(
-                                                                    e
-                                                                ) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-
-                                                                    if (
-                                                                        subItem.onRemove
-                                                                    ) {
-                                                                        subItem.onRemove();
-                                                                    }
-                                                                }}
-                                                                className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                            </button>
-                                                        ) : null}
-                                                    </div>
-                                                </SidebarMenuSubItem>
-                                            );
-                                        })}
-
-                                        {isAnnualReports &&
-                                            item.addYear && (
-                                                <SidebarMenuSubItem>
-                                                    <button
-                                                        onClick={() =>
-                                                            setIsAddYearDialogOpen(
-                                                                true
-                                                            )
-                                                        }
-                                                        className="flex items-center gap-2 rounded-lg px-3 py-2 min-h-[42px] text-sm font-medium transition-all duration-200 w-full text-white/80 hover:bg-white/10 hover:text-white"
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                        <span className="text-sm">Add Year</span>
-                                                    </button>
-                                                </SidebarMenuSubItem>
-                                            )}
-                                    </SidebarMenuSub>
-                                );
-                            };
-
-                            if (item.title === "Main Menu") {
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            disabled
-                                            className="flex items-center px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-white/60 cursor-default hover:bg-transparent"
-                                        >
-                                            {Icon && (
-                                                <Icon
-                                                    className="mr-1.5 h-4 w-4"
-                                                    color="white"
-                                                />
-                                            )}
-
-                                            {!isCollapsed && item.title}
-                                        </SidebarMenuButton>
-
-                                        {!isCollapsed &&
-                                            hasSubItems &&
-                                            renderSubMenu()}
-                                    </SidebarMenuItem>
-                                );
-                            }
-
-                            if (item.title === "Report History") {
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            onClick={() =>
-                                                setIsReportHistoryOpen(
-                                                    !isReportHistoryOpen
-                                                )
-                                            }
-                                            tooltip={item.title}
-                                            className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 min-h-[42px] text-sm font-medium transition-all duration-200 text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {Icon && (
-                                                    <Icon
-                                                        className="h-4 w-4 flex-shrink-0"
-                                                        color="white"
-                                                    />
-                                                )}
-
-                                                {!isCollapsed && (
-                                                    <span className="text-sm">
-                                                        {item.title}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {!isCollapsed &&
-                                                hasSubItems && (
-                                                    <ChevronDown
-                                                        className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${
-                                                            isReportHistoryOpen
-                                                                ? "rotate-180"
-                                                                : ""
-                                                        }`}
-                                                        color="white"
-                                                    />
-                                                )}
-                                        </SidebarMenuButton>
-
-                                        {!isCollapsed &&
-                                            hasSubItems &&
-                                            isReportHistoryOpen &&
-                                            renderSubMenu()}
-                                    </SidebarMenuItem>
-                                );
-                            }
-
-                            if (item.title === "Annual Reports") {
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            onClick={() =>
-                                                setIsAnnualReportsOpen(
-                                                    !isAnnualReportsOpen
-                                                )
-                                            }
-                                            tooltip={item.title}
-                                            className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 min-h-[42px] text-sm font-medium transition-all duration-200 text-white/80 hover:bg-white/10 hover:text-white cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {Icon && (
-                                                    <Icon
-                                                        className="h-4 w-4 flex-shrink-0"
-                                                        color="white"
-                                                    />
-                                                )}
-
-                                                {!isCollapsed && (
-                                                    <span className="text-sm">
-                                                        {item.title}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {!isCollapsed &&
-                                                hasSubItems && (
-                                                    <ChevronDown
-                                                        className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${
-                                                            isAnnualReportsOpen
-                                                                ? "rotate-180"
-                                                                : ""
-                                                        }`}
-                                                        color="white"
-                                                    />
-                                                )}
-                                        </SidebarMenuButton>
-
-                                        {!isCollapsed &&
-                                            hasSubItems &&
-                                            isAnnualReportsOpen &&
-                                            renderSubMenu()}
-                                    </SidebarMenuItem>
-                                );
-                            }
-
-                            const isActive =
-                                currentUrl.includes(item.url) ||
-                                (item.url &&
-                                    item.url !== "#" &&
-                                    currentUrl === item.url);
-
-                            return (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        tooltip={item.title}
-                                        isActive={isActive}
-                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 min-h-[42px] text-sm font-medium transition-all duration-200 border-l-4 relative
-                                        ${
-                                            isActive
-                                                ? "bg-white text-blue-700 shadow-md font-bold border-blue-600"
-                                                : "text-white/80 hover:bg-white/10 hover:text-white border-transparent"
-                                        }`}
-                                    >
-                                        <a
-                                            href={item.url || "#"}
-                                            className="flex items-center gap-2 w-full min-w-0"
-                                        >
-                                            {Icon && (
-                                                <Icon
-                                                    className={`h-4 w-4 flex-shrink-0 ${
-                                                        isActive
-                                                            ? "text-blue-600"
-                                                            : ""
-                                                    }`}
-                                                    color={
-                                                        isActive
-                                                            ? "currentColor"
-                                                            : "white"
-                                                    }
-                                                />
-                                            )}
-
-                                            {!isCollapsed && (
-                                                <span className="flex-1 text-left whitespace-normal break-words leading-tight text-sm">
-                                                    {item.title}
-                                                </span>
-                                            )}
-
-                                            {isActive &&
-                                                !isCollapsed && (
-                                                    <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                                )}
-                                        </a>
-                                    </SidebarMenuButton>
-
-                                    {!isCollapsed &&
-                                        hasSubItems &&
-                                        renderSubMenu()}
-                                </SidebarMenuItem>
-                            );
-                        })}
-                    </SidebarMenu>
-                </SidebarGroupContent>
-            </SidebarGroup>
-
-            <Dialog
-                open={isAddYearDialogOpen}
-                onOpenChange={setIsAddYearDialogOpen}
-            >
-                <DialogContent className="sm:max-w-[400px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-md bg-blue-100 flex items-center justify-center">
-                                <Plus className="h-4 w-4 text-blue-600" />
-                            </div>
-
-                            Add Year
-                        </DialogTitle>
-
-                        <DialogDescription>
-                            Enter a year to add to your annual reports list.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="year"
-                                className="text-sm font-medium text-gray-700"
-                            >
-                                Year
-                            </Label>
-
-                            <Input
-                                id="year"
-                                type="number"
-                                placeholder="e.g., 2020"
-                                value={newYear}
-                                onChange={(e) => {
-                                    setNewYear(e.target.value);
-                                    setYearError("");
-                                }}
-                                onKeyPress={(e) => {
-                                    if (e.key === "Enter") {
-                                        handleAddYear();
-                                    }
-                                }}
-                                className="w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                min="1900"
-                                max={new Date().getFullYear() + 10}
-                            />
-
-                            <p className="text-xs text-gray-500">
-                                Valid range: 1900 -{" "}
-                                {new Date().getFullYear() + 10}
-                            </p>
-                        </div>
-
-                        {yearError && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                                <p className="text-sm text-red-600">
-                                    {yearError}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    <DialogFooter className="gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                                setIsAddYearDialogOpen(false);
-                                setNewYear("");
-                                setYearError("");
-                            }}
-                            className="border-gray-300 hover:bg-gray-50"
-                        >
-                            Cancel
-                        </Button>
-
-                        <Button
-                            type="button"
-                            onClick={handleAddYear}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            Add Year
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </>
+                <DialogFooter className="gap-2">
+                    <Button type="button" variant="outline" onClick={close}>
+                        Cancel
+                    </Button>
+                    <Button type="button" onClick={handleAddYear}>
+                        Add Year
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

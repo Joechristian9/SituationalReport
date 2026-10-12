@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 214 50% 97%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -48,14 +48,15 @@
     --chart-4: 280 60% 50%;
     --chart-5: 0 72% 51%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%
+    /* Civic deep blue: #1e3a8a panel, #93c5fd active marker; text pairs pass 4.5:1 */
+    --sidebar-background: 224 64% 33%;
+    --sidebar-foreground: 214 95% 93%;
+    --sidebar-primary: 212 96% 78%;
+    --sidebar-primary-foreground: 224 64% 33%;
+    --sidebar-accent: 224 58% 42%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 224 50% 41%;
+    --sidebar-ring: 212 96% 78%;
   }
   .dark {
     --background: 222 47% 7%;
@@ -99,14 +100,14 @@
     --chart-3: 43 96% 56%;
     --chart-4: 270 80% 70%;
     --chart-5: 0 91% 71%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%
+    --sidebar-background: 226 57% 21%;
+    --sidebar-foreground: 214 95% 93%;
+    --sidebar-primary: 212 96% 78%;
+    --sidebar-primary-foreground: 226 57% 21%;
+    --sidebar-accent: 224 50% 30%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 224 45% 28%;
+    --sidebar-ring: 212 96% 78%;
   }
 }
 
