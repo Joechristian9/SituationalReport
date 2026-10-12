@@ -4,6 +4,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 import { Button } from '@/Components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/Components/ui/sheet';
+import { Skeleton } from '@/Components/ui/skeleton';
 import TablePagination, { laravelPagination } from '@/Components/ui/TablePagination';
 import {
     Table,
@@ -27,6 +28,7 @@ import {
     AlertTriangle,
     ArrowLeft,
     Building2,
+    ChevronLeft,
     ChevronRight,
     Clock,
     HeartPulse,
@@ -35,6 +37,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
+import { useIsMobile } from '@/hooks/use-mobile';
 import LiveIndicator from '@/Components/LiveIndicator';
 
 /**
@@ -153,7 +156,7 @@ function SexSplit({ stats, accent }) {
 
     return (
         <>
-            <p className="flex items-baseline gap-3 text-2xl font-semibold tabular-nums text-foreground">
+            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0 text-xl font-semibold tabular-nums text-foreground sm:gap-x-3 sm:text-2xl">
                 <span>
                     {stats.male}
                     <span className="ml-1 text-xs font-normal text-muted-foreground">male</span>
@@ -172,12 +175,80 @@ function SexSplit({ stats, accent }) {
     );
 }
 
+// Label over value, so a long address or cause gets the whole sheet width on a phone.
 function DetailRow({ label, children }) {
     return (
-        <div className="grid grid-cols-[8.5rem_1fr] gap-3 py-2.5 text-sm">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 break-words text-foreground">{children}</dd>
+        <div>
+            <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+            <dd className="mt-0.5 min-w-0 break-words text-base text-foreground">{children}</dd>
         </div>
+    );
+}
+
+/** One record on a phone: a single tap target with the essentials, instead of a stacked table row. */
+function RecordCard({ record, config, accent, onOpen }) {
+    const chips = config.columns
+        .map((col) => ({ col, value: formatField(record, col) }))
+        .filter((chip) => chip.value);
+
+    return (
+        <button
+            type="button"
+            onClick={onOpen}
+            className="flex min-h-[4.5rem] w-full items-start gap-3 px-4 py-3.5 text-left transition-colors active:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        >
+            <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${accent.avatar}`}
+                aria-hidden="true"
+            >
+                {initials(record.name)}
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-base font-semibold text-foreground">{record.name || 'No name'}</span>
+                <span className="block text-sm text-muted-foreground">{ageSex(record)}</span>
+                {record.address && (
+                    <span className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="line-clamp-1">{record.address}</span>
+                    </span>
+                )}
+                {chips.length > 0 && (
+                    <span className="mt-2 flex flex-wrap gap-1.5">
+                        {chips.map(({ col, value }) => (
+                            <span key={col.key} className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                                <span className="shrink-0 text-muted-foreground">{col.label}:</span>
+                                <span className="truncate font-medium text-foreground">{value}</span>
+                            </span>
+                        ))}
+                    </span>
+                )}
+                <span className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{record.user?.name || 'Unknown'}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="tabular-nums">
+                        {formatDay(record.created_at) || '—'}, {formatTime(record.created_at)}
+                    </span>
+                    {wasEdited(record) && (
+                        <span className="rounded bg-accent px-1.5 py-0.5 font-medium text-accent-foreground">edited</span>
+                    )}
+                </span>
+            </span>
+            <ChevronRight className="mt-3 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </button>
+    );
+}
+
+function RecordCardSkeleton() {
+    return (
+        <li aria-hidden="true" className="flex gap-3 px-4 py-3.5">
+            <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-3 w-full" />
+            </div>
+        </li>
     );
 }
 
@@ -197,6 +268,16 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(false);
     const perPage = Number(filters.per_page) || 20;
+
+    const isMobile = useIsMobile();
+    const sheetBodyRef = useRef(null);
+    const selectedIndex = selected ? records.data.findIndex((r) => r.id === selected.id) : -1;
+    const step = (delta) => {
+        const next = records.data[selectedIndex + delta];
+        if (!next) return;
+        setSelected(next);
+        sheetBodyRef.current?.scrollTo({ top: 0 });
+    };
 
     const hasFilters = Boolean(filters.search || filters.user_id || filters.date_from || filters.date_to);
     const showSkeleton = useDelayedFlag(loading);
@@ -283,19 +364,19 @@ export default function PersonSubmissions({ config, records, users = [], filters
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-5">
                         {/* Title row */}
-                        <div className="space-y-3">
+                        <div className="space-y-1 sm:space-y-3">
                             <Link
                                 href={route('admin.dashboard')}
-                                className="inline-flex items-center gap-1.5 text-base text-muted-foreground hover:text-foreground"
+                                className="-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:text-base"
                             >
-                                <ArrowLeft className="h-4 w-4" />
+                                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                                 Dashboard
                             </Link>
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                                 <div className="min-w-0">
-                                    <h1 className="text-3xl font-semibold text-foreground">{config.title}</h1>
-                                    <p className="mt-1.5 text-base text-muted-foreground">{config.description}</p>
-                                    <p className="mt-2.5 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                                    <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">{config.title}</h1>
+                                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground sm:mt-1.5 sm:line-clamp-none sm:text-base">{config.description}</p>
+                                    <p className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground sm:mt-2.5">
                                         <span
                                             className={`h-2 w-2 rounded-full ${disaster ? 'bg-success' : 'bg-muted-foreground/40'}`}
                                             aria-hidden="true"
@@ -310,8 +391,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     </p>
                                 </div>
 
-                                {/* Category switcher */}
-                                <nav className="inline-flex self-start rounded-lg bg-muted p-1 lg:self-auto" aria-label="Report type">
+                                {/* Category switcher: first and full width on phones (equal thirds), compact on the right from lg. */}
+                                <nav className="order-first flex w-full rounded-xl bg-muted p-1 sm:inline-flex sm:w-auto sm:self-start sm:rounded-lg lg:order-none lg:self-auto" aria-label="Report type">
                                     {CATEGORIES.map((c) => {
                                         const active = c.key === category.key;
                                         const TabIcon = c.icon;
@@ -320,7 +401,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                 key={c.key}
                                                 href={route(c.routeName)}
                                                 aria-current={active ? 'page' : undefined}
-                                                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                                                className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:flex-none sm:rounded-md ${
                                                     active ? ACCENTS[c.accent].tabActive : 'text-muted-foreground hover:text-foreground'
                                                 }`}
                                             >
@@ -335,22 +416,31 @@ export default function PersonSubmissions({ config, records, users = [], filters
 
                         {/* Summary strip */}
                         <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-t-4 bg-border lg:grid-cols-4 ${accent.stripe}`}>
-                            <div className="bg-card p-4">
+                            {/* Phones: the total is a wide cell with the latest submission folded in, so the strip is 1.5 rows instead of 2. */}
+                            <div className="col-span-2 bg-card p-4 lg:col-span-1">
                                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{config.statLabel}</dt>
-                                <dd className="mt-1">
-                                    <span className="text-3xl font-semibold tabular-nums text-foreground">{summary.total}</span>
-                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                                        {hasFilters ? 'Matching your filters' : scopeLabel}
+                                <dd className="mt-1 flex items-end justify-between gap-3 lg:block">
+                                    <span className="min-w-0">
+                                        <span className="text-3xl font-semibold tabular-nums text-foreground">{summary.total}</span>
+                                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                            {hasFilters ? 'Matching your filters' : scopeLabel}
+                                        </span>
+                                    </span>
+                                    <span className="shrink-0 text-right text-xs text-muted-foreground sm:hidden">
+                                        Latest
+                                        <span className="block text-sm font-semibold text-foreground">
+                                            {summary.latest_at ? timeAgo(summary.latest_at) : 'None yet'}
+                                        </span>
                                     </span>
                                 </dd>
                             </div>
-                            <div className="bg-card p-4">
+                            <div className="bg-card p-3 sm:p-4">
                                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">By sex</dt>
                                 <dd className="mt-1">
                                     <SexSplit stats={summary} accent={accent} />
                                 </dd>
                             </div>
-                            <div className="bg-card p-4">
+                            <div className="bg-card p-3 sm:p-4">
                                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reporting offices</dt>
                                 <dd className="mt-1">
                                     <span className="flex items-center gap-2 text-2xl font-semibold tabular-nums text-foreground">
@@ -360,7 +450,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                     <span className="mt-0.5 block text-xs text-muted-foreground">With at least one record</span>
                                 </dd>
                             </div>
-                            <div className="bg-card p-4">
+                            <div className="bg-card p-4 max-sm:hidden">
                                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latest submission</dt>
                                 <dd className="mt-1">
                                     <span className="flex items-center gap-2 text-lg font-semibold text-foreground">
@@ -427,7 +517,30 @@ export default function PersonSubmissions({ config, records, users = [], filters
 
                             {records.data.length > 0 || showSkeleton ? (
                                 <div aria-busy={loading}>
-                                    <Table stacked>
+                                    {/* Phones: compact tappable cards. md and up: the table. */}
+                                    <ul className="divide-y divide-border md:hidden">
+                                        {showSkeleton ? (
+                                            <>
+                                                {Array.from({ length: Math.min(records.data.length || 6, 8) }, (_, i) => (
+                                                    <RecordCardSkeleton key={i} />
+                                                ))}
+                                                <li className="sr-only">Loading records…</li>
+                                            </>
+                                        ) : (
+                                            records.data.map((record) => (
+                                                <li key={record.id}>
+                                                    <RecordCard
+                                                        record={record}
+                                                        config={config}
+                                                        accent={accent}
+                                                        onOpen={() => setSelected(record)}
+                                                    />
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                    <div className="hidden md:block">
+                                    <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Person</TableHead>
@@ -507,6 +620,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                             {showSkeleton && <tr className="sr-only"><td>Loading records…</td></tr>}
                                         </TableBody>
                                     </Table>
+                                    </div>
 
                                     <TablePagination
                                         {...laravelPagination(records)}
@@ -532,57 +646,103 @@ export default function PersonSubmissions({ config, records, users = [], filters
                     </div>
                 </div>
 
-                {/* Record detail */}
+                {/* Record detail: bottom sheet on phones, side panel from md. */}
                 <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-                    <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+                    <SheetContent
+                        side={isMobile ? 'bottom' : 'right'}
+                        className="flex w-full flex-col gap-0 p-0 max-md:max-h-[88dvh] max-md:rounded-t-2xl md:max-w-md"
+                    >
                         {selected && (
                             <>
-                                <SheetHeader className="text-left">
+                                {/* Grab handle: a visual cue that the sheet can be dismissed. */}
+                                <span className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30 md:hidden" aria-hidden="true" />
+
+                                <SheetHeader className="shrink-0 px-5 pb-4 pt-3 pr-14 text-left md:pt-6">
                                     <div className="flex items-center gap-3">
                                         <span
-                                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${accent.avatar}`}
+                                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${accent.avatar}`}
                                             aria-hidden="true"
                                         >
                                             {initials(selected.name)}
                                         </span>
                                         <div className="min-w-0">
-                                            <SheetTitle className="break-words">{selected.name || 'No name'}</SheetTitle>
-                                            <SheetDescription>
-                                                {category.label} · {ageSex(selected)}
+                                            <SheetTitle className="break-words text-lg leading-snug">{selected.name || 'No name'}</SheetTitle>
+                                            <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${accent.tabCount}`}>
+                                                    {category.label}
+                                                </span>
+                                                <span>{ageSex(selected)}</span>
                                             </SheetDescription>
                                         </div>
                                     </div>
                                 </SheetHeader>
 
-                                <dl className="mt-6 divide-y border-y">
-                                    <DetailRow label="Address">
-                                        {selected.address ? (
-                                            <span className="inline-flex gap-1.5">
-                                                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                                {selected.address}
-                                            </span>
-                                        ) : (
-                                            <Empty>Not given</Empty>
-                                        )}
-                                    </DetailRow>
-                                    {config.details.map((field) => (
-                                        <DetailRow key={field.key} label={field.label}>
-                                            {formatField(selected, field) || <Empty>Not given</Empty>}
+                                <div ref={sheetBodyRef} className="min-h-0 flex-1 overflow-y-auto border-t border-border px-5 py-4">
+                                    <dl className="space-y-4">
+                                        <DetailRow label="Address">
+                                            {selected.address ? (
+                                                <span className="inline-flex gap-1.5">
+                                                    <MapPin className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                                    {selected.address}
+                                                </span>
+                                            ) : (
+                                                <Empty>Not given</Empty>
+                                            )}
                                         </DetailRow>
-                                    ))}
-                                </dl>
+                                        {config.details.map((field) => (
+                                            <DetailRow key={field.key} label={field.label}>
+                                                {formatField(selected, field) || <Empty>Not given</Empty>}
+                                            </DetailRow>
+                                        ))}
+                                    </dl>
 
-                                <h4 className="mt-6 text-xs font-medium uppercase tracking-wide text-muted-foreground">Submission</h4>
-                                <dl className="mt-2 divide-y border-y">
-                                    <DetailRow label="Submitted by">{selected.user?.name || 'Unknown'}</DetailRow>
-                                    <DetailRow label="Submitted">{formatDateTime(selected.created_at) || '—'}</DetailRow>
-                                    {wasEdited(selected) && (
-                                        <DetailRow label="Last edited">
-                                            {formatDateTime(selected.updated_at)}
-                                            <span className="block text-xs text-muted-foreground">by {selected.updater.name}</span>
-                                        </DetailRow>
-                                    )}
-                                </dl>
+                                    <section className="mt-5 rounded-xl border border-border bg-muted/40 p-4" aria-labelledby="submission-heading">
+                                        <h4 id="submission-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Submission
+                                        </h4>
+                                        <dl className="mt-3 space-y-3">
+                                            <DetailRow label="Submitted by">{selected.user?.name || 'Unknown'}</DetailRow>
+                                            <DetailRow label="Submitted">{formatDateTime(selected.created_at) || '—'}</DetailRow>
+                                            {wasEdited(selected) && (
+                                                <DetailRow label="Last edited">
+                                                    {formatDateTime(selected.updated_at)}
+                                                    <span className="block text-sm text-muted-foreground">by {selected.updater.name}</span>
+                                                </DetailRow>
+                                            )}
+                                        </dl>
+                                    </section>
+                                </div>
+
+                                {/* Step through the records on this page without closing the sheet. */}
+                                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-11 gap-1 px-3"
+                                        disabled={selectedIndex <= 0}
+                                        onClick={() => step(-1)}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                                        Previous
+                                    </Button>
+                                    <span
+                                        className="text-sm tabular-nums text-muted-foreground"
+                                        aria-live="polite"
+                                        aria-label={`Record ${selectedIndex + 1} of ${records.data.length} on this page`}
+                                    >
+                                        {selectedIndex + 1} of {records.data.length}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-11 gap-1 px-3"
+                                        disabled={selectedIndex < 0 || selectedIndex >= records.data.length - 1}
+                                        onClick={() => step(1)}
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                    </Button>
+                                </div>
                             </>
                         )}
                     </SheetContent>
