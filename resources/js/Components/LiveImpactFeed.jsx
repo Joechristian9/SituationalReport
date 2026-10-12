@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { ChevronRight, Radio } from 'lucide-react';
 import { IMPACT_SERIES, Swatch } from '@/Components/Graphs/chartParts';
+import { EmptyState } from '@/Components/data/DataView';
 import { reporterLabel } from '@/hooks/useNewImpactReports';
 import RowsPerPage from '@/Components/ui/RowsPerPage';
 import { cn } from '@/lib/utils';
@@ -17,19 +19,25 @@ function NewTag() {
     );
 }
 
-function FilterButton({ active, onClick, children }) {
+// Phones: four equal segments with the count under the label; lg and up: inline buttons.
+function FilterButton({ active, onClick, label, count, color }) {
     return (
         <button
             type="button"
             onClick={onClick}
             aria-pressed={active}
             className={cn(
-                'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors md:min-h-9',
+                'flex min-h-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-xs font-medium transition-colors',
+                'lg:min-h-9 lg:flex-row lg:gap-2 lg:rounded-md lg:px-3 lg:text-sm',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
                 active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
             )}
         >
-            {children}
+            <span className="flex items-center gap-1.5">
+                {color && <Swatch color={color} />}
+                {label}
+            </span>
+            <span className={cn('tabular-nums', active ? 'font-semibold text-foreground' : 'text-muted-foreground')}>{count}</span>
         </button>
     );
 }
@@ -46,46 +54,71 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
     const freshShown = shown.filter((i) => fresh.has(i.key)).length;
 
     return (
-        <section className="rounded-xl border bg-card shadow-sm" aria-labelledby="live-feed-title">
-            <div className="flex flex-col gap-4 border-b p-4 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="min-w-0">
-                    <h2 id="live-feed-title" className="text-lg font-semibold text-foreground">
-                        Live feed
-                    </h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Latest {size} reports{disaster ? ` for ${disaster.name}` : ''}, newest first.{' '}
-                        {paused ? 'Live updates are paused; resume them from the Live button at the top.' : 'Updates automatically.'}
-                    </p>
-                    {freshShown > 0 && (
-                        <p className="mt-2 text-sm font-medium text-foreground">
-                            {freshShown} new since you opened this page
+        <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-labelledby="live-feed-title">
+            <div className="space-y-3 border-b border-border p-4 sm:p-6 lg:flex lg:items-end lg:justify-between lg:gap-4 lg:space-y-0">
+                <div className="flex items-start justify-between gap-3 lg:block">
+                    <div className="min-w-0">
+                        <h2 id="live-feed-title" className="flex flex-wrap items-center gap-2 text-lg font-semibold text-foreground">
+                            Live feed
+                            {freshShown > 0 && (
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
+                                    title="New since you opened this page"
+                                >
+                                    <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+                                    {freshShown} new
+                                    <span className="sr-only"> since you opened this page</span>
+                                </span>
+                            )}
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            <span className="sm:hidden">
+                                {disaster ? `${disaster.name} · ` : ''}
+                                {paused ? 'Paused' : 'Updates automatically'}
+                            </span>
+                            <span className="hidden sm:inline">
+                                Latest {size} reports{disaster ? ` for ${disaster.name}` : ''}, newest first.{' '}
+                                {paused ? 'Live updates are paused; resume them from the Live button at the top.' : 'Updates automatically.'}
+                            </span>
                         </p>
-                    )}
+                    </div>
+                    {/* Phones: beside the title; lg and up it joins the filters */}
+                    <div className="shrink-0 lg:hidden">
+                        <RowsPerPage rowsPerPage={size} setRowsPerPage={setSize} choices={SIZES} label="Show" />
+                    </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-                    <RowsPerPage rowsPerPage={size} setRowsPerPage={setSize} choices={SIZES} label="Show" />
+                <div className="flex flex-wrap items-center gap-3 lg:self-auto">
+                    <div className="hidden lg:block">
+                        <RowsPerPage rowsPerPage={size} setRowsPerPage={setSize} choices={SIZES} label="Show" />
+                    </div>
                     {/* Counts are the disaster's full totals, not just the rows listed. */}
-                    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Filter by report type">
-                        <FilterButton active={type === 'all'} onClick={() => setType('all')}>
-                            All <span className="tabular-nums text-muted-foreground">{count('total')}</span>
-                        </FilterButton>
+                    <div className="grid w-full grid-cols-4 gap-1 rounded-xl bg-muted p-1 lg:inline-flex lg:w-auto lg:rounded-lg" role="group" aria-label="Filter by report type">
+                        <FilterButton active={type === 'all'} onClick={() => setType('all')} label="All" count={count('total')} />
                         {IMPACT_SERIES.map((s) => (
-                            <FilterButton key={s.key} active={type === s.key} onClick={() => setType(s.key)}>
-                                <Swatch color={s.color} />
-                                {s.label} <span className="tabular-nums text-muted-foreground">{count(s.key)}</span>
-                            </FilterButton>
+                            <FilterButton
+                                key={s.key}
+                                active={type === s.key}
+                                onClick={() => setType(s.key)}
+                                label={s.label}
+                                count={count(s.key)}
+                                color={s.color}
+                            />
                         ))}
                     </div>
                 </div>
             </div>
 
             {shown.length === 0 ? (
-                <p className="px-4 py-16 text-center text-sm text-muted-foreground">
-                    {type === 'all'
-                        ? 'No dead, injured or missing reports yet. New reports appear here as they are filed.'
-                        : `No ${SERIES[type].label.toLowerCase()} reports yet.`}
-                </p>
+                <EmptyState
+                    icon={Radio}
+                    title={type === 'all' ? 'No reports yet' : `No ${SERIES[type].label.toLowerCase()} reports yet`}
+                    description={
+                        type === 'all'
+                            ? 'No dead, injured or missing reports yet. New reports appear here as they are filed.'
+                            : 'Reports of this type appear here as they are filed.'
+                    }
+                />
             ) : (
                 <>
                     {/* Column labels for the wide layout; each row also says what it is. */}
@@ -95,7 +128,7 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
                         <span>Reported by</span>
                         <span>Details</span>
                     </div>
-                    <ol className="divide-y" aria-label="Latest human impact reports">
+                    <ol className="divide-y divide-border" aria-label="Latest human impact reports">
                         {shown.map((item) => {
                             const series = SERIES[item.type];
                             const isNew = fresh.has(item.key);
@@ -105,8 +138,11 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
                                 <li key={item.key}>
                                     <Link
                                         href={route(series.route, { search: item.name })}
+                                        style={{ '--bar': series.color }}
                                         className={cn(
-                                            'block cursor-pointer px-4 py-3 text-sm transition-colors hover:bg-muted/60 sm:px-6 md:items-center',
+                                            'relative block cursor-pointer py-3 pl-5 pr-4 text-sm transition-colors hover:bg-muted/60 active:bg-muted sm:pl-7 sm:pr-6 md:items-center md:pl-6',
+                                            // Phones: a color bar down the left edge groups the rows by type (the label is always shown too).
+                                            'before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--bar)] md:before:hidden',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none',
                                             COLUMNS,
                                             isNew && 'bg-accent/50',
@@ -127,6 +163,7 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
                                                 <span className="font-semibold text-foreground">{series.label}</span>
                                                 {isNew && <NewTag />}
                                             </span>
+                                            <ChevronRight className="order-3 h-4 w-4 shrink-0 text-muted-foreground md:hidden" aria-hidden="true" />
                                         </div>
 
                                         <p className="mt-1 min-w-0 font-medium text-foreground md:mt-0">{reporterLabel(item)}</p>

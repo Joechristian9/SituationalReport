@@ -9,6 +9,7 @@ import useNewImpactReports from "@/hooks/useNewImpactReports";
 import { Toaster } from "sonner";
 import { m as motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Users, Sun, CloudSun, Radio } from "lucide-react";
+import SectionNav from "@/Components/SectionNav";
 import { SkeletonChart } from "@/Components/ui/skeleton";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
@@ -29,27 +30,12 @@ const BarangayImpactChart = lazy(() => import("@/Components/Graphs/BarangayImpac
 const ImpactHourlyChart = lazy(() => import("@/Components/Graphs/ImpactHourlyChart"));
 const DisasterHistory = lazy(() => import("@/Components/Graphs/DisasterHistory"));
 
-// Memoized Tab component to prevent unnecessary re-renders
-const Tab = React.memo(({ label, icon, isActive, onClick, count = 0 }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        aria-label={count > 0 ? `${label}, ${count} new` : label}
-        aria-pressed={isActive}
-        className={`flex min-h-[40px] items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
-            isActive
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:bg-gray-200"
-        }`}
-    >
-        {icon} <span className="hidden sm:inline">{label}</span>
-        {count > 0 && (
-            <span className="rounded-full bg-destructive px-1.5 text-xs font-bold tabular-nums text-destructive-foreground" aria-hidden="true">
-                {count > 99 ? "99+" : count}
-            </span>
-        )}
-    </button>
-));
+const SECTIONS = [
+    { key: "impact", label: "Human Impact", shortLabel: "Impact", icon: Users },
+    { key: "live", label: "Live Feed", shortLabel: "Live", icon: Radio },
+    { key: "environment", label: "Environment Graphs", shortLabel: "Weather", icon: Sun },
+    { key: "pagasa", label: "PAGASA", icon: CloudSun },
+];
 
 // App-style notification badge showing how many new reports came in
 const NotificationBadge = ({ count }) => (
@@ -131,49 +117,34 @@ export default function Dashboard({
             }
             actions={
                 <>
-                    <ActiveTyphoonHeader
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
-                    <NoActiveTyphoonBadge
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
+                    {/* Phones: the disaster name is in the context bar below, so the header keeps only the Live dot. */}
+                    <div className="hidden min-w-0 items-center gap-3 sm:flex">
+                        <ActiveTyphoonHeader
+                            typhoon={typhoon?.active}
+                            hasActive={typhoon?.hasActive}
+                        />
+                        <NoActiveTyphoonBadge
+                            typhoon={typhoon?.active}
+                            hasActive={typhoon?.hasActive}
+                        />
+                    </div>
                     <LiveIndicator live={live} />
                 </>
             }
         >
                 <Toaster position="top-right" richColors />
 
-                <main className="w-full p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
+                {/* Phones: bottom padding keeps the last card clear of the floating section dock. */}
+                <main className="min-h-dvh w-full space-y-4 p-4 max-sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:space-y-8 sm:p-6 lg:p-8">
                     <DisasterContextBar disaster={typhoon?.active} updatedAt={impactSummary?.generatedAt} />
-                    <div className="flex p-1.5 bg-gray-100 rounded-full">
-                        <Tab
-                            label="Human Impact"
-                            icon={<Users size={16} />}
-                            isActive={activeTab === "impact"}
-                            onClick={() => setActiveTab("impact")}
-                        />
-                        <Tab
-                            label="Live Feed"
-                            icon={<Radio size={16} />}
-                            isActive={activeTab === "live"}
-                            onClick={() => setActiveTab("live")}
-                            count={unseenReports}
-                        />
-                        <Tab
-                            label="Environment Graphs"
-                            icon={<Sun size={16} />}
-                            isActive={activeTab === "environment"}
-                            onClick={() => setActiveTab("environment")}
-                        />
-                        <Tab
-                            label="PAGASA"
-                            icon={<CloudSun size={16} />}
-                            isActive={activeTab === "pagasa"}
-                            onClick={() => setActiveTab("pagasa")}
-                        />
-                    </div>
+                    {/* Fixed to the bottom on phones, below dialogs, sheets and the offline card. */}
+                    <SectionNav
+                        tabs={SECTIONS}
+                        active={activeTab}
+                        onChange={setActiveTab}
+                        counts={{ live: unseenReports }}
+                        liveStates={live.enabled ? { live: live.paused ? "paused" : "live" } : {}}
+                    />
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
@@ -187,18 +158,23 @@ export default function Dashboard({
                                 {activeTab === "pagasa" && <PagasaPanel />}
 
                                 {activeTab === "live" && (
-                                    <div className="space-y-6">
-                                        <ImpactHourlyChart
-                                            hourly={impactSummary?.hourly || []}
-                                            byBarangay={impactSummary?.barangays24h}
-                                        />
-                                        <LiveImpactFeed
-                                            items={recentImpact}
-                                            totals={impactSummary?.totals}
-                                            fresh={freshReports}
-                                            paused={live.paused}
-                                            disaster={typhoon?.active}
-                                        />
+                                    <div className="flex flex-col gap-4 sm:gap-6">
+                                        {/* Phones: the feed is what this tab is for, so it comes first; the 24-hour chart follows. */}
+                                        <div className="min-w-0 max-sm:order-2">
+                                            <ImpactHourlyChart
+                                                hourly={impactSummary?.hourly || []}
+                                                byBarangay={impactSummary?.barangays24h}
+                                            />
+                                        </div>
+                                        <div className="min-w-0 max-sm:order-1">
+                                            <LiveImpactFeed
+                                                items={recentImpact}
+                                                totals={impactSummary?.totals}
+                                                fresh={freshReports}
+                                                paused={live.paused}
+                                                disaster={typhoon?.active}
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
@@ -227,7 +203,7 @@ export default function Dashboard({
                                 {activeTab === "impact" && history && <DisasterHistory history={history} />}
 
                                 {activeTab === "impact" && !history && (
-                                    <div className="space-y-6">
+                                    <div className="space-y-4 sm:space-y-6">
                                         {/* Stat cards: current totals from the database */}
                                         <ImpactStatCards
                                             summary={impactSummary}
@@ -237,7 +213,7 @@ export default function Dashboard({
                                         />
 
                                         {/* Trend over time + comparison by barangay */}
-                                        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+                                        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
                                             <ImpactTrendChart trend={impactSummary?.trend || []} />
                                             <BarangayImpactChart rows={impactSummary?.byBarangay || []} />
                                         </div>
@@ -249,7 +225,7 @@ export default function Dashboard({
                                             onSexChange={setImpactSex}
                                             onAgeChange={setImpactAge}
                                         />
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                                        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-3">
                                             <CasualtyGraph casualties={casualties} sex={impactSex} age={impactAge} />
                                             <InjuredGraph injuredList={injured} sex={impactSex} age={impactAge} />
                                             <MissingGraph missingList={missing} sex={impactSex} age={impactAge} />

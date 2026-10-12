@@ -1,61 +1,59 @@
 import React from "react";
-import { X } from "lucide-react";
-import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { DataToolbar, FilterSelect } from "@/Components/data/DataView";
 import { AGE_BRACKETS } from "./personStats";
 
-/** One filter row that scopes all three Human Impact graphs. */
+const SEX_OPTIONS = [
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+    { value: "Unknown", label: "Not specified" },
+];
+
+/**
+ * One filter row that scopes all three Human Impact graphs. Pills on desktop; on
+ * phones a single "Filters" button opens a bottom sheet (see DataToolbar).
+ */
 export default function ImpactFilters({ sex, age, onSexChange, onAgeChange }) {
-    const active = sex !== "all" || age !== "all";
+    const reset = () => {
+        onSexChange("all");
+        onAgeChange("all");
+    };
+
+    const chips = [
+        sex !== "all" && {
+            key: "sex",
+            label: `Sex: ${SEX_OPTIONS.find((o) => o.value === sex)?.label ?? sex}`,
+            onRemove: () => onSexChange("all"),
+        },
+        age !== "all" && { key: "age", label: `Age: ${age}`, onRemove: () => onAgeChange("all") },
+    ].filter(Boolean);
 
     return (
-        <div className="flex flex-wrap items-end gap-3">
-            <div>
-                <Label htmlFor="impact-sex" className="text-xs text-muted-foreground">Sex</Label>
-                <Select value={sex} onValueChange={onSexChange}>
-                    <SelectTrigger id="impact-sex" className="mt-1 h-10 w-32 bg-card md:h-9">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Unknown">Not specified</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="impact-age" className="text-xs text-muted-foreground">Age group</Label>
-                <Select value={age} onValueChange={onAgeChange}>
-                    <SelectTrigger id="impact-age" className="mt-1 h-10 w-32 bg-card md:h-9">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All ages</SelectItem>
-                        {AGE_BRACKETS.map((bracket) => (
-                            <SelectItem key={bracket} value={bracket}>
-                                {bracket}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            {active && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-10 gap-1 md:h-9"
-                    onClick={() => {
-                        onSexChange("all");
-                        onAgeChange("all");
-                    }}
-                >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                    Clear filters
-                </Button>
-            )}
-            <p className="pb-2 text-xs text-muted-foreground">Applies to the three graphs below.</p>
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <DataToolbar
+                className="border-0 border-b py-2.5"
+                filters={
+                    <>
+                        <FilterSelect
+                            id="impact-sex"
+                            label="Sex"
+                            value={sex}
+                            onChange={onSexChange}
+                            options={SEX_OPTIONS}
+                        />
+                        <FilterSelect
+                            id="impact-age"
+                            label="Age group"
+                            value={age}
+                            onChange={onAgeChange}
+                            allLabel="All ages"
+                            options={AGE_BRACKETS.map((bracket) => ({ value: bracket, label: bracket }))}
+                        />
+                    </>
+                }
+                chips={chips}
+                onClearAll={reset}
+            />
+            <p className="px-4 py-2 text-xs text-muted-foreground sm:px-5">Applies to the three graphs below.</p>
         </div>
     );
 }

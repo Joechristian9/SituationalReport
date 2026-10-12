@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "@inertiajs/react";
 import { addDays, format, subDays } from "date-fns";
-import { ArrowUp, ChevronRight, Users } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronRight, TrendingUp, Users } from "lucide-react";
 import { IMPACT_SERIES, Swatch, useFloatingTip } from "./chartParts";
 
 const DAYS = 7;
@@ -93,14 +93,32 @@ function DailyLine({ days, color, noun, tip }) {
     );
 }
 
-function NewToday({ value }) {
+// `short` is the phone wording for the compact cards: "↑ 20 in 24h".
+function NewToday({ value, short = false }) {
     return value > 0 ? (
-        <p className="mt-1 flex items-center gap-1 text-sm text-foreground">
+        <p className="mt-1 flex items-center gap-1 text-xs text-foreground sm:text-sm">
             <ArrowUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className="font-semibold tabular-nums">{value.toLocaleString()}</span> new in the last 24 hours
+            <span className="font-semibold tabular-nums">{value.toLocaleString()}</span>
+            {short ? (
+                <>
+                    <span className="sm:hidden">in 24h</span>
+                    <span className="hidden sm:inline">new in the last 24 hours</span>
+                </>
+            ) : (
+                "new in the last 24 hours"
+            )}
         </p>
     ) : (
-        <p className="mt-1 text-sm text-muted-foreground">No new reports in the last 24 hours</p>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            {short ? (
+                <>
+                    <span className="sm:hidden">None in 24h</span>
+                    <span className="hidden sm:inline">No new reports in the last 24 hours</span>
+                </>
+            ) : (
+                "No new reports in the last 24 hours"
+            )}
+        </p>
     );
 }
 
@@ -135,48 +153,85 @@ function Split({ totals }) {
  */
 export default function ImpactStatCards({ summary, renderBadge }) {
     const tip = useFloatingTip();
+    const [trendsOpen, setTrendsOpen] = useState(false);
     const days = lastDays(summary?.trend || []);
     const totals = summary?.totals || { dead: 0, injured: 0, missing: 0, total: 0 };
     const last24h = summary?.last24h || { dead: 0, injured: 0, missing: 0 };
     const total24h = last24h.dead + last24h.injured + last24h.missing;
+    const dailyFor = (s) => days.map((d) => ({ date: d.date, value: d.row?.[s.key] ?? 0 }));
 
-    const cardClass = "relative flex h-full flex-col rounded-xl border bg-card p-4 shadow-sm";
+    // Phones: the three series are compact cards in one row under a wide Total card.
+    const cardClass = "relative flex h-full flex-col rounded-xl border bg-card p-3 shadow-sm max-sm:h-auto sm:p-4";
 
     return (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {IMPACT_SERIES.map((s) => {
                 const Icon = s.icon;
                 return (
                     <div key={s.key} className={cardClass}>
                         {renderBadge?.(s.badgeKey)}
-                        <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground sm:gap-2">
                             <Swatch color={s.color} />
                             {s.label}
-                            <Icon className="ml-auto h-4 w-4" aria-hidden="true" />
+                            <Icon className="ml-auto hidden h-4 w-4 sm:block" aria-hidden="true" />
                         </p>
-                        <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{totals[s.key].toLocaleString()}</p>
-                        <NewToday value={last24h[s.key]} />
-                        <DailyLine days={days.map((d) => ({ date: d.date, value: d.row?.[s.key] ?? 0 }))} color={s.color} noun={s.label.toLowerCase()} tip={tip} />
+                        <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground sm:mt-2 sm:text-3xl">{totals[s.key].toLocaleString()}</p>
+                        <NewToday value={last24h[s.key]} short />
+                        <div className="hidden sm:block">
+                            <DailyLine days={dailyFor(s)} color={s.color} noun={s.label.toLowerCase()} tip={tip} />
+                        </div>
                         <Link
                             href={route(s.route)}
-                            className="mt-3 inline-flex min-h-11 items-center gap-1 self-end rounded text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-8"
+                            className="mt-2 inline-flex min-h-11 items-center gap-0.5 self-end rounded text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:mt-3 sm:gap-1 md:min-h-8"
                         >
-                            View records
-                            <span className="sr-only">: {s.label.toLowerCase()}</span>
+                            <span className="sm:hidden">View</span>
+                            <span className="hidden sm:inline">View records</span>
+                            <span className="sr-only"> records: {s.label.toLowerCase()}</span>
                             <ChevronRight className="h-4 w-4" aria-hidden="true" />
                         </Link>
                     </div>
                 );
             })}
-            <div className={cardClass}>
+            <div className={`${cardClass} order-first col-span-3 sm:order-none sm:col-span-1`}>
                 {renderBadge?.("total")}
                 <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     Total affected
                     <Users className="ml-auto h-4 w-4" aria-hidden="true" />
                 </p>
-                <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{totals.total.toLocaleString()}</p>
+                <p className="mt-1.5 text-3xl font-semibold tabular-nums text-foreground sm:mt-2">{totals.total.toLocaleString()}</p>
                 <NewToday value={total24h} />
                 <Split totals={totals} />
+            </div>
+
+            {/* Phones only: the 7-day sparklines, one tap away instead of inside every card. */}
+            <div className="col-span-3 sm:hidden">
+                <button
+                    type="button"
+                    onClick={() => setTrendsOpen((open) => !open)}
+                    aria-expanded={trendsOpen}
+                    aria-controls="impact-trends"
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
+                    {trendsOpen ? "Hide" : "Show"} 7-day trends
+                    <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none ${trendsOpen ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                    />
+                </button>
+                {trendsOpen && (
+                    <div id="impact-trends" className="mt-2.5 space-y-2.5">
+                        {IMPACT_SERIES.map((s) => (
+                            <div key={s.key} className="rounded-xl border bg-card p-3 shadow-sm">
+                                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                    <Swatch color={s.color} />
+                                    {s.label}
+                                </p>
+                                <DailyLine days={dailyFor(s)} color={s.color} noun={s.label.toLowerCase()} tip={tip} />
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             {tip.node}
         </div>

@@ -1,21 +1,21 @@
 import React from "react";
 
 const GraphCard = ({ title, icon, actions, children }) => (
-    <div className="bg-white shadow-lg rounded-2xl p-4 sm:p-6 h-full min-w-0 flex flex-col transition-all duration-300 hover:shadow-xl">
+    <div className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
         {/* Card Header: title stays on one line; actions wrap below it when space runs out */}
-        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
-            <div className="flex items-center gap-3 shrink-0">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex shrink-0 items-center gap-3">
                 {icon && (
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                    <div className="rounded-lg bg-primary/10 p-2 text-primary ring-1 ring-inset ring-primary/15">
                         {icon}
                     </div>
                 )}
-                <h3 className="text-lg font-bold text-gray-800 whitespace-nowrap">{title}</h3>
+                <h3 className="whitespace-nowrap text-lg font-semibold text-foreground">{title}</h3>
             </div>
-            {actions && <div className="w-full sm:w-auto sm:ml-auto min-w-0">{actions}</div>}
+            {actions && <div className="w-full min-w-0 sm:ml-auto sm:w-auto">{actions}</div>}
         </div>
         {/* Card Body */}
-        <div className="flex-grow w-full h-full min-w-0">{children}</div>
+        <div className="h-full w-full min-w-0 flex-grow">{children}</div>
     </div>
 );
 

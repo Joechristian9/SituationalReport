@@ -4,6 +4,7 @@ import { addHours, format, parseISO } from "date-fns";
 import { Activity, BarChart3, Table2 } from "lucide-react";
 import GraphCard from "../ui/GraphCard";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 import { IMPACT_SERIES, LineKey } from "./chartParts";
 
 const AXIS_TICK = { fontSize: 12, fill: "hsl(var(--muted-foreground))" };
@@ -75,7 +76,12 @@ function HourTooltip({ active, payload, label, series, showZeros }) {
 }
 
 /** Every barangay that reported in the last 24 hours; click one to highlight its line. */
+const PHONE_ROWS = 8;
+
 function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
+    // Phones show the first few barangays and expand in the page instead of scrolling inside a box.
+    const [expanded, setExpanded] = useState(false);
+
     return (
         <div className="min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -90,14 +96,14 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
             {rows.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">No barangay reports in the last 24 hours.</p>
             ) : (
-                <div className="mt-2 max-h-80 overflow-y-auto">
+                <div className="mt-2 sm:max-h-80 sm:overflow-y-auto">
                     <table className="w-full text-sm">
                         <caption className="sr-only">Barangays by number of reports in the last 24 hours</caption>
                         <thead className="sticky top-0 bg-card text-left text-xs text-muted-foreground">
                             <tr className="border-b">
                                 <th scope="col" className="py-2 pr-2 font-medium">Barangay</th>
                                 {IMPACT_SERIES.map((s) => (
-                                    <th key={s.key} scope="col" className="px-1.5 py-2 text-right font-medium">{s.label}</th>
+                                    <th key={s.key} scope="col" className="px-1.5 py-2 text-right font-medium max-sm:hidden">{s.label}</th>
                                 ))}
                                 <th scope="col" className="py-2 pl-1.5 text-right font-medium">Total</th>
                             </tr>
@@ -106,7 +112,10 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
                             {rows.map((row, i) => {
                                 const color = colorFor(row.key);
                                 return (
-                                    <tr key={row.key} className={color ? "bg-muted/40" : undefined}>
+                                    <tr
+                                        key={row.key}
+                                        className={cn(color && "bg-muted/40", !expanded && i >= PHONE_ROWS && "max-sm:hidden")}
+                                    >
                                         <th scope="row" className="p-0 text-left font-normal">
                                             <button
                                                 type="button"
@@ -116,11 +125,17 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
                                             >
                                                 <span className="w-5 shrink-0 tabular-nums text-muted-foreground">{i + 1}</span>
                                                 {color ? <LineKey color={color} /> : <MutedKey />}
-                                                <span className={`min-w-0 break-words ${color ? "font-medium text-foreground" : "text-foreground"}`}>{placeLabel(row)}</span>
+                                                <span className="min-w-0">
+                                                    <span className={`block break-words ${color ? "font-medium text-foreground" : "text-foreground"}`}>{placeLabel(row)}</span>
+                                                    {/* Phones: the three type columns fold into one line under the name. */}
+                                                    <span className="block text-xs tabular-nums text-muted-foreground sm:hidden">
+                                                        {IMPACT_SERIES.map((s) => `${s.label} ${row[s.key]}`).join(" · ")}
+                                                    </span>
+                                                </span>
                                             </button>
                                         </th>
                                         {IMPACT_SERIES.map((s) => (
-                                            <td key={s.key} className="px-1.5 py-1.5 text-right tabular-nums text-muted-foreground">{row[s.key]}</td>
+                                            <td key={s.key} className="px-1.5 py-1.5 text-right tabular-nums text-muted-foreground max-sm:hidden">{row[s.key]}</td>
                                         ))}
                                         <td className="py-1.5 pl-1.5 text-right font-semibold tabular-nums text-foreground">{row.total}</td>
                                     </tr>
@@ -128,6 +143,16 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
                             })}
                         </tbody>
                     </table>
+                    {rows.length > PHONE_ROWS && (
+                        <button
+                            type="button"
+                            onClick={() => setExpanded((v) => !v)}
+                            aria-expanded={expanded}
+                            className="mt-1 flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-border text-sm font-medium text-primary transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
+                        >
+                            {expanded ? "Show fewer" : `Show all ${rows.length} barangays`}
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -230,7 +255,7 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
             </table>
         </div>
     ) : (
-        <div className="h-64 w-full" role="img" aria-label={summary}>
+        <div className="h-52 w-full sm:h-64" role="img" aria-label={summary}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
                     <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
@@ -269,9 +294,19 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
     return (
         <GraphCard title="Last 24 hours" icon={<Activity size={24} />} actions={toggle}>
             <p className="-mt-2 mb-4 text-sm text-muted-foreground">
-                {byPlace
-                    ? "Reports filed each hour, one line per barangay. Highlighted barangays are in color; the rest are gray."
-                    : "Reports filed each hour, by type. Updates with the feed."}
+                {byPlace ? (
+                    <>
+                        <span className="sm:hidden">One line per barangay; highlighted ones are in color.</span>
+                        <span className="hidden sm:inline">
+                            Reports filed each hour, one line per barangay. Highlighted barangays are in color; the rest are gray.
+                        </span>
+                    </>
+                ) : (
+                    <>
+                        <span className="sm:hidden">Reports per hour, by type.</span>
+                        <span className="hidden sm:inline">Reports filed each hour, by type. Updates with the feed.</span>
+                    </>
+                )}
             </p>
 
             <div className={byPlace ? "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""}>
@@ -294,7 +329,7 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
                     </ul>
                     {chart}
                     {hasReports && (
-                        <Button type="button" variant="ghost" size="sm" className="mt-3 h-9 gap-1.5 px-2 text-muted-foreground" onClick={() => setAsTable((v) => !v)}>
+                        <Button type="button" variant="ghost" size="sm" className="mt-3 h-11 gap-1.5 px-2 text-muted-foreground sm:h-9" onClick={() => setAsTable((v) => !v)}>
                             {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}
                             {asTable ? "View as chart" : "View as table"}
                         </Button>
