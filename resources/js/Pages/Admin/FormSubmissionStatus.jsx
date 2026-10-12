@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
 import axios from 'axios';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import LiveIndicator from '@/Components/LiveIndicator';
+import { cn } from '@/lib/utils';
 
 const SUBMISSION_SORT = {
     name: (u) => u.name.toLowerCase(),
@@ -44,6 +45,117 @@ const SUBMISSION_SORT = {
     status: (u) => (u.has_submitted ? 0 : 1),
     last: (u) => (u.last_submission ? new Date(u.last_submission).getTime() : null),
 };
+
+// Columns the server adds to every form table; they mean nothing to the person reading.
+const HIDDEN_COLUMNS = ['id', 'typhoon_id', 'disaster_id', 'user_id', 'created_at', 'updated_at', 'updated_by'];
+
+const titleCase = (text) => text.replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+/** "access-weather-form" -> "Weather" */
+const permissionLabel = (permission) =>
+    titleCase(permission.replace('access-', '').replace('-form', '').replace(/-/g, ' '));
+
+const formatDate = (value) =>
+    new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const isEmptyValue = (value) => value === null || value === undefined || value === '';
+
+/**
+ * The records of one submitted form: compact cards on phones, a table from md up,
+ * paged so a form with hundreds of rows stays quick.
+ */
+function FormRecords({ rows }) {
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+
+    if (!rows || rows.length === 0) {
+        return <EmptyState icon={AlertCircle} title="No data available" className="py-8" />;
+    }
+
+    const keys = Object.keys(rows[0]).filter((key) => !HIDDEN_COLUMNS.includes(key));
+    const totalPages = Math.ceil(rows.length / perPage);
+    const start = (Math.min(page, totalPages) - 1) * perPage;
+    const shown = rows.slice(start, start + perPage);
+    const labelOf = (key) => titleCase(key.replace(/_/g, ' '));
+
+    return (
+        <div className="space-y-3 p-3 sm:p-4">
+            {/* Phones: one card per record, two fields across; long values take the full width. */}
+            <ul className="space-y-2.5 md:hidden">
+                {shown.map((row, index) => (
+                    <li key={index} className="rounded-xl border border-border bg-card p-3 shadow-sm">
+                        <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                            <span className="rounded-md bg-primary/10 px-1.5 py-0.5 tabular-nums text-primary">#{start + index + 1}</span>
+                        </p>
+                        <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                            {keys.map((key) => {
+                                const empty = isEmptyValue(row[key]);
+                                const wide = !empty && String(row[key]).length > 28;
+                                return (
+                                    <div key={key} className={cn('min-w-0', wide && 'col-span-2')}>
+                                        <dt className="text-xs font-medium text-muted-foreground">{labelOf(key)}</dt>
+                                        <dd className="mt-0.5 break-words text-sm font-medium text-foreground">
+                                            {empty ? <span className="text-muted-foreground" aria-label="Empty">-</span> : String(row[key])}
+                                        </dd>
+                                    </div>
+                                );
+                            })}
+                        </dl>
+                    </li>
+                ))}
+            </ul>
+
+            {/* md and up: a rounded, bordered table that scrolls sideways inside itself. */}
+            <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12 text-right">
+                                <span aria-hidden="true">#</span>
+                                <span className="sr-only">Row</span>
+                            </TableHead>
+                            {keys.map((key) => (
+                                <TableHead key={key}>{labelOf(key)}</TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {shown.map((row, index) => (
+                            <TableRow key={index}>
+                                <TableCell className="text-right tabular-nums text-muted-foreground">{start + index + 1}</TableCell>
+                                {keys.map((key) => (
+                                    <TableCell key={key} className="align-top text-foreground">
+                                        {isEmptyValue(row[key]) ? (
+                                            <span className="text-muted-foreground" aria-label="Empty">-</span>
+                                        ) : (
+                                            <span className="line-clamp-2 max-w-[16rem] break-words" title={String(row[key])}>
+                                                {String(row[key])}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <TablePagination
+                currentPage={Math.min(page, totalPages)}
+                totalPages={totalPages}
+                totalItems={rows.length}
+                perPage={perPage}
+                onPageChange={setPage}
+                onPerPageChange={(value) => {
+                    setPerPage(value);
+                    setPage(1);
+                }}
+                itemLabel="records"
+                className="border-t border-border pt-3"
+            />
+        </div>
+    );
+}
 
 export default function FormSubmissionStatus({ users, activeTyphoon }) {
     // Slower than the other pages: this page runs about 20 grouped queries per refresh.
@@ -53,90 +165,51 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedFormData, setSelectedFormData] = useState(null);
-    const [loadingFormData, setLoadingFormData] = useState(false);
+    // The form open inside the details panel, with its records once loaded.
+    const [openForm, setOpenForm] = useState(null);
+    const [formRows, setFormRows] = useState(null);
+    const [formError, setFormError] = useState(false);
+    const latestForm = useRef(null); // ignores a slow response for a form that was closed or replaced
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const handleViewDetails = (user) => {
         setSelectedUser(user);
         setIsModalOpen(true);
-        setSelectedFormData(null);
+        setOpenForm(null);
+        setFormRows(null);
     };
 
-    const handleViewFormData = async (userId, table, formName) => {
-        // Toggle: if clicking the same form, hide it
-        if (selectedFormData?.form_name === formName) {
-            setSelectedFormData(null);
+    const loadFormData = async (userId, table, formName) => {
+        latestForm.current = formName;
+        setOpenForm(formName);
+        setFormRows(null);
+        setFormError(false);
+        try {
+            const response = await axios.get(route('admin.user-form-data', userId), {
+                params: { table, form_name: formName },
+            });
+            if (latestForm.current === formName) setFormRows(response.data.data ?? []);
+        } catch (error) {
+            if (latestForm.current === formName) setFormError(true);
+        }
+    };
+
+    // Clicking the open form again closes it.
+    const handleViewFormData = (userId, table, formName) => {
+        if (openForm === formName) {
+            latestForm.current = null;
+            setOpenForm(null);
             return;
         }
-
-        setLoadingFormData(true);
-        try {
-            const response = await axios.get(`/admin/user-form-data/${userId}`, {
-                params: { table, form_name: formName }
-            });
-            setSelectedFormData(response.data);
-        } catch (error) {
-            console.error('Error fetching form data:', error);
-        } finally {
-            setLoadingFormData(false);
-        }
+        loadFormData(userId, table, formName);
     };
 
     const closeModal = () => {
+        latestForm.current = null;
         setIsModalOpen(false);
         setSelectedUser(null);
-        setSelectedFormData(null);
-    };
-
-    const renderFormData = (data) => {
-        if (!data || data.length === 0) {
-            return (
-                <EmptyState icon={AlertCircle} title="No data available" />
-            );
-        }
-
-        // Get all unique keys from the data
-        const keys = Object.keys(data[0]).filter(key => 
-            !['id', 'typhoon_id', 'user_id', 'created_at', 'updated_at', 'updated_by'].includes(key)
-        );
-
-        return (
-            <div className="overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-right">#</TableHead>
-                            {keys.map(key => (
-                                <TableHead key={key}>
-                                    {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.map((row, idx) => (
-                            <TableRow key={idx}>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
-                                    {idx + 1}
-                                </TableCell>
-                                {keys.map(key => (
-                                    <TableCell key={key} className="text-foreground">
-                                        {row[key] !== null && row[key] !== undefined ? (
-                                            <span className="inline-block max-w-xs truncate" title={String(row[key])}>
-                                                {String(row[key])}
-                                            </span>
-                                        ) : (
-                                            <span className="text-gray-400 italic">-</span>
-                                        )}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        );
+        setOpenForm(null);
+        setFormRows(null);
     };
 
     const getStatusBadge = (hasSubmitted) => {
@@ -157,12 +230,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         );
     };
 
-    const formatPermissions = (permissions) => {
-        return permissions
-            .map(p => p.replace('access-', '').replace('-form', '').replace(/-/g, ' '))
-            .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-            .join(', ');
-    };
+    const formatPermissions = (permissions) => permissions.map(permissionLabel).join(', ');
 
     // Map permission to table name for checking submission status
     const permissionToTable = {
@@ -192,7 +260,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
 
     const renderAssignedForms = (user) => {
         if (!user.permissions || user.permissions.length === 0) {
-            return <span className="text-sm text-gray-400 italic">No forms assigned</span>;
+            return <span className="text-sm italic text-muted-foreground">No forms assigned</span>;
         }
 
         const submittedTables = user.submitted_form_types || [];
@@ -204,47 +272,43 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+                        className="h-11 gap-2 rounded-lg border-primary/30 text-primary hover:bg-accent hover:text-primary max-md:w-full md:h-8"
                     >
-                        <FileText className="w-4 h-4" />
-                        View Forms ({totalForms})
+                        <FileText className="h-4 w-4" aria-hidden="true" />
+                        View forms ({totalForms})
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[min(420px,calc(100vw-2rem))]" align="start">
                     <div className="space-y-3">
                         <div>
-                            <h4 className="font-semibold text-sm text-gray-900">Assigned Forms</h4>
-                            <p className="text-xs text-gray-500 mt-1">Forms assigned to this organization</p>
+                            <h4 className="text-sm font-semibold text-foreground">Assigned forms</h4>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {user.permissions.filter((p) => submittedTables.includes(permissionToTable[p])).length} of {totalForms} submitted
+                            </p>
                         </div>
                         <div className="max-h-[350px] overflow-y-auto">
-                            <div className="flex flex-wrap gap-2">
-                                {user.permissions.map((permission, idx) => {
-                                    const formName = permission
-                                        .replace('access-', '')
-                                        .replace('-form', '')
-                                        .replace(/-/g, ' ')
-                                        .split(' ')
-                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                        .join(' ');
-                                    
+                            <ul className="flex flex-wrap gap-2">
+                                {user.permissions.map((permission) => {
                                     const tableName = permissionToTable[permission];
                                     const isSubmitted = tableName && submittedTables.includes(tableName);
-                                    
+
                                     return (
-                                        <span
-                                            key={idx}
-                                            className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                        <li
+                                            key={permission}
+                                            className={cn(
+                                                'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium',
                                                 isSubmitted
-                                                    ? 'bg-green-100 text-green-700 border border-green-200'
-                                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
-                                            }`}
+                                                    ? 'border-success/30 bg-success/10 text-success'
+                                                    : 'border-border bg-muted text-muted-foreground'
+                                            )}
                                         >
-                                            {isSubmitted && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                                            {formName}
-                                        </span>
+                                            {isSubmitted && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}
+                                            {permissionLabel(permission)}
+                                            <span className="sr-only">{isSubmitted ? ' (submitted)' : ' (not submitted)'}</span>
+                                        </li>
                                     );
                                 })}
-                            </div>
+                            </ul>
                         </div>
                     </div>
                 </PopoverContent>
@@ -375,7 +439,85 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
 
                                     {paginationData.paginatedUsers.length > 0 ? (
                                         <>
-                                            <Table stacked>
+                                            {/* Phones: one compact card per user instead of a tall stack of labelled cells. */}
+                                            <ul className="space-y-3 p-3 md:hidden">
+                                                {paginationData.paginatedUsers.map((user) => {
+                                                    const permissions = user.permissions ?? [];
+                                                    const doneTables = user.submitted_form_types ?? [];
+                                                    const done = permissions.filter((p) => doneTables.includes(permissionToTable[p])).length;
+                                                    const percent = permissions.length ? Math.round((done / permissions.length) * 100) : 0;
+                                                    return (
+                                                        <li key={user.id} className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate text-base font-semibold text-foreground">{user.name}</p>
+                                                                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                                                                </div>
+                                                                {getStatusBadge(user.has_submitted)}
+                                                            </div>
+
+                                                            {permissions.length > 0 && (
+                                                                <div className="mt-3">
+                                                                    <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                                                                        <span>Forms submitted</span>
+                                                                        <span className="tabular-nums">
+                                                                            <span className="font-semibold text-foreground">{done}</span> of {permissions.length}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        role="progressbar"
+                                                                        aria-label={`Forms submitted by ${user.name}`}
+                                                                        aria-valuemin={0}
+                                                                        aria-valuemax={permissions.length}
+                                                                        aria-valuenow={done}
+                                                                        className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"
+                                                                    >
+                                                                        <div className="h-full rounded-full bg-success" style={{ width: `${percent}%` }} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                                <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                                                {user.last_submission ? (
+                                                                    <span className="tabular-nums">
+                                                                        Last submission{' '}
+                                                                        <span className="font-medium text-foreground">
+                                                                            {new Date(user.last_submission).toLocaleString('en-US', {
+                                                                                month: 'short',
+                                                                                day: 'numeric',
+                                                                                year: 'numeric',
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit',
+                                                                            })}
+                                                                        </span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="italic">No submissions yet</span>
+                                                                )}
+                                                            </p>
+
+                                                            <div className={cn('mt-3 grid gap-2', user.has_submitted ? 'grid-cols-2' : 'grid-cols-1')}>
+                                                                {renderAssignedForms(user)}
+                                                                {user.has_submitted && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        onClick={() => handleViewDetails(user)}
+                                                                        className="h-11 gap-1.5 rounded-lg font-medium text-primary hover:bg-accent hover:text-primary"
+                                                                        aria-label={`View submissions from ${user.name}`}
+                                                                    >
+                                                                        <Eye className="h-4 w-4" aria-hidden="true" />
+                                                                        View
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+
+                                            <div className="hidden md:block">
+                                            <Table>
                                                 <TableHeader>
                                                     <TableRow>
                                                         <TableHead className="w-12 text-right">
@@ -395,7 +537,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                 <TableBody>
                                                     {paginationData.paginatedUsers.map((user, index) => (
                                                         <TableRow key={user.id}>
-                                                            <TableCell className="text-right tabular-nums text-muted-foreground max-md:!hidden">
+                                                            <TableCell className="text-right tabular-nums text-muted-foreground">
                                                                 {paginationData.startIndex + index + 1}
                                                             </TableCell>
                                                             <TableCell className="font-medium text-foreground">
@@ -445,6 +587,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                     ))}
                                                 </TableBody>
                                             </Table>
+                                            </div>
 
                                             <TablePagination
                                                 currentPage={currentPage}
@@ -479,117 +622,168 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                     </div>
                 </main>
 
-            {/* User Details Sheet */}
-            <Sheet open={isModalOpen} onOpenChange={closeModal}>
-                <SheetContent 
-                    side="right" 
-                    className="w-full sm:max-w-4xl p-0 flex flex-col bg-white border-l border-gray-200 shadow-2xl"
-                >
-                    <SheetHeader className="pl-4 pr-14 pt-5 pb-4 sm:px-8 sm:pt-8 sm:pb-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <SheetTitle className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{selectedUser?.name}</SheetTitle>
-                                <SheetDescription className="text-sm text-gray-600 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                        {activeTyphoon?.name}
-                                    </span>
-                                    <span className="text-gray-400">•</span>
-                                    <span>{selectedUser?.submitted_forms?.length || 0} forms submitted</span>
-                                </SheetDescription>
-                            </div>
-                        </div>
-                    </SheetHeader>
+            {/* User details: which forms were submitted, and the records inside each. */}
+            <Sheet open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
+                <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden border-l border-border bg-background p-0 sm:max-w-3xl sm:rounded-l-2xl">
+                    {(() => {
+                        const submitted = selectedUser?.submitted_forms ?? [];
+                        const permissions = selectedUser?.permissions ?? [];
+                        const submittedTables = selectedUser?.submitted_form_types ?? [];
+                        const pending = permissions.filter((p) => !submittedTables.includes(permissionToTable[p]));
+                        const assigned = Math.max(permissions.length, submitted.length);
+                        const percent = assigned ? Math.round((submitted.length / assigned) * 100) : 0;
 
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gradient-to-b from-gray-50 to-white">
-                        {selectedUser?.submitted_forms && selectedUser.submitted_forms.length > 0 ? (
-                            <div className="space-y-4">
-                                {selectedUser.submitted_forms.map((form, idx) => (
-                                    <div key={idx} className="group">
-                                        <button
-                                            onClick={() => handleViewFormData(selectedUser.id, form.table, form.name)}
-                                            className={`w-full text-left p-4 sm:p-5 rounded-2xl transition-all duration-300 flex items-center justify-between border-2 ${
-                                                selectedFormData?.form_name === form.name 
-                                                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-lg scale-[1.02]' 
-                                                    : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md hover:scale-[1.01]'
-                                            }`}
+                        return (
+                            <>
+                                <SheetHeader className="space-y-3 border-b border-border bg-card px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
+                                    <div className="min-w-0">
+                                        <SheetTitle className="truncate text-lg font-semibold text-foreground sm:text-xl">
+                                            {selectedUser?.name}
+                                        </SheetTitle>
+                                        <SheetDescription className="truncate text-sm text-muted-foreground">
+                                            {selectedUser?.email}
+                                            {activeTyphoon && (
+                                                <>
+                                                    <span aria-hidden="true"> · </span>
+                                                    {activeTyphoon.name}
+                                                </>
+                                            )}
+                                        </SheetDescription>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-baseline justify-between gap-2 text-sm">
+                                            <span className="font-medium text-foreground">Forms submitted</span>
+                                            <span className="tabular-nums text-muted-foreground">
+                                                <span className="font-semibold text-foreground">{submitted.length}</span> of {assigned}
+                                            </span>
+                                        </div>
+                                        <div
+                                            role="progressbar"
+                                            aria-label="Forms submitted"
+                                            aria-valuemin={0}
+                                            aria-valuemax={assigned}
+                                            aria-valuenow={submitted.length}
+                                            className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"
                                         >
-                                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                                                <div className={`p-3.5 rounded-2xl transition-all duration-300 ${
-                                                    selectedFormData?.form_name === form.name 
-                                                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg' 
-                                                        : 'bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-indigo-100'
-                                                }`}>
-                                                    <FileText className={`w-6 h-6 flex-shrink-0 transition-colors duration-300 ${
-                                                        selectedFormData?.form_name === form.name 
-                                                            ? 'text-white' 
-                                                            : 'text-gray-600 group-hover:text-blue-600'
-                                                    }`} />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-bold text-lg truncate text-gray-900 mb-1">{form.name}</p>
-                                                    <div className="flex items-center gap-3 text-xs text-gray-600">
-                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full font-medium bg-gray-100 text-gray-700">
-                                                            {form.count} {form.count === 1 ? 'entry' : 'entries'}
-                                                        </span>
-                                                        <span className="text-gray-400">•</span>
-                                                        <span className="flex items-center gap-1">
-                                                            <Clock className="w-3.5 h-3.5" />
-                                                            {new Date(form.last_updated).toLocaleDateString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                year: 'numeric'
-                                                            })}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <ChevronRight className={`w-6 h-6 flex-shrink-0 transition-all duration-300 ${
-                                                selectedFormData?.form_name === form.name 
-                                                    ? 'rotate-90 text-blue-600' 
-                                                    : 'text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1'
-                                            }`} />
-                                        </button>
+                                            <div className="h-full rounded-full bg-success" style={{ width: `${percent}%` }} />
+                                        </div>
+                                    </div>
+                                </SheetHeader>
 
-                                        {/* Show data below when selected */}
-                                        {selectedFormData?.form_name === form.name && (
-                                            <div className="mt-4 rounded-2xl overflow-hidden bg-white border-2 border-blue-300 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <h4 className="font-bold text-white flex items-center gap-2.5">
-                                                            <div className="p-1.5 bg-white/20 rounded-lg">
-                                                                <Eye className="w-5 h-5 text-white" />
+                                <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                                    {submitted.length > 0 ? (
+                                        <ul className="space-y-3">
+                                            {submitted.map((form) => {
+                                                const open = openForm === form.name;
+                                                const panelId = `form-panel-${form.table}`;
+                                                return (
+                                                    <li
+                                                        key={form.table}
+                                                        className={cn(
+                                                            'overflow-hidden rounded-2xl border bg-card shadow-sm',
+                                                            open ? 'border-primary/40' : 'border-border'
+                                                        )}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleViewFormData(selectedUser.id, form.table, form.name)}
+                                                            aria-expanded={open}
+                                                            aria-controls={panelId}
+                                                            className="flex min-h-16 w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-4"
+                                                        >
+                                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                                <FileText className="h-5 w-5" aria-hidden="true" />
+                                                            </span>
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="block truncate text-sm font-semibold text-foreground sm:text-base">
+                                                                    {form.name}
+                                                                </span>
+                                                                <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                                                    <span className="font-medium tabular-nums text-foreground">
+                                                                        {form.count} {form.count === 1 ? 'entry' : 'entries'}
+                                                                    </span>
+                                                                    <span className="inline-flex items-center gap-1">
+                                                                        <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                        Updated {formatDate(form.last_updated)}
+                                                                    </span>
+                                                                </span>
+                                                            </span>
+                                                            <ChevronRight
+                                                                className={cn(
+                                                                    'h-5 w-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
+                                                                    open && 'rotate-90 text-primary'
+                                                                )}
+                                                                aria-hidden="true"
+                                                            />
+                                                        </button>
+
+                                                        {open && (
+                                                            <div id={panelId} className="border-t border-border bg-muted/20">
+                                                                {formError ? (
+                                                                    <div
+                                                                        className="m-3 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-foreground"
+                                                                        role="alert"
+                                                                    >
+                                                                        Couldn't load these records.
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="h-11 md:h-8"
+                                                                            onClick={() => loadFormData(selectedUser.id, form.table, form.name)}
+                                                                        >
+                                                                            Retry
+                                                                        </Button>
+                                                                    </div>
+                                                                ) : formRows === null ? (
+                                                                    <SkeletonTable columns={4} label="Loading form data…" className="p-4" />
+                                                                ) : (
+                                                                    <>
+                                                                        <p className="px-4 pt-3 text-xs font-medium tabular-nums text-muted-foreground sm:px-5">
+                                                                            {formRows.length} {formRows.length === 1 ? 'record' : 'records'}
+                                                                        </p>
+                                                                        <FormRecords key={form.table} rows={formRows} />
+                                                                    </>
+                                                                )}
                                                             </div>
-                                                            <span className="text-lg">Form Data</span>
-                                                        </h4>
-                                                        <span className="text-xs text-white/80 bg-white/20 px-3 py-1.5 rounded-full font-medium">
-                                                            {selectedFormData.data?.length || 0} {selectedFormData.data?.length === 1 ? 'record' : 'records'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                {loadingFormData ? (
-                                                    <SkeletonTable columns={4} label="Loading form data…" className="p-4" />
-                                                ) : (
-                                                    <div className="bg-gradient-to-b from-gray-50 to-white">
-                                                        {renderFormData(selectedFormData.data)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-96">
-                                <div className="text-center p-12 rounded-2xl bg-white border-2 border-dashed border-gray-300 max-w-md">
-                                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                        <FileText className="w-10 h-10 text-gray-400" />
-                                    </div>
-                                    <p className="text-base text-gray-900 font-semibold mb-2">No forms submitted</p>
-                                    <p className="text-sm text-gray-500">This user hasn't submitted any data for the current typhoon yet</p>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    ) : (
+                                        <EmptyState
+                                            icon={FileText}
+                                            title="No forms submitted"
+                                            description="This account hasn't submitted any data for the current disaster yet."
+                                        />
+                                    )}
+
+                                    {pending.length > 0 && (
+                                        <section aria-labelledby="pending-forms-heading">
+                                            <h3 id="pending-forms-heading" className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                Not yet submitted
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                                                    {pending.length}
+                                                </span>
+                                            </h3>
+                                            <ul className="flex flex-wrap gap-2">
+                                                {pending.map((permission) => (
+                                                    <li
+                                                        key={permission}
+                                                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
+                                                    >
+                                                        <Clock className="h-3 w-3" aria-hidden="true" />
+                                                        {permissionLabel(permission)}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </section>
+                                    )}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            </>
+                        );
+                    })()}
                 </SheetContent>
             </Sheet>
         </AppLayout>

@@ -16,7 +16,7 @@ const pageWindow = (current, total) => {
     return pages;
 };
 
-const BOX = "inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-2 text-sm tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9 md:min-w-9";
+const BOX = "inline-flex h-11 min-w-11 items-center justify-center rounded-md border px-2 text-sm tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9 md:min-w-9";
 const IDLE = "border-input bg-card text-foreground hover:bg-muted";
 const ACTIVE = "border-info bg-info text-info-foreground hover:bg-info/90";
 const DISABLED = "pointer-events-none border-input bg-card text-muted-foreground opacity-50";
@@ -73,11 +73,14 @@ export default function TablePagination({
     return (
         <div className={cn("flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between", className)}>
             <p className="text-sm tabular-nums text-muted-foreground" aria-live="polite">
-                Showing {from.toLocaleString()} to {to.toLocaleString()} of {totalItems.toLocaleString()} {itemLabel}
+                Showing <span className="font-medium text-foreground">{from.toLocaleString()}</span> to{" "}
+                <span className="font-medium text-foreground">{to.toLocaleString()}</span> of{" "}
+                <span className="font-medium text-foreground">{totalItems.toLocaleString()}</span> {itemLabel}
             </p>
 
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {onPerPageChange && <RowsPerPage rowsPerPage={perPage} setRowsPerPage={onPerPageChange} />}
+            {/* Phones: rows-per-page on the left, pager on the right, in one row. */}
+            <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-x-6">
+                {onPerPageChange && <RowsPerPage rowsPerPage={perPage} setRowsPerPage={onPerPageChange} shortLabel="Rows" />}
 
                 {/* Shown even for a single page (arrows disabled) so people can see the
                     table is paged; hiding it read as "pagination is broken". */}
@@ -87,8 +90,9 @@ export default function TablePagination({
                     </PageControl>
 
                     {/* Phones: compact "2 / 5"; larger screens: numbered pages */}
-                    <span className="min-w-14 px-1 text-center text-sm tabular-nums text-muted-foreground sm:hidden">
-                        {page} / {lastPage}
+                    <span className="min-w-12 px-1 text-center text-sm font-medium tabular-nums text-foreground sm:hidden">
+                        <span className="sr-only">Page </span>
+                        {page} <span className="text-muted-foreground">/</span> {lastPage}
                     </span>
                     <ul className="hidden items-center gap-1.5 sm:flex">
                         {pageWindow(page, lastPage).map((item, i) => (

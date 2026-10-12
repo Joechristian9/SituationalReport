@@ -10,7 +10,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { Clock, Download, FileCheck, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
+import { Clock, Download, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +21,7 @@ import { toast, Toaster } from 'sonner';
 import axios from 'axios';
 import { differenceInCalendarDays, format, formatDuration, intervalToDuration } from 'date-fns';
 import { Skeleton } from '@/Components/ui/skeleton';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import TablePagination from '@/Components/ui/TablePagination';
 import { SortableHead, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import {
@@ -181,64 +181,131 @@ function DisasterTotals({ state, onRetry }) {
     );
 }
 
-const TILE_LIMIT = 4;
+function TypeTile({ stat, total }) {
+    const { icon: Icon } = getDisasterIcon(stat.disaster_type);
+    const pct = total ? (stat.count / total) * 100 : 0;
+    return (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
+            <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 truncate text-sm font-medium text-foreground">{stat.disaster_type}</span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between gap-2">
+                <span className="text-2xl font-semibold tabular-nums text-foreground">{stat.count}</span>
+                <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                    {pct.toFixed(0)}%<span className="sr-only"> of all disasters</span>
+                </span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            </div>
+        </div>
+    );
+}
+
+const TILE_GRID = 'grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-3';
+const carouselButton =
+    'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card';
 
 /**
- * Phones and tablets: disaster types as a compact 2-column grid (top four, then "Show all")
- * instead of the one-card carousel. `featureFirst` makes the most recorded type a wide tile.
+ * Disaster types as tiles. Collapsed it is one page: three columns by two rows on desktop, four tiles on
+ * smaller screens. `showAll` (toggled from the section header) turns it into a carousel of
+ * those pages (arrows, dots, swipe).
  */
-function TypeTiles({ stats, total, featureFirst = false }) {
-    const [showAll, setShowAll] = useState(false);
-    const limit = TILE_LIMIT + (featureFirst ? 1 : 0);
-    const shown = showAll ? stats : stats.slice(0, limit);
+function TypeTiles({ stats, total, pageSize, showAll }) {
+    const reduceMotion = useReducedMotion();
+    const pageCount = Math.max(1, Math.ceil(stats.length / pageSize));
+    const [requested, setRequested] = useState({ page: 0, dir: 1 });
+    const page = Math.min(requested.page, pageCount - 1); // stays valid when pageSize changes
+    const goTo = (target) => {
+        const next = Math.min(Math.max(0, target), pageCount - 1);
+        if (next !== page) setRequested({ page: next, dir: next > page ? 1 : -1 });
+    };
+    const pageStats = (index) => stats.slice(index * pageSize, index * pageSize + pageSize);
+    const carousel = showAll && pageCount > 1;
+    const shift = reduceMotion ? 0 : 32;
 
     return (
         <div>
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {shown.map((stat, index) => {
-                    const { icon: Icon } = getDisasterIcon(stat.disaster_type);
-                    const pct = total ? (stat.count / total) * 100 : 0;
-                    const wide = featureFirst && index === 0;
-                    return (
-                        <div
-                            key={stat.disaster_type}
-                            className={`rounded-xl border border-border bg-card p-3 shadow-sm ${wide ? 'col-span-2' : ''}`}
+            {carousel ? (
+                <div role="region" aria-roledescription="carousel" aria-label="Disaster types">
+                    <div className="overflow-hidden">
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.div
+                                key={`${pageSize}-${page}`}
+                                className={`select-none ${TILE_GRID}`}
+                                initial={{ opacity: 0, x: shift * requested.dir }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -shift * requested.dir }}
+                                transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                                drag="x"
+                                dragDirectionLock
+                                dragConstraints={{ left: 0, right: 0 }}
+                                dragElastic={0.2}
+                                onDragEnd={(event, info) => {
+                                    if (info.offset.x < -60) goTo(page + 1);
+                                    else if (info.offset.x > 60) goTo(page - 1);
+                                }}
+                            >
+                                {pageStats(page).map((stat) => (
+                                    <TypeTile key={stat.disaster_type} stat={stat} total={total} />
+                                ))}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                        <button
+                            type="button"
+                            onClick={() => goTo(page - 1)}
+                            disabled={page === 0}
+                            aria-label="Previous disaster types"
+                            className={carouselButton}
                         >
-                            <div className="flex items-center gap-2">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <Icon className="h-4 w-4" aria-hidden="true" />
-                                </span>
-                                <span className="min-w-0">
-                                    {wide && (
-                                        <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                            Most recorded
-                                        </span>
-                                    )}
-                                    <span className="block truncate text-sm font-medium text-foreground">{stat.disaster_type}</span>
-                                </span>
+                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        <div className="flex flex-col items-center">
+                            <div className="flex flex-wrap items-center justify-center">
+                                {Array.from({ length: pageCount }, (_, index) => (
+                                    <button
+                                        key={index}
+                                        type="button"
+                                        onClick={() => goTo(index)}
+                                        aria-label={`Go to page ${index + 1} of ${pageCount}`}
+                                        aria-current={index === page ? 'true' : undefined}
+                                        className="flex h-8 min-w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <span
+                                            className={`h-2 rounded-full transition-all duration-200 motion-reduce:transition-none ${
+                                                index === page ? 'w-6 bg-primary' : 'w-2 bg-primary/30'
+                                            }`}
+                                        />
+                                    </button>
+                                ))}
                             </div>
-                            <div className="mt-2 flex items-baseline justify-between gap-2">
-                                <span className="text-2xl font-semibold tabular-nums text-foreground">{stat.count}</span>
-                                <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                                    {pct.toFixed(0)}%<span className="sr-only"> of all disasters</span>
-                                </span>
-                            </div>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                            </div>
+                            <p className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
+                                {page + 1} / {pageCount}
+                            </p>
                         </div>
-                    );
-                })}
-            </div>
-            {stats.length > limit && (
-                <button
-                    type="button"
-                    onClick={() => setShowAll((v) => !v)}
-                    aria-expanded={showAll}
-                    className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-border bg-card text-sm font-medium text-primary shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    {showAll ? 'Show fewer' : `Show all ${stats.length} types`}
-                </button>
+                        <button
+                            type="button"
+                            onClick={() => goTo(page + 1)}
+                            disabled={page >= pageCount - 1}
+                            aria-label="Next disaster types"
+                            className={carouselButton}
+                        >
+                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className={TILE_GRID}>
+                    {pageStats(0).map((stat) => (
+                        <TypeTile key={stat.disaster_type} stat={stat} total={total} />
+                    ))}
+                </div>
             )}
         </div>
     );
@@ -250,6 +317,9 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
+    // Disaster-type tiles: one page is 3x2 on desktop and 4 tiles elsewhere; "Show all" pages through the rest.
+    const typePageSize = useMediaQuery('(min-width: 1024px)') ? 6 : 4;
+    const [showAllTypes, setShowAllTypes] = useState(false);
     // View details totals, per disaster id: { data } once loaded, { error: true } on failure.
     const [summaries, setSummaries] = useState({});
     const loadSummary = useCallback((id) => {
@@ -265,14 +335,6 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [showAllTypes, setShowAllTypes] = useState(false);
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    // Disaster-type carousel: one card per slide on phones and tablets, a 2x2 grid on desktop.
-    const perSlide = useMediaQuery('(min-width: 1024px)') ? 4 : 1;
-    const slideCount = Math.max(1, Math.ceil((disasterStats?.length || 0) / perSlide));
-    const slide = Math.min(carouselIndex, slideCount - 1); // stays valid when perSlide changes
-    const slideStats = (disasterStats || []).slice(slide * perSlide, slide * perSlide + perSlide);
-    const goToSlide = (index) => setCarouselIndex(Math.min(Math.max(0, index), slideCount - 1));
     const [formData, setFormData] = useState({
         name: '',
         disaster_type: '',
@@ -373,7 +435,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Creating disaster report...');
 
         try {
-            const response = await axios.post('/admin/disasters', formData);
+            const response = await axios.post(route('disasters.store'), formData);
             toast.success(response.data.message, { id: loadingToast });
             setIsCreateModalOpen(false);
             setFormData({ name: '', disaster_type: '', description: '' });
@@ -386,7 +448,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
     }, [formData]);
 
     const handleDownloadSnapshot = async (typhoon) => {
-        window.open(`/admin/disasters/${typhoon.id}/snapshot`, '_blank');
+        window.open(route('disasters.snapshot', typhoon.id), '_blank');
     };
 
     const openDeleteModal = useCallback((typhoon) => {
@@ -401,7 +463,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         const loadingToast = toast.loading('Deleting disaster report...');
 
         try {
-            const response = await axios.delete(`/admin/disasters/${selectedTyphoon.id}`);
+            const response = await axios.delete(route('disasters.destroy', selectedTyphoon.id));
             toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
@@ -413,37 +475,24 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
         }
     }, [selectedTyphoon]);
 
-    const handleDownloadPdf = async (typhoon) => {
-        // If PDF doesn't exist, generate it first
-        if (!typhoon.pdf_path) {
-            setIsSubmitting(true);
-            toast.loading('Generating PDF report...');
-            try {
-                const response = await axios.post(`/admin/disasters/${typhoon.id}/regenerate-pdf`);
-                toast.dismiss();
-                toast.success('PDF generated successfully! Downloading...');
-                
-                // Automatically download the generated PDF
-                setTimeout(() => {
-                    window.open(`/admin/disasters/${typhoon.id}/download`, '_blank');
-                    router.reload();
-                }, 500);
-                
-                return;
-            } catch (error) {
-                toast.dismiss();
-                toast.error(error.response?.data?.message || 'Failed to generate PDF');
-                setIsSubmitting(false);
-                return;
-            }
-        }
-
-        // PDF exists, download it
+    // The final PDF is normally built right after a disaster ends; this builds it on demand
+    // when that didn't happen. Returns whether the PDF now exists.
+    const generatePdf = useCallback(async (typhoon) => {
+        const loadingToast = toast.loading('Generating PDF report...');
         try {
-            window.open(`/admin/disasters/${typhoon.id}/download`, '_blank');
+            await axios.post(route('disasters.regenerate-pdf', typhoon.id));
+            toast.success('PDF generated successfully', { id: loadingToast });
+            router.reload({ only: ['typhoons'] });
+            return true;
         } catch (error) {
-            toast.error('Failed to download PDF');
+            toast.error(error.response?.data?.message || 'Failed to generate PDF', { id: loadingToast });
+            return false;
         }
+    }, []);
+
+    const handleDownloadPdf = async (typhoon) => {
+        if (!typhoon.pdf_path && !(await generatePdf(typhoon))) return;
+        window.open(route('disasters.download', typhoon.id), '_blank');
     };
 
     const openView = (typhoon) => {
@@ -528,62 +577,38 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                     <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">
                                         {activeTyphoon
                                             ? 'Active disaster report and statistics by type'
-                                            : showAllTypes
-                                                ? `Showing all ${disasterStats.length} disaster types`
-                                                : `Showing top ${Math.min(4, disasterStats.length)} disaster types`}
+                                            : 'Disaster statistics by type'}
                                     </p>
                                 </div>
-                                {/* Phones and tablets expand the type tiles instead (see TypeTiles). */}
-                                {!activeTyphoon && disasterStats.length > 4 && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setShowAllTypes(!showAllTypes)}
-                                        className="hidden items-center gap-2 lg:flex"
-                                    >
-                                        {showAllTypes ? (
-                                            <>
-                                                <ChevronLeft className="w-4 h-4" />
-                                                Show Less
-                                            </>
-                                        ) : (
-                                            <>
-                                                View All ({disasterStats.length})
-                                                <ChevronRight className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
                             </div>
                             
-                            {/* Featured + Grid Layout: Active Disaster + Carousel */}
-                            {!showAllTypes && activeTyphoon && disasterStats.length > 0 && (
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                                    {/* Compact Featured Card - Active Disaster */}
+                            {/* The active disaster beside the most recorded types; stacked on phones and tablets. */}
+                            <div className={`grid grid-cols-1 gap-4 ${activeTyphoon ? 'lg:grid-cols-3' : ''}`}>
+                                {activeTyphoon && (
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.3 }}
-                                        className="lg:col-span-1"
+                                        className="flex flex-col lg:col-span-1"
                                     >
-                                        {/* Theme card; the left bar and chip carry the status (green active, amber paused). */}
-                                        <Card className="relative h-full overflow-hidden border-border shadow-sm">
+                                        {/* Same heading row as "By disaster type", so the card and the tiles start and end together. */}
+                                        <div className="mb-2 flex items-center sm:min-h-9">
+                                            <h3 className="text-sm font-semibold text-foreground">Active disaster report</h3>
+                                        </div>
+                                        {/* The left bar and chip carry the status (green active, amber paused). */}
+                                        <Card className="relative flex-1 overflow-hidden border-border shadow-sm">
                                             <span
                                                 aria-hidden="true"
                                                 className={`absolute inset-y-0 left-0 w-1 ${activeTyphoon.status === 'paused' ? 'bg-warning' : 'bg-success'}`}
                                             />
-                                            <CardContent className="flex h-full flex-col gap-3 p-4 pl-5 sm:p-5 sm:pl-6">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                        Active disaster report
-                                                    </p>
-                                                    <StatusChip status={activeTyphoon.status} />
-                                                </div>
-
+                                            <CardContent className="flex h-full flex-col gap-3 p-4 pl-5 sm:p-5 sm:pl-6 lg:justify-between">
                                                 <div className="min-w-0">
-                                                    <h3 className="line-clamp-2 text-xl font-semibold leading-tight text-foreground">
-                                                        {activeTyphoon.name}
-                                                    </h3>
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <h3 className="line-clamp-2 min-w-0 text-xl font-semibold leading-tight text-foreground">
+                                                            {activeTyphoon.name}
+                                                        </h3>
+                                                        <StatusChip status={activeTyphoon.status} />
+                                                    </div>
                                                     <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
                                                         {activeTyphoon.disaster_type && (
                                                             <span className="font-medium text-foreground">{activeTyphoon.disaster_type}</span>
@@ -644,243 +669,35 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                             </CardContent>
                                         </Card>
                                     </motion.div>
+                                )}
 
-                                    {/* Desktop: carousel of disaster types, a 2x2 grid of four per slide.
-                                        Phones and tablets get the TypeTiles grid below instead. */}
-                                    <div className="relative hidden lg:col-span-2 lg:block">
-                                        <div className="flex items-center gap-2 sm:gap-4">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => goToSlide(slide - 1)}
-                                                disabled={slide === 0}
-                                                aria-label="Previous disaster types"
-                                                className="shrink-0 h-11 w-11 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
-                                            >
-                                                <ChevronLeft className="w-5 h-5" />
-                                            </Button>
-
-                                            <div className="flex-1 min-w-0 overflow-hidden">
-                                                {/* One animated child per slide, as AnimatePresence "wait" requires. */}
-                                                <AnimatePresence mode="wait" initial={false}>
-                                                    <motion.div
-                                                        key={`${perSlide}-${slide}`}
-                                                        className={`grid select-none gap-4 ${perSlide > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
-                                                        initial={{ opacity: 0, x: 40 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        exit={{ opacity: 0, x: -40 }}
-                                                        transition={{ duration: 0.25 }}
-                                                        drag={slideCount > 1 ? 'x' : false}
-                                                        dragDirectionLock
-                                                        dragConstraints={{ left: 0, right: 0 }}
-                                                        dragElastic={0.2}
-                                                        onDragEnd={(event, info) => {
-                                                            if (info.offset.x < -60) goToSlide(slide + 1);
-                                                            else if (info.offset.x > 60) goToSlide(slide - 1);
-                                                        }}
-                                                    >
-                                                        {slideStats.map((stat) => {
-                                                            const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
-                                                            return (
-                                                                <Card key={stat.disaster_type} className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg transition-shadow duration-300 h-full">
-                                                                    <CardContent className="p-5">
-                                                                        <div className="flex items-center justify-between mb-3">
-                                                                            <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
-                                                                                <Icon className="w-5 h-5 text-white" aria-hidden="true" />
-                                                                            </div>
-                                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm tabular-nums">
-                                                                                {((stat.count / statusCounts.total) * 100).toFixed(1)}%
-                                                                            </div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
-                                                                                {stat.disaster_type}
-                                                                            </p>
-                                                                            <p className="text-3xl font-bold text-blue-900 tabular-nums">{stat.count}</p>
-                                                                            <p className="text-xs text-slate-500 mt-1">
-                                                                                {stat.count === 1 ? 'disaster' : 'disasters'} recorded
-                                                                            </p>
-                                                                        </div>
-                                                                    </CardContent>
-                                                                </Card>
-                                                            );
-                                                        })}
-                                                    </motion.div>
-                                                </AnimatePresence>
-                                            </div>
-
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => goToSlide(slide + 1)}
-                                                disabled={slide >= slideCount - 1}
-                                                aria-label="Next disaster types"
-                                                className="shrink-0 h-11 w-11 rounded-full border-2 border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed z-10"
-                                            >
-                                                <ChevronRight className="w-5 h-5" />
-                                            </Button>
+                                {disasterStats.length > 0 && (
+                                    <div className={activeTyphoon ? 'lg:col-span-2' : undefined}>
+                                        <div className="mb-2 flex items-center justify-between gap-3 sm:min-h-9">
+                                            <h3 className="text-sm font-semibold text-foreground">By disaster type</h3>
+                                            {disasterStats.length > typePageSize && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowAllTypes((v) => !v)}
+                                                    aria-expanded={showAllTypes}
+                                                    className="h-11 shrink-0 px-3 text-sm font-medium text-primary sm:h-9"
+                                                >
+                                                    {showAllTypes ? 'Show fewer' : `Show all (${disasterStats.length})`}
+                                                </Button>
+                                            )}
                                         </div>
-
-                                        {slideCount > 1 && (
-                                            <div className="mt-3 flex flex-col items-center gap-1">
-                                                <div className="flex flex-wrap items-center justify-center">
-                                                    {Array.from({ length: slideCount }).map((_, index) => (
-                                                        <button
-                                                            key={index}
-                                                            type="button"
-                                                            onClick={() => goToSlide(index)}
-                                                            aria-label={`Go to slide ${index + 1} of ${slideCount}`}
-                                                            aria-current={index === slide ? 'true' : undefined}
-                                                            className="flex h-8 min-w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                        >
-                                                            <span
-                                                                className={`h-2 rounded-full transition-all duration-300 motion-reduce:transition-none ${
-                                                                    index === slide ? 'w-8 bg-blue-600' : 'w-2 bg-blue-300 hover:bg-blue-400'
-                                                                }`}
-                                                            />
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
-                                                    {slide + 1} / {slideCount}
-                                                </p>
-                                            </div>
-                                        )}
+                                        <TypeTiles
+                                            key={`${typePageSize}-${showAllTypes}`}
+                                            stats={disasterStats}
+                                            total={statusCounts.total}
+                                            pageSize={typePageSize}
+                                            showAll={showAllTypes}
+                                        />
                                     </div>
-                                </div>
-                            )}
-
-                            {/* When NO Active Disaster: Show Featured + Grid Layout for Stats */}
-                            {!showAllTypes && !activeTyphoon && disasterStats.length > 0 && (
-                                <div className="mb-4 hidden grid-cols-3 gap-4 lg:grid">
-                                    {/* Large Featured Card - Top Disaster Type */}
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="lg:col-span-1 lg:row-span-2"
-                                    >
-                                        <Card className="h-full border-blue-300 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer">
-                                            <CardContent className="p-8 h-full flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-6">
-                                                        <div className="p-4 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
-                                                            <Cloud className="w-8 h-8 text-white" />
-                                                        </div>
-                                                        <div className="px-4 py-2 bg-white text-blue-700 text-sm font-bold rounded-full shadow-md">
-                                                            {((disasterStats[0].count / statusCounts.total) * 100).toFixed(1)}%
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-semibold text-blue-100 mb-2 uppercase tracking-wide">
-                                                            Top Disaster Type
-                                                        </p>
-                                                        <h3 className="text-2xl font-bold text-white mb-1">
-                                                            {disasterStats[0].disaster_type}
-                                                        </h3>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-6">
-                                                    <p className="text-5xl font-black text-white mb-2">{disasterStats[0].count}</p>
-                                                    <p className="text-sm text-blue-100">
-                                                        {disasterStats[0].count === 1 ? 'disaster' : 'disasters'} recorded
-                                                    </p>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-
-                                    {/* 2x2 Grid of Smaller Cards */}
-                                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {disasterStats.slice(1, 5).map((stat, index) => (
-                                            <motion.div
-                                                key={stat.disaster_type}
-                                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                transition={{ duration: 0.3, delay: (index + 1) * 0.1 }}
-                                            >
-                                                <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer h-full">
-                                                    <CardContent className="p-5">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            {(() => {
-                                                                const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
-                                                                return (
-                                                                    <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
-                                                                        <Icon className="w-5 h-5 text-white" />
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
-                                                                {((stat.count / statusCounts.total) * 100).toFixed(1)}%
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
-                                                                {stat.disaster_type}
-                                                            </p>
-                                                            <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
-                                                            <p className="text-xs text-slate-500 mt-1">
-                                                                {stat.count === 1 ? 'disaster' : 'disasters'} recorded
-                                                            </p>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Phones and tablets: every type at a glance instead of the carousel / featured grid. */}
-                            {disasterStats.length > 0 && (
-                                <div className="lg:hidden">
-                                    {activeTyphoon && (
-                                        <h3 className="mb-2 text-sm font-semibold text-foreground">By disaster type</h3>
-                                    )}
-                                    <TypeTiles stats={disasterStats} total={statusCounts.total} featureFirst={!activeTyphoon} />
-                                </div>
-                            )}
-
-                            {/* Show All View - Regular Grid */}
-                            {showAllTypes && (
-                                <div className="hidden grid-cols-3 gap-4 lg:grid">
-                                    {disasterStats.map((stat, index) => (
-                                        <motion.div
-                                            key={stat.disaster_type}
-                                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                                        >
-                                            <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer">
-                                                <CardContent className="p-5">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        {(() => {
-                                                            const { icon: Icon, color } = getDisasterIcon(stat.disaster_type);
-                                                            return (
-                                                                <div className={`p-2.5 bg-gradient-to-br ${color} rounded-lg shadow-md`}>
-                                                                    <Icon className="w-5 h-5 text-white" />
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                        <div className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
-                                                            {((stat.count / statusCounts.total) * 100).toFixed(1)}%
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-semibold text-blue-600 mb-1 line-clamp-1">
-                                                            {stat.disaster_type}
-                                                        </p>
-                                                        <p className="text-3xl font-bold text-blue-900">{stat.count}</p>
-                                                        <p className="text-xs text-slate-500 mt-1">
-                                                            {stat.count === 1 ? 'disaster' : 'disasters'} recorded
-                                                        </p>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </motion.div>
                     )}
 
@@ -1274,7 +1091,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                     <h3 className="min-w-0 break-words text-base font-semibold text-foreground sm:text-lg">{selectedTyphoon.name}</h3>
                                     <StatusChip status={selectedTyphoon.status} />
                                 </div>
-                                {/* Duration, and for ended disasters whether the final PDF exists yet. */}
+                                {/* Duration */}
                                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                                     <span className="inline-flex items-center gap-1.5">
                                         <Clock className="h-4 w-4" aria-hidden="true" />
@@ -1283,20 +1100,6 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                             {durationLabel(selectedTyphoon.started_at, selectedTyphoon.ended_at)}
                                         </span>
                                     </span>
-                                    {selectedTyphoon.status === 'ended' && (
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 font-medium ${
-                                                selectedTyphoon.pdf_path ? 'text-success' : 'text-warning'
-                                            }`}
-                                        >
-                                            {selectedTyphoon.pdf_path ? (
-                                                <FileCheck className="h-4 w-4" aria-hidden="true" />
-                                            ) : (
-                                                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                                            )}
-                                            {selectedTyphoon.pdf_path ? 'PDF ready' : 'PDF being prepared'}
-                                        </span>
-                                    )}
                                 </p>
                             </div>
 

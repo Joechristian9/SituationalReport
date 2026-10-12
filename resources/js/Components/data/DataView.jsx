@@ -6,14 +6,7 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-} from "@/Components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -223,12 +216,12 @@ function DensityToggle() {
 /**
  * Search and filters above a list, on a tinted band. `search` = { id, value, onChange,
  * onClear?, placeholder }. `filters` are FilterSelect / FilterDate pills; on phones they
- * move into a bottom sheet. `chips` = [{ key, label, onRemove }] for the applied filters.
+ * move into a popover under the Filters button. `chips` = [{ key, label, onRemove }] for the applied filters.
  * `onClearAll` resets the search and every filter.
  */
 export function DataToolbar({ search, filters, chips = [], onClearAll, className }) {
     const isMobile = useIsMobile();
-    const [sheetOpen, setSheetOpen] = useState(false);
+    const [popoverOpen, setPopoverOpen] = useState(false);
     const canClear = onClearAll && (chips.length > 0 || !!search?.value);
 
     return (
@@ -241,20 +234,58 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, className
                         </div>
                     )}
                     {filters && isMobile && (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setSheetOpen(true)}
-                            className="h-11 shrink-0 gap-2 rounded-lg bg-card shadow-sm"
-                        >
-                            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                            Filters
-                            {chips.length > 0 && (
-                                <span className="rounded-full bg-primary px-1.5 text-xs font-semibold tabular-nums text-primary-foreground">
-                                    {chips.length}
-                                </span>
-                            )}
-                        </Button>
+                        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    aria-label={chips.length > 0 ? `Filters, ${chips.length} applied` : "Filters"}
+                                    className={cn(
+                                        "h-11 shrink-0 gap-2 rounded-lg px-3 shadow-sm",
+                                        chips.length > 0
+                                            ? "border-primary/40 bg-primary/10 text-accent-foreground hover:bg-primary/15"
+                                            : "bg-card"
+                                    )}
+                                >
+                                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                                    Filters
+                                    {chips.length > 0 && (
+                                        <span
+                                            className="rounded-full bg-primary px-1.5 text-xs font-semibold tabular-nums text-primary-foreground"
+                                            aria-hidden="true"
+                                        >
+                                            {chips.length}
+                                        </span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            {/* Hangs under the button; capped to the space on screen so long lists scroll inside it. */}
+                            <PopoverContent
+                                align="end"
+                                sideOffset={8}
+                                collisionPadding={16}
+                                className="w-[min(22rem,calc(100vw-2rem))] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto rounded-xl p-0 shadow-lg"
+                            >
+                                <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+                                    <p className="text-sm font-semibold text-foreground">Filters</p>
+                                    {canClear && (
+                                        <button
+                                            type="button"
+                                            onClick={onClearAll}
+                                            className="-mr-2 inline-flex h-9 items-center rounded-md px-2 text-sm font-semibold text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            Clear all
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid gap-2.5 p-4">{filters}</div>
+                                <div className="border-t border-border bg-muted/30 p-3">
+                                    <Button type="button" className="h-11 w-full" onClick={() => setPopoverOpen(false)}>
+                                        Done
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     )}
                 </div>
 
@@ -295,27 +326,6 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, className
                 </div>
             )}
 
-            {filters && isMobile && (
-                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                    <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl">
-                        <SheetHeader className="text-left">
-                            <SheetTitle>Filters</SheetTitle>
-                            <SheetDescription>Narrow down the list.</SheetDescription>
-                        </SheetHeader>
-                        <div className="grid gap-3 py-4">{filters}</div>
-                        <SheetFooter className="gap-2">
-                            {canClear && (
-                                <Button type="button" variant="outline" className="h-11" onClick={onClearAll}>
-                                    Clear all
-                                </Button>
-                            )}
-                            <Button type="button" className="h-11" onClick={() => setSheetOpen(false)}>
-                                Show results
-                            </Button>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
-            )}
         </div>
     );
 }
