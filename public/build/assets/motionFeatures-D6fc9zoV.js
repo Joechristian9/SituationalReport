@@ -1,1 +1,0 @@
-import{g as t,a,c as o}from"./gestures-9rciMc8q.js";import"./button-CWzBXmFH.js";import"./data-id-Dm1nb9Ee.js";import"./is-html-element-CQto32_L.js";const n={renderer:o,...a,...t};export{n as default};
