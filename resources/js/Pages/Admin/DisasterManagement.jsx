@@ -311,7 +311,32 @@ function TypeTiles({ stats, total, pageSize, showAll }) {
     );
 }
 
-export default function DisasterManagement({ typhoons, activeTyphoon, disasterStats, statusCounts }) {
+export default function DisasterManagement({ typhoons }) {
+    // Everything below is derived from the one list the server sends (newest first), so
+    // the tiles, counts and current disaster always match the table after any action.
+    const activeTyphoon = useMemo(
+        () => typhoons.find((typhoon) => typhoon.status === 'active' || typhoon.status === 'paused') ?? null,
+        [typhoons],
+    );
+    const statusCounts = useMemo(() => {
+        const counts = { total: typhoons.length, active: 0, paused: 0, ended: 0 };
+        typhoons.forEach((typhoon) => {
+            if (typhoon.status in counts) counts[typhoon.status] += 1;
+        });
+        return counts;
+    }, [typhoons]);
+    const disasterStats = useMemo(() => {
+        const byType = {};
+        typhoons.forEach(({ disaster_type: type }) => {
+            if (type) byType[type] = (byType[type] || 0) + 1;
+        });
+        return Object.entries(byType)
+            .map(([disaster_type, count]) => ({ disaster_type, count }))
+            .sort((a, b) => b.count - a.count);
+    }, [typhoons]);
+    // Only the layout in use is rendered: cards on phones, the table from md up.
+    const isWide = useMediaQuery('(min-width: 768px)');
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [lifecycleAction, setLifecycleAction] = useState(null); // 'pause' | 'resume' | 'end'
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -439,7 +464,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             toast.success(response.data.message, { id: loadingToast });
             setIsCreateModalOpen(false);
             setFormData({ name: '', disaster_type: '', description: '' });
-            router.reload({ only: ['typhoons', 'activeTyphoon'] });
+            router.reload({ only: ['typhoons', 'typhoon'] });
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create disaster report', { id: loadingToast });
         } finally {
@@ -467,7 +492,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
             toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
-            router.reload({ only: ['typhoons'] });
+            router.reload({ only: ['typhoons', 'typhoon'] });
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to delete disaster report', { id: loadingToast });
         } finally {
@@ -768,7 +793,8 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                 ) : (
                                     <>
                                     {/* Phones: compact cards; the card opens the details, ⋯ holds the other actions. */}
-                                    <ul className="divide-y divide-border md:hidden">
+                                    {!isWide ? (
+                                    <ul className="divide-y divide-border">
                                         {paginationData.paginatedTyphoons.map((typhoon) => {
                                             const { icon: TypeIcon } = getDisasterIcon(typhoon.disaster_type);
                                             return (
@@ -806,8 +832,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                             );
                                         })}
                                     </ul>
-
-                                    <div className="hidden md:block">
+                                    ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -867,7 +892,7 @@ export default function DisasterManagement({ typhoons, activeTyphoon, disasterSt
                                             ))}
                                         </TableBody>
                                     </Table>
-                                    </div>
+                                    )}
                                     </>
                                 )}
 

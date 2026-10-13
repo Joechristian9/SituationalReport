@@ -24,12 +24,11 @@ class DisasterController extends Controller
     private const FORM_TABLES = PendingForms::FORM_TABLES;
 
     /**
-     * Display disaster management page
-     * Optimized with eager loading and selective fields
+     * Disaster management page. One query: the page derives the current disaster, the
+     * status counts and the per-type tiles from this list, so they never disagree with it.
      */
     public function index()
     {
-        // Eager load relationships with only necessary fields
         $typhoons = Typhoon::with([
             'creator:id,name',
             'ender:id,name',
@@ -38,52 +37,24 @@ class DisasterController extends Controller
             ->latest('started_at')
             ->get();
 
-        // Get active or paused typhoon with creator info
-        $activeTyphoon = Typhoon::with('creator:id,name')
-            ->whereIn('status', ['active', 'paused'])
-            ->select('id', 'name', 'disaster_type', 'description', 'status', 'started_at', 'created_by')
-            ->latest('started_at')
-            ->first();
-
-        // Get disaster statistics by type
-        $disasterStats = Typhoon::select('disaster_type', \DB::raw('count(*) as count'))
-            ->whereNotNull('disaster_type')
-            ->groupBy('disaster_type')
-            ->orderBy('count', 'desc')
-            ->get();
-
-        // Get total counts by status
-        $statusCounts = [
-            'total' => Typhoon::count(),
-            'active' => Typhoon::where('status', 'active')->count(),
-            'paused' => Typhoon::where('status', 'paused')->count(),
-            'ended' => Typhoon::where('status', 'ended')->count(),
-        ];
-
         return Inertia::render('Admin/DisasterManagement', [
             'typhoons' => $typhoons,
-            'activeTyphoon' => $activeTyphoon,
-            'disasterStats' => $disasterStats,
-            'statusCounts' => $statusCounts,
         ]);
     }
 
     /**
-     * Get active typhoon info
+     * The current disaster (active or paused) for pages that poll it. One query; the keys
+     * are kept for the pages that read them.
      */
     public function getActiveTyphoon()
     {
-        $activeTyphoon = Typhoon::getActiveTyphoon();
-        $pausedTyphoon = Typhoon::paused()->latest()->first();
-
-        // If there's a paused typhoon but no active one, return the paused one
-        $currentTyphoon = $activeTyphoon ?? $pausedTyphoon;
+        $current = Typhoon::getActiveTyphoon();
 
         return response()->json([
-            'activeTyphoon' => $activeTyphoon,
-            'currentTyphoon' => $currentTyphoon,
-            'hasActiveTyphoon' => Typhoon::hasActiveTyphoon(),
-            'isPaused' => $currentTyphoon && $currentTyphoon->status === 'paused',
+            'activeTyphoon' => $current,
+            'currentTyphoon' => $current,
+            'hasActiveTyphoon' => $current !== null,
+            'isPaused' => $current?->status === 'paused',
         ]);
     }
 
@@ -154,7 +125,7 @@ class DisasterController extends Controller
 
         return response()->json([
             'message' => 'Typhoon report updated successfully.',
-            'typhoon' => $disaster->load('creator'),
+            'typhoon' => $disaster->load('creator:id,name'),
         ]);
     }
 
@@ -397,7 +368,7 @@ class DisasterController extends Controller
 
             return response()->json([
                 'message' => 'PDF generated successfully.',
-                'typhoon' => $disaster->load(['creator', 'ender']),
+                'typhoon' => $disaster->load(['creator:id,name', 'ender:id,name']),
                 'pdf_path' => $pdfPath,
             ]);
         } catch (\Exception $e) {
@@ -460,60 +431,21 @@ class DisasterController extends Controller
     {
         $activeTyphoon = Typhoon::getActiveTyphoon();
 
-        $formMappings = self::FORM_TABLES;
-
-        // Initialize variables before the closure
+        // Every form's per-account figures in one query (plus one for the shared agriculture
+        // list), instead of one query per form; this page refreshes itself every 30 seconds.
         $submissionsByUser = [];
         $agricultureData = null;
 
-        // Pre-fetch all submission data in bulk if there's an active typhoon
         if ($activeTyphoon) {
-            foreach ($formMappings as $table => $displayName) {
-                try {
-                    $records = \DB::table($table)
-                        ->select('user_id', \DB::raw('COUNT(*) as count'), \DB::raw('MAX(updated_at) as last_updated'))
-                        ->where('disaster_id', $activeTyphoon->id)
-                        ->whereNotNull('user_id')
-                        ->groupBy('user_id')
-                        ->get();
-
-                    foreach ($records as $record) {
-                        if (! isset($submissionsByUser[$record->user_id])) {
-                            $submissionsByUser[$record->user_id] = [];
-                        }
-                        $submissionsByUser[$record->user_id][$table] = [
-                            'name' => $displayName,
-                            'table' => $table,
-                            'count' => $record->count,
-                            'last_updated' => $record->last_updated,
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    \Log::debug("Table {$table} check failed: ".$e->getMessage());
+            foreach (PendingForms::submissionsByUser($activeTyphoon) as $userId => $forms) {
+                foreach ($forms as $table => $figures) {
+                    $submissionsByUser[$userId][$table] = ['name' => PendingForms::label($table), 'table' => $table] + $figures;
                 }
             }
 
-            // Check agriculture_reports separately (no user_id)
-            try {
-                $agricultureCount = \DB::table('agriculture_reports')
-                    ->where('disaster_id', $activeTyphoon->id)
-                    ->count();
-
-                if ($agricultureCount > 0) {
-                    $agricultureLastUpdated = \DB::table('agriculture_reports')
-                        ->where('disaster_id', $activeTyphoon->id)
-                        ->max('updated_at');
-
-                    // Store agriculture data separately to be added to users with permission
-                    $agricultureData = [
-                        'name' => 'Agriculture Report',
-                        'table' => 'agriculture_reports',
-                        'count' => $agricultureCount,
-                        'last_updated' => $agricultureLastUpdated,
-                    ];
-                }
-            } catch (\Exception $e) {
-                \Log::debug('Agriculture table check failed: '.$e->getMessage());
+            if ($agriculture = PendingForms::agricultureSubmission($activeTyphoon)) {
+                // Shared by every account that holds the agriculture form.
+                $agricultureData = ['name' => PendingForms::label(PendingForms::AGRICULTURE_TABLE), 'table' => PendingForms::AGRICULTURE_TABLE] + $agriculture;
             }
         }
 
@@ -564,7 +496,8 @@ class DisasterController extends Controller
 
         return Inertia::render('Admin/FormSubmissionStatus', [
             'users' => $users,
-            'activeTyphoon' => $activeTyphoon,
+            // Only what the page reads.
+            'activeTyphoon' => $activeTyphoon?->only(['id', 'name', 'status']),
         ]);
     }
 

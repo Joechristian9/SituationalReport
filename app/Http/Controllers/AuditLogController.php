@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
-use App\Models\User;
 use App\Models\Typhoon;
+use App\Models\User;
 use App\Services\AuditLogger;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class AuditLogController extends Controller
 {
@@ -21,10 +21,14 @@ class AuditLogController extends Controller
 
         // Pagination (limited to the options the page offers)
         $perPage = (int) $request->input('per_page', 20);
-        if (!in_array($perPage, [5, 10, 20, 50], true)) {
+        if (! in_array($perPage, [5, 10, 20, 50], true)) {
             $perPage = 20;
         }
-        $logs = $query->paginate($perPage)->withQueryString();
+        // Every column the list shows except user_agent (long, only in the detail view).
+        $logs = $query
+            ->select(['id', 'user_id', 'action', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'ip_address', 'disaster_id', 'description', 'created_at'])
+            ->paginate($perPage)
+            ->withQueryString();
 
         // Transform data for frontend
         $logs->getCollection()->transform(function ($log) {
@@ -53,50 +57,9 @@ class AuditLogController extends Controller
             ];
         });
 
-        // Get filter options
-        $users = User::orderBy('name')->get(['id', 'name', 'email']);
-        $disasters = Typhoon::orderBy('created_at', 'desc')->get(['id', 'name']);
-
-        // Get unique actions
-        $actions = AuditLog::select('action')
-            ->distinct()
-            ->orderBy('action')
-            ->pluck('action')
-            ->map(function ($action) {
-                $log = new AuditLog(['action' => $action]);
-                return [
-                    'value' => $action,
-                    'label' => $log->action_name,
-                ];
-            });
-
-        // Get unique modules
-        $modules = AuditLog::select('auditable_type')
-            ->whereNotNull('auditable_type')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                $log = new AuditLog(['auditable_type' => $item->auditable_type]);
-                return [
-                    'value' => $item->auditable_type,
-                    'label' => $log->model_name,
-                ];
-            })
-            ->sortBy('label')
-            ->values();
-
-        // Today's activity (not affected by filters)
-        $today = AuditLog::whereDate('created_at', Carbon::today());
-        $summary = [
-            'events' => (clone $today)->count(),
-            'changes' => (clone $today)->whereIn('action', ['created', 'updated', 'deleted'])->count(),
-            'active_users' => (clone $today)->whereNotNull('user_id')->distinct()->count('user_id'),
-            'failed_logins' => (clone $today)->where('action', 'failed_login')->count(),
-        ];
-
         return Inertia::render('Admin/AuditLogs', [
             'logs' => $logs,
-            'summary' => $summary,
+            'summary' => $this->todaySummary(),
             'filters' => [
                 'search' => $request->input('search'),
                 'user_id' => $request->input('user_id'),
@@ -107,13 +70,54 @@ class AuditLogController extends Controller
                 'end_date' => $request->input('end_date'),
                 'per_page' => $perPage,
             ],
-            'filterOptions' => [
-                'users' => $users,
-                'disasters' => $disasters,
-                'actions' => $actions,
-                'modules' => $modules,
-            ],
+            // Four queries (two of them DISTINCT over the whole log), so only on a full visit:
+            // filter changes and live refreshes leave them out.
+            'filterOptions' => fn () => $this->filterOptions(),
         ]);
+    }
+
+    /** The choices in the filter dropdowns. */
+    private function filterOptions(): array
+    {
+        return [
+            'users' => User::orderBy('name')->get(['id', 'name', 'email']),
+            'disasters' => Typhoon::orderBy('created_at', 'desc')->get(['id', 'name']),
+            'actions' => AuditLog::query()
+                ->distinct()
+                ->orderBy('action')
+                ->pluck('action')
+                ->map(fn ($action) => ['value' => $action, 'label' => (new AuditLog(['action' => $action]))->action_name]),
+            'modules' => AuditLog::query()
+                ->whereNotNull('auditable_type')
+                ->distinct()
+                ->pluck('auditable_type')
+                ->map(fn ($type) => ['value' => $type, 'label' => (new AuditLog(['auditable_type' => $type]))->model_name])
+                ->sortBy('label')
+                ->values(),
+        ];
+    }
+
+    /** Today's activity (not affected by the filters), in one query over today's rows only. */
+    private function todaySummary(): array
+    {
+        $row = AuditLog::query()
+            ->where('created_at', '>=', Carbon::today())
+            ->where('created_at', '<', Carbon::tomorrow())
+            ->toBase()
+            ->selectRaw("
+                COUNT(*) as events,
+                SUM(CASE WHEN action IN ('created', 'updated', 'deleted') THEN 1 ELSE 0 END) as changes,
+                COUNT(DISTINCT user_id) as active_users,
+                SUM(CASE WHEN action = 'failed_login' THEN 1 ELSE 0 END) as failed_logins
+            ")
+            ->first();
+
+        return [
+            'events' => (int) ($row->events ?? 0),
+            'changes' => (int) ($row->changes ?? 0),
+            'active_users' => (int) ($row->active_users ?? 0),
+            'failed_logins' => (int) ($row->failed_logins ?? 0),
+        ];
     }
 
     /**
@@ -121,20 +125,27 @@ class AuditLogController extends Controller
      */
     private function filteredQuery(Request $request)
     {
+        $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+        ]);
+
         $query = AuditLog::with(['user:id,name,email', 'disaster:id,name'])
             ->orderBy('created_at', 'desc');
 
-        // Search functionality
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('action', 'like', "%{$search}%")
-                  ->orWhere('auditable_type', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('ip_address', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+        // Search functionality (% and _ in the search are matched literally)
+        if ($search = trim((string) $request->input('search'))) {
+            $like = '%'.addcslashes($search, '%_\\').'%';
+            $query->where(function ($q) use ($like) {
+                $q->where('action', 'like', $like)
+                    ->orWhere('auditable_type', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('ip_address', 'like', $like)
+                    ->orWhereHas('user', function ($q) use ($like) {
+                        $q->where('name', 'like', $like)
+                            ->orWhere('email', 'like', $like);
+                    });
             });
         }
 
@@ -158,13 +169,14 @@ class AuditLogController extends Controller
             $query->where('disaster_id', $disasterId);
         }
 
-        // Filter by date range
-        if ($startDate = $request->input('start_date')) {
-            $query->whereDate('created_at', '>=', $startDate);
+        // Filter by date range: ranges on created_at itself so its index can be used; the
+        // end date includes that whole day.
+        if ($startDate = $request->date('start_date')) {
+            $query->where('created_at', '>=', $startDate->startOfDay());
         }
 
-        if ($endDate = $request->input('end_date')) {
-            $query->whereDate('created_at', '<=', $endDate);
+        if ($endDate = $request->date('end_date')) {
+            $query->where('created_at', '<', $endDate->addDay()->startOfDay());
         }
 
         return $query;
@@ -176,7 +188,8 @@ class AuditLogController extends Controller
     public function show($id)
     {
         try {
-            $log = AuditLog::with(['user:id,name,email', 'disaster:id,name', 'auditable'])
+            // The audited record itself is not shown, so it is not loaded.
+            $log = AuditLog::with(['user:id,name,email', 'disaster:id,name'])
                 ->findOrFail($id);
 
             $changes = [];
@@ -185,7 +198,7 @@ class AuditLogController extends Controller
             if ($log->action === 'updated' && $log->old_values && $log->new_values) {
                 foreach ($log->new_values as $field => $newValue) {
                     $oldValue = $log->old_values[$field] ?? null;
-                    
+
                     // Only show if values actually changed
                     if ($oldValue != $newValue) {
                         $changes[] = [
@@ -240,12 +253,12 @@ class AuditLogController extends Controller
                 'changes' => $changes,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error loading audit log details: ' . $e->getMessage());
+            \Log::error('Error loading audit log details: '.$e->getMessage());
             \Log::error($e->getTraceAsString());
-            
+
             return response()->json([
                 'error' => 'Failed to load audit log details',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -263,7 +276,7 @@ class AuditLogController extends Controller
             description: 'Exported audit logs to CSV'
         );
 
-        $filename = 'audit-logs-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = 'audit-logs-'.now()->format('Y-m-d-His').'.csv';
 
         return response()->streamDownload(function () use ($query) {
             $out = fopen('php://output', 'w');

@@ -81,7 +81,7 @@ export default function DisasterLifecycleDialog({ action, disaster, onActionChan
         try {
             const { data } = await axios.post(route(`disasters.${action}`, disaster.id));
             onActionChange(null);
-            router.reload({ only: ['typhoons', 'activeTyphoon', 'statusCounts'] });
+            router.reload({ only: ['typhoons', 'typhoon'] });
             toast.success(data.message, action === 'end' ? { description: 'The final PDF report will be ready in the history table shortly.' } : undefined);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Something went wrong. Please try again.');

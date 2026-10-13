@@ -8,7 +8,9 @@ use App\Models\Missing;
 use App\Models\Typhoon;
 use App\Models\User;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * Aggregates Dead / Injured / Missing records for one disaster, straight from the
@@ -20,7 +22,7 @@ use Illuminate\Support\Carbon;
  */
 class HumanImpactStats
 {
-    /** @var array<string, class-string<\Illuminate\Database\Eloquent\Model>> */
+    /** @var array<string, class-string<Model>> */
     public const TYPES = [
         'dead' => Casualty::class,
         'injured' => Injured::class,
@@ -81,21 +83,27 @@ class HumanImpactStats
         $since = now()->subDay();
         $hourly = self::emptyHours();
         $firstHour = Carbon::parse(array_key_first($hourly));
+        // The rows behind both the 24-hour count and the hourly chart, read once.
+        $from = $since->lt($firstHour) ? $since : $firstHour;
         $dayTypes = [];   // [user_id][type] => count, last 24 hours
         $dayHours = [];   // [user_id][hour key] => count, last 24 hours
 
+        // Three queries per type. Totals come from the per-account counts and the 24-hour
+        // count from the recent rows, so neither needs a COUNT query of its own.
         foreach (self::TYPES as $type => $model) {
             $base = $model::query()->where('disaster_id', $disaster->id);
-
-            $totals[$type] = (clone $base)->count();
-            $last24h[$type] = (clone $base)->where('created_at', '>=', $since)->count();
+            $last24h[$type] = 0;
 
             // Bucketed in PHP so it works on MySQL and SQLite alike; at most a day of rows.
             (clone $base)
-                ->where('created_at', '>=', $firstHour)
+                ->where('created_at', '>=', $from)
                 ->get(['user_id', 'created_at'])
-                ->each(function ($record) use (&$hourly, &$dayTypes, &$dayHours, $type) {
-                    $key = Carbon::parse($record->created_at)->format('Y-m-d H:00');
+                ->each(function ($record) use (&$hourly, &$dayTypes, &$dayHours, &$last24h, $type, $since) {
+                    $createdAt = Carbon::parse($record->created_at);
+                    if ($createdAt->gte($since)) {
+                        $last24h[$type]++;
+                    }
+                    $key = $createdAt->format('Y-m-d H:00');
                     if (! isset($hourly[$key])) {
                         return;
                     }
@@ -105,12 +113,14 @@ class HumanImpactStats
                     $dayHours[$userId][$key] = ($dayHours[$userId][$key] ?? 0) + 1;
                 });
 
+            $totals[$type] = 0;
             (clone $base)
                 ->selectRaw('user_id, COUNT(*) as aggregate')
                 ->groupBy('user_id')
                 ->get()
-                ->each(function ($row) use (&$byAccount, $type) {
+                ->each(function ($row) use (&$byAccount, &$totals, $type) {
                     $byAccount[$row->user_id ?? 0][$type] = (int) $row->aggregate;
+                    $totals[$type] += (int) $row->aggregate;
                 });
 
             (clone $base)
@@ -124,13 +134,18 @@ class HumanImpactStats
 
         $totals['total'] = $totals['dead'] + $totals['injured'] + $totals['missing'];
 
+        // One lookup for every account named in either chart (the last day's are a subset).
+        $users = User::whereIn('id', array_filter(array_keys($byAccount)))
+            ->get(['id', 'name', 'email'])
+            ->keyBy('id');
+
         return [
             'totals' => $totals,
             'last24h' => $last24h,
-            'byBarangay' => self::barangayRows($byAccount),
+            'byBarangay' => self::barangayRows($byAccount, $users),
             'trend' => self::trendRows($byDay),
             'hourly' => array_values($hourly),
-            'barangays24h' => self::barangaysLastDay($dayTypes, $dayHours, array_keys($hourly)),
+            'barangays24h' => self::barangaysLastDay($dayTypes, $dayHours, array_keys($hourly), $users),
             'generatedAt' => now()->toIso8601String(),
         ];
     }
@@ -140,12 +155,8 @@ class HumanImpactStats
      * injured / missing counts, and per-hour totals keyed "a{user_id}" (one line
      * per barangay on the chart).
      */
-    private static function barangaysLastDay(array $dayTypes, array $dayHours, array $hourKeys): array
+    private static function barangaysLastDay(array $dayTypes, array $dayHours, array $hourKeys, Collection $users): array
     {
-        $users = User::whereIn('id', array_filter(array_keys($dayTypes)))
-            ->get(['id', 'name', 'email'])
-            ->keyBy('id');
-
         $ranking = [];
         foreach ($dayTypes as $userId => $counts) {
             $user = $users->get($userId);
@@ -192,12 +203,8 @@ class HumanImpactStats
         return $hours;
     }
 
-    private static function barangayRows(array $byAccount): array
+    private static function barangayRows(array $byAccount, Collection $users): array
     {
-        $users = User::whereIn('id', array_filter(array_keys($byAccount)))
-            ->get(['id', 'name', 'email'])
-            ->keyBy('id');
-
         $rows = [];
         foreach ($byAccount as $userId => $counts) {
             $user = $users->get($userId);

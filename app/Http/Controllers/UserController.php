@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -19,9 +19,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with(['roles', 'permissions'])
+        // Only the columns the page shows; roles and permissions by name only.
+        $users = User::with(['roles:id,name', 'permissions:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get()
+            ->get(['id', 'name', 'email', 'created_at'])
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
@@ -33,13 +34,11 @@ class UserController extends Controller
                 ];
             });
 
-        $roles = Role::all(['id', 'name']);
-        $permissions = Permission::all(['id', 'name']);
-
         return Inertia::render('Admin/UserManagement', [
             'users' => $users,
-            'roles' => $roles,
-            'permissions' => $permissions,
+            // These never change from this page, so saving a user skips them.
+            'roles' => fn () => Role::all(['id', 'name']),
+            'permissions' => fn () => Permission::all(['id', 'name']),
         ]);
     }
 
@@ -67,7 +66,7 @@ class UserController extends Controller
         $user->assignRole($validated['role']);
 
         // Assign permissions if provided
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             $user->givePermissionTo($validated['permissions']);
         }
 
@@ -99,11 +98,11 @@ class UserController extends Controller
         ]);
 
         // Update password if provided
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->update([
                 'password' => Hash::make($validated['password']),
             ]);
-            
+
             // Log password change
             AuditLogger::logPasswordChange(
                 userId: $user->id,

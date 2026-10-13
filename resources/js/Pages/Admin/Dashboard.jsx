@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
 import AppLayout from "@/Layouts/AppLayout";
 import PageTitle from "@/Components/PageTitle";
 import { router, usePage } from "@inertiajs/react";
@@ -37,6 +37,20 @@ const SECTIONS = [
     { key: "pagasa", label: "PAGASA", icon: CloudSun },
 ];
 
+// Polled on every tab: the stat cards, the live feed and its tab badge, the disaster itself.
+const LIVE_PROPS = ["impactSummary", "recentImpact", "newReportCounts", "typhoon"];
+// Polled only while their tab is open, and fetched again when it is reopened.
+const TAB_PROPS = {
+    impact: ["casualties", "injured", "missing"],
+    environment: ["weatherReports", "waterLevels", "preEmptiveReports"],
+};
+
+const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    in: { opacity: 1, y: 0 },
+    out: { opacity: 0, y: -20 },
+};
+
 // App-style notification badge showing how many new reports came in
 const NotificationBadge = ({ count }) => (
     <AnimatePresence>
@@ -57,9 +71,10 @@ const NotificationBadge = ({ count }) => (
 );
 
 export default function Dashboard({
-    weatherReports = [],
-    waterLevels = [],
-    preEmptiveReports = [],
+    // The environment data is sent only when its tab asks (undefined until then).
+    weatherReports,
+    waterLevels,
+    preEmptiveReports,
     casualties = [],
     injured = [],
     missing = [],
@@ -69,13 +84,28 @@ export default function Dashboard({
     history = null,
 }) {
     const { auth, typhoon } = usePage().props;
+    const [activeTab, setActiveTab] = useState("impact");
 
     // Live only while a disaster is active or paused. `typhoon` is refreshed too, so polling
-    // stops on its own when the disaster ends while this page is open.
+    // stops on its own when the disaster ends while this page is open. Each poll carries only
+    // what the open tab shows, so the full casualty lists are not re-sent from other tabs.
     const live = useLiveRefresh({
-        only: ["casualties", "injured", "missing", "impactSummary", "recentImpact", "newReportCounts", "typhoon"],
+        only: [...LIVE_PROPS, ...(TAB_PROPS[activeTab] ?? [])],
         enabled: Boolean(typhoon?.hasActive),
     });
+
+    // A tab's own data is not polled while another tab is open: fetch it when the tab opens
+    // (the first time for the environment graphs, otherwise to catch up).
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        const props = TAB_PROPS[activeTab];
+        const notLoaded = activeTab === "environment" && weatherReports === undefined;
+        if (props && (notLoaded || typhoon?.hasActive)) router.reload({ only: props });
+    }, [activeTab]);
     // The disaster ended while this page was open: fetch the history it now shows instead.
     useEffect(() => {
         if (!typhoon?.hasActive && !history) router.reload({ only: ["history"] });
@@ -87,7 +117,6 @@ export default function Dashboard({
 
     const totalNewReports =
         newReportCounts.casualties + newReportCounts.injured + newReportCounts.missing;
-    const [activeTab, setActiveTab] = useState("impact");
     useEffect(() => {
         if (activeTab === "live") setViewedReports(new Set(freshReports));
     }, [activeTab, freshReports]);
@@ -98,12 +127,6 @@ export default function Dashboard({
     const [impactSex, setImpactSex] = useState("all");
     const [impactAge, setImpactAge] = useState("all");
     
-    const pageVariants = {
-        initial: { opacity: 0, y: 20 },
-        in: { opacity: 1, y: 0 },
-        out: { opacity: 0, y: -20 },
-    };
-
     return (
         <MotionConfig reducedMotion="user">
         <AppLayout
@@ -178,7 +201,14 @@ export default function Dashboard({
                                     </div>
                                 )}
 
-                                {activeTab === "environment" && (
+                                {activeTab === "environment" && weatherReports === undefined && (
+                                    <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2" aria-busy="true">
+                                        <SkeletonChart />
+                                        <SkeletonChart />
+                                    </div>
+                                )}
+
+                                {activeTab === "environment" && weatherReports !== undefined && (
                                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                                         {/* Weather + Evacuation side by side on wide screens; Water Level spans the full width */}
                                         <WeatherGraph

@@ -236,15 +236,28 @@ export default function Index() {
         // Save initial state
         saveCurrentState();
 
+        // Phones on mobile data: a status change is rare, so check every 30 seconds, never
+        // while the app is in the background or offline, and right away when it comes back.
+        const check = () => {
+            if (document.hidden || !navigator.onLine) return;
+            checkTyphoonStatus();
+        };
+        let interval = null;
         // Wait 3 seconds before starting polling to ensure page is fully loaded
         const startDelay = setTimeout(() => {
-            // Check every 5 seconds
-            const interval = setInterval(checkTyphoonStatus, 5000);
-
-            return () => clearInterval(interval);
+            interval = setInterval(check, 30000);
         }, 3000);
+        document.addEventListener("visibilitychange", check);
+        window.addEventListener("online", check);
 
-        return () => clearTimeout(startDelay);
+        // Both timers are cleared when the page is left; before, the interval kept polling
+        // on every other page and a new one was added on each return to this page.
+        return () => {
+            clearTimeout(startDelay);
+            clearInterval(interval);
+            document.removeEventListener("visibilitychange", check);
+            window.removeEventListener("online", check);
+        };
     }, []); // Empty deps - only run once
 
     // Get user permissions

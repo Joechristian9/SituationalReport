@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Missing; // 1. Use the Missing model
 use App\Models\Modification;
-use App\Models\ReportView;
 use App\Models\Typhoon;
-use App\Models\User;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
@@ -14,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class MissingController extends Controller
 {
@@ -212,61 +211,8 @@ class MissingController extends Controller
     /**
      * Show missing persons submissions page (Admin only)
      */
-    public function submissions(Request $request)
+    public function submissions(Request $request): Response
     {
-        // Clear the "new reports" badge for this admin
-        ReportView::markSeen('missing');
-
-        $query = Missing::with(['user:id,name', 'updater:id,name']);
-
-        // Filter by active disaster if exists
-        $activeTyphoon = Typhoon::where('status', 'active')->first();
-        if ($activeTyphoon) {
-            $query->where('disaster_id', $activeTyphoon->id);
-        }
-
-        // Search filter
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%")
-                    ->orWhere('cause', 'like', "%{$search}%");
-            });
-        }
-
-        // User filter
-        if ($userId = $request->input('user_id')) {
-            $query->where('user_id', $userId);
-        }
-
-        // Date range filter
-        if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('created_at', '>=', $dateFrom);
-        }
-        if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('created_at', '<=', $dateTo);
-        }
-
-        $perPage = $this->submissionPerPage($request);
-        $stats = $this->submissionStats($query);
-
-        $missing = $query->latest('created_at')->paginate($perPage)->withQueryString();
-
-        // Get all users for filter dropdown
-        $users = User::select('id', 'name')->orderBy('name')->get();
-
-        return Inertia::render('Admin/MissingSubmissions', [
-            'missing' => $missing,
-            'users' => $users,
-            'stats' => $stats,
-            'disaster' => $activeTyphoon?->only(['id', 'name', 'status']),
-            'filters' => [
-                'search' => $request->input('search'),
-                'user_id' => $request->input('user_id'),
-                'date_from' => $request->input('date_from'),
-                'date_to' => $request->input('date_to'),
-                'per_page' => $perPage,
-            ],
-        ]);
+        return $this->submissionsPage($request, Missing::class, 'missing', ['name', 'address', 'cause'], 'Admin/MissingSubmissions', 'missing');
     }
 }

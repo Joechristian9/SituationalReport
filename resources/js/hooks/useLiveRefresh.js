@@ -22,7 +22,8 @@ export default function useLiveRefresh({ only, interval = 15000, enabled = true 
 
         let inFlight = false;
         const refresh = () => {
-            if (document.hidden || inFlight) return;
+            // Offline (phones in the field): skip the tick instead of failing a request.
+            if (document.hidden || inFlight || !navigator.onLine) return;
             inFlight = true;
             router.reload({
                 only: propsKey.split(','),
@@ -34,12 +35,14 @@ export default function useLiveRefresh({ only, interval = 15000, enabled = true 
         };
 
         const timer = setInterval(refresh, interval);
-        // Catch up right away when the tab becomes visible again.
+        // Catch up right away when the tab becomes visible again, or the connection returns.
         document.addEventListener('visibilitychange', refresh);
+        window.addEventListener('online', refresh);
 
         return () => {
             clearInterval(timer);
             document.removeEventListener('visibilitychange', refresh);
+            window.removeEventListener('online', refresh);
         };
     }, [paused, enabled, interval, propsKey]);
 

@@ -40,6 +40,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { Toaster } from 'sonner';
 import RemindDialog from '@/Components/reminders/RemindDialog';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import LiveIndicator from '@/Components/LiveIndicator';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +59,32 @@ const SUBMISSION_SORT = {
 const HIDDEN_COLUMNS = ['id', 'typhoon_id', 'disaster_id', 'user_id', 'created_at', 'updated_at', 'updated_by'];
 
 const titleCase = (text) => text.replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+// Form permission => report table, for coloring the assigned-form chips.
+const permissionToTable = {
+    'access-weather-form': 'weather_reports',
+    'access-electricity-form': 'electricity_services',
+    'access-water-service-form': 'water_services',
+    'access-communication-form': 'communications',
+    'access-pre-emptive-form': 'pre_emptive_reports',
+    'access-incident-form': 'incident_monitored',
+    'access-agriculture-form': 'agriculture_reports',
+    'access-water-level-form': 'water_levels',
+    'access-road-form': 'roads',
+    'access-bridge-form': 'bridges',
+    'access-pre-positioning-form': 'pre_positionings',
+    'access-declaration-form': 'usc_declarations',
+    'access-response-operations': 'response_operations',
+    'access-assistance-extended': 'assistance_extendeds',
+    'access-casualty-form': 'casualties',
+    'access-injured-form': 'injureds',
+    'access-missing-form': 'missing',
+    'access-damaged-houses-form': 'damaged_house_reports',
+    'access-affected-tourists-form': 'affected_tourists',
+    'access-assistance-provided-lgus-form': 'assistance_provided_lgus',
+    'access-suspension-classes-form': 'suspension_of_classes',
+    'access-suspension-work-form': 'suspension_of_works',
+};
 
 /** "access-weather-form" -> "Weather" */
 const permissionLabel = (permission) =>
@@ -80,6 +107,7 @@ const initials = (name = '') => {
  * paged so a form with hundreds of rows stays quick.
  */
 function FormRecords({ rows }) {
+    const isWide = useMediaQuery('(min-width: 768px)');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
 
@@ -96,7 +124,8 @@ function FormRecords({ rows }) {
     return (
         <div className="space-y-3 p-3 sm:p-4">
             {/* Phones: one card per record, two fields across; long values take the full width. */}
-            <ul className="space-y-2.5 md:hidden">
+            {!isWide ? (
+            <ul className="space-y-2.5">
                 {shown.map((row, index) => (
                     <li key={index} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                         <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -119,9 +148,9 @@ function FormRecords({ rows }) {
                     </li>
                 ))}
             </ul>
-
-            {/* md and up: a rounded, bordered table that scrolls sideways inside itself. */}
-            <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
+            ) : (
+            /* md and up: a rounded, bordered table that scrolls sideways inside itself. */
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -154,6 +183,7 @@ function FormRecords({ rows }) {
                     </TableBody>
                 </Table>
             </div>
+            )}
 
             <TablePagination
                 currentPage={Math.min(page, totalPages)}
@@ -173,6 +203,8 @@ function FormRecords({ rows }) {
 }
 
 export default function FormSubmissionStatus({ users, activeTyphoon }) {
+    // Only the layout in use is rendered: cards on phones, the table from md up.
+    const isWide = useMediaQuery('(min-width: 768px)');
     // Slower than the other pages: this page runs about 20 grouped queries per refresh.
     const live = useLiveRefresh({ only: ['users', 'activeTyphoon'], interval: 30000, enabled: Boolean(activeTyphoon) });
     const [searchQuery, setSearchQuery] = useState('');
@@ -258,31 +290,6 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
 
     const formatPermissions = (permissions) => permissions.map(permissionLabel).join(', ');
 
-    // Map permission to table name for checking submission status
-    const permissionToTable = {
-        'access-weather-form': 'weather_reports',
-        'access-electricity-form': 'electricity_services',
-        'access-water-service-form': 'water_services',
-        'access-communication-form': 'communications',
-        'access-pre-emptive-form': 'pre_emptive_reports',
-        'access-incident-form': 'incident_monitored',
-        'access-agriculture-form': 'agriculture_reports',
-        'access-water-level-form': 'water_levels',
-        'access-road-form': 'roads',
-        'access-bridge-form': 'bridges',
-        'access-pre-positioning-form': 'pre_positionings',
-        'access-declaration-form': 'usc_declarations',
-        'access-response-operations': 'response_operations',
-        'access-assistance-extended': 'assistance_extendeds',
-        'access-casualty-form': 'casualties',
-        'access-injured-form': 'injureds',
-        'access-missing-form': 'missing',
-        'access-damaged-houses-form': 'damaged_house_reports',
-        'access-affected-tourists-form': 'affected_tourists',
-        'access-assistance-provided-lgus-form': 'assistance_provided_lgus',
-        'access-suspension-classes-form': 'suspension_of_classes',
-        'access-suspension-work-form': 'suspension_of_works',
-    };
 
     const renderAssignedForms = (user) => {
         if (!user.permissions || user.permissions.length === 0) {
@@ -507,7 +514,8 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                     {paginationData.paginatedUsers.length > 0 ? (
                                         <>
                                             {/* Phones: one compact card per user instead of a tall stack of labelled cells. */}
-                                            <ul className="space-y-3 p-3 md:hidden">
+                                            {!isWide ? (
+                                            <ul className="space-y-3 p-3">
                                                 {paginationData.paginatedUsers.map((user) => {
                                                     const permissions = user.permissions ?? [];
                                                     const doneTables = user.submitted_form_types ?? [];
@@ -610,8 +618,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                     );
                                                 })}
                                             </ul>
-
-                                            <div className="hidden md:block">
+                                            ) : (
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
@@ -726,7 +733,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                     ))}
                                                 </TableBody>
                                             </Table>
-                                            </div>
+                                            )}
 
                                             <TablePagination
                                                 currentPage={currentPage}

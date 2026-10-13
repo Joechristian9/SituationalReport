@@ -320,7 +320,12 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
 
     const [loading, setLoading] = useState(false);
     const showSkeleton = useDelayedFlag(loading);
-    const visitOptions = { onStart: () => setLoading(true), onFinish: () => setLoading(false) };
+    // Filtering never changes the dropdown choices, so those are left out of the reload.
+    const visitOptions = {
+        only: ['logs', 'summary', 'filters'],
+        onStart: () => setLoading(true),
+        onFinish: () => setLoading(false),
+    };
 
     // Filters apply as soon as they change.
     const applyFilters = (overrides) => {

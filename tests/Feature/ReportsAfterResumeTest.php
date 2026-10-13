@@ -3,12 +3,16 @@
 use App\Models\Typhoon;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 it('shows a barangay its records saved before the disaster was paused and resumed', function () {
     Role::findOrCreate('user');
     $barangay = User::factory()->create(['name' => 'Rugao', 'email' => 'rugao@barangay.local']);
     $barangay->assignRole('user');
+    // The page only sends the records of forms the account holds.
+    Permission::findOrCreate('access-casualty-form');
+    $barangay->givePermissionTo('access-casualty-form');
     $other = User::factory()->create();
 
     $disaster = Typhoon::create([

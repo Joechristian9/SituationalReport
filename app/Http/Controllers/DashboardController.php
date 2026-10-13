@@ -59,23 +59,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        $weatherReports = WeatherReport::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        $waterLevels = WaterLevel::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        $preEmptiveReports = PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
-            ->with('user:id,name')
-            ->latest()
-            ->limit(100)
-            ->get();
+        $disasterId = $activeTyphoon->id;
 
         // All records (no limit) but only the columns the graphs use, so totals stay correct.
         $casualties = Casualty::where('disaster_id', $activeTyphoon->id)
@@ -91,9 +75,20 @@ class DashboardController extends Controller
             ->get(['id', 'sex', 'age', 'cause', 'created_at']);
 
         return Inertia::render('Admin/Dashboard', [
-            'weatherReports' => $weatherReports,
-            'waterLevels' => $waterLevels,
-            'preEmptiveReports' => $preEmptiveReports,
+            // Environment tab only: sent when that tab asks for them, not on every visit,
+            // and only the columns its graphs read.
+            'weatherReports' => Inertia::optional(fn () => WeatherReport::where('disaster_id', $disasterId)
+                ->latest()
+                ->limit(50)
+                ->get(['id', 'municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition', 'updated_at'])),
+            'waterLevels' => Inertia::optional(fn () => WaterLevel::where('disaster_id', $disasterId)
+                ->latest()
+                ->limit(50)
+                ->get(['id', 'gauging_station', 'current_level', 'alarm_level', 'critical_level', 'updated_at'])),
+            'preEmptiveReports' => Inertia::optional(fn () => PreEmptiveReport::where('disaster_id', $disasterId)
+                ->latest()
+                ->limit(100)
+                ->get(['id', 'barangay', 'families', 'persons', 'outside_families', 'outside_persons', 'total_families', 'total_persons'])),
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,

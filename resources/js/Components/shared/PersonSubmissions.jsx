@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
-import { useIsMobile } from '@/hooks/use-mobile';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import LiveIndicator from '@/Components/LiveIndicator';
 
 /**
@@ -269,7 +269,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
     const [loading, setLoading] = useState(false);
     const perPage = Number(filters.per_page) || 20;
 
-    const isMobile = useIsMobile();
+    // Read synchronously, so a phone never renders the table first. Only the layout in use is built.
+    const isMobile = !useMediaQuery('(min-width: 768px)');
     const sheetBodyRef = useRef(null);
     const selectedIndex = selected ? records.data.findIndex((r) => r.id === selected.id) : -1;
     const step = (delta) => {
@@ -314,6 +315,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
             if (params[key] === '' || params[key] === null || params[key] === undefined) delete params[key];
         });
         router.get(route(category.routeName), params, {
+            // The account list only changes between visits, so filtering leaves it out.
+            only: [config.category, 'stats', 'filters', 'disaster'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -518,7 +521,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
                             {records.data.length > 0 || showSkeleton ? (
                                 <div aria-busy={loading}>
                                     {/* Phones: compact tappable cards. md and up: the table. */}
-                                    <ul className="divide-y divide-border md:hidden">
+                                    {isMobile ? (
+                                    <ul className="divide-y divide-border">
                                         {showSkeleton ? (
                                             <>
                                                 {Array.from({ length: Math.min(records.data.length || 6, 8) }, (_, i) => (
@@ -539,7 +543,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                             ))
                                         )}
                                     </ul>
-                                    <div className="hidden md:block">
+                                    ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -620,7 +624,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                             {showSkeleton && <tr className="sr-only"><td>Loading records…</td></tr>}
                                         </TableBody>
                                     </Table>
-                                    </div>
+                                    )}
 
                                     <TablePagination
                                         {...laravelPagination(records)}

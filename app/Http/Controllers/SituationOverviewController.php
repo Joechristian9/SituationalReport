@@ -73,22 +73,30 @@ class SituationOverviewController extends Controller
             $missingQuery->whereIn('user_id', $accessibleUserIds);
         }
 
+        // Phones on mobile data: only the forms this account can open are read and sent
+        // (the page shows no others); the rest go out as empty lists. Closures, so a partial
+        // reload of one form's records doesn't read the others either.
+        $permissions = $user?->getPermissionNames()->all() ?? [];
+        $isAdmin = $user?->isAdmin() ?? false;
+        $holds = fn (string $permission) => $isAdmin || in_array($permission, $permissions, true);
+        $forForm = fn (string $permission, \Closure $records) => fn () => $holds($permission) ? $records() : [];
+
         return Inertia::render('SituationReports/Index', [
-            'weatherReports' => $weatherQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterLevels' => $waterLevelQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'electricity' => $electricityQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'waterServices' => $waterServiceQuery
+            'weatherReports' => $forForm('access-weather-form', fn () => $weatherQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'waterLevels' => $forForm('access-water-level-form', fn () => $waterLevelQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'electricity' => $forForm('access-electricity-form', fn () => $electricityQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'waterServices' => $forForm('access-water-service-form', fn () => $waterServiceQuery
                 ->with('user:id,name') // Load user relationship
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'communications' => $communicationQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'communications' => $forForm('access-communication-form', fn () => $communicationQuery
                 ->with('serviceValues:id,communication_id,service_id,status')
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'roads' => $roadQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'bridges' => $bridgeQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'roads' => $forForm('access-road-form', fn () => $roadQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'bridges' => $forForm('access-bridge-form', fn () => $bridgeQuery
                 ->where(function ($query) {
                     // Filter out completely empty rows
                     $query->where(function ($q) {
@@ -110,20 +118,20 @@ class SituationOverviewController extends Controller
                             $q->whereNotNull('remarks')->where('remarks', '!=', '');
                         });
                 })
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'preEmptiveReports' => $preEmptiveQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'casualties' => $casualtyQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'injured' => $injuredQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
-            'missing' => $missingQuery
-                ->orderBy('updated_at', 'desc')->limit(100)->get(),
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'preEmptiveReports' => $forForm('access-pre-emptive-form', fn () => $preEmptiveQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'casualties' => $forForm('access-casualty-form', fn () => $casualtyQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'injured' => $forForm('access-injured-form', fn () => $injuredQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'missing' => $forForm('access-missing-form', fn () => $missingQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
             // One shared list per disaster, and saving removes crops left out of it, so the
             // form must get every row of the active disaster: no limit, no other disasters.
-            'agriculture' => $typhoonId
+            'agriculture' => $forForm('access-agriculture-form', fn () => $typhoonId
                 ? AgricultureReport::where('disaster_id', $typhoonId)->orderBy('created_at')->get()
-                : [],
+                : []),
         ]);
     }
 

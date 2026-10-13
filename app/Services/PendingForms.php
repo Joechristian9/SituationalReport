@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Typhoon;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Which forms an account must still submit for a disaster: the forms its permissions
@@ -87,21 +89,91 @@ class PendingForms
     }
 
     /**
+     * What every account has saved for the disaster, per form: one UNION query over all
+     * the form tables instead of one query per table.
+     *
+     * @return array<int, array<string, array{count: int, last_updated: string|null}>> account id => table => figures
+     */
+    public static function submissionsByUser(Typhoon $disaster): array
+    {
+        $byUser = [];
+        foreach (self::groupedSubmissions($disaster) as $row) {
+            $byUser[(int) $row->user_id][$row->table_name] = [
+                'count' => (int) $row->aggregate,
+                'last_updated' => $row->last_updated,
+            ];
+        }
+
+        return $byUser;
+    }
+
+    /**
+     * The shared agriculture list for the disaster (it has no per-account records), or null
+     * while it is empty. One query.
+     *
+     * @return array{count: int, last_updated: string|null}|null
+     */
+    public static function agricultureSubmission(Typhoon $disaster): ?array
+    {
+        $row = DB::table(self::AGRICULTURE_TABLE)
+            ->where('disaster_id', $disaster->id)
+            ->selectRaw('COUNT(*) as aggregate, MAX(updated_at) as last_updated')
+            ->first();
+
+        return $row && (int) $row->aggregate > 0
+            ? ['count' => (int) $row->aggregate, 'last_updated' => $row->last_updated]
+            : null;
+    }
+
+    /** @return array<int, object{table_name: string, user_id: int, aggregate: int, last_updated: string|null}> */
+    private static function groupedSubmissions(Typhoon $disaster): array
+    {
+        $grammar = DB::getQueryGrammar();
+        $selects = [];
+        $bindings = [];
+        // Table names come from the constant above, never from the request.
+        foreach (array_keys(self::FORM_TABLES) as $table) {
+            $selects[] = 'select ? as table_name, user_id, COUNT(*) as aggregate, MAX(updated_at) as last_updated from '
+                .$grammar->wrapTable($table).' where disaster_id = ? and user_id is not null group by user_id';
+            array_push($bindings, $table, $disaster->id);
+        }
+
+        try {
+            return DB::select(implode(' union all ', $selects), $bindings);
+        } catch (QueryException $e) {
+            // A form table missing on this install: fall back to reading the tables one by one.
+            Log::warning('Form submission union failed; reading tables one by one', ['error' => $e->getMessage()]);
+            $rows = [];
+            foreach (array_keys(self::FORM_TABLES) as $table) {
+                try {
+                    foreach (DB::table($table)
+                        ->where('disaster_id', $disaster->id)
+                        ->whereNotNull('user_id')
+                        ->groupBy('user_id')
+                        ->get(['user_id', DB::raw('COUNT(*) as aggregate'), DB::raw('MAX(updated_at) as last_updated')]) as $row) {
+                        $row->table_name = $table;
+                        $rows[] = $row;
+                    }
+                } catch (QueryException) {
+                    // Skip the missing table.
+                }
+            }
+
+            return $rows;
+        }
+    }
+
+    /**
      * The tables still to submit for each of the given accounts (permissions must be loaded).
-     * One query per form, however many accounts there are.
+     * Two queries, however many accounts and forms there are.
      *
      * @param  iterable<User>  $users
      * @return array<int, array<int, string>> account id => report tables
      */
     public static function missingForUsers(iterable $users, Typhoon $disaster): array
     {
-        $filedBy = [];
-        foreach (array_keys(self::FORM_TABLES) as $table) {
-            foreach (DB::table($table)->where('disaster_id', $disaster->id)->whereNotNull('user_id')->distinct()->pluck('user_id') as $userId) {
-                $filedBy[$userId][] = $table;
-            }
-        }
-        $agricultureFiled = DB::table(self::AGRICULTURE_TABLE)->where('disaster_id', $disaster->id)->exists();
+        $filedBy = array_map('array_keys', self::submissionsByUser($disaster));
+        $agricultureFiled = self::agricultureSubmission($disaster) !== null;
 
         $missing = [];
         foreach ($users as $user) {

@@ -531,6 +531,8 @@ export default function UserManagement({ users, roles, permissions }) {
 
         setIsSubmitting(true);
         const options = {
+            // Roles and the permission list don't change when saving a user.
+            only: ['users', 'flash'],
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(formMode === 'create' ? `${formData.name} was added` : `${formData.name} was updated`);
@@ -555,6 +557,7 @@ export default function UserManagement({ users, roles, permissions }) {
         if (!deleteTarget) return;
         setIsSubmitting(true);
         router.delete(route('admin.users.destroy', deleteTarget.id), {
+            only: ['users', 'flash'],
             preserveScroll: true,
             onSuccess: (pageResponse) => {
                 const flashError = pageResponse?.props?.flash?.error;
