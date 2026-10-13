@@ -10,6 +10,9 @@
  * Full HTML pages and Inertia page data live in separate caches. They share one URL, and
  * the Cache API keeps a single response per URL, so one used to overwrite the other: the
  * app then opened with no connection only if the last thing cached happened to be HTML.
+ *
+ * Reopening the app after closing it loads a full page, which only a few pages have saved as
+ * HTML (moving between pages saves data only): see rebuildPage for how the rest still open.
  */
 const VERSION = 'v2';
 const ASSETS = `sitrep-assets-${VERSION}`;
@@ -90,6 +93,53 @@ async function remember(cache, request, response, max) {
     await trim(cache, max);
 }
 
+// Addresses a phone shortcut or restored tab may reopen on. With no saved copy of their own
+// they open the saved home page instead of the offline page.
+const ENTRY_PATHS = [BASE, `${BASE}login`];
+const HOME_PATHS = [`${BASE}situation-reports`, `${BASE}dashboard`];
+
+const escapeAttribute = (text) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Put an Inertia page (JSON) into saved page HTML, in either way Inertia embeds it. */
+function withPageData(html, json) {
+    const attribute = /(<div id="app" data-page=")[^"]*(")/;
+    if (attribute.test(html)) return html.replace(attribute, (_, open, close) => open + escapeAttribute(json) + close);
+    const element = /(<script data-page="app" type="application\/json">)[\s\S]*?(<\/script>)/;
+    return html.replace(element, (_, open, close) => open + json.replace(/</g, '\\u003C') + close);
+}
+
+/**
+ * Opening the app after it was closed is a full page load, but moving between pages only saved
+ * page data, so most pages have no HTML of their own. Build one from a saved page plus the page's
+ * saved data (all scripts are cached, so the app renders it), or open the home page for the
+ * entry addresses. Returns nothing when there is nothing saved to build from.
+ */
+async function rebuildPage(request) {
+    const pages = await caches.open(PAGES);
+    let shell;
+    for (const path of HOME_PATHS) {
+        shell = shell || (await pages.match(path, { ignoreVary: true }));
+    }
+    if (!shell) {
+        const [first] = await pages.keys();
+        shell = first && (await pages.match(first, { ignoreVary: true }));
+    }
+    if (!shell) return null;
+
+    const saved = await (await caches.open(DATA)).match(request, { ignoreVary: true });
+    const json = saved ? await saved.clone().text() : '';
+    let hasPage = false;
+    try {
+        hasPage = Boolean(JSON.parse(json).component);
+    } catch {
+        // Not page data (plain JSON saved under the same address): treat as not saved.
+    }
+    if (hasPage) {
+        return new Response(withPageData(await shell.clone().text(), json), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+    return ENTRY_PATHS.includes(new URL(request.url).pathname) ? shell.clone() : null;
+}
+
 async function networkFirst(event, request, isPage) {
     const cache = await caches.open(isPage ? PAGES : DATA);
     const cached = await cache.match(request, { ignoreVary: true });
@@ -108,6 +158,8 @@ async function networkFirst(event, request, isPage) {
     } catch {
         if (cached) return cached;
         if (isPage) {
+            const rebuilt = await rebuildPage(request).catch(() => null);
+            if (rebuilt) return rebuilt;
             const offline = await caches.match(OFFLINE_URL);
             if (offline) return offline;
         }

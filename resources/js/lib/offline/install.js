@@ -15,6 +15,12 @@ const OFFLINE_PAGES = [
     'pre-positioning.index',
     'response-operations.index',
     'assistance.index',
+    'assistance-extendeds.index',
+    'casualties.index',
+    'injured.index',
+    'missing.index',
+    'affected-tourists.index',
+    'damaged-houses.index',
 ];
 // JSON the forms load when they open (field suggestions and the like), so they work offline too.
 const OFFLINE_JSON = [
