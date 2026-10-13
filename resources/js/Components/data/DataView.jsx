@@ -53,32 +53,46 @@ export function DataPanel({ icon: Icon, title, count, description, actions, clas
                 )}
             >
                 {title && (
-                    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                        <div className="flex min-w-0 items-start gap-3">
-                            {Icon && (
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-                                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    // Icon | title | actions on one row; the description sits under the title on wide screens
+                    // and spans the full width below on phones, so the action button never gets a row to itself.
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-4 sm:px-5">
+                        {Icon && (
+                            <span className="col-start-1 row-start-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 sm:row-span-2">
+                                <Icon className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                        )}
+                        <h2
+                            className={cn(
+                                "row-start-1 flex min-w-0 flex-wrap items-center gap-2 text-base font-semibold text-foreground sm:text-lg",
+                                Icon ? "col-start-2" : "col-span-2 col-start-1"
+                            )}
+                        >
+                            {title}
+                            {count !== undefined && count !== null && (
+                                <span
+                                    className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary"
+                                    aria-live="polite"
+                                >
+                                    {Number(count).toLocaleString()}
                                 </span>
                             )}
-                            <div className="min-w-0">
-                                <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-foreground sm:text-lg">
-                                    {title}
-                                    {count !== undefined && count !== null && (
-                                        <span
-                                            className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary"
-                                            aria-live="polite"
-                                        >
-                                            {Number(count).toLocaleString()}
-                                        </span>
-                                    )}
-                                </h2>
-                                {description && (
-                                    <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+                        </h2>
+                        {description && (
+                            <p
+                                className={cn(
+                                    "row-start-2 mt-1 text-sm text-muted-foreground sm:mt-0",
+                                    Icon
+                                        ? "col-span-3 col-start-1 sm:col-span-1 sm:col-start-2"
+                                        : "col-span-3 col-start-1 sm:col-span-2"
                                 )}
-                            </div>
-                        </div>
+                            >
+                                {description}
+                            </p>
+                        )}
                         {actions && (
-                            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+                            <div className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-2 sm:row-span-2">
+                                {actions}
+                            </div>
                         )}
                     </div>
                 )}
