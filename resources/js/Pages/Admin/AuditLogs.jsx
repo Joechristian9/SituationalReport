@@ -20,13 +20,14 @@ import {
     DataPanel,
     DataToolbar,
     EmptyState,
-    FilterDate,
+    FilterDateRange,
     FilterSelect,
     PANEL_PAGINATION,
     useDelayedFlag,
 } from '@/Components/data/DataView';
 import { toast, Toaster } from 'sonner';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import LiveIndicator from '@/Components/LiveIndicator';
 import {
     Activity,
@@ -44,7 +45,7 @@ import {
     Trash2,
     UserCheck,
 } from 'lucide-react';
-import { SkeletonList } from '@/Components/ui/skeleton';
+import { Skeleton, SkeletonList } from '@/Components/ui/skeleton';
 
 // How each action is drawn and phrased. Full class strings so Tailwind keeps them.
 const ACTIONS = {
@@ -93,12 +94,12 @@ function ActionChip({ log }) {
 // "Cdrrmo created Casualty #10"
 function Sentence({ log }) {
     const { verb } = actionStyle(log.action);
-    const who = <span className="font-semibold text-gray-900">{log.user?.name || 'System'}</span>;
+    const who = <span className="font-semibold text-foreground">{log.user?.name || 'System'}</span>;
     const target =
         log.auditable_id || log.module !== 'System' ? (
-            <span className="font-semibold text-gray-900">
+            <span className="font-semibold text-foreground">
                 {log.module}
-                {log.auditable_id ? <span className="font-normal text-gray-500"> #{log.auditable_id}</span> : null}
+                {log.auditable_id ? <span className="font-normal text-muted-foreground"> #{log.auditable_id}</span> : null}
             </span>
         ) : null;
 
@@ -120,6 +121,76 @@ function Sentence({ log }) {
     );
 }
 
+// Phone row: the table is too wide for a card, so each entry is one tappable card
+// (who and when on top, what happened in the middle, where from at the bottom).
+function MobileLogCard({ log, onOpen }) {
+    const name = log.user?.name || 'System';
+    const detail = log.disaster?.name || (!RECORD_ACTIONS.includes(log.action) && log.description) || null;
+
+    return (
+        <button
+            type="button"
+            onClick={() => onOpen(log)}
+            aria-label={`View entry: ${name} ${log.action_name}`}
+            className="block min-h-11 w-full rounded-xl border border-border bg-card p-3.5 text-left shadow-sm transition-colors duration-150 active:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+        >
+            <div className="flex items-start gap-3">
+                <ActionIcon action={log.action} size="h-10 w-10" />
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                    {!isSystem(log) && <p className="truncate text-xs text-muted-foreground">{log.user.email}</p>}
+                </div>
+                {log.created_at_iso && (
+                    <p className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">{timeOf(log.created_at_iso)}</p>
+                )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <ActionChip log={log} />
+                {log.action === 'updated' && log.changes_count > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                        {log.changes_count} field{log.changes_count === 1 ? '' : 's'}
+                    </span>
+                )}
+            </div>
+
+            <p className="mt-2 text-sm text-foreground">
+                {log.module}
+                {log.auditable_id ? <span className="text-muted-foreground"> #{log.auditable_id}</span> : null}
+            </p>
+            {detail && <p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p>}
+
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
+                <span className="truncate font-mono text-muted-foreground">{log.ip_address || '—'}</span>
+                <span className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary">
+                    View
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                </span>
+            </div>
+        </button>
+    );
+}
+
+function MobileLogSkeleton() {
+    return (
+        <div className="space-y-3 p-3" aria-hidden="true">
+            {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-3.5">
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-1.5">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-3 w-44" />
+                        </div>
+                    </div>
+                    <Skeleton className="mt-3 h-5 w-20 rounded-full" />
+                    <Skeleton className="mt-2 h-4 w-40" />
+                </div>
+            ))}
+        </div>
+    );
+}
+
 function SummaryTile({ label, value, icon: Icon, tone, warn }) {
     return (
         <div className={`flex items-center gap-3 rounded-lg border bg-white p-4 ${warn ? 'border-orange-300' : ''}`}>
@@ -136,65 +207,81 @@ function SummaryTile({ label, value, icon: Icon, tone, warn }) {
 
 
 function EmptyValue() {
-    return <span className="italic text-gray-500">empty</span>;
+    return <span className="italic text-muted-foreground">empty</span>;
 }
+
+// Long paths and user agents have no spaces, so they must be allowed to break anywhere.
+const WRAP = 'min-w-0 [overflow-wrap:anywhere]';
 
 function LogDetail({ details }) {
     const { log, changes = [] } = details;
     const isUpdate = log.action === 'updated';
 
+    const rows = [
+        ['When', <>{log.created_at}<span className="block text-muted-foreground">{log.created_at_human}</span></>],
+        ['By', <>{log.user?.name || 'System'}{log.user?.email && <span className="block text-muted-foreground">{log.user.email}</span>}</>],
+        ['Record', log.auditable_id ? `${log.module} #${log.auditable_id}` : log.module],
+        log.disaster && ['Disaster', log.disaster.name],
+        ['IP address', <span className="font-mono text-[13px]">{log.ip_address || '—'}</span>],
+        log.user_agent && ['Device', <span className="text-muted-foreground">{log.user_agent}</span>],
+        log.description && ['Note', log.description],
+    ].filter(Boolean);
+
     return (
         <div className="space-y-6">
-            <dl className="divide-y rounded-lg border text-sm">
-                {[
-                    ['When', <>{log.created_at}<span className="block text-gray-500">{log.created_at_human}</span></>],
-                    ['By', <>{log.user.name}<span className="block text-gray-500">{log.user.email}</span></>],
-                    ['Record', log.auditable_id ? `${log.module} #${log.auditable_id}` : log.module],
-                    log.disaster && ['Disaster', log.disaster.name],
-                    ['IP address', <span className="font-mono">{log.ip_address || '—'}</span>],
-                    log.user_agent && ['Device', <span className="break-all text-gray-600">{log.user_agent}</span>],
-                    log.description && ['Note', log.description],
-                ]
-                    .filter(Boolean)
-                    .map(([label, value]) => (
-                        <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-3 px-3 py-2.5">
-                            <dt className="text-gray-500">{label}</dt>
-                            <dd className="min-w-0 break-words text-gray-900">{value}</dd>
-                        </div>
-                    ))}
+            <dl className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card text-sm shadow-sm">
+                {rows.map(([label, value]) => (
+                    <div key={label} className="grid gap-0.5 px-4 py-3 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-4">
+                        <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground sm:pt-0.5 sm:text-sm sm:normal-case sm:tracking-normal">
+                            {label}
+                        </dt>
+                        <dd className={`${WRAP} text-foreground`}>{value}</dd>
+                    </div>
+                ))}
             </dl>
 
-            <section>
-                <h3 className="mb-2 flex items-baseline justify-between text-sm font-semibold text-gray-900">
+            <section aria-labelledby="log-changes-heading">
+                <h3 id="log-changes-heading" className="mb-2.5 flex items-center justify-between gap-2 text-sm font-semibold text-foreground">
                     {isUpdate ? 'What changed' : log.action === 'created' ? 'Values entered' : log.action === 'deleted' ? 'Values removed' : 'Details'}
                     {changes.length > 0 && (
-                        <span className="text-xs font-normal text-gray-500">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
                             {changes.length} field{changes.length === 1 ? '' : 's'}
                         </span>
                     )}
                 </h3>
 
                 {changes.length === 0 ? (
-                    <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-gray-500">
+                    <p className="rounded-xl border border-dashed border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
                         No field changes were recorded for this entry.
                     </p>
                 ) : (
-                    <ul className="divide-y rounded-lg border">
+                    <ul className="space-y-2.5">
                         {changes.map((change, i) => (
-                            <li key={`${change.field_key}-${i}`} className="px-3 py-2.5">
-                                <p className="text-sm font-medium text-gray-700">{change.field}</p>
+                            <li key={`${change.field_key}-${i}`} className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
+                                <p className="text-sm font-semibold text-foreground">{change.field}</p>
                                 {isUpdate ? (
-                                    <div className="mt-1 flex flex-wrap items-start gap-2 text-sm">
-                                        <span className="min-w-0 break-words rounded bg-red-50 px-2 py-1 text-red-800 line-through decoration-red-300">
-                                            {change.old_value || <EmptyValue />}
-                                        </span>
-                                        <ArrowRight className="mt-1.5 h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" /><span className="sr-only">changed to</span>
-                                        <span className="min-w-0 break-words rounded bg-emerald-50 px-2 py-1 text-emerald-800">
-                                            {change.new_value || <EmptyValue />}
-                                        </span>
+                                    <div className="mt-2.5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-stretch">
+                                        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-destructive">Before</p>
+                                            <p className={`${WRAP} mt-0.5 text-sm text-foreground`}>
+                                                {change.old_value || <EmptyValue />}
+                                            </p>
+                                        </div>
+                                        <ArrowRight
+                                            className="mx-auto h-4 w-4 shrink-0 rotate-90 self-center text-muted-foreground sm:rotate-0"
+                                            aria-hidden="true"
+                                        />
+                                        <div className="rounded-lg border border-success/20 bg-success/10 px-3 py-2">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-success">After</p>
+                                            <p className={`${WRAP} mt-0.5 text-sm text-foreground`}>
+                                                {change.new_value || <EmptyValue />}
+                                            </p>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-0.5 break-words text-sm text-gray-900">{change.value || <EmptyValue />}</p>
+                                    <p className={`${WRAP} mt-1.5 rounded-lg bg-muted px-3 py-2 text-sm text-foreground`}>
+                                        {change.value || <EmptyValue />}
+                                    </p>
                                 )}
                             </li>
                         ))}
@@ -213,6 +300,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
     const perPage = Number(filters.per_page) || 20;
     const stats = summary || { events: 0, changes: 0, active_users: 0, failed_logins: 0 };
     const live = useLiveRefresh({ only: ['logs', 'summary'] });
+    const isWide = useMediaQuery('(min-width: 640px)');
 
     const currentParams = () => ({
         search: filters.search || '',
@@ -373,22 +461,17 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                             allLabel="All disasters"
                                             options={filterOptions.disasters.map((d) => ({ value: d.id, label: d.name }))}
                                         />
-                                        <FilterDate
-                                            id="log-from"
-                                            label="From"
-                                            value={filters.start_date || ''}
-                                            max={filters.end_date || undefined}
-                                            onChange={(value) => applyFilters({ start_date: value })}
-                                        />
-                                        <FilterDate
-                                            id="log-to"
-                                            label="To"
-                                            value={filters.end_date || ''}
-                                            min={filters.start_date || undefined}
-                                            onChange={(value) => applyFilters({ end_date: value })}
+                                        <FilterDateRange
+                                            fromId="log-from"
+                                            toId="log-to"
+                                            from={filters.start_date || ''}
+                                            to={filters.end_date || ''}
+                                            onFromChange={(value) => applyFilters({ start_date: value })}
+                                            onToChange={(value) => applyFilters({ end_date: value })}
                                         />
                                     </>
                                 }
+                                filtersRow
                                 chips={chips}
                                 onClearAll={clearAll}
                             />
@@ -407,7 +490,32 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                 />
                             ) : (
                                 <>
-                                    <Table stacked>
+                                    {/* Phones: cards grouped by day. */}
+                                    <div className="md:hidden">
+                                        {showSkeleton ? (
+                                            <MobileLogSkeleton />
+                                        ) : (
+                                            <ul className="space-y-2 p-3" aria-busy={loading}>
+                                                {logs.data.map((log, i) => {
+                                                    const day = log.created_at_iso ? dateOf(log.created_at_iso) : 'Unknown date';
+                                                    const prev = logs.data[i - 1];
+                                                    const newDay = !prev || (prev.created_at_iso ? dateOf(prev.created_at_iso) : 'Unknown date') !== day;
+                                                    return (
+                                                        <li key={log.id} className={newDay && i > 0 ? 'pt-2' : undefined}>
+                                                            {newDay && (
+                                                                <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                    {day}
+                                                                </h3>
+                                                            )}
+                                                            <MobileLogCard log={log} onOpen={openDetails} />
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
+                                    </div>
+
+                                    <Table className="max-md:hidden">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>When</TableHead>
@@ -429,7 +537,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                                     onClick={() => openDetails(log)}
                                                     className="cursor-pointer"
                                                 >
-                                                    <TableCell label="When" className="whitespace-nowrap tabular-nums">
+                                                    <TableCell className="whitespace-nowrap tabular-nums">
                                                         {log.created_at_iso ? (
                                                             <>
                                                                 <div className="text-foreground">{dateOf(log.created_at_iso)}</div>
@@ -439,13 +547,13 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                                             <span className="text-muted-foreground">Unknown</span>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell label="Account">
+                                                    <TableCell>
                                                         <div className="font-medium text-foreground">{log.user?.name || 'System'}</div>
                                                         {!isSystem(log) && (
                                                             <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{log.user.email}</div>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell label="Action">
+                                                    <TableCell>
                                                         <div className="flex flex-wrap items-center gap-1.5">
                                                             <ActionChip log={log} />
                                                             {log.action === 'updated' && log.changes_count > 0 && (
@@ -455,7 +563,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                                             )}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell label="Record">
+                                                    <TableCell>
                                                         <div className="text-foreground">
                                                             {log.module}
                                                             {log.auditable_id ? <span className="text-muted-foreground"> #{log.auditable_id}</span> : null}
@@ -466,7 +574,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                                             </div>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell label="IP address" className="font-mono text-xs text-muted-foreground md:hidden lg:table-cell">
+                                                    <TableCell className="hidden font-mono text-xs text-muted-foreground lg:table-cell">
                                                         {log.ip_address || '—'}
                                                     </TableCell>
                                                     <TableCell className="text-right">
@@ -505,24 +613,31 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
 
                 {/* Entry detail */}
                 <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-                    <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+                    {/* Bottom sheet on phones, side panel from 640px; both rounded on the open edge. */}
+                    <SheetContent
+                        side={isWide ? 'right' : 'bottom'}
+                        className={`flex flex-col gap-0 overflow-hidden border-border bg-background p-0 ${
+                            isWide ? 'h-full w-full sm:max-w-xl sm:rounded-l-2xl' : 'max-h-[92dvh] rounded-t-2xl'
+                        }`}
+                    >
                         {selected && (
                             <>
-                                <SheetHeader className="pr-6 text-left">
-                                    <div className="flex items-start gap-3">
-                                        <ActionIcon action={selected.action} size="h-10 w-10" />
+                                <SheetHeader className="shrink-0 space-y-0 border-b border-border bg-card px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
+                                    {/* Right padding keeps the title clear of the close button. */}
+                                    <div className="flex items-start gap-3 pr-10 sm:pr-8">
+                                        <ActionIcon action={selected.action} size="h-11 w-11" />
                                         <div className="min-w-0">
-                                            <SheetTitle className="text-lg font-normal leading-snug text-gray-700">
+                                            <SheetTitle className="text-base font-normal leading-snug text-muted-foreground sm:text-lg">
                                                 <Sentence log={selected} />
                                             </SheetTitle>
-                                            <SheetDescription className="mt-1 flex flex-wrap items-center gap-2">
+                                            <SheetDescription className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                                                 <ActionChip log={selected} />
-                                                <span>{selected.created_at}</span>
+                                                <span className="tabular-nums">{selected.created_at}</span>
                                             </SheetDescription>
                                         </div>
                                     </div>
                                 </SheetHeader>
-                                <div className="mt-6">
+                                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
                                     {loadingDetails || !details ? (
                                         <SkeletonList rows={3} label="Loading entry…" />
                                     ) : (

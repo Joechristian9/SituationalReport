@@ -197,6 +197,56 @@ export function FilterDate({ id, label, value, onChange, min, max }) {
     );
 }
 
+/**
+ * A from/to date filter as one pill, so the two dates never wrap apart on desktop.
+ * On phones (inside the Filters popover) it is two full-width fields.
+ */
+export function FilterDateRange({ fromId, toId, from, to, onFromChange, onToChange, label = "Date range" }) {
+    const active = Boolean(from || to);
+    const field = (id, text, value, onChange, limits) => (
+        <label
+            htmlFor={id}
+            className={cn(
+                "flex cursor-pointer items-center gap-1.5 focus-within:ring-2 focus-within:ring-ring",
+                "max-md:h-11 max-md:rounded-lg max-md:border max-md:px-3 max-md:shadow-sm",
+                value
+                    ? "max-md:border-primary/40 max-md:bg-primary/10 max-md:text-accent-foreground"
+                    : "max-md:border-dashed max-md:border-input max-md:bg-card",
+                "md:rounded-full md:px-2 md:py-1"
+            )}
+        >
+            <span className={cn("shrink-0", !value && "text-muted-foreground")}>{text}:</span>
+            <input
+                id={id}
+                type="date"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-inherit focus:outline-none focus:ring-0 md:w-[7.75rem] md:flex-none"
+                {...limits}
+            />
+        </label>
+    );
+
+    return (
+        <div
+            role="group"
+            aria-label={label}
+            className={cn(
+                "grid gap-2.5 text-sm md:inline-flex md:h-9 md:items-center md:gap-0.5 md:rounded-full md:border md:px-1 md:shadow-sm",
+                active
+                    ? "md:border-primary/40 md:bg-primary/10 md:text-accent-foreground"
+                    : "md:border-dashed md:border-input md:bg-card md:text-foreground"
+            )}
+        >
+            {field(fromId, "From", from, onFromChange, { max: to || undefined })}
+            <span className="hidden text-muted-foreground md:block" aria-hidden="true">
+                –
+            </span>
+            {field(toId, "To", to, onToChange, { min: from || undefined })}
+        </div>
+    );
+}
+
 function DensityToggle() {
     const { density, setDensity } = useDensity();
     if (!setDensity) return null;
@@ -231,9 +281,10 @@ function DensityToggle() {
  * Search and filters above a list, on a tinted band. `search` = { id, value, onChange,
  * onClear?, placeholder }. `filters` are FilterSelect / FilterDate pills; on phones they
  * move into a popover under the Filters button. `chips` = [{ key, label, onRemove }] for the applied filters.
- * `onClearAll` resets the search and every filter.
+ * `onClearAll` resets the search and every filter. `filtersRow` puts the pills on their own
+ * labelled row under the search (for lists with many filters) instead of beside it.
  */
-export function DataToolbar({ search, filters, chips = [], onClearAll, className }) {
+export function DataToolbar({ search, filters, chips = [], onClearAll, filtersRow = false, className }) {
     const isMobile = useIsMobile();
     const [popoverOpen, setPopoverOpen] = useState(false);
     const canClear = onClearAll && (chips.length > 0 || !!search?.value);
@@ -241,7 +292,7 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, className
     return (
         <div className={cn("space-y-3 border-y border-border bg-muted/40 px-4 py-3 sm:px-5", className)}>
             <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center">
-                <div className="flex items-center gap-2 md:w-72 lg:w-80">
+                <div className={cn("flex items-center gap-2 md:w-72 lg:w-80", filtersRow && "md:w-full md:max-w-md lg:w-full")}>
                     {search && (
                         <div role="search" className="w-full">
                             <SearchInput {...search} />
@@ -303,12 +354,22 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, className
                     )}
                 </div>
 
-                {filters && !isMobile && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
+                {filters && !isMobile && !filtersRow && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
 
                 <div className="md:ml-auto">
                     <DensityToggle />
                 </div>
             </div>
+
+            {filters && !isMobile && filtersRow && (
+                <div role="group" aria-label="Filters" className="flex flex-wrap items-center gap-2">
+                    <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                        Filter by
+                    </span>
+                    {filters}
+                </div>
+            )}
 
             {(chips.length > 0 || canClear) && (
                 <div className="flex flex-wrap items-center gap-2">
