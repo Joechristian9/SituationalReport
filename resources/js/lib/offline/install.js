@@ -168,8 +168,8 @@ function lastWarmed() {
     }
 }
 
-async function warmPages(registration) {
-    if (!navigator.onLine || !currentUser() || Date.now() - lastWarmed() < WARM_EVERY_MS) return;
+async function warmPages(registration, force = false) {
+    if (!navigator.onLine || !currentUser() || (!force && Date.now() - lastWarmed() < WARM_EVERY_MS)) return;
     const worker = registration.active || (await navigator.serviceWorker.ready).active;
     worker?.postMessage({ type: 'warm', urls: offlinePageUrls(), jsonUrls: offlineJsonUrls(), inertiaVersion: currentPage()?.version ?? '' });
     try {
@@ -218,7 +218,11 @@ async function registerServiceWorker() {
     if (!import.meta.env.PROD || !('serviceWorker' in navigator) || !window.isSecureContext) return;
     try {
         const base = appBase();
+        const updating = Boolean(navigator.serviceWorker.controller);
         const registration = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base });
+        // A new worker deletes the old worker's caches when it takes over, including pages the
+        // old one just saved for this session: save them again into the new worker's caches.
+        if (updating) navigator.serviceWorker.addEventListener('controllerchange', () => warmPages(registration, true), { once: true });
         listenForWarmed();
         warmPages(registration);
         router.on('navigate', () => warmPages(registration));
