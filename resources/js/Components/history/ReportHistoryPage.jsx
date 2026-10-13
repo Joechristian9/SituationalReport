@@ -1,17 +1,23 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { CheckCircle2, ChevronRight, Download, FileText, History, Pause, RefreshCw } from 'lucide-react';
 import Breadcrumbs from '@/Components/Breadcrumbs';
+import { PANEL_PAGINATION } from '@/Components/data/DataView';
 import FormPanel from '@/Components/forms/FormPanel';
 import { Button } from '@/Components/ui/button';
 import DownloadExcelButton from '@/Components/ui/DownloadExcelButton';
 import SearchBar from '@/Components/ui/SearchBar';
+import TablePagination from '@/Components/ui/TablePagination';
 import { SkeletonTable } from '@/Components/ui/skeleton';
 import AppLayout from '@/Layouts/AppLayout';
-import { CELL_LABEL, STACKED_TABLE } from '@/lib/responsiveTable';
 import { cn } from '@/lib/utils';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import { HISTORY_TYPES, TRAILING_COLUMNS, cellText, formatDate } from './historyTypes';
+
+const DEFAULT_PER_PAGE = 10;
+const DISASTERS_PER_PAGE = 5;
+const SEARCH_DELAY = 300;
 
 /**
  * One "Report History" page: the user's reports of one type, grouped by disaster
@@ -22,19 +28,40 @@ export default function ReportHistoryPage({ type }) {
     const config = HISTORY_TYPES[type];
     const columns = useMemo(() => [...config.columns, ...TRAILING_COLUMNS], [config]);
     const Icon = config.icon;
+    // Phones get cards, wider screens the table; only the one in use is rendered.
+    const isWide = useMediaQuery('(min-width: 768px)');
 
-    const { data: groups = [], isLoading, isError, refetch, isFetching } = useQuery({
-        queryKey: ['report-history', type],
-        queryFn: async () => (await axios.get(route(config.api))).data,
-        staleTime: 5 * 60 * 1000,
-    });
-
+    // The server pages the disasters and filters them by search, so only one page is ever loaded.
     const [search, setSearch] = useState('');
-    const visible = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        if (!term) return groups;
-        return groups.filter(({ typhoon }) => `${typhoon.name} ${typhoon.disaster_type ?? ''}`.toLowerCase().includes(term));
-    }, [groups, search]);
+    const [term, setTerm] = useState('');
+    const [perPage, setPerPage] = useState(DISASTERS_PER_PAGE);
+    const [page, setPage] = useState(1);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setTerm(search.trim());
+            setPage(1);
+        }, SEARCH_DELAY);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    const { data, isLoading, isError, refetch, isFetching, isPlaceholderData } = useQuery({
+        queryKey: ['report-history', type, page, perPage, term],
+        queryFn: async () => {
+            const params = { ...config.apiParams, page, per_page: perPage, ...(term ? { search: term } : {}) };
+            return (await axios.get(route(config.api, params))).data;
+        },
+        staleTime: 5 * 60 * 1000,
+        placeholderData: keepPreviousData,
+    });
+    const groups = data?.data ?? [];
+    const meta = data?.meta ?? { current_page: 1, last_page: 1, per_page: perPage, total: 0 };
+    const offset = (meta.current_page - 1) * meta.per_page;
+
+    // A refresh can leave the page past the end (a disaster was removed); step back.
+    useEffect(() => {
+        if (data && groups.length === 0 && meta.total > 0 && page > meta.last_page) setPage(meta.last_page);
+    }, [data]);
 
     // The newest disaster starts open; everything else is the user's choice.
     const [open, setOpen] = useState({});
@@ -58,7 +85,7 @@ export default function ReportHistoryPage({ type }) {
                                     <p className="mt-1 text-sm text-muted-foreground">Reports you can see, grouped by disaster, newest first.</p>
                                 </div>
                             </div>
-                            {groups.length > 1 && <SearchBar value={search} onChange={setSearch} placeholder="Search disaster" />}
+                            {(meta.total > 1 || search) && <SearchBar value={search} onChange={setSearch} placeholder="Search disaster" />}
                         </div>
 
                         {isLoading ? (
@@ -72,25 +99,44 @@ export default function ReportHistoryPage({ type }) {
                                     Try again
                                 </Button>
                             </Message>
-                        ) : groups.length === 0 ? (
+                        ) : groups.length === 0 && !term ? (
                             <Message title="No reports yet." text="Reports you save during a disaster appear here, grouped by disaster." />
-                        ) : visible.length === 0 ? (
-                            <Message title={`No disaster matches “${search}”.`}>
-                                <Button type="button" variant="link" onClick={() => setSearch('')} className="min-h-11 sm:min-h-9">
+                        ) : groups.length === 0 ? (
+                            <Message title={`No disaster matches “${term}”.`}>
+                                <Button type="button" variant="link" onClick={() => { setSearch(''); setTerm(''); setPage(1); }} className="min-h-11 sm:min-h-9">
                                     Clear search
                                 </Button>
                             </Message>
                         ) : (
-                            visible.map((group, index) => (
-                                <DisasterSection
-                                    key={group.typhoon.id}
-                                    group={group}
-                                    config={config}
-                                    columns={columns}
-                                    open={isOpen(group.typhoon.id, index)}
-                                    onToggle={() => setOpen((prev) => ({ ...prev, [group.typhoon.id]: !isOpen(group.typhoon.id, index) }))}
+                            <div aria-busy={isPlaceholderData} className={cn('transition-opacity motion-reduce:transition-none', isPlaceholderData && 'opacity-60')}>
+                                {groups.map((group, i) => {
+                                    const index = offset + i;
+                                    return (
+                                        <DisasterSection
+                                            key={group.typhoon.id}
+                                            group={group}
+                                            config={config}
+                                            columns={columns}
+                                            isWide={isWide}
+                                            open={isOpen(group.typhoon.id, index)}
+                                            onToggle={() => setOpen((prev) => ({ ...prev, [group.typhoon.id]: !isOpen(group.typhoon.id, index) }))}
+                                        />
+                                    );
+                                })}
+                                <TablePagination
+                                    currentPage={meta.current_page}
+                                    totalPages={meta.last_page}
+                                    totalItems={meta.total}
+                                    perPage={meta.per_page}
+                                    onPageChange={setPage}
+                                    onPerPageChange={(n) => {
+                                        setPerPage(n);
+                                        setPage(1);
+                                    }}
+                                    itemLabel="disasters"
+                                    className={PANEL_PAGINATION}
                                 />
-                            ))
+                            </div>
                         )}
                     </FormPanel>
                 </main>
@@ -98,14 +144,17 @@ export default function ReportHistoryPage({ type }) {
     );
 }
 
-function DisasterSection({ group, config, columns, open, onToggle }) {
+function DisasterSection({ group, config, columns, open, onToggle, isWide }) {
     const { typhoon, reports } = group;
     const panelId = `history-${typhoon.id}`;
     const period = `${formatDate(typhoon.started_at)} – ${typhoon.ended_at ? formatDate(typhoon.ended_at) : 'ongoing'}`;
-    const exportRows = useMemo(
-        () => reports.map((report) => Object.fromEntries(columns.map((column) => [column.label, cellText(column, report)]))),
-        [reports, columns],
-    );
+
+    // The data is already loaded, so paging is client-side. Clamped in case a refresh shrinks the list.
+    const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
+    const [pageState, setPage] = useState(1);
+    const totalPages = Math.max(1, Math.ceil(reports.length / perPage));
+    const page = Math.min(pageState, totalPages);
+    const pageReports = reports.slice((page - 1) * perPage, page * perPage);
 
     return (
         <section className="border-b border-border last:border-b-0">
@@ -158,60 +207,133 @@ function DisasterSection({ group, config, columns, open, onToggle }) {
                                     </Button>
                                 </>
                             )}
-                            <DownloadExcelButton
-                                data={exportRows}
-                                fileName={`${config.title} - ${typhoon.name}`.replace(/[^\w -]+/g, '').replace(/\s+/g, '_')}
-                                sheetName={typhoon.name.slice(0, 31)}
-                            />
+                            <ExportExcel reports={reports} columns={columns} config={config} typhoon={typhoon} />
                         </div>
                     </div>
 
-                    <div className="md:overflow-x-auto md:rounded-lg md:border md:border-border">
-                        <table className={cn('w-full border-collapse text-sm', STACKED_TABLE, 'md:min-w-[48rem]')}>
-                            <caption className="sr-only">
-                                {config.title}: {typhoon.name}
-                            </caption>
-                            <thead className="bg-muted/60">
-                                <tr>
-                                    {columns.map((column) => (
-                                        <th
-                                            key={column.name}
-                                            scope="col"
-                                            className={cn('px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground', column.align === 'right' && 'text-right')}
-                                        >
-                                            {column.label}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {reports.map((report) => (
-                                    <tr key={report.id} className="md:border-t md:border-border">
-                                        {columns.map((column) => {
-                                            const text = cellText(column, report);
-                                            return (
-                                                <td
-                                                    key={column.name}
-                                                    className={cn(
-                                                        'whitespace-pre-line px-3 py-2.5 align-top text-foreground',
-                                                        column.align === 'right' && 'tabular-nums md:text-right',
-                                                    )}
-                                                >
-                                                    <span className={CELL_LABEL}>{column.label}</span>
-                                                    {text || <span className="text-muted-foreground">—</span>}
-                                                </td>
-                                            );
-                                        })}
+                    {/* Only the layout in use is rendered, so a phone never builds the table (or a desktop the cards). */}
+                    {!isWide ? (
+                        <ul className="space-y-3" aria-label={`${config.title}: ${typhoon.name}`}>
+                            {pageReports.map((report) => (
+                                <li key={report.id}>
+                                    <ReportCard report={report} columns={columns} />
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="overflow-x-auto rounded-lg border border-border">
+                            <table className="w-full min-w-[48rem] border-collapse text-sm">
+                                <caption className="sr-only">
+                                    {config.title}: {typhoon.name}
+                                </caption>
+                                <thead className="bg-muted/60">
+                                    <tr>
+                                        {columns.map((column) => (
+                                            <th
+                                                key={column.name}
+                                                scope="col"
+                                                className={cn('px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground', column.align === 'right' && 'text-right')}
+                                            >
+                                                {column.label}
+                                            </th>
+                                        ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {pageReports.map((report) => (
+                                        <tr key={report.id} className="border-t border-border">
+                                            {columns.map((column) => {
+                                                const text = cellText(column, report);
+                                                return (
+                                                    <td
+                                                        key={column.name}
+                                                        className={cn(
+                                                            'whitespace-pre-line px-3 py-2.5 align-top text-foreground',
+                                                            column.align === 'right' && 'tabular-nums text-right',
+                                                        )}
+                                                    >
+                                                        {text || <span className="text-muted-foreground">—</span>}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={reports.length}
+                        perPage={perPage}
+                        onPageChange={setPage}
+                        onPerPageChange={(n) => {
+                            setPerPage(n);
+                            setPage(1);
+                        }}
+                        itemLabel="reports"
+                        className="pt-1"
+                    />
                 </div>
             )}
         </section>
     );
 }
+
+const TRAILING_NAMES = TRAILING_COLUMNS.map((column) => column.name);
+
+/**
+ * A report on a phone: the first column is the heading, a text second column its
+ * subtitle, numbers sit two to a row, text takes the full width, and who/when closes the card.
+ */
+const ReportCard = memo(function ReportCard({ report, columns }) {
+    const [titleColumn, secondColumn] = columns;
+    const subtitle = secondColumn && secondColumn.align !== 'right' ? cellText(secondColumn, report) : '';
+    const skip = secondColumn && secondColumn.align !== 'right' ? 2 : 1;
+    const fields = columns
+        .slice(skip)
+        .filter((column) => !TRAILING_NAMES.includes(column.name))
+        .map((column) => ({ column, text: cellText(column, report) }))
+        .filter(({ text }) => text !== '');
+    const updatedBy = report.user?.name;
+    const updatedAt = cellText(TRAILING_COLUMNS[0], report);
+
+    return (
+        <article className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <h3 className="break-words text-base font-semibold leading-snug text-foreground">
+                {cellText(titleColumn, report) || '—'}
+            </h3>
+            {subtitle && <p className="mt-0.5 break-words text-sm text-muted-foreground">{subtitle}</p>}
+
+            {fields.length > 0 && (
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-3">
+                    {fields.map(({ column, text }) => (
+                        <div key={column.name} className={cn('min-w-0', column.align !== 'right' && 'col-span-2')}>
+                            <dt className="text-xs font-medium text-muted-foreground">{column.label}</dt>
+                            <dd
+                                className={cn(
+                                    'mt-0.5 whitespace-pre-line break-words text-sm text-foreground',
+                                    column.align === 'right' && 'text-base font-semibold tabular-nums',
+                                )}
+                            >
+                                {text}
+                            </dd>
+                        </div>
+                    ))}
+                </dl>
+            )}
+
+            {(updatedBy || updatedAt) && (
+                <p className="mt-3 border-t border-border pt-2.5 text-xs text-muted-foreground">
+                    {updatedBy ? `Updated by ${updatedBy}` : 'Updated'}
+                    {updatedAt ? ` · ${updatedAt}` : ''}
+                </p>
+            )}
+        </article>
+    );
+});
 
 // Design system status mapping: icon and text, never colour alone.
 const STATUS = {
@@ -239,5 +361,21 @@ function Message({ title, text, children }) {
             {text && <p className="mt-1 text-sm text-muted-foreground">{text}</p>}
             {children}
         </div>
+    );
+}
+
+// The Excel rows are built when the section is open, and only re-built when its data changes.
+function ExportExcel({ reports, columns, config, typhoon }) {
+    const rows = useMemo(
+        () => reports.map((report) => Object.fromEntries(columns.map((column) => [column.label, cellText(column, report)]))),
+        [reports, columns],
+    );
+
+    return (
+        <DownloadExcelButton
+            data={rows}
+            fileName={`${config.title} - ${typhoon.name}`.replace(/[^\w -]+/g, '').replace(/\s+/g, '_')}
+            sheetName={typhoon.name.slice(0, 31)}
+        />
     );
 }

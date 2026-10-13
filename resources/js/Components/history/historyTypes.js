@@ -1,9 +1,31 @@
-import { ClipboardList, Cloud, Droplets, Flame, Landmark, Radio, Route, Sprout, Zap } from 'lucide-react';
+import {
+    ClipboardList,
+    Cloud,
+    Droplets,
+    FileWarning,
+    Flame,
+    HeartHandshake,
+    House,
+    Landmark,
+    Luggage,
+    MapPin,
+    Radio,
+    Route,
+    Sprout,
+    UserRound,
+    UserSearch,
+    Users,
+    UserX,
+    Waves,
+    Zap,
+} from 'lucide-react';
 
 /*
  * Every "Report History" page, in one place: the page, the sidebar and the Excel
  * export all read this. Column: { name, label, align?: 'right', value?: (report) => text }.
- * `pdf` is the route of a per-disaster PDF, for the types that have one.
+ * `pdf` is the route of a per-disaster PDF, for the types that have one. `page` and `api`
+ * are route names; `pageParams` / `apiParams` fill their parameters (the shared
+ * ReportHistoryController routes take the type).
  */
 const roadLike = (nameField, nameLabel) => [
     { name: 'road_classification', label: 'Road classification' },
@@ -15,6 +37,15 @@ const roadLike = (nameField, nameLabel) => [
 ];
 
 const count = (name, label) => ({ name, label, align: 'right' });
+
+// The forms served by ReportHistoryController share one page route and one data route.
+const shared = (type, config) => ({
+    ...config,
+    api: 'api.report-history',
+    apiParams: { type },
+    page: 'report-history.show',
+    pageParams: { type },
+});
 
 export const HISTORY_TYPES = {
     weather: {
@@ -153,6 +184,140 @@ export const HISTORY_TYPES = {
             { name: 'remarks', label: 'Remarks' },
         ],
     },
+    casualties: shared('casualties', {
+        title: 'Casualties (dead) history',
+        menuTitle: 'Casualties - Dead History',
+        icon: UserX,
+        permission: 'access-casualty-form',
+        columns: [
+            { name: 'name', label: 'Name' },
+            count('age', 'Age'),
+            { name: 'sex', label: 'Sex' },
+            { name: 'address', label: 'Address' },
+            { name: 'cause_of_death', label: 'Cause of death' },
+            { name: 'date_died', label: 'Date died', value: (report) => formatDate(report.date_died) },
+            { name: 'place_of_incident', label: 'Place of incident' },
+        ],
+    }),
+    injured: shared('injured', {
+        title: 'Casualties (injured) history',
+        menuTitle: 'Casualties - Injured History',
+        icon: UserRound,
+        permission: 'access-injured-form',
+        columns: [
+            { name: 'name', label: 'Name' },
+            count('age', 'Age'),
+            { name: 'sex', label: 'Sex' },
+            { name: 'address', label: 'Address' },
+            { name: 'diagnosis', label: 'Diagnosis' },
+            { name: 'date_admitted', label: 'Date admitted', value: (report) => formatDate(report.date_admitted) },
+            { name: 'place_of_incident', label: 'Place of incident' },
+            { name: 'remarks', label: 'Remarks' },
+        ],
+    }),
+    missing: shared('missing', {
+        title: 'Casualties (missing) history',
+        menuTitle: 'Casualties - Missing History',
+        icon: UserSearch,
+        permission: 'access-missing-form',
+        columns: [
+            { name: 'name', label: 'Name' },
+            count('age', 'Age'),
+            { name: 'sex', label: 'Sex' },
+            { name: 'address', label: 'Address' },
+            { name: 'cause', label: 'Cause' },
+            { name: 'remarks', label: 'Remarks' },
+        ],
+    }),
+    tourists: shared('tourists', {
+        title: 'Affected tourists history',
+        menuTitle: 'Affected Tourists History',
+        icon: Luggage,
+        permission: 'access-tourist-form',
+        columns: [
+            { name: 'province_city_municipality', label: 'Province / city / municipality' },
+            { name: 'location', label: 'Location' },
+            count('local_tourists', 'Local tourists'),
+            count('foreign_tourists', 'Foreign tourists'),
+            { name: 'remarks', label: 'Remarks' },
+        ],
+    }),
+    'damaged-houses': shared('damaged-houses', {
+        title: 'Damaged houses history',
+        menuTitle: 'Damaged Houses History',
+        icon: House,
+        permission: 'access-damaged-houses-form',
+        columns: [
+            { name: 'barangay', label: 'Barangay' },
+            count('partially', 'Partially damaged'),
+            count('totally', 'Totally damaged'),
+            count('total', 'Total'),
+        ],
+    }),
+    'pre-positioning': shared('pre-positioning', {
+        title: 'Deployment of response assets history',
+        menuTitle: 'Response Assets History',
+        icon: MapPin,
+        permission: 'access-pre-positioning-form',
+        columns: [
+            { name: 'team_units', label: 'Team / unit' },
+            { name: 'team_leader', label: 'Team leader' },
+            { name: 'personnel_deployed', label: 'Personnel deployed' },
+            { name: 'response_assets', label: 'Response assets' },
+            { name: 'capability', label: 'Capability' },
+            { name: 'area_of_deployment', label: 'Area of deployment' },
+        ],
+    }),
+    'response-operations': shared('response-operations', {
+        title: 'Response operations history',
+        menuTitle: 'Response Operations History',
+        icon: Users,
+        permission: 'access-response-operations',
+        columns: [
+            { name: 'team_unit', label: 'Team / unit' },
+            { name: 'incident', label: 'Incident' },
+            { name: 'datetime', label: 'Date & time', value: (report) => formatDateTime(report.datetime) },
+            { name: 'location', label: 'Location' },
+            { name: 'actions', label: 'Actions taken' },
+            { name: 'remarks', label: 'Remarks' },
+        ],
+    }),
+    'assistance-extended': shared('assistance-extended', {
+        title: 'Assistance extended history',
+        menuTitle: 'Assistance History',
+        icon: HeartHandshake,
+        permission: 'access-assistance-extended',
+        columns: [
+            { name: 'agency_officials_groups', label: 'Agency / officials / groups' },
+            { name: 'type_kind_of_assistance', label: 'Type / kind of assistance' },
+            { name: 'amount', label: 'Amount' },
+            { name: 'beneficiaries', label: 'Beneficiaries' },
+        ],
+    }),
+    declaration: shared('declaration', {
+        title: 'Declaration of state of calamity history',
+        menuTitle: 'Declaration History',
+        icon: FileWarning,
+        permission: 'access-declaration-form',
+        columns: [
+            { name: 'declared_by', label: 'Declared by' },
+            { name: 'resolution_number', label: 'Resolution number' },
+            { name: 'date_approved', label: 'Date approved', value: (report) => formatDate(report.date_approved) },
+        ],
+    }),
+    'water-level': shared('water-level', {
+        title: 'Water level history',
+        menuTitle: 'Water Level History',
+        icon: Waves,
+        permission: 'access-water-level-form',
+        columns: [
+            { name: 'gauging_station', label: 'Gauging station' },
+            { name: 'current_level', label: 'Current level' },
+            { name: 'alarm_level', label: 'Alarm level' },
+            { name: 'critical_level', label: 'Critical level' },
+            { name: 'affected_areas', label: 'Affected areas' },
+        ],
+    }),
 };
 
 /** Columns every history table ends with. */
@@ -187,7 +352,7 @@ export const historyMenuItems = (keys) =>
         return {
             // Sidebar items are Title Case like the rest of the menu.
             title: type.menuTitle,
-            url: route(type.page),
+            url: route(type.page, type.pageParams),
             roles: ['user', 'admin'],
             icon: type.icon,
             permission: type.permission,

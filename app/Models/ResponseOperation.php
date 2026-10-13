@@ -23,6 +23,11 @@ class ResponseOperation extends Model
         'disaster_id',
     ];
 
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

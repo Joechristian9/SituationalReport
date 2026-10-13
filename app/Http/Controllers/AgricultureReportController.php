@@ -8,6 +8,7 @@ use App\Services\ReportHistory;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AgricultureReportController extends Controller
@@ -28,12 +29,7 @@ class AgricultureReportController extends Controller
     public function apiHistory(): JsonResponse
     {
         // One shared crop list per disaster (the form loads every row too).
-        $reports = AgricultureReport::whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['crops_affected', 'standing_crop_ha', 'stage_of_crop', 'total_area_affected_ha', 'total_production_loss', 'remarks']));
+        return response()->json(ReportHistory::forUser(AgricultureReport::class, ['crops_affected', 'standing_crop_ha', 'stage_of_crop', 'total_area_affected_ha', 'total_production_loss', 'remarks'], Auth::user(), ownAccountsOnly: false));
     }
 
     /**

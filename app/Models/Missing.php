@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\LogsModification;
 
 class Missing extends Model
 {
@@ -34,6 +34,11 @@ class Missing extends Model
         'user_id',
         'updated_by',
     ];
+
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
 
     /**
      * Get the user who created the record.

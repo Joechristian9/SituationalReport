@@ -22,6 +22,11 @@ class WaterLevel extends Model
         'disaster_id',
     ];
 
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
     /**
      * The user who created the water level report.
      */

@@ -1089,13 +1089,7 @@ class SituationOverviewController extends Controller
     /* ------------------- GET ELECTRICITY HISTORY ------------------- */
     public function getElectricityHistory(): JsonResponse
     {
-        $reports = ElectricityService::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['status', 'barangays_affected', 'remarks']));
+        return response()->json(ReportHistory::forUser(ElectricityService::class, ['status', 'barangays_affected', 'remarks'], Auth::user()));
     }
 
     /* ------------------- VIEW/DOWNLOAD ELECTRICITY PDF ------------------- */
@@ -1185,37 +1179,19 @@ class SituationOverviewController extends Controller
     /* ------------------- GET WATER SERVICE HISTORY ------------------- */
     public function getWaterServiceHistory(): JsonResponse
     {
-        $reports = WaterService::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['source_of_water', 'barangays_served', 'status', 'remarks']));
+        return response()->json(ReportHistory::forUser(WaterService::class, ['source_of_water', 'barangays_served', 'status', 'remarks'], Auth::user()));
     }
 
     /* ------------------- GET WEATHER HISTORY ------------------- */
     public function getWeatherHistory(): JsonResponse
     {
-        $reports = WeatherReport::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition']));
+        return response()->json(ReportHistory::forUser(WeatherReport::class, ['municipality', 'sky_condition', 'wind', 'precipitation', 'sea_condition'], Auth::user()));
     }
 
     /* ------------------- GET COMMUNICATION HISTORY ------------------- */
     public function getCommunicationHistory(): JsonResponse
     {
-        $reports = Communication::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name', 'serviceValues.service:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['globe', 'smart', 'pldt_landline', 'pldt_internet', 'vhf', 'remarks'], fn ($report) => [
+        return response()->json(ReportHistory::forUser(Communication::class, ['globe', 'smart', 'pldt_landline', 'pldt_internet', 'vhf', 'remarks'], Auth::user(), ['serviceValues.service:id,name'], extra: fn ($report) => [
             'service_values' => $report->serviceValues->map(fn ($value) => ['name' => $value->service?->name, 'status' => $value->status])->values(),
         ]));
     }
@@ -1223,24 +1199,12 @@ class SituationOverviewController extends Controller
     /* ------------------- GET ROAD HISTORY ------------------- */
     public function getRoadHistory(): JsonResponse
     {
-        $reports = Road::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['road_classification', 'name_of_road', 'status', 'areas_affected', 're_routing', 'remarks']));
+        return response()->json(ReportHistory::forUser(Road::class, ['road_classification', 'name_of_road', 'status', 'areas_affected', 're_routing', 'remarks'], Auth::user()));
     }
 
     /* ------------------- GET BRIDGE HISTORY ------------------- */
     public function getBridgeHistory(): JsonResponse
     {
-        $reports = Bridge::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['road_classification', 'name_of_bridge', 'status', 'areas_affected', 're_routing', 'remarks']));
+        return response()->json(ReportHistory::forUser(Bridge::class, ['road_classification', 'name_of_bridge', 'status', 'areas_affected', 're_routing', 'remarks'], Auth::user()));
     }
 }

@@ -271,12 +271,6 @@ class IncidentMonitoredController extends Controller
      */
     public function apiHistory(): JsonResponse
     {
-        $reports = IncidentMonitored::whereIn('user_id', Auth::user()->getAccessibleUserIds('read'))
-            ->whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['kinds_of_incident', 'date_time', 'location', 'description', 'remarks']));
+        return response()->json(ReportHistory::forUser(IncidentMonitored::class, ['kinds_of_incident', 'date_time', 'location', 'description', 'remarks'], Auth::user()));
     }
 }

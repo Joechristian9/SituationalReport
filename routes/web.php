@@ -18,6 +18,7 @@ use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportHistoryController;
 use App\Http\Controllers\ResponseOperationController;
 use App\Http\Controllers\SituationOverviewController;
 use App\Http\Controllers\SuspensionOfClassController;
@@ -114,6 +115,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/bridge/history', function () {
         return inertia('BridgeHistory/Index');
     })->name('bridge.history');
+
+    // History of the remaining forms (casualties, tourists, response operations, ...).
+    Route::get('/report-history/{type}', [ReportHistoryController::class, 'page'])
+        ->whereIn('type', ReportHistoryController::types())
+        ->name('report-history.show');
 
     // ============= MODIFICATIONS (Accessible without active typhoon) =============
     Route::prefix('modifications')->group(function () {
@@ -405,6 +411,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/api/incident-history', [IncidentMonitoredController::class, 'apiHistory'])->name('api.incident-history');
     Route::get('/api/road-history', [SituationOverviewController::class, 'getRoadHistory'])->name('api.road-history');
     Route::get('/api/bridge-history', [SituationOverviewController::class, 'getBridgeHistory'])->name('api.bridge-history');
+    Route::get('/api/report-history/{type}', [ReportHistoryController::class, 'data'])
+        ->whereIn('type', ReportHistoryController::types())
+        ->name('api.report-history');
 });
 
 require __DIR__.'/auth.php';

@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\LogsModification;
 
 class PrePositioning extends Model
 {
@@ -22,6 +22,11 @@ class PrePositioning extends Model
         'updated_by',
         'disaster_id',
     ];
+
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
 
     public function user()
     {

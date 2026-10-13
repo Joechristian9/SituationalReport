@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\LogsModification;
 
 class AssistanceExtended extends Model
 {
@@ -20,6 +20,11 @@ class AssistanceExtended extends Model
         'updated_by',
         'disaster_id',
     ];
+
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
 
     /**
      * Relationships

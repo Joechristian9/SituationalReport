@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\LogsModification;
 
 class Casualty extends Model
 {
     use HasFactory, LogsModification;
+
     protected $table = 'casualties';
+
     protected $fillable = [
         'name',
         'age',
@@ -23,6 +25,11 @@ class Casualty extends Model
         'user_id',
         'updated_by',
     ];
+
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
 
     /**
      * Relationship to creator (user who created the record)

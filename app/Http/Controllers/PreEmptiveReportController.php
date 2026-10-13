@@ -298,11 +298,6 @@ class PreEmptiveReportController extends Controller
     public function getPreEmptiveHistory(): JsonResponse
     {
         // One shared evacuation list per disaster (the form loads every row too).
-        $reports = PreEmptiveReport::whereHas('typhoon')
-            ->with(['typhoon:id,name,disaster_type,status,started_at,ended_at', 'user:id,name'])
-            ->latest()
-            ->get();
-
-        return response()->json(ReportHistory::byDisaster($reports, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons']));
+        return response()->json(ReportHistory::forUser(PreEmptiveReport::class, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons'], Auth::user(), ownAccountsOnly: false));
     }
 }

@@ -14,7 +14,7 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 import { route } from "ziggy-js";
-import { historyMenuItems } from "@/Components/history/historyTypes";
+import { HISTORY_TYPES, historyMenuItems } from "@/Components/history/historyTypes";
 import {
     BarChart3,
     FileWarning,
@@ -24,7 +24,6 @@ import {
     HeartHandshake,
     Calendar,
     Cloud,
-    History,
     LayoutDashboard,
     UserCircle,
     Sprout,
@@ -176,15 +175,6 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-pre-emptive-form') &&
         !hasPermission('access-pre-positioning-form');
     
-    // Check if user only has agriculture access (CAO)
-    const isCAO = hasPermission('access-agriculture-form') && 
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-communication-form') &&
-        !hasPermission('access-road-form') &&
-        !hasPermission('access-bridge-form');
-    
     // Check if user is a Barangay user (has 6 specific permissions but not electricity/water service/water level/pre-positioning)
     // Barangay users should only see "Situation Overview" menu
     const isBarangay = hasPermission('access-weather-form') &&
@@ -199,15 +189,11 @@ export function AppSidebar({ ...props }) {
         !hasPermission('access-pre-positioning-form') &&
         !hasPermission('access-declaration-form');
 
-    // Which report histories each office sees (see Components/history/historyTypes.js).
-    const historyKeys = [...new Set([
-        [isCDRRMO, ["weather", "communication", "pre-emptive", "incident", "agriculture"]],
-        [isBDRRMC, ["electricity", "communication", "pre-emptive"]],
-        [isCEO, ["road", "bridge"]],
-        [isPNP, ["road", "bridge", "incident"]],
-        [isBarangay, ["weather", "communication", "road", "bridge", "pre-emptive", "incident"]],
-        [isCAO, ["agriculture"]],
-    ].flatMap(([applies, keys]) => (applies ? keys : [])))];
+    // A history for every form the account may file, whatever its office (see
+    // Components/history/historyTypes.js). Admins read everything from the dashboard instead.
+    const historyKeys = isAdmin
+        ? []
+        : Object.keys(HISTORY_TYPES).filter((key) => hasPermission(HISTORY_TYPES[key].permission));
 
     // Each group's items are filtered by role and permission below; empty groups drop out.
     const navGroups = [
@@ -267,20 +253,6 @@ export function AppSidebar({ ...props }) {
                     icon: BarChart3,
                     requiresAnyPermission: true,
                 }] : []),
-                ...(isElectricityOnly ? [{
-                    title: "Report History",
-                    url: route("electricity.history"),
-                    roles: ["user", "admin"],
-                    icon: History,
-                    permission: "access-electricity-form",
-                }] : []),
-                ...(isWaterServiceOnly ? [{
-                    title: "Report History",
-                    url: route("water-service.history"),
-                    roles: ["user", "admin"],
-                    icon: History,
-                    permission: "access-water-service-form",
-                }] : []),
                 ...(!isBarangay && !isCDRRMO && !isAdmin ? [{
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
@@ -325,7 +297,7 @@ export function AppSidebar({ ...props }) {
                 }] : []),
             ],
         },
-        // Report History: the histories of the forms the user's office files.
+        // Report History: one entry per form the user may file.
         ...(historyKeys.length > 0 ? [{
             label: "Report History",
             collapsible: true,

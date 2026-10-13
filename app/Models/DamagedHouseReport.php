@@ -26,6 +26,11 @@ class DamagedHouseReport extends Model
         'disaster_id',
     ];
 
+    public function typhoon()
+    {
+        return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
     /**
      * Get the user who created the report.
      */
