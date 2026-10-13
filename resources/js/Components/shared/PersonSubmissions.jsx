@@ -650,7 +650,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                 <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
                     <SheetContent
                         side={isMobile ? 'bottom' : 'right'}
-                        className="flex w-full flex-col gap-0 p-0 max-md:max-h-[88dvh] max-md:rounded-t-2xl md:max-w-md"
+                        className="flex w-full flex-col gap-0 overflow-hidden p-0 max-md:max-h-[88dvh] max-md:rounded-t-2xl md:max-w-md md:rounded-l-2xl"
                     >
                         {selected && (
                             <>

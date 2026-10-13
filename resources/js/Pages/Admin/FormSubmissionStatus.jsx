@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, AlertCircle, ChevronRight, Eye, FileText } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
 import {
@@ -59,6 +59,13 @@ const formatDate = (value) =>
     new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const isEmptyValue = (value) => value === null || value === undefined || value === '';
+
+const initials = (name = '') => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
 
 /**
  * The records of one submitted form: compact cards on phones, a table from md up,
@@ -170,9 +177,12 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const [formRows, setFormRows] = useState(null);
     const [formError, setFormError] = useState(false);
     const latestForm = useRef(null); // ignores a slow response for a form that was closed or replaced
+    const panelBody = useRef(null);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const handleViewDetails = (user) => {
+        // A form still loading for the previous account must not fill in this one's panel.
+        latestForm.current = null;
         setSelectedUser(user);
         setIsModalOpen(true);
         setOpenForm(null);
@@ -362,6 +372,16 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         setCurrentPage(1);
     }, [searchQuery, statusFilter, itemsPerPage, sort]);
 
+    // Previous / Next step through the accounts on this page that have something to view.
+    const viewableUsers = paginationData.paginatedUsers.filter((user) => user.has_submitted);
+    const selectedIndex = viewableUsers.findIndex((user) => user.id === selectedUser?.id);
+    const step = (direction) => {
+        const next = viewableUsers[selectedIndex + direction];
+        if (!next) return;
+        handleViewDetails(next);
+        panelBody.current?.scrollTo({ top: 0 });
+    };
+
     const clearFilters = () => {
         setSearchQuery('');
         setStatusFilter('all');
@@ -503,11 +523,11 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                     <Button
                                                                         variant="outline"
                                                                         onClick={() => handleViewDetails(user)}
-                                                                        className="h-11 gap-1.5 rounded-lg font-medium text-primary hover:bg-accent hover:text-primary"
+                                                                        className="h-11 gap-1 rounded-lg font-medium text-primary hover:bg-accent hover:text-primary"
                                                                         aria-label={`View submissions from ${user.name}`}
                                                                     >
-                                                                        <Eye className="h-4 w-4" aria-hidden="true" />
                                                                         View
+                                                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
                                                                     </Button>
                                                                 )}
                                                             </div>
@@ -576,8 +596,8 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                         className="h-11 gap-1 font-medium text-primary hover:bg-accent hover:text-primary md:h-8"
                                                                         aria-label={`View submissions from ${user.name}`}
                                                                     >
-                                                                        <Eye className="h-4 w-4" aria-hidden="true" />
                                                                         View
+                                                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
                                                                     </Button>
                                                                 ) : (
                                                                     <span className="text-muted-foreground" aria-label="Nothing to view">-</span>
@@ -635,20 +655,30 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
 
                         return (
                             <>
-                                <SheetHeader className="space-y-3 border-b border-border bg-card px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
-                                    <div className="min-w-0">
-                                        <SheetTitle className="truncate text-lg font-semibold text-foreground sm:text-xl">
-                                            {selectedUser?.name}
-                                        </SheetTitle>
-                                        <SheetDescription className="truncate text-sm text-muted-foreground">
-                                            {selectedUser?.email}
-                                            {activeTyphoon && (
-                                                <>
-                                                    <span aria-hidden="true"> · </span>
-                                                    {activeTyphoon.name}
-                                                </>
-                                            )}
-                                        </SheetDescription>
+                                <SheetHeader className="shrink-0 space-y-3 border-b border-border bg-card px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
+                                    {/* Right padding keeps the name clear of the close button. */}
+                                    <div className="flex items-center gap-3 pr-9 sm:pr-6">
+                                        <span
+                                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+                                            aria-hidden="true"
+                                        >
+                                            {initials(selectedUser?.name)}
+                                        </span>
+                                        <div className="min-w-0">
+                                            <SheetTitle className="break-words text-lg font-semibold leading-snug text-foreground">
+                                                {selectedUser?.name}
+                                            </SheetTitle>
+                                            <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                                                {getStatusBadge(Boolean(selectedUser?.has_submitted))}
+                                                <span className="min-w-0 break-all">{selectedUser?.email}</span>
+                                                {activeTyphoon && (
+                                                    <>
+                                                        <span aria-hidden="true">·</span>
+                                                        <span>{activeTyphoon.name}</span>
+                                                    </>
+                                                )}
+                                            </SheetDescription>
+                                        </div>
                                     </div>
                                     <div>
                                         <div className="flex items-baseline justify-between gap-2 text-sm">
@@ -670,7 +700,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                     </div>
                                 </SheetHeader>
 
-                                <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                                <div ref={panelBody} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
                                     {submitted.length > 0 ? (
                                         <ul className="space-y-3">
                                             {submitted.map((form) => {
@@ -780,6 +810,37 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                             </ul>
                                         </section>
                                     )}
+                                </div>
+
+                                {/* Step through the accounts on this page without closing the panel. */}
+                                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-11 gap-1 px-3"
+                                        disabled={selectedIndex <= 0}
+                                        onClick={() => step(-1)}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                                        Previous
+                                    </Button>
+                                    <span
+                                        className="text-sm tabular-nums text-muted-foreground"
+                                        aria-live="polite"
+                                        aria-label={`Account ${selectedIndex + 1} of ${viewableUsers.length} on this page`}
+                                    >
+                                        {selectedIndex + 1} of {viewableUsers.length}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-11 gap-1 px-3"
+                                        disabled={selectedIndex < 0 || selectedIndex >= viewableUsers.length - 1}
+                                        onClick={() => step(1)}
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                    </Button>
                                 </div>
                             </>
                         );
