@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, BellRing, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
 import {
@@ -35,9 +35,17 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import axios from 'axios';
+import { router } from '@inertiajs/react';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { Toaster } from 'sonner';
+import RemindDialog from '@/Components/reminders/RemindDialog';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import LiveIndicator from '@/Components/LiveIndicator';
 import { cn } from '@/lib/utils';
+
+// Matches FormReminder::COOLDOWN_MINUTES: the server skips an account reminded this recently.
+const REMIND_COOLDOWN_MS = 60 * 60 * 1000;
+const recentlyReminded = (user) => user.reminded_at && Date.now() - new Date(user.reminded_at).getTime() < REMIND_COOLDOWN_MS;
 
 const SUBMISSION_SORT = {
     name: (u) => u.name.toLowerCase(),
@@ -179,6 +187,14 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const latestForm = useRef(null); // ignores a slow response for a form that was closed or replaced
     const panelBody = useRef(null);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    // Accounts the open reminder dialog will notify (null when closed).
+    const [remindTargets, setRemindTargets] = useState(null);
+    // Reminders only make sense while forms are open: an active disaster, not a paused one.
+    const canRemind = activeTyphoon?.status === 'active';
+    const remindable = useMemo(
+        () => (canRemind ? users.filter((user) => user.pending_forms?.length > 0 && !recentlyReminded(user)) : []),
+        [canRemind, users],
+    );
 
     const handleViewDetails = (user) => {
         // A form still loading for the previous account must not fill in this one's panel.
@@ -411,11 +427,30 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
             }
             actions={<LiveIndicator live={live} />}
         >
+                <Toaster position="top-right" richColors />
+                <RemindDialog
+                    users={remindTargets}
+                    onClose={() => setRemindTargets(null)}
+                    onSent={() => router.reload({ only: ['users'] })}
+                />
 
                 <main className="w-full p-4 sm:p-6">
                     <div className="max-w-7xl mx-auto space-y-6">
                         <DataPanel
                             icon={FileText}
+                            actions={
+                                canRemind && remindable.length > 0 ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setRemindTargets(remindable)}
+                                        className="hidden h-11 gap-2 bg-card shadow-sm sm:inline-flex md:h-9"
+                                    >
+                                        <BellRing className="h-4 w-4" aria-hidden="true" />
+                                        Notify pending ({remindable.length})
+                                    </Button>
+                                ) : null
+                            }
                             title="Form submissions"
                             count={users.length > 0 ? filteredUsers.length : undefined}
                             description={
@@ -434,6 +469,18 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                         >
                             {users.length > 0 ? (
                                 <>
+                                    {canRemind && remindable.length > 0 && (
+                                        <div className="flex items-center justify-between gap-3 border-t border-border bg-warning/10 px-4 py-3 sm:hidden">
+                                            <p className="min-w-0 text-sm text-foreground">
+                                                <span className="font-semibold tabular-nums">{remindable.length}</span>{' '}
+                                                {remindable.length === 1 ? 'account has' : 'accounts have'} forms to submit
+                                            </p>
+                                            <Button type="button" onClick={() => setRemindTargets(remindable)} className="h-11 shrink-0 gap-2">
+                                                <BellRing className="h-4 w-4" aria-hidden="true" />
+                                                Notify all
+                                            </Button>
+                                        </div>
+                                    )}
                                     <DataToolbar
                                         search={{
                                             id: 'submission-search',
@@ -517,6 +564,34 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                 )}
                                                             </p>
 
+                                                            {activeTyphoon && user.pending_forms?.length > 0 && (
+                                                                <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
+                                                                    <div className="min-w-0 text-xs">
+                                                                        <p className="font-semibold text-warning">
+                                                                            {user.pending_forms.length} {user.pending_forms.length === 1 ? 'form' : 'forms'} to submit
+                                                                        </p>
+                                                                        {user.reminded_at && (
+                                                                            <p className="text-muted-foreground">
+                                                                                Reminded {formatDistanceToNowStrict(new Date(user.reminded_at), { addSuffix: true })}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    {canRemind && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            onClick={() => setRemindTargets([user])}
+                                                                            disabled={recentlyReminded(user)}
+                                                                            className="h-11 shrink-0 gap-1.5 bg-card"
+                                                                            aria-label={`Remind ${user.name} to submit ${user.pending_forms.length} ${user.pending_forms.length === 1 ? 'form' : 'forms'}`}
+                                                                        >
+                                                                            <BellRing className="h-4 w-4" aria-hidden="true" />
+                                                                            Notify
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
                                                             <div className={cn('mt-3 grid gap-2', user.has_submitted ? 'grid-cols-2' : 'grid-cols-1')}>
                                                                 {renderAssignedForms(user)}
                                                                 {user.has_submitted && (
@@ -548,22 +623,21 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                         <SortableHead sortKey="email" sort={sort} onSort={toggleSort}>Email</SortableHead>
                                                         <SortableHead sortKey="status" sort={sort} onSort={toggleSort}>Status</SortableHead>
                                                         <TableHead>Assigned forms</TableHead>
+                                                        {activeTyphoon && <TableHead>To submit</TableHead>}
                                                         <SortableHead sortKey="last" sort={sort} onSort={toggleSort}>Last submission</SortableHead>
-                                                        <TableHead className="text-right">
-                                                            <span className="sr-only">Actions</span>
-                                                        </TableHead>
+                                                        <TableHead className="sticky right-0 z-[1] border-l border-border/60 bg-[color-mix(in_srgb,hsl(var(--accent))_50%,hsl(var(--card)))] text-right">Actions</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
                                                     {paginationData.paginatedUsers.map((user, index) => (
-                                                        <TableRow key={user.id}>
+                                                        <TableRow key={user.id} className="group">
                                                             <TableCell className="text-right tabular-nums text-muted-foreground">
                                                                 {paginationData.startIndex + index + 1}
                                                             </TableCell>
                                                             <TableCell className="font-medium text-foreground">
                                                                 {user.name}
                                                             </TableCell>
-                                                            <TableCell label="Email" className="text-muted-foreground">
+                                                            <TableCell label="Email" className="max-w-[14rem] truncate text-muted-foreground" title={user.email}>
                                                                 {user.email}
                                                             </TableCell>
                                                             <TableCell label="Status">
@@ -572,6 +646,32 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                             <TableCell label="Assigned forms">
                                                                 {renderAssignedForms(user)}
                                                             </TableCell>
+                                                            {activeTyphoon && (
+                                                                <TableCell label="To submit">
+                                                                    {user.pending_forms?.length > 0 ? (
+                                                                        <div className="space-y-1">
+                                                                            <span
+                                                                                className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning"
+                                                                                title={user.pending_forms.join(', ')}
+                                                                            >
+                                                                                <Clock className="h-3 w-3" aria-hidden="true" />
+                                                                                {user.pending_forms.length} {user.pending_forms.length === 1 ? 'form' : 'forms'}
+                                                                            </span>
+                                                                            <span className="sr-only">Missing: {user.pending_forms.join(', ')}</span>
+                                                                            {user.reminded_at && (
+                                                                                <p className="whitespace-nowrap text-xs text-muted-foreground">
+                                                                                    Reminded {formatDistanceToNowStrict(new Date(user.reminded_at), { addSuffix: true })}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                                                                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                            All submitted
+                                                                        </span>
+                                                                    )}
+                                                                </TableCell>
+                                                            )}
                                                             <TableCell label="Last submission" className="whitespace-nowrap tabular-nums">
                                                                 {user.last_submission ? (
                                                                     <span className="text-muted-foreground">
@@ -587,21 +687,40 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                     <span className="italic text-muted-foreground">No submissions yet</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="text-right">
-                                                                {user.has_submitted ? (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => handleViewDetails(user)}
-                                                                        className="h-11 gap-1 font-medium text-primary hover:bg-accent hover:text-primary md:h-8"
-                                                                        aria-label={`View submissions from ${user.name}`}
-                                                                    >
-                                                                        View
-                                                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                                                                    </Button>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground" aria-label="Nothing to view">-</span>
-                                                                )}
+                                                            <TableCell className="sticky right-0 z-[1] border-l border-border/60 bg-card text-right group-hover:bg-[color-mix(in_srgb,hsl(var(--accent))_30%,hsl(var(--card)))]">
+                                                                <div className="flex items-center justify-end gap-1.5">
+                                                                    {canRemind && user.pending_forms?.length > 0 && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => setRemindTargets([user])}
+                                                                            disabled={recentlyReminded(user)}
+                                                                            title={recentlyReminded(user) ? 'Reminded within the last hour' : undefined}
+                                                                            className="h-11 gap-1.5 bg-card font-medium shadow-sm md:h-8"
+                                                                            aria-label={`Remind ${user.name} to submit ${user.pending_forms.length} ${user.pending_forms.length === 1 ? 'form' : 'forms'}`}
+                                                                        >
+                                                                            <BellRing className="h-4 w-4" aria-hidden="true" />
+                                                                            Notify
+                                                                        </Button>
+                                                                    )}
+                                                                    {user.has_submitted ? (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleViewDetails(user)}
+                                                                            className="h-11 gap-1 font-medium text-primary hover:bg-accent hover:text-primary md:h-8"
+                                                                            aria-label={`View submissions from ${user.name}`}
+                                                                        >
+                                                                            View
+                                                                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                                                        </Button>
+                                                                    ) : (
+                                                                        !(canRemind && user.pending_forms?.length > 0) && (
+                                                                            <span className="text-muted-foreground" aria-label="Nothing to view">-</span>
+                                                                        )
+                                                                    )}
+                                                                </div>
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}

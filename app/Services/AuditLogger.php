@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
@@ -29,10 +30,10 @@ class AuditLogger
     public static function logUpdate(Model $model, array $originalValues, ?int $disasterId = null, ?string $description = null): void
     {
         $changes = $model->getChanges();
-        
+
         // Remove timestamps and updated_by from changes if they exist
         unset($changes['updated_at'], $changes['created_at'], $changes['updated_by']);
-        
+
         if (empty($changes)) {
             return; // No actual changes to log
         }
@@ -99,7 +100,7 @@ class AuditLogger
         self::log(
             action: 'failed_login',
             userId: null, // No user ID for failed attempts
-            description: $description ?? "Failed login attempt" . ($email ? " for: {$email}" : '')
+            description: $description ?? 'Failed login attempt'.($email ? " for: {$email}" : '')
         );
     }
 
@@ -112,6 +113,18 @@ class AuditLogger
             action: 'exported',
             disasterId: $disasterId,
             description: $description ?? "Exported {$exportType} data"
+        );
+    }
+
+    /**
+     * Log an admin reminding accounts to file their reports
+     */
+    public static function logReminder(int $disasterId, string $description): void
+    {
+        self::log(
+            action: 'reminded',
+            disasterId: $disasterId,
+            description: $description
         );
     }
 
@@ -168,7 +181,7 @@ class AuditLogger
             ]);
         } catch (\Exception $e) {
             // Log error but don't interrupt the main process
-            \Log::error('Audit logging failed: ' . $e->getMessage());
+            \Log::error('Audit logging failed: '.$e->getMessage());
         }
     }
 
@@ -178,13 +191,13 @@ class AuditLogger
     private static function sanitizeValues(array $values): array
     {
         $sensitiveFields = ['password', 'password_confirmation', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
-        
+
         foreach ($sensitiveFields as $field) {
             if (isset($values[$field])) {
                 $values[$field] = '[REDACTED]';
             }
         }
-        
+
         return $values;
     }
 
@@ -193,7 +206,7 @@ class AuditLogger
      */
     private static function getCurrentDisasterId(?Model $model): ?int
     {
-        if (!$model) {
+        if (! $model) {
             return null;
         }
 
@@ -216,6 +229,7 @@ class AuditLogger
     {
         // Convert snake_case to Title Case
         $label = str_replace('_', ' ', $field);
+
         return ucwords($label);
     }
 
@@ -236,7 +250,7 @@ class AuditLogger
             return json_encode($value, JSON_PRETTY_PRINT);
         }
 
-        if ($value instanceof \DateTime || $value instanceof \Carbon\Carbon) {
+        if ($value instanceof \DateTime || $value instanceof Carbon) {
             return $value->format('M d, Y h:i A');
         }
 

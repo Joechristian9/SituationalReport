@@ -32,6 +32,7 @@ import LiveIndicator from '@/Components/LiveIndicator';
 import {
     Activity,
     ArrowRight,
+    BellRing,
     ChevronRight,
     Download,
     FilePen,
@@ -57,6 +58,7 @@ const ACTIONS = {
     failed_login: { icon: ShieldAlert, verb: 'failed sign-in attempt', tone: 'bg-orange-100 text-orange-700', chip: 'bg-orange-50 text-orange-700 ring-orange-200' },
     exported: { icon: Download, verb: 'exported data', tone: 'bg-indigo-100 text-indigo-700', chip: 'bg-indigo-50 text-indigo-700 ring-indigo-200' },
     password_changed: { icon: KeyRound, verb: 'changed a password', tone: 'bg-amber-100 text-amber-700', chip: 'bg-amber-50 text-amber-800 ring-amber-200' },
+    reminded: { icon: BellRing, verb: 'sent a reminder', tone: 'bg-sky-100 text-sky-700', chip: 'bg-sky-50 text-sky-700 ring-sky-200' },
     permission_changed: { icon: ShieldCheck, verb: 'changed permissions', tone: 'bg-pink-100 text-pink-700', chip: 'bg-pink-50 text-pink-700 ring-pink-200' },
 };
 const FALLBACK_ACTION = { icon: Activity, verb: null, tone: 'bg-gray-100 text-gray-600', chip: 'bg-gray-50 text-gray-700 ring-gray-200' };

@@ -5,7 +5,6 @@ import { usePage, useForm, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
-import NoActiveTyphoonNotification from "@/Components/NoActiveDisasterNotification";
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import FormPanel from "@/Components/forms/FormPanel";
@@ -686,10 +685,6 @@ export default function Index() {
             }
             actions={
                 <>
-                    <NoActiveTyphoonNotification
-                        typhoon={typhoon?.active}
-                        hasActive={typhoon?.hasActive}
-                    />
                     {typhoon?.hasActive &&
                         typhoon?.active?.status === "active" && (
                             <ActiveTyphoonHeader

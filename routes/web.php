@@ -10,9 +10,11 @@ use App\Http\Controllers\CommunicationServiceController;
 use App\Http\Controllers\DamagedHouseReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisasterController;
+use App\Http\Controllers\FormReminderController;
 use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\InjuredController;
 use App\Http\Controllers\MissingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PagasaAlertController;
 use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
@@ -67,6 +69,12 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/reports/download', [ReportController::class, 'download'])
         ->name('reports.download')
         ->middleware(['auth', 'throttle:pdf']);
+
+    // The bell in the app header of report accounts (admins send reminders, they don't get them)
+    Route::middleware('role:user')->group(function () {
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    });
 
     // Situation Reports Index - accessible even without active typhoon
     Route::get('/situation-reports', [SituationOverviewController::class, 'index'])
@@ -356,6 +364,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.form-submission-status');
     Route::get('user-form-data/{userId}', [DisasterController::class, 'getUserFormData'])
         ->name('admin.user-form-data');
+    Route::post('form-submission-status/remind', [FormReminderController::class, 'store'])
+        ->name('admin.form-reminders.store');
 
     // Audit Logs (Admin only)
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');

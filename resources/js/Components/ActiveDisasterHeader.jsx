@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Badge } from '@/Components/ui/badge';
-import { Cloud, CheckCircle, Bell, X } from 'lucide-react';
-import { m as motion, AnimatePresence } from 'framer-motion';
+import { Cloud, CheckCircle } from 'lucide-react';
+import { m as motion } from 'framer-motion';
 
 /**
  * ActiveTyphoonHeader Component
  * Compact inline component showing active or paused typhoon information
- * Designed to be placed in the header on the right side
- * 
+ * Designed to be placed in the header on the right side. The paused notice itself
+ * lives in the bell of the app header (NotificationBell).
+ *
  * @param {Object} typhoon - The active/paused disaster object (null if no active disaster)
  * @param {boolean} hasActive - Whether there's an active or paused disaster
  */
 export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
-    const [showNotification, setShowNotification] = useState(false);
-
     // Only show if there's an active or paused typhoon
     if (!hasActive || !typhoon) {
         return null;
@@ -29,20 +28,6 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
 
     return (
         <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
-            {/* Notification Bell Icon (only show when paused) */}
-            {isPaused && (
-                <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    onClick={() => setShowNotification(!showNotification)}
-                    className="relative p-2 rounded-full bg-amber-100 hover:bg-amber-200 transition-colors"
-                >
-                    <Bell className="w-5 h-5 text-amber-600" />
-                    {/* Notification dot */}
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-                </motion.button>
-            )}
-
             {/* Typhoon Status Badge */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -65,48 +50,6 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
                 )}
                 {isPaused && <span className="sr-only">Paused</span>}
             </motion.div>
-
-            {/* Notification Popup */}
-            <AnimatePresence>
-                {showNotification && isPaused && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] bg-white rounded-xl shadow-2xl border border-amber-200 z-50"
-                    >
-                        <div className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                                        <Bell className="w-4 h-4 text-amber-600" />
-                                    </div>
-                                    <h4 className="font-semibold text-gray-900">Report Paused</h4>
-                                </div>
-                                <button
-                                    onClick={() => setShowNotification(false)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-sm text-gray-700">
-                                    The <span className="font-semibold text-amber-600">{typhoon.name}</span> typhoon report has been temporarily paused.
-                                </p>
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    <p className="text-xs text-amber-800">
-                                        <span className="font-semibold">⚠️ Forms are disabled</span>
-                                        <br />
-                                        Please wait for the administrator to resume reporting before making any changes.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

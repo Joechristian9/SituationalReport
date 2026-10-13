@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Typhoon;
 use App\Models\User;
+use App\Notifications\FormReminder;
 use App\Services\DisasterSummary;
+use App\Services\PendingForms;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,29 +21,7 @@ class DisasterController extends Controller
      * Report tables (with a user_id column) shown on the form submission status page.
      * Also the only tables getUserFormData() may read, so request input never picks the table.
      */
-    private const FORM_TABLES = [
-        'weather_reports' => 'Weather Report',
-        'electricity_services' => 'Electricity Services',
-        'water_services' => 'Water Services',
-        'communications' => 'Communication Services',
-        'pre_emptive_reports' => 'Pre-Emptive Evacuation',
-        'incident_monitored' => 'Incident Monitored',
-        'casualties' => 'Casualties',
-        'injureds' => 'Injured',
-        'missing' => 'Missing Persons',
-        'pre_positionings' => 'Pre-Positioning',
-        'usc_declarations' => 'USC Declaration',
-        'damaged_house_reports' => 'Damaged Houses',
-        'affected_tourists' => 'Affected Tourists',
-        'response_operations' => 'Response Operations',
-        'assistance_extendeds' => 'Assistance Extended',
-        'assistance_provided_lgus' => 'Assistance Provided LGUs',
-        'suspension_of_classes' => 'Suspension of Classes',
-        'suspension_of_works' => 'Suspension of Work',
-        'bridges' => 'Bridges',
-        'roads' => 'Roads',
-        'water_levels' => 'Water Levels',
-    ];
+    private const FORM_TABLES = PendingForms::FORM_TABLES;
 
     /**
      * Display disaster management page
@@ -537,6 +517,8 @@ class DisasterController extends Controller
             }
         }
 
+        $remindedAt = $activeTyphoon ? FormReminder::lastSentByUser($activeTyphoon) : [];
+
         // Get all users with their permissions (excluding admins) - only load necessary fields
         $users = User::select('id', 'name', 'email')
             ->with(['permissions:id,name'])
@@ -544,7 +526,7 @@ class DisasterController extends Controller
                 $query->where('name', 'user');
             })
             ->get()
-            ->map(function ($user) use ($submissionsByUser, $agricultureData) {
+            ->map(function ($user) use ($submissionsByUser, $agricultureData, $remindedAt, $activeTyphoon) {
                 $submittedForms = $submissionsByUser[$user->id] ?? [];
 
                 // Add agriculture data if user has permission
@@ -572,6 +554,11 @@ class DisasterController extends Controller
                     'permissions' => $user->permissions->pluck('name')->toArray(),
                     'submitted_forms' => array_values($submittedForms),
                     'submitted_form_types' => $submittedFormTypes,
+                    // Forms the account still has to file, and when an admin last reminded it.
+                    'pending_forms' => $activeTyphoon
+                        ? array_map([PendingForms::class, 'label'], PendingForms::missing($user->permissions->pluck('name')->all(), $submittedFormTypes))
+                        : [],
+                    'reminded_at' => ($remindedAt[$user->id] ?? null)?->toIso8601String(),
                 ];
             });
 
