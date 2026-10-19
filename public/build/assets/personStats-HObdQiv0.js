@@ -1,0 +1,1 @@
+const s=["0-17","18-30","31-50","51-65","66+"],n=r=>{const e=parseInt(r,10);return Number.isNaN(e)?null:e<=17?"0-17":e<=30?"18-30":e<=50?"31-50":e<=65?"51-65":"66+"},a=r=>{const e=r.sex?.toLowerCase();return e==="male"?"Male":e==="female"?"Female":"Unknown"},l=(r,{sex:e="all",age:t="all"}={})=>!(e!=="all"&&a(r)!==e||t!=="all"&&n(r.age)!==t);export{s as A,n as a,l as m,a as s};
