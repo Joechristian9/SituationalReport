@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
-
 return [
 
     /*
@@ -127,10 +125,9 @@ return [
     |
     */
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug(env('APP_NAME', 'laravel')).'-session'
-    ),
+    // Fixed name, not from APP_NAME ("Laravel" on the servers), so the cookie doesn't
+    // advertise the framework. Renaming it signs everyone out once.
+    'cookie' => env('SESSION_COOKIE', 'sitrep-session'),
 
     /*
     |--------------------------------------------------------------------------
