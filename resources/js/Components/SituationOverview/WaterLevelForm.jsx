@@ -45,7 +45,7 @@ export default function WaterLevelForm({ data, setData, errors, disabled = false
         disabled,
         validate,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(levels, ["gauging_station"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(levels, ["gauging_station"], 5);
 
     return (
         <div className="space-y-5">
@@ -54,6 +54,7 @@ export default function WaterLevelForm({ data, setData, errors, disabled = false
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search gauging station"
                 excel={{ data: levels, fileName: "Water_Level_Reports", sheetName: "Water Levels" }}
             />

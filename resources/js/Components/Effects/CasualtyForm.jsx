@@ -39,7 +39,7 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
         successMessage: "Casualties saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(casualties, ["name", "address"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(casualties, ["name", "address"], 5);
 
     return (
         <div className="space-y-5">
@@ -48,6 +48,7 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search by name or address"
                 excel={{ data: casualties, fileName: "Casualties_Dead_Report", sheetName: "Casualties" }}
             />

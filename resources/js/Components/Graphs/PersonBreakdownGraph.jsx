@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, format, startOfDay, startOfWeek } from "date-fns";
-import { BarChart3, SearchX, Table2 } from "lucide-react";
-import GraphCard from "../ui/GraphCard";
+import { BarChart3, SearchX, Table2, Users } from "lucide-react";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
+import ImpactFilters from "./ImpactFilters";
 import { AGE_BRACKETS, ageBracket, matchesFilters, sexOf } from "./personStats";
 import { LineKey, Swatch, Tip, useFloatingTip } from "./chartParts";
 
 /**
- * Shared dashboard graph for the Casualties / Injured / Missing cards.
- * Views: stacked bars by cause/diagnosis, an age-sex pyramid, and a timeline of
- * reports. Series colors come from the --viz-* tokens in app.css (validated with
+ * "Who is affected": one dashboard panel for Dead / Injured / Missing. A switch picks the
+ * type; the sex split and top causes sit beside the age-sex pyramid, all scoped by the
+ * Sex / Age filters. Series colors come from the --viz-* tokens in app.css (validated with
  * the dataviz palette checker); text always stays in text tokens.
  */
 
@@ -19,13 +19,15 @@ const SERIES = [
     { key: "Unknown", label: "Not specified", color: "var(--viz-unknown)" },
 ];
 
-const ACCENT_TEXT = {
-    destructive: "text-destructive",
-    warning: "text-warning",
-    info: "text-info",
-};
+const TYPES = [
+    { key: "dead", label: "Dead", color: "var(--viz-dead)", groupKey: "cause_of_death", groupLabel: "Cause of death", groupTitle: "Top causes", unit: "casualties" },
+    { key: "injured", label: "Injured", color: "var(--viz-injured)", groupKey: "diagnosis", groupLabel: "Diagnosis", groupTitle: "Top diagnoses", unit: "injured persons" },
+    { key: "missing", label: "Missing", color: "var(--viz-missing)", groupKey: "cause", groupLabel: "Cause", groupTitle: "Top causes", unit: "missing persons" },
+];
 
 const ROW_LIMIT = 5;
+
+const sectionTitle = "mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground";
 
 const emptyRow = (label) => ({ label, Male: 0, Female: 0, Unknown: 0, total: 0 });
 
@@ -202,98 +204,15 @@ function AgePyramid({ byAge, total, noAge, unknownSex }) {
     );
 }
 
-/** Reports over time: one column per day (or week for long spans). Single series, no legend. */
-function Timeline({ timeline, color }) {
-    const { buckets, weekly } = timeline;
-    const max = Math.max(1, ...buckets.map((b) => b.count));
-    const peak = buckets.reduce((best, b) => (b.count > best.count ? b : best), buckets[0]);
-    const last = buckets[buckets.length - 1];
-    const fmt = (d) => format(d, "MMM d");
-    const tickIdx = buckets.length > 2 ? [0, Math.floor((buckets.length - 1) / 2), buckets.length - 1] : buckets.map((_, i) => i);
-
-    return (
-        <div>
-            <p className="mb-6 text-xs text-muted-foreground">Reports received per {weekly ? "week" : "day"}</p>
-            <div className="flex h-32 items-end gap-1 border-b border-[color:var(--viz-axis)]" role="list" aria-label={`Reports per ${weekly ? "week" : "day"}`}>
-                {buckets.map((b) => {
-                    const height = (b.count / max) * 100;
-                    const labelled = b.count > 0 && (b === peak || b === last);
-                    const when = weekly ? `Week of ${fmt(b.date)}` : format(b.date, "EEE, MMM d");
-                    return (
-                        <div
-                            key={b.key}
-                            role="listitem"
-                            tabIndex={0}
-                            aria-label={`${when}: ${b.count} report${b.count === 1 ? "" : "s"}`}
-                            className="group relative flex h-full min-w-0 flex-1 items-end justify-center rounded-sm outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            {labelled && (
-                                <span
-                                    className="absolute text-xs font-semibold tabular-nums text-foreground"
-                                    style={{ bottom: `calc(${height}% + 2px)` }}
-                                >
-                                    {b.count}
-                                </span>
-                            )}
-                            <div
-                                className="w-full max-w-6 rounded-t-[4px] transition-[filter] group-hover:brightness-110"
-                                style={{ height: `${height}%`, minHeight: b.count ? 2 : 0, background: color }}
-                            />
-                            <Tip className="bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap">
-                                <p className="font-semibold tabular-nums text-foreground">
-                                    {b.count} report{b.count === 1 ? "" : "s"}
-                                </p>
-                                <p className="text-muted-foreground">{when}</p>
-                            </Tip>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="relative mt-1.5 h-4 text-xs text-muted-foreground">
-                {tickIdx.map((i, n) => (
-                    <span
-                        key={buckets[i].key}
-                        className={`absolute whitespace-nowrap ${n === 0 ? "left-0" : n === tickIdx.length - 1 ? "right-0" : "-translate-x-1/2"}`}
-                        style={n > 0 && n < tickIdx.length - 1 ? { left: `${((i + 0.5) / buckets.length) * 100}%` } : undefined}
-                    >
-                        {fmt(buckets[i].date)}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function DataTable({ view, rows, timeline, groupLabel }) {
-    if (view === "time") {
-        return (
-            <table className="w-full text-sm">
-                <caption className="sr-only">Reports per {timeline.weekly ? "week" : "day"}</caption>
-                <thead className="sticky top-0 z-10 bg-card text-left text-xs text-muted-foreground">
-                    <tr className="border-b">
-                        <th scope="col" className="py-2 font-medium">{timeline.weekly ? "Week of" : "Date"}</th>
-                        <th scope="col" className="py-2 text-right font-medium">Reports</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y">
-                    {timeline.buckets.map((b) => (
-                        <tr key={b.key}>
-                            <td className="py-1.5">{format(b.date, "MMM d, yyyy")}</td>
-                            <td className="py-1.5 text-right tabular-nums">{b.count}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    }
-
+/** Male / Female / N/S counts per row, for "View as table". */
+function DataTable({ caption, rowLabel, rows }) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
-                <caption className="sr-only">{view === "age" ? "By age group and sex" : `By ${groupLabel}`}</caption>
+                <caption className="sr-only">{caption}</caption>
                 <thead className="sticky top-0 z-10 bg-card text-left text-xs text-muted-foreground">
                     <tr className="border-b">
-                        <th scope="col" className="py-2 pr-2 font-medium">{view === "age" ? "Age group" : groupLabel}</th>
+                        <th scope="col" className="py-2 pr-2 font-medium">{rowLabel}</th>
                         <th scope="col" className="px-2 py-2 text-right font-medium">Male</th>
                         <th scope="col" className="px-2 py-2 text-right font-medium">Female</th>
                         <th scope="col" className="px-2 py-2 text-right font-medium">N/S</th>
@@ -317,26 +236,19 @@ function DataTable({ view, rows, timeline, groupLabel }) {
 }
 
 // ---------------------------------------------------------------------------
-// Card
+// Panel
 // ---------------------------------------------------------------------------
 
-const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({
-    title,
-    icon: Icon,
-    items = [],
-    groupKey,
-    groupLabel,
-    groupTab = groupLabel,
-    unit,
-    accent = "destructive",
-    sex = "all",
-    age = "all",
-    defaultView = "group",
-    seriesColor = "var(--viz-unknown)",
-}) {
-    const [view, setView] = useState(defaultView);
+const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({ casualties = [], injured = [], missing = [] }) {
+    const [typeKey, setTypeKey] = useState("dead");
+    const [sex, setSex] = useState("all");
+    const [age, setAge] = useState("all");
     const [asTable, setAsTable] = useState(false);
     const [showAll, setShowAll] = useState(false);
+
+    const itemsByType = { dead: casualties, injured, missing };
+    const type = TYPES.find((t) => t.key === typeKey);
+    const items = itemsByType[typeKey];
     const hasFilters = sex !== "all" || age !== "all";
 
     const filtered = useMemo(() => items.filter((item) => matchesFilters(item, { sex, age })), [items, sex, age]);
@@ -350,162 +262,144 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({
 
     const groupRows = useMemo(
         () =>
-            Object.values(tally(filtered, (item) => item[groupKey]?.toString().trim() || "Not specified")).sort(
+            Object.values(tally(filtered, (item) => item[type.groupKey]?.toString().trim() || "Not specified")).sort(
                 (a, b) => b.total - a.total || a.label.localeCompare(b.label),
             ),
-        [filtered, groupKey],
+        [filtered, type.groupKey],
     );
 
     const byAge = useMemo(() => tally(filtered, (item) => ageBracket(item.age) || "none"), [filtered]);
 
-    const timeline = useMemo(() => {
-        const dates = filtered
-            .map((item) => (item.created_at ? new Date(item.created_at) : null))
-            .filter((d) => d && !Number.isNaN(d.getTime()));
-        if (!dates.length) return null;
-
-        const first = startOfDay(new Date(Math.min(...dates)));
-        const last = startOfDay(new Date(Math.max(...dates)));
-        const weekly = differenceInCalendarDays(last, first) > 20;
-        const bucketOf = (d) => (weekly ? startOfWeek(d, { weekStartsOn: 1 }) : startOfDay(d));
-
-        const perBucket = {};
-        dates.forEach((d) => {
-            const key = format(bucketOf(d), "yyyy-MM-dd");
-            perBucket[key] = (perBucket[key] || 0) + 1;
-        });
-
-        const buckets = [];
-        for (let d = bucketOf(first); d <= last; d = weekly ? addWeeks(d, 1) : addDays(d, 1)) {
-            const key = format(d, "yyyy-MM-dd");
-            buckets.push({ key, date: d, count: perBucket[key] || 0 });
-        }
-        return { weekly, buckets };
-    }, [filtered]);
-
     const visibleGroupRows = showAll ? groupRows : groupRows.slice(0, ROW_LIMIT);
-    const scrolls = (showAll && view === "group") || (asTable && view === "time");
-    const ageRows = [...AGE_BRACKETS].map((b) => byAge[b] || emptyRow(b));
+    const ageRows = AGE_BRACKETS.map((b) => byAge[b] || emptyRow(b));
     const noAge = byAge.none?.total || 0;
 
-    const views = [
-        { key: "group", label: groupTab },
-        { key: "age", label: "Age & sex" },
-        { key: "time", label: "Timeline" },
-    ];
-
-    const toggle = (
-        <div className="flex rounded-lg bg-muted p-1" role="group" aria-label={`${title} view`}>
-            {views.map((option) => (
-                <button
-                    key={option.key}
-                    type="button"
-                    aria-pressed={view === option.key}
-                    onClick={() => setView(option.key)}
-                    className={`flex-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none ${
-                        view === option.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                    {option.label}
-                </button>
-            ))}
-        </div>
-    );
-
-    const empty = (
-        <div className="flex flex-col items-center py-8 text-center text-muted-foreground">
-            {Icon && !hasFilters ? (
-                <Icon size={40} className="mb-3 opacity-60" aria-hidden="true" />
-            ) : (
-                <SearchX size={40} className="mb-3 opacity-60" aria-hidden="true" />
-            )}
-            <p className="text-sm font-medium text-foreground">
-                {items.length === 0 ? `No ${unit} reported yet` : "No records match the filters"}
-            </p>
-        </div>
-    );
-
-    const chart = () => {
-        if (view === "group") {
-            return (
-                <CategoryBars
-                    rows={visibleGroupRows}
-                    total={total}
-                    label={`By ${groupLabel}`}
-                    max={Math.max(1, ...groupRows.map((r) => r.total))}
-                />
-            );
-        }
-        if (view === "age") return <AgePyramid byAge={byAge} total={total} noAge={noAge} unknownSex={counts.Unknown} />;
-        return timeline ? <Timeline timeline={timeline} color={seriesColor} /> : <p className="py-6 text-center text-sm text-muted-foreground">No report dates available.</p>;
+    const pickType = (key) => {
+        setTypeKey(key);
+        setShowAll(false);
     };
 
     return (
-        <GraphCard title={title} icon={Icon && <Icon size={24} />} actions={toggle}>
-            {/* Headline + sex split (part-to-whole) */}
-            <p className="flex items-baseline gap-2">
-                <span className={`text-4xl font-semibold ${ACCENT_TEXT[accent]}`}>{total}</span>
-                <span className="text-sm text-muted-foreground">
-                    {unit}
-                    {hasFilters && ` matching filters (of ${items.length})`}
-                </span>
-            </p>
-            <div className="mt-3">
-                <SexSplit counts={counts} total={total} />
+        <section aria-labelledby="who-affected-title" className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            {/*
+              * Header. Phones: title with the Filters button in the corner, the type switch
+              * full width below. md and up: title, then the switch and the filter pills on the right.
+              */}
+            <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-4 sm:px-6">
+                <div className="mr-auto flex items-center gap-3">
+                    <span className="rounded-lg bg-primary/10 p-2 text-primary ring-1 ring-inset ring-primary/15" aria-hidden="true">
+                        <Users size={22} />
+                    </span>
+                    <h3 id="who-affected-title" className="text-lg font-semibold text-foreground">
+                        Who is affected
+                    </h3>
+                </div>
+                <div className="md:order-3">
+                    <ImpactFilters sex={sex} age={age} onSexChange={setSex} onAgeChange={setAge} />
+                </div>
+                <div className="grid w-full grid-cols-3 gap-1 rounded-lg bg-muted p-1 md:order-2 md:inline-grid md:w-auto" role="group" aria-label="Show">
+                    {TYPES.map((t) => (
+                        <button
+                            key={t.key}
+                            type="button"
+                            aria-pressed={typeKey === t.key}
+                            onClick={() => pickType(t.key)}
+                            className={cn(
+                                "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none md:min-h-9",
+                                typeKey === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Swatch color={t.color} />
+                            {t.label}
+                            <span className="tabular-nums text-muted-foreground">{itemsByType[t.key].length}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            <div className="mt-5 border-t pt-5">
-                {total === 0 ? (
-                    empty
-                ) : (
-                    <>
-                        {/* Expanded lists and long tables scroll inside the card */}
-                        <div
-                            className={scrolls ? "max-h-80 overflow-y-auto overscroll-contain rounded-sm pr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" : ""}
-                            tabIndex={scrolls ? 0 : undefined}
-                            role={scrolls ? "region" : undefined}
-                            aria-label={scrolls ? `${title}: all ${view === "group" ? groupLabel.toLowerCase() : "dates"}` : undefined}
-                        >
+            {total === 0 ? (
+                <div className="flex flex-col items-center px-4 py-10 text-center text-muted-foreground">
+                    <SearchX size={40} className="mb-3 opacity-60" aria-hidden="true" />
+                    <p className="text-sm font-medium text-foreground">
+                        {items.length === 0 ? `No ${type.unit} reported yet` : "No records match the filters"}
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <div className="grid lg:grid-cols-2 lg:divide-x lg:divide-border">
+                        <div className="min-w-0 space-y-6 p-4 sm:p-6">
+                            <div>
+                                <h4 className={sectionTitle}>
+                                    Sex
+                                    {hasFilters && (
+                                        <span className="ml-2 font-normal normal-case tracking-normal">
+                                            {total} of {items.length} {type.unit} match the filters
+                                        </span>
+                                    )}
+                                </h4>
+                                <SexSplit counts={counts} total={total} />
+                            </div>
+                            <div>
+                                <h4 className={sectionTitle}>{type.groupTitle}</h4>
+                                {/* The full list scrolls inside the panel. */}
+                                <div
+                                    className={showAll ? "max-h-80 overflow-y-auto overscroll-contain rounded-sm pr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" : ""}
+                                    tabIndex={showAll ? 0 : undefined}
+                                    role={showAll ? "region" : undefined}
+                                    aria-label={showAll ? `All ${type.groupLabel.toLowerCase()}` : undefined}
+                                >
+                                    {asTable ? (
+                                        <DataTable caption={`${type.label} by ${type.groupLabel.toLowerCase()}`} rowLabel={type.groupLabel} rows={visibleGroupRows} />
+                                    ) : (
+                                        <CategoryBars
+                                            rows={visibleGroupRows}
+                                            total={total}
+                                            label={`${type.label} by ${type.groupLabel.toLowerCase()}`}
+                                            max={Math.max(1, ...groupRows.map((r) => r.total))}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="min-w-0 border-t border-border p-4 sm:p-6 lg:border-t-0">
+                            <h4 className={sectionTitle}>Age &amp; sex</h4>
                             {asTable ? (
-                                <DataTable
-                                    view={view}
-                                    rows={view === "age" ? ageRows : visibleGroupRows}
-                                    timeline={timeline || { weekly: false, buckets: [] }}
-                                    groupLabel={groupLabel}
-                                />
+                                <DataTable caption={`${type.label} by age group and sex`} rowLabel="Age group" rows={ageRows} />
                             ) : (
-                                chart()
+                                <AgePyramid byAge={byAge} total={total} noAge={noAge} unknownSex={counts.Unknown} />
                             )}
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {view === "group" && groupRows.length > ROW_LIMIT && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-9 px-2 text-muted-foreground"
-                                    aria-expanded={showAll}
-                                    onClick={() => setShowAll((value) => !value)}
-                                >
-                                    {showAll ? `Show top ${ROW_LIMIT}` : `Show all ${groupRows.length}`}
-                                </Button>
-                            )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 border-t border-border px-2 py-2 sm:px-4">
+                        {groupRows.length > ROW_LIMIT && (
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-9 gap-1.5 px-2 text-muted-foreground"
-                                onClick={() => setAsTable((value) => !value)}
+                                className="h-11 px-2 text-muted-foreground md:h-9"
+                                aria-expanded={showAll}
+                                onClick={() => setShowAll((value) => !value)}
                             >
-                                {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}
-                                {asTable ? "View as chart" : "View as table"}
+                                {showAll ? `Show top ${ROW_LIMIT}` : `Show all ${groupRows.length}`}
                             </Button>
-                        </div>
-                    </>
-                )}
-            </div>
-        </GraphCard>
+                        )}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-11 gap-1.5 px-2 text-muted-foreground md:h-9"
+                            onClick={() => setAsTable((value) => !value)}
+                        >
+                            {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}
+                            {asTable ? "View as charts" : "View as tables"}
+                        </Button>
+                    </div>
+                </>
+            )}
+        </section>
     );
 });
 
 export default PersonBreakdownGraph;
+

@@ -280,7 +280,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
             </Dialog>
 
             <Dialog open={Boolean(removing)} onOpenChange={(open) => !open && !busy && setRemoving(null)}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent centered className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-foreground">Remove {removing?.name}?</DialogTitle>
                         <DialogDescription>

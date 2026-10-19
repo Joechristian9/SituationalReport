@@ -45,7 +45,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
         successMessage: "Pre-emptive evacuation saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(reports, ["barangay", "evacuation_center"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(reports, ["barangay", "evacuation_center"], 5);
 
     const footer = useMemo(() => {
         const total = (field) => reports.reduce((sum, row) => sum + count(row[field]), 0);
@@ -67,6 +67,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search barangay or evacuation center"
                 excel={{ data: reports, fileName: "Pre_Emptive_Evacuation_Reports", sheetName: "Pre-Emptive Evacuation" }}
             />

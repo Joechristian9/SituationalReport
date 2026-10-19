@@ -297,7 +297,7 @@ export function AppSidebar({ ...props }) {
                 }] : []),
             ],
         },
-        // Report History: one entry per form the user may file.
+        // Report History: the forms the user may file, in the Reports page's sections.
         ...(historyKeys.length > 0 ? [{
             label: "Report History",
             collapsible: true,

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday, subDays } from 'date-fns';
 import AppLayout from '@/Layouts/AppLayout';
 import PageTitle from '@/Components/PageTitle';
 import { Button } from '@/Components/ui/button';
@@ -21,10 +21,14 @@ import {
     DataToolbar,
     EmptyState,
     FilterDateRange,
+    FilterSearchSelect,
     FilterSelect,
     PANEL_PAGINATION,
     useDelayedFlag,
 } from '@/Components/data/DataView';
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { toast, Toaster } from 'sonner';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import useMediaQuery from '@/hooks/useMediaQuery';
@@ -43,6 +47,7 @@ import {
     Shield,
     ShieldAlert,
     ShieldCheck,
+    SlidersHorizontal,
     Trash2,
     UserCheck,
 } from 'lucide-react';
@@ -64,6 +69,20 @@ const ACTIONS = {
 const FALLBACK_ACTION = { icon: Activity, verb: null, tone: 'bg-gray-100 text-gray-600', chip: 'bg-gray-50 text-gray-700 ring-gray-200' };
 const actionStyle = (action) => ACTIONS[action] || FALLBACK_ACTION;
 const RECORD_ACTIONS = ['created', 'updated', 'deleted'];
+
+// Date filter shortcuts. The server filters by whole days (end day included), so each is a
+// [days ago at the start, days ago at the end] pair, counted back from today.
+const DATE_PRESETS = [
+    { value: 'today', label: 'Today', days: [0, 0] },
+    { value: 'yesterday', label: 'Yesterday', days: [1, 1] },
+    { value: '7d', label: 'Last 7 days', days: [6, 0] },
+    { value: '30d', label: 'Last 30 days', days: [29, 0] },
+];
+const presetRange = (preset) => preset.days.map((ago) => format(subDays(new Date(), ago), 'yyyy-MM-dd'));
+const presetFor = (start, end) => DATE_PRESETS.find((preset) => {
+    const [from, to] = presetRange(preset);
+    return from === start && to === end;
+});
 
 const dateOf = (iso) => {
     const d = new Date(iso);
@@ -190,6 +209,42 @@ function MobileLogSkeleton() {
                 </div>
             ))}
         </div>
+    );
+}
+
+/** Account (type to find, ~100 accounts), report type and disaster: the less-used filters. */
+function MoreLogFilters({ filters, filterOptions, applyFilters, fullWidth = false }) {
+    const width = fullWidth && 'md:w-full md:justify-between';
+    return (
+        <>
+            <FilterSearchSelect
+                id="log-user"
+                label="Account"
+                value={filters.user_id ? String(filters.user_id) : 'all'}
+                onChange={(v) => applyFilters({ user_id: v === 'all' ? '' : v })}
+                allLabel="All accounts"
+                options={filterOptions.users.map((u) => ({ value: u.id, label: u.name }))}
+                className={width}
+            />
+            <FilterSelect
+                id="log-module"
+                label="Report type"
+                value={filters.module || 'all'}
+                onChange={(v) => applyFilters({ module: v === 'all' ? '' : v })}
+                allLabel="All report types"
+                options={filterOptions.modules}
+                className={width}
+            />
+            <FilterSelect
+                id="log-disaster"
+                label="Disaster"
+                value={filters.disaster_id ? String(filters.disaster_id) : 'all'}
+                onChange={(v) => applyFilters({ disaster_id: v === 'all' ? '' : v })}
+                allLabel="All disasters"
+                options={filterOptions.disasters.map((d) => ({ value: d.id, label: d.name }))}
+                className={width}
+            />
+        </>
     );
 }
 
@@ -337,17 +392,12 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
         });
     };
 
-    // Search applies after a short pause in typing.
-    const firstRun = useRef(true);
-    useEffect(() => {
-        if (firstRun.current) {
-            firstRun.current = false;
-            return;
-        }
-        if ((filters.search || '') === searchQuery) return;
-        const t = setTimeout(() => applyFilters({ search: searchQuery }), 400);
-        return () => clearTimeout(t);
-    }, [searchQuery]);
+    // The search box calls this only on Enter or a picked suggestion, so it searches right away.
+    // (A watcher on searchQuery also fired on "Clear all" and replaced that request with the old filters.)
+    const search = (value) => {
+        setSearchQuery(value);
+        applyFilters({ search: value });
+    };
 
     const exportUrl = route('admin.audit-logs.export', clean({ ...currentParams(), per_page: '' }));
 
@@ -355,18 +405,41 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
         list.find((o) => String(o[key]) === String(value))?.[labelKey] || value;
     const dayLabel = (value) => format(new Date(`${value}T00:00`), 'MMM d, yyyy');
 
+    // Date: a preset, or "Custom range" which shows the From / To fields. A range picked by
+    // hand (or from an old link) that matches no preset shows as custom too.
+    const [customRange, setCustomRange] = useState(false);
+    const startDate = filters.start_date || '';
+    const endDate = filters.end_date || '';
+    const activePreset = presetFor(startDate, endDate);
+    const dateValue = customRange || ((startDate || endDate) && !activePreset) ? 'custom' : activePreset?.value ?? 'any';
+    const pickDate = (value) => {
+        if (value === 'custom') return setCustomRange(true);
+        setCustomRange(false);
+        const preset = DATE_PRESETS.find((p) => p.value === value);
+        const [from, to] = preset ? presetRange(preset) : ['', ''];
+        applyFilters({ start_date: from, end_date: to });
+    };
+    // Only called when a date is set: formatting an empty date throws.
+    const dateChipLabel = () => {
+        if (activePreset) return activePreset.label;
+        if (startDate && endDate) return `${dayLabel(startDate)} – ${dayLabel(endDate)}`;
+        return startDate ? `From ${dayLabel(startDate)}` : `Until ${dayLabel(endDate)}`;
+    };
+
     const chips = [
         filters.action && { key: 'action', label: `Action: ${labelFor(filterOptions.actions, filters.action)}`, onRemove: () => applyFilters({ action: '' }) },
+        (startDate || endDate) && { key: 'date', label: `Date: ${dateChipLabel()}`, onRemove: () => pickDate('any') },
         filters.user_id && { key: 'user', label: `Account: ${labelFor(filterOptions.users, filters.user_id, 'id', 'name')}`, onRemove: () => applyFilters({ user_id: '' }) },
         filters.module && { key: 'module', label: `Report type: ${labelFor(filterOptions.modules, filters.module)}`, onRemove: () => applyFilters({ module: '' }) },
         filters.disaster_id && { key: 'disaster', label: `Disaster: ${labelFor(filterOptions.disasters, filters.disaster_id, 'id', 'name')}`, onRemove: () => applyFilters({ disaster_id: '' }) },
-        filters.start_date && { key: 'from', label: `From: ${dayLabel(filters.start_date)}`, onRemove: () => applyFilters({ start_date: '' }) },
-        filters.end_date && { key: 'to', label: `To: ${dayLabel(filters.end_date)}`, onRemove: () => applyFilters({ end_date: '' }) },
     ].filter(Boolean);
     const activeFilterCount = chips.length;
+    const moreCount = [filters.user_id, filters.module, filters.disaster_id].filter(Boolean).length;
+    const isMobile = useIsMobile();
 
     const clearAll = () => {
         setSearchQuery('');
+        setCustomRange(false);
         router.get(route('admin.audit-logs'), clean({ per_page: perPage === 20 ? '' : perPage }), {
             preserveScroll: true,
             replace: true,
@@ -431,7 +504,7 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                 search={{
                                     id: 'log-search',
                                     value: searchQuery,
-                                    onChange: setSearchQuery,
+                                    onChange: search,
                                     placeholder: 'Name, email, IP address or note',
                                 }}
                                 filters={
@@ -445,40 +518,63 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                             options={filterOptions.actions}
                                         />
                                         <FilterSelect
-                                            id="log-user"
-                                            label="Account"
-                                            value={filters.user_id ? String(filters.user_id) : 'all'}
-                                            onChange={(v) => applyFilters({ user_id: v === 'all' ? '' : v })}
-                                            allLabel="All accounts"
-                                            options={filterOptions.users.map((u) => ({ value: u.id, label: u.name }))}
+                                            id="log-date"
+                                            label="Date"
+                                            value={dateValue}
+                                            onChange={pickDate}
+                                            allValue="any"
+                                            allLabel="Any time"
+                                            options={[
+                                                ...DATE_PRESETS.map(({ value, label }) => ({ value, label })),
+                                                { value: 'custom', label: 'Custom range…' },
+                                            ]}
                                         />
-                                        <FilterSelect
-                                            id="log-module"
-                                            label="Report type"
-                                            value={filters.module || 'all'}
-                                            onChange={(v) => applyFilters({ module: v === 'all' ? '' : v })}
-                                            allLabel="All report types"
-                                            options={filterOptions.modules}
-                                        />
-                                        <FilterSelect
-                                            id="log-disaster"
-                                            label="Disaster"
-                                            value={filters.disaster_id ? String(filters.disaster_id) : 'all'}
-                                            onChange={(v) => applyFilters({ disaster_id: v === 'all' ? '' : v })}
-                                            allLabel="All disasters"
-                                            options={filterOptions.disasters.map((d) => ({ value: d.id, label: d.name }))}
-                                        />
-                                        <FilterDateRange
-                                            fromId="log-from"
-                                            toId="log-to"
-                                            from={filters.start_date || ''}
-                                            to={filters.end_date || ''}
-                                            onFromChange={(value) => applyFilters({ start_date: value })}
-                                            onToChange={(value) => applyFilters({ end_date: value })}
-                                        />
+                                        {dateValue === 'custom' && (
+                                            <FilterDateRange
+                                                fromId="log-from"
+                                                toId="log-to"
+                                                from={startDate}
+                                                to={endDate}
+                                                onFromChange={(value) => applyFilters({ start_date: value })}
+                                                onToChange={(value) => applyFilters({ end_date: value })}
+                                            />
+                                        )}
+                                        {/* Phones: the Filters popover already holds everything, so these sit in it directly. */}
+                                        {isMobile ? (
+                                            <MoreLogFilters filters={filters} filterOptions={filterOptions} applyFilters={applyFilters} />
+                                        ) : (
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        aria-label={moreCount > 0 ? `More filters, ${moreCount} applied` : 'More filters'}
+                                                        className={cn(
+                                                            'h-9 gap-1.5 rounded-full px-3 text-sm font-normal shadow-sm',
+                                                            moreCount > 0
+                                                                ? 'border-primary/40 bg-primary/10 text-accent-foreground hover:bg-primary/15'
+                                                                : 'border-dashed border-input bg-card hover:border-solid hover:bg-muted/60'
+                                                        )}
+                                                    >
+                                                        <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                                                        More filters
+                                                        {moreCount > 0 && (
+                                                            <span className="rounded-full bg-primary px-1.5 text-xs font-semibold tabular-nums text-primary-foreground" aria-hidden="true">
+                                                                {moreCount}
+                                                            </span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent align="end" collisionPadding={16} className="w-80 p-3">
+                                                    <p className="mb-2.5 text-sm font-semibold text-foreground">More filters</p>
+                                                    <div className="grid gap-2">
+                                                        <MoreLogFilters filters={filters} filterOptions={filterOptions} applyFilters={applyFilters} fullWidth />
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        )}
                                     </>
                                 }
-                                filtersRow
                                 chips={chips}
                                 onClearAll={clearAll}
                             />

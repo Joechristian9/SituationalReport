@@ -2,6 +2,11 @@ import * as React from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+/**
+ * The real checkbox sits invisibly on top of the drawn box, so a click lands on it directly.
+ * (Clicking a drawn box that re-clicks the input toggled twice inside a <label>: once by the
+ * script, once by the label, so it never stayed ticked.)
+ */
 const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...props }, ref) => {
   const [isChecked, setIsChecked] = React.useState(checked || false);
 
@@ -10,40 +15,33 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...pro
   }, [checked]);
 
   const handleChange = (e) => {
-    const newValue = e.target.checked;
-    setIsChecked(newValue);
-    if (onCheckedChange) {
-      onCheckedChange(newValue);
-    }
+    setIsChecked(e.target.checked);
+    onCheckedChange?.(e.target.checked);
   };
 
   return (
-    <div className="relative inline-flex items-center">
+    <span className="relative inline-flex h-4 w-4 shrink-0">
       <input
         type="checkbox"
         ref={ref}
         checked={isChecked}
         onChange={handleChange}
-        className="peer sr-only"
+        className="peer absolute inset-0 z-10 m-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         {...props}
       />
-      <div
+      <span
+        aria-hidden="true"
         className={cn(
-          "h-4 w-4 shrink-0 rounded-sm border border-gray-300 ring-offset-white cursor-pointer transition-all",
-          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2",
-          "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-          "flex items-center justify-center",
-          isChecked ? "bg-blue-600 text-white border-blue-600" : "bg-white",
+          "flex h-4 w-4 items-center justify-center rounded-sm border transition-colors",
+          "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background",
+          "peer-disabled:opacity-50",
+          isChecked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card",
           className
         )}
-        onClick={() => {
-          const input = ref?.current || document.getElementById(props.id);
-          if (input) input.click();
-        }}
       >
-        {isChecked && <Check className="h-3 w-3 text-white" />}
-      </div>
-    </div>
+        {isChecked && <Check className="h-3 w-3" />}
+      </span>
+    </span>
   );
 });
 

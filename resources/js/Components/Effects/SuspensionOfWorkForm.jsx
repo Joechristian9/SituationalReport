@@ -33,7 +33,7 @@ export default function SuspensionOfWorkForm({ data, setData, errors, disabled =
         successMessage: "Work suspensions saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(suspensionList, ["province_city_municipality"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(suspensionList, ["province_city_municipality"], 5);
 
     return (
         <div className="space-y-5">
@@ -42,6 +42,7 @@ export default function SuspensionOfWorkForm({ data, setData, errors, disabled =
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search municipality"
                 excel={{ data: suspensionList, fileName: "Suspension_Of_Work", sheetName: "Suspension of Work" }}
             />

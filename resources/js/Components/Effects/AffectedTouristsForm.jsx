@@ -35,7 +35,7 @@ export default function AffectedTouristsForm({ data, setData, errors, disabled =
         successMessage: "Affected tourists saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(touristsList, ["province_city_municipality", "location"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(touristsList, ["province_city_municipality", "location"], 5);
 
     return (
         <div className="space-y-5">
@@ -44,6 +44,7 @@ export default function AffectedTouristsForm({ data, setData, errors, disabled =
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search location or municipality"
                 excel={{ data: touristsList, fileName: "Affected_Tourists", sheetName: "Affected Tourists" }}
             />

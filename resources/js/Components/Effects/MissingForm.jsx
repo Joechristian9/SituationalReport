@@ -36,7 +36,7 @@ export default function MissingForm({ data, setData, errors, disabled = false })
         successMessage: "Missing persons saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(missingList, ["name", "address"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(missingList, ["name", "address"], 5);
 
     return (
         <div className="space-y-5">
@@ -45,6 +45,7 @@ export default function MissingForm({ data, setData, errors, disabled = false })
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search by name or address"
                 excel={{ data: missingList, fileName: "Casualties_Missing_Report", sheetName: "Missing" }}
             />

@@ -59,10 +59,7 @@ export default function LiveIndicator({ live, className }) {
                 )}
             >
                 {state === 'live' && (
-                    <span className="relative flex h-2 w-2" aria-hidden="true">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 motion-safe:animate-ping" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-                    </span>
+                    <span className="inline-flex h-2 w-2 rounded-full bg-success" aria-hidden="true" />
                 )}
                 {state === 'paused' && <Pause className="h-3.5 w-3.5" aria-hidden="true" />}
                 {state === 'stale' && <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}

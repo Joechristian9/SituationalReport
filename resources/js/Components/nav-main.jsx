@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 
 import {
     Collapsible,
@@ -26,6 +26,9 @@ import {
     SidebarMenuAction,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -93,14 +96,23 @@ function NavGroup({ group, collapsed, currentPath, onNavigate, onAddYear }) {
     const menu = (
         <SidebarGroupContent>
             <SidebarMenu>
-                {group.items.map((item) => (
-                    <NavItem
-                        key={item.title}
-                        item={item}
-                        active={isCurrent(item, currentPath)}
-                        onNavigate={onNavigate}
-                    />
-                ))}
+                {group.items.map((item) =>
+                    item.items ? (
+                        <NavSubmenu
+                            key={item.title}
+                            item={item}
+                            currentPath={currentPath}
+                            onNavigate={onNavigate}
+                        />
+                    ) : (
+                        <NavItem
+                            key={item.title}
+                            item={item}
+                            active={isCurrent(item, currentPath)}
+                            onNavigate={onNavigate}
+                        />
+                    )
+                )}
 
                 {group.addYear && (
                     <SidebarMenuItem>
@@ -195,6 +207,78 @@ function NavItem({ item, active, onNavigate }) {
                 </SidebarMenuAction>
             )}
         </SidebarMenuItem>
+    );
+}
+
+/** An item with `items`: a section that opens to show its pages (e.g. Casualties > Dead, Injured, Missing). */
+function NavSubmenu({ item, currentPath, onNavigate }) {
+    const { state, isMobile, setOpen: setSidebarOpen } = useSidebar();
+    const iconMode = state === "collapsed" && !isMobile;
+    const hasActive = item.items.some((sub) => isCurrent(sub, currentPath));
+    const [open, setOpen] = useState(hasActive);
+    const Icon = item.icon;
+
+    // Landing on one of its pages from elsewhere opens the section.
+    useEffect(() => {
+        if (hasActive) setOpen(true);
+    }, [hasActive]);
+
+    return (
+        <Collapsible open={open} onOpenChange={setOpen} asChild>
+            <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                        tooltip={item.title}
+                        // Marked when its page is hidden: section closed, or the sidebar shows icons only.
+                        isActive={hasActive && (!open || iconMode)}
+                        className={itemClass}
+                        onClick={(e) => {
+                            // Icons only: the pages can't show there, so widen the sidebar instead.
+                            if (!iconMode) return;
+                            e.preventDefault();
+                            setSidebarOpen(true);
+                            setOpen(true);
+                        }}
+                    >
+                        {Icon && <Icon aria-hidden="true" />}
+                        <span className="!whitespace-normal leading-tight">{item.title}</span>
+                        <ChevronRight
+                            aria-hidden="true"
+                            className={cn(
+                                "ml-auto transition-transform duration-200 motion-reduce:transition-none",
+                                open && "rotate-90"
+                            )}
+                        />
+                    </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <SidebarMenuSub>
+                        {item.items.map((sub) => {
+                            const active = isCurrent(sub, currentPath);
+                            const SubIcon = sub.icon;
+                            return (
+                                <SidebarMenuSubItem key={sub.title}>
+                                    <SidebarMenuSubButton
+                                        asChild
+                                        isActive={active}
+                                        className="h-auto min-h-11 py-1.5 text-sidebar-foreground/85 data-[active=true]:font-semibold md:min-h-8"
+                                    >
+                                        <Link
+                                            href={sub.url}
+                                            aria-current={active ? "page" : undefined}
+                                            onClick={onNavigate}
+                                        >
+                                            {SubIcon && <SubIcon aria-hidden="true" />}
+                                            <span>{sub.title}</span>
+                                        </Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            );
+                        })}
+                    </SidebarMenuSub>
+                </CollapsibleContent>
+            </SidebarMenuItem>
+        </Collapsible>
     );
 }
 

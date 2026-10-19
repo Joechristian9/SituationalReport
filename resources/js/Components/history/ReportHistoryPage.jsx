@@ -17,7 +17,6 @@ import { HISTORY_TYPES, TRAILING_COLUMNS, cellText, formatDate } from './history
 
 const DEFAULT_PER_PAGE = 10;
 const DISASTERS_PER_PAGE = 5;
-const SEARCH_DELAY = 300;
 
 /**
  * One "Report History" page: the user's reports of one type, grouped by disaster
@@ -37,12 +36,10 @@ export default function ReportHistoryPage({ type }) {
     const [perPage, setPerPage] = useState(DISASTERS_PER_PAGE);
     const [page, setPage] = useState(1);
 
+    // No wait needed: the search box only sends a search on Enter or a picked suggestion.
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setTerm(search.trim());
-            setPage(1);
-        }, SEARCH_DELAY);
-        return () => clearTimeout(timer);
+        setTerm(search.trim());
+        setPage(1);
     }, [search]);
 
     const { data, isLoading, isError, refetch, isFetching, isPlaceholderData } = useQuery({

@@ -97,7 +97,7 @@ export default function RemindDialog({ users, onClose, onSent }) {
 
     return (
         <Dialog open={open} onOpenChange={(next) => !next && !sending && onClose()}>
-            <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto rounded-2xl">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader className="space-y-3 text-left">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
                         {one ? <BellRing className="h-5 w-5" /> : <Users className="h-5 w-5" />}

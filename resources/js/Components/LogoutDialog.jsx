@@ -45,7 +45,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent centered className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Log out of this device?</DialogTitle>
                     <DialogDescription>

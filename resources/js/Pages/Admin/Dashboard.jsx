@@ -13,7 +13,6 @@ import SectionNav from "@/Components/SectionNav";
 import { SkeletonChart } from "@/Components/ui/skeleton";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import NoActiveTyphoonBadge from "@/Components/NoActiveDisasterBadge";
-import ImpactFilters from "@/Components/Graphs/ImpactFilters";
 import ImpactStatCards from "@/Components/Graphs/ImpactStatCards";
 import DisasterContextBar from "@/Components/DisasterContextBar";
 
@@ -22,9 +21,8 @@ const PagasaPanel = lazy(() => import("@/Components/Weather/PagasaPanel"));
 const WeatherGraph = lazy(() => import("@/Components/Graphs/WeatherGraph"));
 const WaterLevelGraph = lazy(() => import("@/Components/Graphs/WaterLevelGraph"));
 const EvacuationGraph = lazy(() => import("@/Components/Graphs/EvacuationGraph"));
-const CasualtyGraph = lazy(() => import("@/Components/Graphs/CasualtyGraph"));
-const InjuredGraph = lazy(() => import("@/Components/Graphs/InjuredGraph"));
-const MissingGraph = lazy(() => import("@/Components/Graphs/MissingGraph"));
+const PersonBreakdownGraph = lazy(() => import("@/Components/Graphs/PersonBreakdownGraph"));
+const AgeSexTable = lazy(() => import("@/Components/Graphs/AgeSexTable"));
 const ImpactTrendChart = lazy(() => import("@/Components/Graphs/ImpactTrendChart"));
 const BarangayImpactChart = lazy(() => import("@/Components/Graphs/BarangayImpactChart"));
 const ImpactHourlyChart = lazy(() => import("@/Components/Graphs/ImpactHourlyChart"));
@@ -64,7 +62,6 @@ const NotificationBadge = ({ count }) => (
                 title={`${count} new report${count === 1 ? "" : "s"}`}
             >
                 {count > 99 ? "99+" : count}
-                <span className="absolute inset-0 -z-10 rounded-full bg-red-500 motion-safe:animate-ping opacity-60" />
             </motion.span>
         )}
     </AnimatePresence>
@@ -123,10 +120,6 @@ export default function Dashboard({
     const [evacuationType, setEvacuationType] = useState("total");
     const [searchQuery, setSearchQuery] = useState("");
     
-    // Human Impact graph filters (one row scopes all three graphs)
-    const [impactSex, setImpactSex] = useState("all");
-    const [impactAge, setImpactAge] = useState("all");
-    
     return (
         <MotionConfig reducedMotion="user">
         <AppLayout
@@ -157,8 +150,8 @@ export default function Dashboard({
         >
                 <Toaster position="top-right" richColors />
 
-                {/* Phones: bottom padding keeps the last card clear of the floating section dock. */}
-                <main className="min-h-dvh w-full space-y-4 p-4 max-sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:space-y-8 sm:p-6 lg:p-8">
+                {/* Phones: bottom padding keeps the last card clear of the section bar. */}
+                <main className="min-h-dvh w-full space-y-4 p-4 max-sm:pb-[calc(6rem+env(safe-area-inset-bottom))] sm:space-y-8 sm:p-6 lg:p-8">
                     <DisasterContextBar disaster={typhoon?.active} updatedAt={impactSummary?.generatedAt} />
                     {/* Fixed to the bottom on phones, below dialogs, sheets and the offline card. */}
                     <SectionNav
@@ -242,24 +235,17 @@ export default function Dashboard({
                                             )}
                                         />
 
-                                        {/* Trend over time + comparison by barangay */}
-                                        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
-                                            <ImpactTrendChart trend={impactSummary?.trend || []} />
+                                        {/* Trend over time gets the width; the top-5 barangay list sits beside it. */}
+                                        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-3">
+                                            <div className="min-w-0 xl:col-span-2">
+                                                <ImpactTrendChart trend={impactSummary?.trend || []} />
+                                            </div>
                                             <BarangayImpactChart rows={impactSummary?.byBarangay || []} />
                                         </div>
 
-                                        {/* Detailed Graphs */}
-                                        <ImpactFilters
-                                            sex={impactSex}
-                                            age={impactAge}
-                                            onSexChange={setImpactSex}
-                                            onAgeChange={setImpactAge}
-                                        />
-                                        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-3">
-                                            <CasualtyGraph casualties={casualties} sex={impactSex} age={impactAge} />
-                                            <InjuredGraph injuredList={injured} sex={impactSex} age={impactAge} />
-                                            <MissingGraph missingList={missing} sex={impactSex} age={impactAge} />
-                                        </div>
+                                        {/* Who is affected: one type at a time, with its own Sex / Age filters. */}
+                                        <PersonBreakdownGraph casualties={casualties} injured={injured} missing={missing} />
+                                        <AgeSexTable casualties={casualties} injured={injured} missing={missing} />
                                     </div>
                                 )}
                             </Suspense>

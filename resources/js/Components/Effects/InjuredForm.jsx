@@ -38,7 +38,7 @@ export default function InjuredForm({ data, setData, errors, disabled = false })
         successMessage: "Injured persons saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(injuredList, ["name", "address"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(injuredList, ["name", "address"], 5);
 
     return (
         <div className="space-y-5">
@@ -47,6 +47,7 @@ export default function InjuredForm({ data, setData, errors, disabled = false })
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search by name or address"
                 excel={{ data: injuredList, fileName: "Casualties_Injured_Report", sheetName: "Injured" }}
             />

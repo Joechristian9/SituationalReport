@@ -11,7 +11,9 @@ import { LazyMotion } from "framer-motion";
 import { installOffline } from "./lib/offline/install";
 import OfflineStatus from "./Components/OfflineStatus";
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+// Tab titles read "Dashboard - SitRep". Set here, not from APP_NAME, so every server shows it
+// without editing its .env.
+const appName = "SitRep";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +23,7 @@ const loadMotionFeatures = () =>
     import("./lib/motionFeatures").then((mod) => mod.default);
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,

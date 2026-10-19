@@ -99,7 +99,8 @@ export default function DisasterLifecycleDialog({ action, disaster, onActionChan
     return (
         <Dialog open={Boolean(config)} onOpenChange={(open) => !open && close()}>
             <DialogContent
-                className="max-h-[90dvh] gap-3 overflow-y-auto p-4 sm:max-w-md sm:gap-4 sm:p-6"
+                centered
+                className="gap-3 p-4 sm:max-w-md sm:gap-4 sm:p-6"
                 onInteractOutside={(e) => pending && e.preventDefault()}
                 onEscapeKeyDown={(e) => pending && e.preventDefault()}
             >

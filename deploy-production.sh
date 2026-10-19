@@ -18,6 +18,20 @@ echo "========================================="
 echo "Starting Production Deployment"
 echo "========================================="
 
+# A live site in debug mode shows full error pages (file paths, settings, sometimes
+# passwords) to anyone. Stop before changing anything if the server's .env allows that.
+echo ""
+echo "0. Checking production settings..."
+if grep -Eiq '^APP_DEBUG=("?true"?|1)\s*$' .env; then
+    echo "!!! .env has APP_DEBUG=true. Set APP_DEBUG=false, then deploy again."
+    exit 1
+fi
+if ! grep -Eq '^APP_ENV="?production"?\s*$' .env; then
+    echo "!!! .env APP_ENV is not production. Set APP_ENV=production (it turns on https links"
+    echo "!!! and secure cookies), then deploy again."
+    exit 1
+fi
+
 # A restore point from just before this deploy's migrations. Runs while the site is
 # still up; if it fails, nothing has changed yet and the deploy stops here.
 if [ "${SKIP_BACKUP:-0}" != "1" ]; then

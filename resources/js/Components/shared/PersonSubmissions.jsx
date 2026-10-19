@@ -341,8 +341,8 @@ export default function PersonSubmissions({ config, records, users = [], filters
             return;
         }
         if ((filters.search || '') === searchQuery) return;
-        const t = setTimeout(() => visit({ search: searchQuery, page: '' }), 400);
-        return () => clearTimeout(t);
+        // No wait needed: the search box only sends a search on Enter or a picked suggestion.
+        visit({ search: searchQuery, page: '' });
     }, [searchQuery]);
 
     const scopeLabel = disaster ? disaster.name : 'All disasters';

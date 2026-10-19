@@ -38,7 +38,7 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
         successMessage: "Damaged houses saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(reports, ["barangay"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(reports, ["barangay"], 5);
 
     const footer = useMemo(() => {
         const partially = reports.reduce((sum, row) => sum + count(row.partially), 0);
@@ -53,6 +53,7 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search barangay"
                 excel={{ data: reports, fileName: "Damaged_Houses", sheetName: "Damaged Houses" }}
             />

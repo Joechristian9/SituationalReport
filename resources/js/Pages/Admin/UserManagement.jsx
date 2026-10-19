@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import PageTitle from '@/Components/PageTitle';
@@ -6,6 +6,8 @@ import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import InputError from '@/Components/InputError';
+import { buildSuggestions } from '@/lib/searchSuggestions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import {
     DropdownMenu,
@@ -386,6 +388,8 @@ export default function UserManagement({ users, roles, permissions }) {
     const [formTab, setFormTab] = useState('account');
     const [selectedUser, setSelectedUser] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [deleteError, setDeleteError] = useState('');
     const [confirmDiscard, setConfirmDiscard] = useState(false);
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [errors, setErrors] = useState({});
@@ -418,6 +422,11 @@ export default function UserManagement({ users, roles, permissions }) {
         }
         return result;
     }, [users, tab, searchQuery, noAccessOnly]);
+
+    const suggestSearch = useCallback(
+        (text) => buildSuggestions(users, [{ get: (u) => u.name, label: 'user' }, 'email'], text),
+        [users]
+    );
 
     const { sorted: sortedUsers, sort, toggle: toggleSort } = useTableSort(filteredUsers, USER_SORT, {
         key: 'name',
@@ -553,10 +562,20 @@ export default function UserManagement({ users, roles, permissions }) {
         }
     };
 
-    const handleDelete = () => {
+    // Start each delete with an empty password field.
+    useEffect(() => {
+        setDeletePassword('');
+        setDeleteError('');
+    }, [deleteTarget]);
+
+    const handleDelete = (e) => {
+        e.preventDefault();
         if (!deleteTarget) return;
         setIsSubmitting(true);
         router.delete(route('admin.users.destroy', deleteTarget.id), {
+            data: { password: deletePassword },
+            // Own error bag, so a wrong password never shows up in the account form.
+            errorBag: 'deleteUser',
             only: ['users', 'flash'],
             preserveScroll: true,
             onSuccess: (pageResponse) => {
@@ -565,7 +584,10 @@ export default function UserManagement({ users, roles, permissions }) {
                 else toast.success(`${deleteTarget.name} was deleted`);
                 setDeleteTarget(null);
             },
-            onError: (errs) => Object.values(errs).forEach((msg) => toast.error(msg)),
+            onError: (errs) => {
+                if (errs.password) setDeleteError(errs.password);
+                else Object.values(errs).forEach((msg) => toast.error(msg));
+            },
             onFinish: () => setIsSubmitting(false),
         });
     };
@@ -650,6 +672,7 @@ export default function UserManagement({ users, roles, permissions }) {
                                 value: searchQuery,
                                 onChange: setSearchQuery,
                                 placeholder: 'Search name, email or form',
+                                suggest: suggestSearch,
                             }}
                             filters={
                                 <>
@@ -770,7 +793,7 @@ export default function UserManagement({ users, roles, permissions }) {
             <Dialog open={formMode !== null} onOpenChange={(open) => !open && requestClose()}>
                 <DialogContent
                     // Fixed height so the card doesn't change size when switching tabs; the body scrolls inside.
-                    className="flex h-[min(40rem,calc(100dvh-2rem))] flex-col gap-0 overflow-hidden p-0 sm:p-0"
+                    className="flex flex-col gap-0 overflow-hidden p-0 sm:p-0"
                 >
                     <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
                         <DialogHeader className="border-b border-border py-4 pl-4 pr-14 sm:pl-6 sm:pr-12">
@@ -1017,7 +1040,7 @@ export default function UserManagement({ users, roles, permissions }) {
 
             {/* Delete */}
             <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && !isSubmitting && setDeleteTarget(null)}>
-                <DialogContent className="max-w-md">
+                <DialogContent centered className="max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-foreground [overflow-wrap:anywhere]">Delete {deleteTarget?.name}?</DialogTitle>
                         <DialogDescription className="text-muted-foreground [overflow-wrap:anywhere]">
@@ -1032,14 +1055,33 @@ export default function UserManagement({ users, roles, permissions }) {
                             signing in without losing their reports, change their password instead.
                         </p>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
-                            {isSubmitting ? 'Deleting…' : 'Delete user'}
-                        </Button>
-                    </DialogFooter>
+                    <form onSubmit={handleDelete} className="grid gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="delete-user-password">Enter your password to confirm</Label>
+                            <Input
+                                id="delete-user-password"
+                                type="password"
+                                autoComplete="current-password"
+                                value={deletePassword}
+                                onChange={(e) => {
+                                    setDeletePassword(e.target.value);
+                                    setDeleteError('');
+                                }}
+                                aria-invalid={Boolean(deleteError)}
+                                aria-describedby={deleteError ? 'delete-user-password-error' : undefined}
+                                className="h-11 md:h-9"
+                            />
+                            <InputError id="delete-user-password-error" message={deleteError} />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)} disabled={isSubmitting}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="destructive" disabled={isSubmitting || !deletePassword}>
+                                {isSubmitting ? 'Deleting…' : 'Delete user'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </AppLayout>

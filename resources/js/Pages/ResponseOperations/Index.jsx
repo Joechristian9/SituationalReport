@@ -58,6 +58,7 @@ export default function Index() {
     const {
         paginatedData: paginatedResponses,
         searchTerm,
+        suggest,
         setSearchTerm,
         currentPage,
         setCurrentPage,
@@ -225,6 +226,7 @@ export default function Index() {
                                     <SearchBar
                                         value={searchTerm}
                                         onChange={setSearchTerm}
+                                        suggest={suggest}
                                         placeholder="Search team, incident, location..."
                                     />
 

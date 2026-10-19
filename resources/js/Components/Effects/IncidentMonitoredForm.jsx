@@ -35,7 +35,7 @@ export default function IncidentMonitoredForm({ data, setData, errors, disabled 
         successMessage: "Incidents saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(incidents, ["kinds_of_incident", "location"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(incidents, ["kinds_of_incident", "location"], 5);
 
     return (
         <div className="space-y-5">
@@ -44,6 +44,7 @@ export default function IncidentMonitoredForm({ data, setData, errors, disabled 
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search kind of incident or location"
                 excel={{ data: incidents, fileName: "Incidents_Monitored", sheetName: "Incidents" }}
             />

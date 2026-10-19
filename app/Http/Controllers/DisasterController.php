@@ -389,8 +389,11 @@ class DisasterController extends Controller
      * Delete a typhoon report
      * Optimized with transaction and file cleanup
      */
-    public function destroy(Typhoon $disaster)
+    public function destroy(Request $request, Typhoon $disaster)
     {
+        // Deleting can't be undone: the admin re-enters their password, so an unattended session can't do it.
+        $request->validate(['password' => ['required', 'current_password']]);
+
         // Only allow deleting if not active
         if ($disaster->status === 'active') {
             return response()->json([

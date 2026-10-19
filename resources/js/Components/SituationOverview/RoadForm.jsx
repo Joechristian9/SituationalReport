@@ -36,7 +36,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
         successMessage: "Road report saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(roads, ["name_of_road", "areas_affected"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(roads, ["name_of_road", "areas_affected"], 5);
 
     return (
         <div className="space-y-5">
@@ -45,6 +45,7 @@ export default function RoadForm({ data, setData, errors, disabled = false }) {
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search road or area"
                 excel={{ data: roads, fileName: "Roads_Report", sheetName: "Roads" }}
             />

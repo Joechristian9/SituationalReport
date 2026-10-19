@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
     BarChart,
     Bar,
@@ -9,9 +9,11 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
-import { Search, Filter, Users, Home, MapPin, TrendingUp } from "lucide-react";
+import { Filter, Users, Home, MapPin, TrendingUp } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
 import ModernSelect from "@/Components/ui/ModernSelect";
+import SearchBar from "@/Components/ui/SearchBar";
+import { buildSuggestions } from "@/lib/searchSuggestions";
 
 // The CustomTooltip component remains unchanged.
 const CustomTooltip = ({ active, payload, label }) => {
@@ -88,6 +90,8 @@ const EvacuationGraph = ({
         );
     }, [aggregatedData, searchQuery]);
 
+    const suggest = useCallback((text) => buildSuggestions(aggregatedData, ["barangay"], text), [aggregatedData]);
+
     const { personsDataKey, familiesDataKey, personsBarName, familiesBarName } =
         useMemo(() => {
             switch (evacuationType) {
@@ -154,16 +158,8 @@ const EvacuationGraph = ({
                 ariaLabel="Evacuees shown"
                 className="w-full min-[400px]:w-32 shrink-0"
             />
-            <div className="relative flex-grow sm:w-52">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none z-10" aria-hidden="true" />
-                <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder="Search barangay"
-                    aria-label="Search barangay"
-                    className="w-full pl-10 pr-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                />
+            <div className="min-w-0 flex-grow sm:w-52">
+                <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="Search barangay" suggest={suggest} />
             </div>
         </div>
     );

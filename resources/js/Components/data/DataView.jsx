@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Rows2, Rows4, Search, SearchX, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, Rows2, Rows4, Search, SearchX, SlidersHorizontal, X } from "lucide-react";
 
 import { DensityContext, useDensity } from "@/Components/data/density";
 import { Button } from "@/Components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
+import SearchSuggestions from "@/Components/ui/SearchSuggestions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -102,36 +103,42 @@ export function DataPanel({ icon: Icon, title, count, description, actions, clas
     );
 }
 
-export function SearchInput({ id, value, onChange, onClear, placeholder = "Search…", label = "Search" }) {
+/**
+ * Search box with suggestions. `onChange` runs when a suggestion is picked or on Enter, not
+ * on every keystroke. `suggest(text)` returns [{ value, hint }] (see lib/searchSuggestions).
+ */
+export function SearchInput({ id, value, onChange, placeholder = "Search…", label = "Search", suggest }) {
     return (
-        <div className="relative w-full">
-            <Label htmlFor={id} className="sr-only">
-                {label}
-            </Label>
-            <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-            />
-            <Input
-                id={id}
-                type="search"
-                autoComplete="off"
-                placeholder={placeholder}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="h-11 rounded-lg border-input bg-card pl-9 pr-10 shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring md:h-9 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {value && (
-                <button
-                    type="button"
-                    onClick={onClear ?? (() => onChange(""))}
-                    aria-label="Clear search"
-                    className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-7 md:w-7"
-                >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                </button>
+        <SearchSuggestions value={value} onChange={onChange} suggest={suggest}>
+            {(inputProps, clear) => (
+                <div className="relative w-full">
+                    <Label htmlFor={id} className="sr-only">
+                        {label}
+                    </Label>
+                    <Search
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                    />
+                    <Input
+                        id={id}
+                        type="search"
+                        placeholder={placeholder}
+                        {...inputProps}
+                        className="h-11 rounded-lg border-input bg-card pl-9 pr-10 shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring md:h-9 [&::-webkit-search-cancel-button]:hidden"
+                    />
+                    {inputProps.value && (
+                        <button
+                            type="button"
+                            onClick={clear}
+                            aria-label="Clear search"
+                            className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-7 md:w-7"
+                        >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                    )}
+                </div>
             )}
-        </div>
+        </SearchSuggestions>
     );
 }
 
@@ -147,12 +154,12 @@ const pillClass = (active) =>
  * A filter as a pill: "Status: All ▾". `options` = [{ value, label }]; `allValue`
  * is the "no filter" option, shown first with `allLabel`.
  */
-export function FilterSelect({ id, label, value, onChange, options, allValue = "all", allLabel = "All" }) {
+export function FilterSelect({ id, label, value, onChange, options, allValue = "all", allLabel = "All", className }) {
     const active = value !== allValue;
     return (
         <Select value={value} onValueChange={onChange}>
             {/* SelectTrigger line-clamps its child span, so the label stays inline text. */}
-            <SelectTrigger id={id} className={cn(pillClass(active), "focus:ring-2")}>
+            <SelectTrigger id={id} className={cn(pillClass(active), "focus:ring-2", className)}>
                 <span className="text-left">
                     <span className={cn("mr-1", !active && "text-muted-foreground")}>{label}:</span>
                     <span className="font-medium">
@@ -169,6 +176,106 @@ export function FilterSelect({ id, label, value, onChange, options, allValue = "
                 ))}
             </SelectContent>
         </Select>
+    );
+}
+
+/**
+ * A filter pill like FilterSelect, for long lists (e.g. ~100 accounts): the menu has a box
+ * that narrows the list as you type. Up / Down move, Enter picks.
+ */
+export function FilterSearchSelect({ id, label, value, onChange, options, allValue = "all", allLabel = "All", className }) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState("");
+    const [active, setActive] = useState(0);
+    const isActive = value !== allValue;
+    const selected = options.find((o) => String(o.value) === String(value));
+    const q = query.trim().toLowerCase();
+    const shown = [{ value: allValue, label: allLabel }, ...options].filter((o) => !q || o.label.toLowerCase().includes(q));
+    const activeIndex = Math.min(active, shown.length - 1);
+    const listId = `${id}-options`;
+
+    const toggle = (next) => {
+        setOpen(next);
+        setQuery("");
+        setActive(0);
+    };
+    const choose = (option) => {
+        onChange(String(option.value));
+        toggle(false);
+    };
+
+    return (
+        <Popover open={open} onOpenChange={toggle}>
+            <PopoverTrigger asChild>
+                <Button
+                    id={id}
+                    type="button"
+                    variant="outline"
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    className={cn(pillClass(isActive), "font-normal", className)}
+                >
+                    <span className="truncate text-left">
+                        <span className={cn("mr-1", !isActive && "text-muted-foreground")}>{label}:</span>
+                        <span className="font-medium">{selected?.label ?? allLabel}</span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" collisionPadding={16} className="w-[min(18rem,calc(100vw-2rem))] p-0">
+                <div className="border-b border-border p-2">
+                    <Input
+                        role="combobox"
+                        aria-label={`Find ${label.toLowerCase()}`}
+                        aria-controls={listId}
+                        aria-expanded="true"
+                        aria-activedescendant={shown.length ? `${listId}-${activeIndex}` : undefined}
+                        autoComplete="off"
+                        placeholder={`Find ${label.toLowerCase()}…`}
+                        value={query}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setActive(0);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                                e.preventDefault();
+                                const step = e.key === "ArrowDown" ? 1 : -1;
+                                setActive((activeIndex + step + shown.length) % Math.max(shown.length, 1));
+                            } else if (e.key === "Enter" && shown[activeIndex]) {
+                                e.preventDefault();
+                                choose(shown[activeIndex]);
+                            }
+                        }}
+                        className="h-11 md:h-9"
+                    />
+                </div>
+                <ul id={listId} role="listbox" aria-label={label} className="max-h-64 overflow-y-auto overscroll-contain p-1">
+                    {shown.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">No matches</li>}
+                    {shown.map((option, i) => {
+                        const isSelected = String(option.value) === String(value);
+                        return (
+                            <li
+                                key={option.value}
+                                id={`${listId}-${i}`}
+                                role="option"
+                                aria-selected={isSelected}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => choose(option)}
+                                onMouseEnter={() => setActive(i)}
+                                className={cn(
+                                    "flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm md:min-h-9",
+                                    i === activeIndex ? "bg-accent text-accent-foreground" : "text-foreground"
+                                )}
+                            >
+                                <span className="min-w-0 truncate">{option.label}</span>
+                                {isSelected && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
+                            </li>
+                        );
+                    })}
+                </ul>
+            </PopoverContent>
+        </Popover>
     );
 }
 
@@ -279,12 +386,11 @@ function DensityToggle() {
 
 /**
  * Search and filters above a list, on a tinted band. `search` = { id, value, onChange,
- * onClear?, placeholder }. `filters` are FilterSelect / FilterDate pills; on phones they
+ * placeholder, suggest? }. `filters` are FilterSelect / FilterDate pills; on phones they
  * move into a popover under the Filters button. `chips` = [{ key, label, onRemove }] for the applied filters.
- * `onClearAll` resets the search and every filter. `filtersRow` puts the pills on their own
- * labelled row under the search (for lists with many filters) instead of beside it.
+ * `onClearAll` resets the search and every filter.
  */
-export function DataToolbar({ search, filters, chips = [], onClearAll, filtersRow = false, className }) {
+export function DataToolbar({ search, filters, chips = [], onClearAll, className }) {
     const isMobile = useIsMobile();
     const [popoverOpen, setPopoverOpen] = useState(false);
     const canClear = onClearAll && (chips.length > 0 || !!search?.value);
@@ -292,7 +398,8 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, filtersRo
     return (
         <div className={cn("space-y-3 border-y border-border bg-muted/40 px-4 py-3 sm:px-5", className)}>
             <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center">
-                <div className={cn("flex items-center gap-2 md:w-72 lg:w-80", filtersRow && "md:w-full md:max-w-md lg:w-full")}>
+                {/* Width is kept for the search box only; without one the filters start at the edge. */}
+                <div className={cn("flex items-center gap-2", search ? "md:w-72 lg:w-80" : "md:hidden")}>
                     {search && (
                         <div role="search" className="w-full">
                             <SearchInput {...search} />
@@ -354,22 +461,12 @@ export function DataToolbar({ search, filters, chips = [], onClearAll, filtersRo
                     )}
                 </div>
 
-                {filters && !isMobile && !filtersRow && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
+                {filters && !isMobile && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
 
                 <div className="md:ml-auto">
                     <DensityToggle />
                 </div>
             </div>
-
-            {filters && !isMobile && filtersRow && (
-                <div role="group" aria-label="Filters" className="flex flex-wrap items-center gap-2">
-                    <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-                        Filter by
-                    </span>
-                    {filters}
-                </div>
-            )}
 
             {(chips.length > 0 || canClear) && (
                 <div className="flex flex-wrap items-center gap-2">

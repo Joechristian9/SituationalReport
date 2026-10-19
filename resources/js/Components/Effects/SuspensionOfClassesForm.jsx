@@ -44,7 +44,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors, disable
         successMessage: "Class suspensions saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(suspensionList, ["province_city_municipality", "level"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(suspensionList, ["province_city_municipality", "level"], 5);
 
     return (
         <div className="space-y-5">
@@ -53,6 +53,7 @@ export default function SuspensionOfClassesForm({ data, setData, errors, disable
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search municipality or level"
                 excel={{ data: suspensionList, fileName: "Suspension_Of_Classes", sheetName: "Suspension of Classes" }}
             />

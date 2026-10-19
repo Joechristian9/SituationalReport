@@ -61,6 +61,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
     const {
         paginatedData: paginatedAssistances,
         searchTerm,
+        suggest,
         setSearchTerm,
         currentPage,
         setCurrentPage,
@@ -249,6 +250,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                     <SearchBar
                         value={searchTerm}
                         onChange={setSearchTerm}
+                        suggest={suggest}
                         placeholder="Search assistance records..."
                     />
                     <div className="flex items-center gap-3">

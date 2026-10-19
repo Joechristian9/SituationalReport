@@ -36,7 +36,7 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
         successMessage: "Pre-positioning saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(rows, ["team_units", "area_of_deployment"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(rows, ["team_units", "area_of_deployment"], 5);
 
     return (
         <div className="space-y-5">
@@ -45,6 +45,7 @@ export default function PrePositioningForm({ data, setData, errors, disabled = f
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search team or area"
                 excel={{ data: rows, fileName: "PrePositioning_Report", sheetName: "Pre-Positioning" }}
             />

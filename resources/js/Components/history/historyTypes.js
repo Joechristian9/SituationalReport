@@ -1,10 +1,13 @@
 import {
+    Activity,
+    AlertTriangle,
     ClipboardList,
     Cloud,
     Droplets,
     FileWarning,
     Flame,
     HeartHandshake,
+    HeartPulse,
     House,
     Landmark,
     Luggage,
@@ -12,6 +15,7 @@ import {
     Radio,
     Route,
     Sprout,
+    Tent,
     UserRound,
     UserSearch,
     Users,
@@ -50,7 +54,7 @@ const shared = (type, config) => ({
 export const HISTORY_TYPES = {
     weather: {
         title: 'Weather history',
-        menuTitle: 'Weather History',
+        menuTitle: 'Weather',
         icon: Cloud,
         api: 'api.weather-history',
         page: 'weather.history',
@@ -65,7 +69,7 @@ export const HISTORY_TYPES = {
     },
     communication: {
         title: 'Communication history',
-        menuTitle: 'Communication History',
+        menuTitle: 'Communications',
         icon: Radio,
         api: 'api.communication-history',
         page: 'communication.history',
@@ -89,7 +93,7 @@ export const HISTORY_TYPES = {
     },
     road: {
         title: 'Road history',
-        menuTitle: 'Road History',
+        menuTitle: 'Roads',
         icon: Route,
         api: 'api.road-history',
         page: 'road.history',
@@ -98,7 +102,7 @@ export const HISTORY_TYPES = {
     },
     bridge: {
         title: 'Bridge history',
-        menuTitle: 'Bridge History',
+        menuTitle: 'Bridges',
         icon: Landmark,
         api: 'api.bridge-history',
         page: 'bridge.history',
@@ -107,7 +111,7 @@ export const HISTORY_TYPES = {
     },
     'pre-emptive': {
         title: 'Pre-emptive evacuation history',
-        menuTitle: 'Pre-Emptive History',
+        menuTitle: 'Pre-Emptive Evacuation',
         icon: ClipboardList,
         api: 'api.pre-emptive-history',
         page: 'pre-emptive.history',
@@ -126,7 +130,7 @@ export const HISTORY_TYPES = {
     },
     incident: {
         title: 'Incident history',
-        menuTitle: 'Incident History',
+        menuTitle: 'Incident Monitored',
         icon: Flame,
         api: 'api.incident-history',
         page: 'incident.history',
@@ -141,7 +145,7 @@ export const HISTORY_TYPES = {
     },
     agriculture: {
         title: 'Agriculture history',
-        menuTitle: 'Agriculture History',
+        menuTitle: 'Agriculture',
         icon: Sprout,
         api: 'api.agriculture-history',
         page: 'agriculture.history',
@@ -157,7 +161,7 @@ export const HISTORY_TYPES = {
     },
     electricity: {
         title: 'Electricity history',
-        menuTitle: 'Electricity History',
+        menuTitle: 'Electricity',
         icon: Zap,
         api: 'api.electricity-history',
         page: 'electricity.history',
@@ -171,7 +175,7 @@ export const HISTORY_TYPES = {
     },
     'water-service': {
         title: 'Water services history',
-        menuTitle: 'Water Service History',
+        menuTitle: 'Water Services',
         icon: Droplets,
         api: 'api.water-service-history',
         page: 'water-service.history',
@@ -186,7 +190,7 @@ export const HISTORY_TYPES = {
     },
     casualties: shared('casualties', {
         title: 'Casualties (dead) history',
-        menuTitle: 'Casualties - Dead History',
+        menuTitle: 'Dead',
         icon: UserX,
         permission: 'access-casualty-form',
         columns: [
@@ -201,7 +205,7 @@ export const HISTORY_TYPES = {
     }),
     injured: shared('injured', {
         title: 'Casualties (injured) history',
-        menuTitle: 'Casualties - Injured History',
+        menuTitle: 'Injured',
         icon: UserRound,
         permission: 'access-injured-form',
         columns: [
@@ -217,7 +221,7 @@ export const HISTORY_TYPES = {
     }),
     missing: shared('missing', {
         title: 'Casualties (missing) history',
-        menuTitle: 'Casualties - Missing History',
+        menuTitle: 'Missing',
         icon: UserSearch,
         permission: 'access-missing-form',
         columns: [
@@ -231,7 +235,7 @@ export const HISTORY_TYPES = {
     }),
     tourists: shared('tourists', {
         title: 'Affected tourists history',
-        menuTitle: 'Affected Tourists History',
+        menuTitle: 'Affected Tourists',
         icon: Luggage,
         permission: 'access-tourist-form',
         columns: [
@@ -244,7 +248,7 @@ export const HISTORY_TYPES = {
     }),
     'damaged-houses': shared('damaged-houses', {
         title: 'Damaged houses history',
-        menuTitle: 'Damaged Houses History',
+        menuTitle: 'Damaged Houses',
         icon: House,
         permission: 'access-damaged-houses-form',
         columns: [
@@ -256,7 +260,7 @@ export const HISTORY_TYPES = {
     }),
     'pre-positioning': shared('pre-positioning', {
         title: 'Deployment of response assets history',
-        menuTitle: 'Response Assets History',
+        menuTitle: 'Response Assets',
         icon: MapPin,
         permission: 'access-pre-positioning-form',
         columns: [
@@ -270,7 +274,7 @@ export const HISTORY_TYPES = {
     }),
     'response-operations': shared('response-operations', {
         title: 'Response operations history',
-        menuTitle: 'Response Operations History',
+        menuTitle: 'Response Operations',
         icon: Users,
         permission: 'access-response-operations',
         columns: [
@@ -284,7 +288,7 @@ export const HISTORY_TYPES = {
     }),
     'assistance-extended': shared('assistance-extended', {
         title: 'Assistance extended history',
-        menuTitle: 'Assistance History',
+        menuTitle: 'Assistance',
         icon: HeartHandshake,
         permission: 'access-assistance-extended',
         columns: [
@@ -296,7 +300,7 @@ export const HISTORY_TYPES = {
     }),
     declaration: shared('declaration', {
         title: 'Declaration of state of calamity history',
-        menuTitle: 'Declaration History',
+        menuTitle: 'Declaration',
         icon: FileWarning,
         permission: 'access-declaration-form',
         columns: [
@@ -307,7 +311,7 @@ export const HISTORY_TYPES = {
     }),
     'water-level': shared('water-level', {
         title: 'Water level history',
-        menuTitle: 'Water Level History',
+        menuTitle: 'Water Level',
         icon: Waves,
         permission: 'access-water-level-form',
         columns: [
@@ -345,16 +349,29 @@ export const cellText = (column, report) => {
     return value === null || value === undefined || value === '' ? '' : String(value);
 };
 
-/** Sidebar entries for the given history types, in that order. */
+// Sidebar submenus, in the same sections as the Reports page. Every type must be in one.
+const HISTORY_GROUPS = [
+    { title: 'Situation Overview', icon: Activity, keys: ['weather', 'electricity', 'water-service', 'water-level', 'communication', 'road', 'bridge'] },
+    { title: 'Evacuation & Response', icon: Tent, keys: ['pre-emptive', 'pre-positioning', 'response-operations', 'assistance-extended'] },
+    { title: 'Effects', icon: AlertTriangle, keys: ['incident', 'agriculture', 'damaged-houses', 'tourists', 'declaration'] },
+    { title: 'Casualties', icon: HeartPulse, keys: ['casualties', 'injured', 'missing'] },
+];
+
+/** Sidebar submenus holding the given history types; sections with none of them drop out. */
 export const historyMenuItems = (keys) =>
-    keys.map((key) => {
-        const type = HISTORY_TYPES[key];
-        return {
-            // Sidebar items are Title Case like the rest of the menu.
-            title: type.menuTitle,
-            url: route(type.page, type.pageParams),
-            roles: ['user', 'admin'],
-            icon: type.icon,
-            permission: type.permission,
-        };
-    });
+    HISTORY_GROUPS.map((group) => ({
+        title: group.title,
+        icon: group.icon,
+        roles: ['user', 'admin'],
+        items: group.keys
+            .filter((key) => keys.includes(key))
+            .map((key) => {
+                const type = HISTORY_TYPES[key];
+                return {
+                    // Sidebar items are Title Case like the rest of the menu.
+                    title: type.menuTitle,
+                    url: route(type.page, type.pageParams),
+                    icon: type.icon,
+                };
+            }),
+    })).filter((group) => group.items.length > 0);

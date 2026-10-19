@@ -36,7 +36,7 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
         successMessage: "Bridge report saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(bridges, ["name_of_bridge", "areas_affected"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(bridges, ["name_of_bridge", "areas_affected"], 5);
 
     return (
         <div className="space-y-5">
@@ -45,6 +45,7 @@ export default function BridgeForm({ data, setData, errors, disabled = false }) 
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search bridge or area"
                 excel={{ data: bridges, fileName: "Bridges_Report", sheetName: "Bridges" }}
             />

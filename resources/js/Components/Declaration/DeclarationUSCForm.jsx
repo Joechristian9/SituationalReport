@@ -34,7 +34,7 @@ export default function DeclarationUSCForm({ data, setData, errors, disabled = f
         successMessage: "Declarations saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, setSearchTerm, pagination, showNewRow } = useTableFilter(declarations, ["declared_by", "resolution_number"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(declarations, ["declared_by", "resolution_number"], 5);
 
     return (
         <div className="space-y-5">
@@ -43,6 +43,7 @@ export default function DeclarationUSCForm({ data, setData, errors, disabled = f
             <FormToolbar
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
+                suggest={suggest}
                 searchPlaceholder="Search declared by or resolution number"
                 excel={{ data: declarations, fileName: "USC_Declarations", sheetName: "Declarations" }}
             />

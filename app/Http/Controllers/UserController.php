@@ -138,8 +138,11 @@ class UserController extends Controller
     /**
      * Remove the specified user
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
+        // Deleting can't be undone: the admin re-enters their password, so an unattended session can't do it.
+        $request->validate(['password' => ['required', 'current_password']]);
+
         // Prevent deleting yourself
         if ($user->id === auth()->id()) {
             return redirect()->route('admin.users.index')->with('error', 'You cannot delete your own account.');

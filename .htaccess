@@ -1,4 +1,23 @@
+# Hidden files (.env, .git, .htaccess) are never served, even if the host's URL rewriting
+# is off and this folder would otherwise be shown as plain files.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Live site only (local XAMPP stays on plain http): one address, always https.
+    # www.pitonmain.com goes to pitonmain.com.
+    RewriteCond %{HTTP_HOST} ^www\.pitonmain\.com$ [NC]
+    RewriteRule ^ https://pitonmain.com%{REQUEST_URI} [L,R=301]
+
+    # http goes to https. The host's CDN may reach this server over http and say the
+    # visitor used https in X-Forwarded-Proto, so that counts as https too.
+    RewriteCond %{HTTP_HOST} ^pitonmain\.com$ [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://pitonmain.com%{REQUEST_URI} [L,R=301]
+
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

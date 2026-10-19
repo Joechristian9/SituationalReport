@@ -6,8 +6,11 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import InputError from '@/Components/InputError';
+import { buildSuggestions } from '@/lib/searchSuggestions';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Clock, Download, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
@@ -342,6 +345,8 @@ export default function DisasterManagement({ typhoons }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTyphoon, setSelectedTyphoon] = useState(null);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [deleteError, setDeleteError] = useState('');
     // Disaster-type tiles: one page is 3x2 on desktop and 4 tiles elsewhere; "Show all" pages through the rest.
     const typePageSize = useMediaQuery('(min-width: 1024px)') ? 6 : 4;
     const [showAllTypes, setShowAllTypes] = useState(false);
@@ -404,6 +409,15 @@ export default function DisasterManagement({ typhoons }) {
 
         return filtered;
     }, [searchQuery, selectedYear, statusFilter, typhoons]);
+
+    const suggestSearch = useCallback(
+        (text) => buildSuggestions(typhoons, [
+            { get: (t) => t.name, label: 'disaster' },
+            { get: (t) => t.creator?.name, label: 'created by' },
+            { get: (t) => t.ender?.name, label: 'ended by' },
+        ], text),
+        [typhoons]
+    );
 
     const clearFilters = () => {
         setSearchQuery('');
@@ -478,27 +492,38 @@ export default function DisasterManagement({ typhoons }) {
 
     const openDeleteModal = useCallback((typhoon) => {
         setSelectedTyphoon(typhoon);
+        setDeletePassword('');
+        setDeleteError('');
         setIsDeleteModalOpen(true);
     }, []);
 
-    const handleDeleteTyphoon = useCallback(async () => {
+    const handleDeleteTyphoon = useCallback(async (e) => {
+        e.preventDefault();
         if (!selectedTyphoon) return;
-        
+
         setIsSubmitting(true);
         const loadingToast = toast.loading('Deleting disaster report...');
 
         try {
-            const response = await axios.delete(route('disasters.destroy', selectedTyphoon.id));
+            const response = await axios.delete(route('disasters.destroy', selectedTyphoon.id), {
+                data: { password: deletePassword },
+            });
             toast.success(response.data.message, { id: loadingToast });
             setIsDeleteModalOpen(false);
             setSelectedTyphoon(null);
             router.reload({ only: ['typhoons', 'typhoon'] });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete disaster report', { id: loadingToast });
+            const passwordError = error.response?.data?.errors?.password?.[0];
+            if (passwordError) {
+                toast.dismiss(loadingToast);
+                setDeleteError(passwordError);
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to delete disaster report', { id: loadingToast });
+            }
         } finally {
             setIsSubmitting(false);
         }
-    }, [selectedTyphoon]);
+    }, [selectedTyphoon, deletePassword]);
 
     // The final PDF is normally built right after a disaster ends; this builds it on demand
     // when that didn't happen. Returns whether the PDF now exists.
@@ -753,6 +778,7 @@ export default function DisasterManagement({ typhoons }) {
                                         value: searchQuery,
                                         onChange: setSearchQuery,
                                         placeholder: 'Search name, description or person',
+                                        suggest: suggestSearch,
                                     }}
                                     filters={
                                         <>
@@ -1034,7 +1060,7 @@ export default function DisasterManagement({ typhoons }) {
 
             {/* Delete Typhoon Modal */}
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent centered className="sm:max-w-[500px]">
                     <DialogHeader>
                         <div className="flex items-center gap-3 pr-8">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
@@ -1060,81 +1086,105 @@ export default function DisasterManagement({ typhoons }) {
                         </div>
                     </div>
 
-                    <DialogFooter className="flex-col sm:flex-row gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setIsDeleteModalOpen(false);
-                                setSelectedTyphoon(null);
-                            }}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDeleteTyphoon}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Deleting...
-                                </>
-                            ) : (
-                                <>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Permanently
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
+                    <form onSubmit={handleDeleteTyphoon} className="grid gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="delete-disaster-password">Enter your password to confirm</Label>
+                            <Input
+                                id="delete-disaster-password"
+                                type="password"
+                                autoComplete="current-password"
+                                value={deletePassword}
+                                onChange={(e) => {
+                                    setDeletePassword(e.target.value);
+                                    setDeleteError('');
+                                }}
+                                aria-invalid={Boolean(deleteError)}
+                                aria-describedby={deleteError ? 'delete-disaster-password-error' : undefined}
+                                className="h-11 md:h-9"
+                            />
+                            <InputError id="delete-disaster-password-error" message={deleteError} />
+                        </div>
+    
+                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setIsDeleteModalOpen(false);
+                                    setSelectedTyphoon(null);
+                                }}
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                disabled={isSubmitting || !deletePassword}
+                                className="w-full sm:w-auto"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Permanently
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
-            {/* View Typhoon Details Modal */}
-            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                <DialogContent className="max-h-[90dvh] gap-3 overflow-y-auto p-4 sm:max-w-[560px] sm:gap-4 sm:p-6">
-                    <DialogHeader className="pr-8 text-left">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <Cloud className="h-[18px] w-[18px]" aria-hidden="true" />
+            {/* Disaster details: a side panel, like the account panel on Form Submission Status. */}
+            {/* The disaster stays selected after closing so the panel keeps its content while it slides out. */}
+            <Sheet open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+                <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden border-l border-border bg-background p-0 sm:max-w-xl sm:rounded-l-2xl">
+                    <SheetHeader className="shrink-0 border-b border-border bg-card px-4 pb-4 pt-5 sm:px-6 sm:pt-6">
+                        {/* Right padding keeps the name clear of the close button. */}
+                        <div className="flex items-center gap-3 pr-9 sm:pr-6">
+                            <span
+                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                aria-hidden="true"
+                            >
+                                <Cloud className="h-5 w-5" />
                             </span>
-                            <DialogTitle className="text-base font-semibold sm:text-lg">Disaster details</DialogTitle>
+                            <div className="min-w-0">
+                                <SheetTitle className="break-words text-lg font-semibold leading-snug text-foreground">
+                                    {selectedTyphoon?.name ?? 'Disaster details'}
+                                </SheetTitle>
+                                <SheetDescription asChild>
+                                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                                        {selectedTyphoon && <StatusChip status={selectedTyphoon.status} />}
+                                        {selectedTyphoon && (
+                                            <span className="inline-flex items-center gap-1">
+                                                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                                                {selectedTyphoon.ended_at ? 'Lasted' : 'Running for'}{' '}
+                                                <span className="font-medium text-foreground">
+                                                    {durationLabel(selectedTyphoon.started_at, selectedTyphoon.ended_at)}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </SheetDescription>
+                            </div>
                         </div>
-                        <DialogDescription className="sr-only sm:not-sr-only sm:pt-1">
-                            Complete information about this disaster report
-                        </DialogDescription>
-                    </DialogHeader>
+                    </SheetHeader>
 
                     {selectedTyphoon && (
-                        <div className="space-y-3">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                    <h3 className="min-w-0 break-words text-base font-semibold text-foreground sm:text-lg">{selectedTyphoon.name}</h3>
-                                    <StatusChip status={selectedTyphoon.status} />
-                                </div>
-                                {/* Duration */}
-                                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <Clock className="h-4 w-4" aria-hidden="true" />
-                                        {selectedTyphoon.ended_at ? 'Lasted' : 'Running for'}{' '}
-                                        <span className="font-medium text-foreground">
-                                            {durationLabel(selectedTyphoon.started_at, selectedTyphoon.ended_at)}
-                                        </span>
-                                    </span>
-                                </p>
-                            </div>
-
+                        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
                             <DisasterTotals
                                 state={summaries[selectedTyphoon.id]}
                                 onRetry={() => loadSummary(selectedTyphoon.id)}
                             />
 
                             {/* Two columns even on a phone; short dates keep each value to one or two lines. */}
-                            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
+                            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
                                 <div className="min-w-0">
                                     <dt className="text-xs font-medium text-muted-foreground">Type</dt>
                                     <dd className="mt-0.5 break-words text-sm font-medium text-foreground">{selectedTyphoon.disaster_type || 'Not specified'}</dd>
@@ -1178,35 +1228,32 @@ export default function DisasterManagement({ typhoons }) {
                         </div>
                     )}
 
-                    {/* Phones: one row; Download only for ended disasters. */}
-                    <DialogFooter
-                        className={`grid gap-2 pt-1 sm:flex sm:flex-row ${selectedTyphoon?.status === 'ended' ? 'grid-cols-2' : 'grid-cols-1'}`}
-                    >
+                    {/* Pinned to the bottom of the panel; Download only for ended disasters. */}
+                    <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                         <Button
+                            type="button"
                             variant="outline"
-                            onClick={() => {
-                                setIsViewModalOpen(false);
-                                setSelectedTyphoon(null);
-                            }}
-                            className="min-h-11 w-full sm:min-h-9 sm:w-auto"
+                            onClick={() => setIsViewModalOpen(false)}
+                            className="h-11 flex-1 px-4 sm:flex-none"
                         >
                             Close
                         </Button>
                         {selectedTyphoon?.status === 'ended' && (
                             <Button
+                                type="button"
                                 onClick={() => {
                                     handleDownloadPdf(selectedTyphoon);
                                     setIsViewModalOpen(false);
                                 }}
-                                className="min-h-11 w-full px-3 sm:min-h-9 sm:w-auto sm:px-4"
+                                className="h-11 flex-1 px-4 sm:flex-none"
                             >
                                 <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
                                 Download PDF
                             </Button>
                         )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </AppLayout>
     );
 }

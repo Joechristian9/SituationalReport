@@ -35,6 +35,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
@@ -74,6 +75,12 @@ class AppServiceProvider extends ServiceProvider
 
         if ($proxies = config('app.trusted_proxies')) {
             TrustProxies::at(array_map('trim', explode(',', $proxies)));
+        }
+
+        // The live site is https only. Behind the host's CDN the request can arrive as http,
+        // so links, redirects and asset URLs would otherwise point at http.
+        if ($this->app->isProduction()) {
+            URL::forceScheme('https');
         }
     }
 

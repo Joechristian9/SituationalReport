@@ -36,6 +36,10 @@ class SecurityHeaders
             }
         }
 
+        // PHP adds "X-Powered-By: PHP/8.x" itself; the version tells attackers which flaws to try.
+        header_remove('X-Powered-By');
+        $response->headers->remove('X-Powered-By');
+
         return $response;
     }
 }

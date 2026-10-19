@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import useLiveRefresh from '@/hooks/useLiveRefresh';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import LiveIndicator from '@/Components/LiveIndicator';
 import { cn } from '@/lib/utils';
+import { buildSuggestions } from '@/lib/searchSuggestions';
 
 // Matches FormReminder::COOLDOWN_MINUTES: the server skips an account reminded this recently.
 const REMIND_COOLDOWN_MS = 60 * 60 * 1000;
@@ -379,6 +380,11 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         );
     }, [sortedUsers, searchQuery, statusFilter]);
 
+    const suggestSearch = useCallback(
+        (text) => buildSuggestions(sortedUsers, [{ get: (u) => u.name, label: 'account' }, 'email'], text),
+        [sortedUsers]
+    );
+
     // Column sorts; until one is picked the list keeps its "recent submitters first" order.
     const { sorted: tableUsers, sort, toggle: toggleSort } = useTableSort(filteredUsers, SUBMISSION_SORT);
 
@@ -494,6 +500,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                             value: searchQuery,
                                             onChange: setSearchQuery,
                                             placeholder: 'Search name, email or assigned form',
+                                            suggest: suggestSearch,
                                         }}
                                         filters={
                                             <FilterSelect

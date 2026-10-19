@@ -1,5 +1,6 @@
 // resources/js/hooks/useTableFilter.js
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { buildSuggestions } from '@/lib/searchSuggestions';
 
 /**
  * Custom hook for enhanced table filtering and pagination
@@ -37,6 +38,9 @@ export default function useTableFilter(data = [], searchFields = [], initialRows
         });
     }, [data, searchTerm, searchKey]);
 
+    // Values from the searched fields that match what is being typed, for the search box's list.
+    const suggest = useCallback((text) => buildSuggestions(data, searchFields, text), [data, searchKey]);
+
     // Calculate pagination
     const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
@@ -53,6 +57,7 @@ export default function useTableFilter(data = [], searchFields = [], initialRows
         
         // Search state
         searchTerm,
+        suggest,
         setSearchTerm: (value) => {
             setSearchTerm(value);
             setCurrentPage(1); // Reset to first page when searching

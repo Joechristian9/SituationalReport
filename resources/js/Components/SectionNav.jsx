@@ -48,60 +48,55 @@ function Item({ tab, active, onSelect, count, liveState }) {
         <button
             type="button"
             onClick={onSelect}
-            aria-label={count > 0 ? `${tab.label}, ${count} new` : tab.label}
+            aria-label={[
+                tab.label,
+                count > 0 && `${count} new`,
+                liveState && (liveState === "live" ? "live updates on" : "live updates paused"),
+            ].filter(Boolean).join(", ")}
             aria-pressed={active}
             className={cn(
-                "relative z-10 flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-xs transition-colors duration-200",
+                // Phones: sits above the sliding pill (z-10); the chosen tab's text turns white on it.
+                "relative z-10 flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-1.5 text-xs transition-[color,transform] duration-200",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
-                "active:bg-accent/60 sm:active:bg-transparent",
-                "sm:min-h-10 sm:flex-none sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:focus-visible:ring-offset-2",
+                "sm:min-h-10 sm:flex-none sm:flex-row sm:gap-2 sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:focus-visible:ring-offset-2",
                 active
-                    ? "font-semibold text-accent-foreground sm:bg-primary sm:text-primary-foreground sm:shadow-sm"
-                    : "font-medium text-muted-foreground hover:text-foreground sm:hover:bg-accent sm:hover:text-accent-foreground"
+                    ? "font-semibold text-primary-foreground sm:bg-primary sm:shadow-sm"
+                    : "font-medium text-muted-foreground hover:text-foreground active:scale-95 sm:hover:bg-accent sm:hover:text-accent-foreground sm:active:scale-100"
             )}
         >
             <span className="relative flex h-6 items-center justify-center">
-                <Icon
-                    size={22}
-                    strokeWidth={active ? 2.4 : 1.9}
-                    aria-hidden="true"
-                    className={cn("transition-colors duration-200 motion-reduce:transition-none sm:size-[18px]", active && "text-primary sm:text-current")}
-                />
-                {count > 0 ? (
+                <Icon size={20} strokeWidth={active ? 2.4 : 1.9} aria-hidden="true" className="sm:size-[18px]" />
+                {count > 0 && (
                     <span
-                        className="absolute -right-3 -top-1.5 min-w-[18px] rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-[18px] tabular-nums text-destructive-foreground ring-2 ring-card sm:static sm:ml-2 sm:ring-0"
+                        className="absolute -right-3.5 -top-1.5 min-w-[18px] rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-[18px] tabular-nums text-destructive-foreground ring-2 ring-card sm:static sm:ml-2 sm:ring-0"
                         aria-hidden="true"
                     >
                         {count > 99 ? "99+" : count}
                     </span>
-                ) : (
-                    liveState && (
-                        <span className="absolute -right-1.5 -top-0.5 flex h-2.5 w-2.5 sm:static sm:ml-1.5" aria-hidden="true">
-                            {liveState === "live" && (
-                                <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 motion-safe:animate-ping" />
-                            )}
-                            <span
-                                className={cn(
-                                    "relative inline-flex h-2.5 w-2.5 rounded-full ring-2 ring-card sm:ring-0",
-                                    liveState === "live" ? "bg-success" : "bg-muted-foreground/60"
-                                )}
-                            />
-                        </span>
-                    )
                 )}
             </span>
-            <span className="sm:hidden">{tab.shortLabel ?? tab.label}</span>
-            <span className="hidden sm:inline">{tab.label}</span>
-            {liveState && count === 0 && (
-                <span className="sr-only">{liveState === "live" ? "Live updates on" : "Live updates paused"}</span>
-            )}
+            {/* The live dot sits with the label, so it isn't mistaken for a notification badge. */}
+            <span className="inline-flex items-center gap-1.5">
+                {liveState && (
+                    <span
+                        aria-hidden="true"
+                        className={cn(
+                            "h-2 w-2 shrink-0 rounded-full",
+                            // Paused grey would vanish on the blue pill, so it goes light there.
+                            liveState === "live" ? "bg-success" : active ? "bg-primary-foreground/70" : "bg-muted-foreground/60"
+                        )}
+                    />
+                )}
+                <span className="sm:hidden">{tab.shortLabel ?? tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+            </span>
         </button>
     );
 }
 
 /**
- * Dashboard sections. Phones: a floating dock at the bottom with a highlight that slides
- * to the chosen item and tucks away while scrolling down. sm and up: a plain pill row.
+ * Dashboard sections. Phones: a frosted capsule floating above the bottom edge, with a solid
+ * pill that slides to the chosen tab; it tucks away while scrolling down. sm and up: a plain pill row.
  * `tabs` = [{ key, label, shortLabel?, icon }]; `counts` / `liveStates` are keyed by tab key.
  */
 export default function SectionNav({ tabs, active, onChange, counts = {}, liveStates = {} }) {
@@ -116,7 +111,8 @@ export default function SectionNav({ tabs, active, onChange, counts = {}, liveSt
             onFocus={(e) => setFocused(e.target.matches(":focus-visible"))}
             onBlur={() => setFocused(false)}
             className={cn(
-                "pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+                // Only the capsule takes taps; the clear strip around it lets them through to the page.
+                "pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
                 "transition-transform duration-300 ease-out motion-reduce:transition-none",
                 hidden && "max-sm:translate-y-[calc(100%+1rem)]",
                 "sm:pointer-events-auto sm:static sm:z-auto sm:p-0"
@@ -124,16 +120,17 @@ export default function SectionNav({ tabs, active, onChange, counts = {}, liveSt
         >
             <div
                 className={cn(
-                    "pointer-events-auto relative mx-auto flex max-w-sm gap-0 rounded-2xl border border-border/70 bg-card/95 p-1 backdrop-blur",
-                    "shadow-[0_10px_30px_-10px_rgba(30,58,138,0.35),0_2px_6px_-2px_rgba(15,23,42,0.12)] supports-[backdrop-filter]:bg-card/85",
-                    "sm:inline-flex sm:max-w-none sm:gap-1 sm:rounded-full sm:border-border sm:bg-card sm:shadow-sm"
+                    "pointer-events-auto relative mx-auto flex max-w-md rounded-full border border-border/60 p-1.5",
+                    // Frosted glass where the browser can blur; nearly solid where it can't, so labels stay readable.
+                    "bg-card/95 shadow-[0_12px_32px_-12px_rgba(30,58,138,0.45),0_2px_8px_-2px_rgba(15,23,42,0.12)] backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-card/75",
+                    "sm:inline-flex sm:max-w-none sm:gap-1 sm:border-border sm:bg-card sm:p-1 sm:shadow-sm sm:backdrop-blur-none"
                 )}
             >
-                {/* The sliding highlight: items are equal width, so it moves by whole multiples of its own width. */}
+                {/* The sliding pill: tabs are equal width, so it moves by whole multiples of its own width. */}
                 <span
                     aria-hidden="true"
-                    className="absolute inset-y-1 left-1 rounded-xl bg-primary/10 ring-1 ring-inset ring-primary/20 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none sm:hidden"
-                    style={{ width: `calc((100% - 0.5rem) / ${tabs.length})`, transform: `translateX(${index * 100}%)` }}
+                    className="absolute inset-y-1.5 left-1.5 rounded-full bg-primary shadow-md transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none sm:hidden"
+                    style={{ width: `calc((100% - 0.75rem) / ${tabs.length})`, transform: `translateX(${index * 100}%)` }}
                 />
                 {tabs.map((tab) => (
                     <Item
