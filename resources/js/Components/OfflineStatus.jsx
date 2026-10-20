@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, Loader2, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, Loader2, RefreshCw, Trash2, UploadCloud, Wifi } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { allItems, putItem, removeItem, subscribe } from '@/lib/offline/store';
 import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
 import { cn } from '@/lib/utils';
 import useOnline from '@/hooks/useOnline';
+import { fit } from '@/lib/fitOnScreen';
 
 const STATUS = {
     pending: { label: 'Waiting to send', tone: 'border-warning/30 bg-warning/10 text-warning' },
@@ -25,6 +26,90 @@ const TONE = {
 };
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+const POS_KEY = 'offline-status-pos';
+
+function readPos() {
+    try {
+        return JSON.parse(localStorage.getItem(POS_KEY)) || null;
+    } catch {
+        return null;
+    }
+}
+
+function savePos(box) {
+    const rect = box.getBoundingClientRect();
+    try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ left: rect.left, bottom: window.innerHeight - rect.bottom }));
+    } catch {
+        // Storage blocked: it stays where it was dropped until the page reloads.
+    }
+}
+
+/**
+ * Lets the user drag the status out of the way, remembered on this device. Moving less than a
+ * few pixels still counts as a tap, so the pill's own button keeps working. Keyboard: Alt + arrows.
+ */
+function useDraggable(box) {
+    const [pos, setPos] = useState(readPos);
+    const drag = useRef(null);
+    const dragged = useRef(false);
+
+    // Back on screen after rotating the phone or resizing the window.
+    useEffect(() => {
+        if (!box) return undefined;
+        const refit = () => setPos((current) => fit(current, box));
+        refit();
+        window.addEventListener('resize', refit);
+        return () => window.removeEventListener('resize', refit);
+    }, [box]);
+
+    const handlers = {
+        onPointerDown: (e) => {
+            if (e.button !== 0 || !box) return;
+            const rect = box.getBoundingClientRect();
+            drag.current = { x: e.clientX, y: e.clientY, dx: e.clientX - rect.left, dy: e.clientY - rect.bottom, moved: false };
+            dragged.current = false;
+        },
+        onPointerMove: (e) => {
+            const d = drag.current;
+            if (!d) return;
+            if (!d.moved) {
+                if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6) return;
+                d.moved = true;
+                e.currentTarget.setPointerCapture(e.pointerId);
+            }
+            setPos(fit({ left: e.clientX - d.dx, bottom: window.innerHeight - (e.clientY - d.dy) }, box));
+        },
+        onPointerUp: () => {
+            if (drag.current?.moved) {
+                dragged.current = true;
+                savePos(box);
+            }
+            drag.current = null;
+        },
+        onPointerCancel: () => {
+            drag.current = null;
+        },
+        // The click that ends a drag must not also open the queue.
+        onClickCapture: (e) => {
+            if (!dragged.current) return;
+            dragged.current = false;
+            e.preventDefault();
+            e.stopPropagation();
+        },
+        onKeyDown: (e) => {
+            const step = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, 24], ArrowDown: [0, -24] }[e.key];
+            if (!e.altKey || !step || !box) return;
+            e.preventDefault();
+            const rect = box.getBoundingClientRect();
+            setPos(fit({ left: rect.left + step[0], bottom: window.innerHeight - rect.bottom + step[1] }, box));
+            requestAnimationFrame(() => savePos(box));
+        },
+    };
+
+    return [pos, handlers];
+}
 
 
 // The status is fixed to the bottom of the screen; publish its height so app.css can pad
@@ -118,13 +203,31 @@ export default function OfflineStatus() {
     const [items, setItems] = useState([]);
     const [sync, setSync] = useState(syncState);
     const [notice, setNotice] = useState(null);
-    const [ready, setReady] = useState(false); // pages are saved on this device: it will open offline
+    const [onlineNote, setOnlineNote] = useState(null); // brief "Online …" message
     const [announcement, setAnnouncement] = useState('');
     const [askRefresh, setAskRefresh] = useState(false);
     const [open, setOpen] = useState(false);
     const [userId, setUserId] = useState(() => currentUser()?.id ?? null);
     const [card, setCard] = useState(null);
-    useReservedBottomSpace(card);
+    const [box, setBox] = useState(null);
+    const [pos, dragHandlers] = useDraggable(box);
+    // Once moved, it no longer sits at the bottom, so the page needn't make room for it there.
+    useReservedBottomSpace(pos ? null : card);
+
+    const noteTimer = useRef();
+    const flashOnline = useCallback((text) => {
+        setOnlineNote(text);
+        setAnnouncement(text);
+        clearTimeout(noteTimer.current);
+        noteTimer.current = setTimeout(() => setOnlineNote(null), 5000);
+    }, []);
+
+    // The connection came back: say so briefly (sending any saved reports takes over the pill).
+    const wasOnline = useRef(online);
+    useEffect(() => {
+        if (online && !wasOnline.current) flashOnline('Back online');
+        wasOnline.current = online;
+    }, [online, flashOnline]);
 
     useEffect(() => {
         const load = () => allItems().then((all) => setItems(all.filter((item) => item.userId === (currentUser()?.id ?? null)))).catch(() => setItems([]));
@@ -157,14 +260,11 @@ export default function OfflineStatus() {
             }, 4000);
         };
         const onReload = () => setAskRefresh(true);
-        let readyTimer;
         const onReady = (event) => {
             // Nothing saved (e.g. the account can't open any of the pages): say nothing rather than promise it.
             if (!event.detail?.pages) return;
-            setReady(true);
-            setAnnouncement('Ready to work offline.');
-            clearTimeout(readyTimer);
-            readyTimer = setTimeout(() => setReady(false), 5000);
+            // Pages are now saved for offline use too; the offline pill says so when it matters.
+            flashOnline('Online');
         };
         window.addEventListener('offline:queued', onQueued);
         window.addEventListener('offline:sent', onSent);
@@ -176,7 +276,7 @@ export default function OfflineStatus() {
             stopSync();
             stopNavigate();
             clearTimeout(timer);
-            clearTimeout(readyTimer);
+            clearTimeout(noteTimer.current);
             window.removeEventListener('offline:queued', onQueued);
             window.removeEventListener('offline:sent', onSent);
             window.removeEventListener('offline:reload-required', onReload);
@@ -205,8 +305,8 @@ export default function OfflineStatus() {
         pill = { tone: 'success', icon: CheckCircle2, text: notice };
     } else if (waiting) {
         pill = { tone: 'neutral', icon: UploadCloud, text: `${waiting} waiting to send` };
-    } else if (ready) {
-        pill = { tone: 'success', icon: CheckCircle2, text: 'Ready to work offline' };
+    } else if (onlineNote) {
+        pill = { tone: 'success', icon: Wifi, text: onlineNote };
     }
 
     const liveRegion = (
@@ -221,8 +321,13 @@ export default function OfflineStatus() {
     const expandable = items.length > 0 && !pill.action;
 
     return (
-        // Above the dashboard's bottom tab bar when there is one (SectionNav sets --section-nav-h).
-        <div className="fixed bottom-[var(--section-nav-h,max(1rem,env(safe-area-inset-bottom)))] left-4 z-[90] flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 sm:max-w-sm">
+        // Above the dashboard's bottom tab bar when there is one (SectionNav sets --section-nav-h),
+        // or wherever the user dragged it.
+        <div
+            ref={setBox}
+            style={pos ?? undefined}
+            className="fixed bottom-[var(--section-nav-h,max(1rem,env(safe-area-inset-bottom)))] left-4 z-[90] flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 sm:max-w-sm"
+        >
             {liveRegion}
 
             {open && expandable && (
@@ -243,7 +348,9 @@ export default function OfflineStatus() {
                 </div>
             )}
 
-            <div ref={setCard}>
+            {/* Drag handle: the pill itself. touch-none so a finger drag moves it instead of scrolling the page. */}
+            <div ref={setCard} {...dragHandlers} className="cursor-grab touch-none active:cursor-grabbing" title="Drag to move">
+
                 {pill.action ? (
                     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-card px-3 py-2 text-sm font-medium shadow-md', TONE[pill.tone])}>
                         <span className="flex min-w-0 items-start gap-2">
