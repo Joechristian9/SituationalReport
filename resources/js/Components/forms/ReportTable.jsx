@@ -163,10 +163,12 @@ export function Field({ id, column, value, disabled, onChange }) {
         const stored = String(value ?? '');
         const selected = column.options.find((option) => option.toLowerCase() === stored.toLowerCase()) ?? stored;
         return (
-            <select {...common} value={selected} className={FIELD}>
+            // Nothing picked: the "Select…" text takes the placeholder color, like an empty input.
+            // Options keep the normal color, since some browsers draw the open list in the select's color.
+            <select {...common} value={selected} className={cn(FIELD, !selected && 'text-[hsl(var(--placeholder))]')}>
                 <option value="">{column.placeholder ?? 'Select…'}</option>
                 {column.options.map((option) => (
-                    <option key={option} value={option}>
+                    <option key={option} value={option} className="text-foreground">
                         {option}
                     </option>
                 ))}

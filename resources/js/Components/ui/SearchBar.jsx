@@ -23,7 +23,7 @@ export default function SearchBar({
                         aria-label={placeholder}
                         placeholder={placeholder}
                         {...inputProps}
-                        className="min-h-11 w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-base text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-9 md:text-sm"
+                        className="min-h-11 w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-9 md:text-sm"
                     />
                 </div>
             )}

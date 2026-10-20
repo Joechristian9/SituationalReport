@@ -8,7 +8,7 @@ import ReportTable from "@/Components/forms/ReportTable";
 import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
 
-const amount = (label) => ({ type: "number", min: 0, step: 0.01, align: "right", placeholder: "0.00", className: "w-40", label });
+const amount = (label) => ({ type: "number", min: 0, step: 0.01, align: "right", className: "w-40", label });
 
 const COLUMNS = [
     { name: "crops_affected", label: "Crops affected", placeholder: "e.g. Rice, corn, HVCC" },

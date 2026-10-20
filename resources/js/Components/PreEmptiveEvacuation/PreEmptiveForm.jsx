@@ -12,7 +12,7 @@ import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
 
 const count = (value) => parseInt(value, 10) || 0;
-const people = (label) => ({ type: "number", min: 0, step: 1, align: "right", placeholder: "0", className: "w-28", label });
+const people = (label) => ({ type: "number", min: 0, step: 1, align: "right", className: "w-28", label });
 // The server stores the same sums; these only show them while typing.
 const totalFamilies = (row) => count(row.families) + count(row.outside_families);
 const totalPersons = (row) => count(row.persons) + count(row.outside_persons);

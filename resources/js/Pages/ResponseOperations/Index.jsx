@@ -312,7 +312,7 @@ export default function Index() {
                                                                                     handleChange(actualIndex, field, e.target.value)
                                                                                 }
                                                                                 placeholder="Enter value..."
-                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition resize-none"
+                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition resize-none"
                                                                             />
                                                                         ) : (
                                                                             <input
@@ -323,7 +323,7 @@ export default function Index() {
                                                                                     handleChange(actualIndex, field, e.target.value)
                                                                                 }
                                                                                 placeholder="Enter value..."
-                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition"
+                                                                                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none transition"
                                                                             />
                                                                         )}
                                                                         <ModificationIndicator 

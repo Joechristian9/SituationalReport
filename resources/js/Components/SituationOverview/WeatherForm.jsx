@@ -9,7 +9,7 @@ import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
 
 const FIELDS = [
-    { name: "municipality", label: "Location", placeholder: "City of Ilagan", wide: true },
+    { name: "municipality", label: "Location", placeholder: "e.g. City of Ilagan", wide: true },
     { name: "sky_condition", label: "Sky condition", placeholder: "e.g. Cloudy, partly cloudy, clear skies" },
     { name: "wind", label: "Wind", placeholder: "e.g. Light winds, moderate winds" },
     { name: "precipitation", label: "Precipitation", placeholder: "e.g. No rain in the last 12 hours" },
