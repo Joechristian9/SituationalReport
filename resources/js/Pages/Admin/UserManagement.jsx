@@ -254,7 +254,8 @@ function PasswordInput({ id, value, onChange, placeholder, required, autoComplet
                 autoComplete={autoComplete}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? `${id}-error` : undefined}
-                className={cn('pr-12', error && 'border-destructive')}
+                // Edge adds its own reveal eye to password fields; hide it so only this toggle shows.
+                className={cn('pr-12 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden', error && 'border-destructive')}
             />
             <button
                 type="button"
@@ -1020,7 +1021,7 @@ export default function UserManagement({ users, roles, permissions }) {
 
             {/* Unsaved changes */}
             <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
-                <DialogContent className="max-w-md">
+                <DialogContent centered className="max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-foreground">Discard your changes?</DialogTitle>
                         <DialogDescription className="text-muted-foreground">

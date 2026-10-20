@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 export default function InstallAppSteps({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-sm">
+            <DialogContent centered className="max-w-sm">
                 <DialogHeader>
                     <DialogTitle>Add Situational Report to your phone</DialogTitle>
                     <DialogDescription>On iPhone, install it from Safari's Share menu.</DialogDescription>

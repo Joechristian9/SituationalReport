@@ -206,7 +206,7 @@ export default function CommunicationForm({ data, setData, errors, disabled = fa
             <FormActions onSave={save} saving={saving} disabled={disabled} hasChanges={hasChanges} saveLabel="Save communication report" />
 
             <Dialog open={Boolean(adding)} onOpenChange={(open) => !open && !busy && setAdding(null)}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent centered className="sm:max-w-md">
                     <form onSubmit={addService} className="space-y-4">
                         <DialogHeader>
                             <DialogTitle className="text-foreground">Add a service</DialogTitle>
