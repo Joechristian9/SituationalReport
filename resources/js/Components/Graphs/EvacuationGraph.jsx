@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Users } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
 import SearchBar from "@/Components/ui/SearchBar";
 import { EmptyState } from "@/Components/data/DataView";
@@ -13,6 +13,28 @@ const VIEWS = [
     { key: "outside", label: "Outside" },
 ];
 const TOP = 10;
+const SPLIT = [
+    { key: "inside", label: "Inside centers" },
+    { key: "outside", label: "Outside centers" },
+];
+
+function Counts({ persons, families }) {
+    return (
+        <span>
+            <span className="font-semibold tabular-nums text-foreground">{persons.toLocaleString()}</span> persons ·{" "}
+            <span className="tabular-nums">{families.toLocaleString()}</span> families
+        </span>
+    );
+}
+
+// Visual only: the numbers beside it carry the same information.
+function Bar({ value, max, className }) {
+    return (
+        <span className={cn("block h-2 rounded-full bg-muted", className)} aria-hidden="true">
+            <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+        </span>
+    );
+}
 
 function Tile({ label, value }) {
     return (
@@ -26,6 +48,13 @@ function Tile({ label, value }) {
 /** Evacuees per barangay (inside / outside evacuation centers, or both), most evacuated first. */
 export default function EvacuationGraph({ preEmptiveReports = [], evacuationType = "total", onEvacuationTypeChange, searchQuery = "", onSearchChange }) {
     const [showAll, setShowAll] = useState(false);
+    const [open, setOpen] = useState(() => new Set());
+    const toggle = (barangay) =>
+        setOpen((prev) => {
+            const next = new Set(prev);
+            next.has(barangay) ? next.delete(barangay) : next.add(barangay);
+            return next;
+        });
     const persons = `${evacuationType}_persons`;
     const families = `${evacuationType}_families`;
 
@@ -89,21 +118,51 @@ export default function EvacuationGraph({ preEmptiveReports = [], evacuationType
                         />
                     ) : (
                         <>
-                            <ol className="space-y-3" aria-label={`Barangays by evacuees${viewLabel}, most first`}>
-                                {shown.map((r) => (
-                                    <li key={r.barangay} className="text-sm sm:grid sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_auto] sm:items-center sm:gap-3">
-                                        <div className="flex items-baseline justify-between gap-3 sm:contents">
-                                            <span className="min-w-0 break-words font-medium text-foreground">{r.barangay}</span>
-                                            <span className="shrink-0 text-muted-foreground sm:order-last">
-                                                <span className="font-semibold tabular-nums text-foreground">{r[persons].toLocaleString()}</span> persons ·{" "}
-                                                <span className="tabular-nums">{r[families].toLocaleString()}</span> families
-                                            </span>
-                                        </div>
-                                        <div className="mt-1.5 h-2 rounded-full bg-muted sm:mt-0" aria-hidden="true">
-                                            <div className="h-full rounded-full bg-primary" style={{ width: `${(r[persons] / max) * 100}%` }} />
-                                        </div>
-                                    </li>
-                                ))}
+                            <ol className="space-y-1" aria-label={`Barangays by evacuees${viewLabel}, most first. Tap one for inside and outside counts.`}>
+                                {shown.map((r) => {
+                                    const expanded = open.has(r.barangay);
+                                    const id = `evac-${r.barangay.replace(/\W+/g, "-")}`;
+                                    return (
+                                        <li key={r.barangay} className="text-sm">
+                                            <button
+                                                type="button"
+                                                onClick={() => toggle(r.barangay)}
+                                                aria-expanded={expanded}
+                                                aria-controls={id}
+                                                className={cn(
+                                                    "-mx-2 block w-[calc(100%+1rem)] cursor-pointer rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/60 motion-reduce:transition-none",
+                                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                                    "sm:grid sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_auto] sm:items-center sm:gap-3"
+                                                )}
+                                            >
+                                                <span className="flex items-baseline justify-between gap-3 sm:contents">
+                                                    <span className="min-w-0 break-words font-medium text-foreground">{r.barangay}</span>
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground sm:order-last">
+                                                        <Counts persons={r[persons]} families={r[families]} />
+                                                        <ChevronDown className={cn("h-4 w-4 transition-transform motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
+                                                    </span>
+                                                </span>
+                                                <Bar value={r[persons]} max={max} className="mt-1.5 sm:mt-0" />
+                                            </button>
+                                            {expanded && (
+                                                <dl id={id} className="mb-1 mt-1 space-y-2 rounded-lg bg-muted/40 p-3">
+                                                    {/* Split of this barangay's total, whatever the view above shows. */}
+                                                    {SPLIT.map(({ key, label }) => (
+                                                        <div key={key} className="sm:grid sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] sm:items-center sm:gap-3">
+                                                            <div className="flex items-baseline justify-between gap-3 sm:contents">
+                                                                <dt className="text-muted-foreground">{label}</dt>
+                                                                <dd className="text-muted-foreground sm:order-last">
+                                                                    <Counts persons={r[`${key}_persons`]} families={r[`${key}_families`]} />
+                                                                </dd>
+                                                            </div>
+                                                            <Bar value={r[`${key}_persons`]} max={r.total_persons || 1} className="mt-1 sm:mt-0" />
+                                                        </div>
+                                                    ))}
+                                                </dl>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ol>
                             {rows.length > TOP && (
                                 <button

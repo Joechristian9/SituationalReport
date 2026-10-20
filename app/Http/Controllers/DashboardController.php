@@ -85,7 +85,7 @@ class DashboardController extends Controller
             'waterLevels' => Inertia::optional(fn () => WaterLevel::where('disaster_id', $disasterId)
                 ->latest()
                 ->limit(50)
-                ->get(['id', 'gauging_station', 'current_level', 'alarm_level', 'critical_level', 'updated_at'])),
+                ->get(['id', 'gauging_station', 'current_level', 'alarm_level', 'critical_level', 'affected_areas', 'updated_at'])),
             // Totals per barangay, summed in SQL: a row limit here would silently cut the totals
             // once a disaster has more evacuation-center rows than the limit.
             'preEmptiveReports' => Inertia::optional(fn () => PreEmptiveReport::where('disaster_id', $disasterId)
