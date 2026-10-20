@@ -1,0 +1,52 @@
+# Runs every test on each push and pull request, so a broken change shows a red X on
+# GitHub before anyone deploys it. Tests use in-memory SQLite (phpunit.xml), never MySQL.
+name: CI
+
+on:
+  push:
+    branches: [main, testing]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, zip, bcmath, exif
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install PHP packages
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: PHP tests
+        run: php artisan test
+
+      - name: Install JS packages
+        run: npm ci
+
+      - name: JS tests
+        run: npm test
+
+      # Catches build errors; the deployed files are still the ones committed in public/build.
+      - name: Build
+        run: npm run build
