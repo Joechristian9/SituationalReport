@@ -1,149 +1,78 @@
 import React, { useMemo } from "react";
-import dayjs from "dayjs";
-import { Cloud, Wind, CloudRain, Waves, CloudOff, MapPin } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { Cloud, CloudOff, CloudRain, MapPin, Waves, Wind } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
+import { EmptyState } from "@/Components/data/DataView";
 
-const WeatherGraph = ({ weatherReports = [] }) => {
-    // Newest first (copy so the shared prop array isn't re-ordered)
-    const filteredReports = useMemo(() => {
-        if (!weatherReports || weatherReports.length === 0) return [];
-        return [...weatherReports].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-    }, [weatherReports]);
+const FIELDS = [
+    { key: "sky_condition", label: "Sky", icon: Cloud },
+    { key: "wind", label: "Wind", icon: Wind },
+    { key: "precipitation", label: "Rain", icon: CloudRain },
+    { key: "sea_condition", label: "Sea", icon: Waves },
+];
+const RECENT = 3;
 
-    // Get latest report
-    const latestReport = filteredReports[0];
+/** The latest weather report in full, then a one-line summary of the few before it. */
+export default function WeatherGraph({ weatherReports = [] }) {
+    // Newest first (copy so the shared prop array isn't re-ordered).
+    const reports = useMemo(
+        () => [...weatherReports].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
+        [weatherReports]
+    );
+    const [latest, ...older] = reports;
+    const when = (report, pattern) => (report.updated_at ? format(parseISO(report.updated_at), pattern) : "");
 
     return (
         <GraphCard
-            title="Weather Conditions"
+            title="Weather"
             icon={<Cloud size={24} />}
+            actions={latest && <span className="text-sm text-muted-foreground">{when(latest, "MMM d, h:mm a")}</span>}
         >
-            {!filteredReports || filteredReports.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500 py-12">
-                    <CloudOff size={48} className="mb-4 text-gray-400" />
-                    <p className="font-semibold">No Weather Data</p>
-                </div>
+            {!latest ? (
+                <EmptyState icon={CloudOff} title="No weather reports" description="Conditions appear here once the Weather form is filled in." />
             ) : (
-                <div className="space-y-3">
-                    {/* Latest Weather Card */}
-                    {latestReport && (
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-sm">
-                            <div className="flex items-center justify-between gap-2 mb-3">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <MapPin className="h-5 w-5 shrink-0 text-blue-600" />
-                                    <h4 className="font-bold text-gray-900 text-lg truncate">
-                                        {latestReport.municipality}
-                                    </h4>
-                                </div>
-                                <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                    Latest
-                                </span>
-                            </div>
-                            <p className="text-xs text-gray-600 mb-3">
-                                {dayjs(latestReport.updated_at).format("MMMM D, YYYY — HH:mm")}
-                            </p>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="bg-white rounded-lg p-3 border border-blue-100">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Cloud className="h-4 w-4 text-blue-500" />
-                                        <span className="text-xs font-semibold text-gray-600">Sky Condition</span>
-                                    </div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {latestReport.sky_condition || "N/A"}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-white rounded-lg p-3 border border-blue-100">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Wind className="h-4 w-4 text-blue-500" />
-                                        <span className="text-xs font-semibold text-gray-600">Wind</span>
-                                    </div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {latestReport.wind || "N/A"}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-white rounded-lg p-3 border border-blue-100">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <CloudRain className="h-4 w-4 text-green-500" />
-                                        <span className="text-xs font-semibold text-gray-600">Precipitation</span>
-                                    </div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {latestReport.precipitation || "N/A"}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-white rounded-lg p-3 border border-blue-100">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Waves className="h-4 w-4 text-cyan-500" />
-                                        <span className="text-xs font-semibold text-gray-600">Sea Condition</span>
-                                    </div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {latestReport.sea_condition || "N/A"}
-                                    </p>
-                                </div>
-                            </div>
+                <div className="space-y-4">
+                    <div>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <span className="flex min-w-0 items-center gap-2 font-semibold text-foreground">
+                                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                                <span className="break-words">{latest.municipality}</span>
+                            </span>
+                            <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Latest</span>
                         </div>
-                    )}
+                        <dl className="grid grid-cols-2 gap-2 sm:gap-3">
+                            {FIELDS.map(({ key, label, icon: Icon }) => (
+                                <div key={key} className="rounded-lg border border-border bg-muted/30 p-3">
+                                    <dt className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                        {label}
+                                    </dt>
+                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{latest[key] || "—"}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
 
-                    {/* Weather History Timeline */}
-                    {filteredReports.length > 1 && (
-                        <div className="space-y-1.5">
-                            <h5 className="text-sm font-semibold text-gray-700 px-1">Recent Updates</h5>
-                            <div className="space-y-2 pr-2">
-                                {filteredReports.slice(1, 4).map((report, index) => (
-                                    <div 
-                                        key={report.id || index}
-                                        className="bg-white rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-colors"
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="h-3 w-3 text-gray-500" />
-                                                <span className="text-xs font-medium text-gray-700">
-                                                    {report.municipality}
-                                                </span>
-                                            </div>
-                                            <span className="text-xs text-gray-500">
-                                                {dayjs(report.updated_at).format("MMM D, HH:mm")}
-                                            </span>
+                    {older.length > 0 && (
+                        <div>
+                            <h4 className="mb-1 text-sm font-semibold text-foreground">Recent updates</h4>
+                            <ul className="divide-y divide-border text-sm">
+                                {older.slice(0, RECENT).map((report) => (
+                                    <li key={report.id} className="py-2">
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <span className="min-w-0 break-words font-medium text-foreground">{report.municipality}</span>
+                                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{when(report, "MMM d, h:mm a")}</span>
                                         </div>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                                            <div>
-                                                <span className="text-gray-500">Sky:</span>
-                                                <span className="ml-1 text-gray-700 font-medium">
-                                                    {report.sky_condition || "N/A"}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">Wind:</span>
-                                                <span className="ml-1 text-gray-700 font-medium">
-                                                    {report.wind || "N/A"}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">Rain:</span>
-                                                <span className="ml-1 text-gray-700 font-medium">
-                                                    {report.precipitation || "N/A"}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">Sea:</span>
-                                                <span className="ml-1 text-gray-700 font-medium">
-                                                    {report.sea_condition || "N/A"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        <p className="mt-0.5 text-muted-foreground">
+                                            {FIELDS.map(({ key, label }) => `${label}: ${report[key] || "—"}`).join(" · ")}
+                                        </p>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
                         </div>
                     )}
                 </div>
             )}
         </GraphCard>
     );
-};
-
-export default WeatherGraph;
+}

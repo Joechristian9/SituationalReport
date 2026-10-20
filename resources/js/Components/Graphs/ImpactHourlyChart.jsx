@@ -201,7 +201,7 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
     const cell = (row, key) => (key === "__rest" ? mutedSeries.reduce((sum, s) => sum + (row[s.key] || 0), 0) : row[key] || 0);
 
     const toggle = (
-        <div className="flex rounded-lg bg-muted p-1" role="group" aria-label="Chart view">
+        <div className="flex w-full rounded-lg bg-muted p-1" role="group" aria-label="Chart view">
             {[
                 { key: "type", label: "By type" },
                 { key: "barangay", label: "By barangay" },
@@ -211,7 +211,7 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
                     type="button"
                     aria-pressed={mode === o.key}
                     onClick={() => setMode(o.key)}
-                    className={`min-h-11 flex-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none md:min-h-0 ${
+                    className={`min-h-11 flex-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-xl:flex-none md:min-h-0 ${
                         mode === o.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
@@ -292,7 +292,15 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
     );
 
     return (
-        <GraphCard title="Last 24 hours" icon={<Activity size={24} />} actions={toggle}>
+        <GraphCard
+            title="Last 24 hours"
+            icon={<Activity size={24} />}
+            actions={toggle}
+            // xl: the card sits in a narrow scrolling side column, so the view filter takes the full width and
+            // title + filter stay pinned while the rest scrolls under them (negative margins cover the card padding).
+            headerClassName="xl:sticky xl:top-0 xl:z-10 xl:-mx-6 xl:-mt-6 xl:rounded-t-xl xl:bg-card xl:px-6 xl:pb-3 xl:pt-6"
+            actionsClassName="xl:w-full"
+        >
             <p className="-mt-2 mb-4 text-sm text-muted-foreground">
                 {byPlace ? (
                     <>
@@ -309,7 +317,8 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
                 )}
             </p>
 
-            <div className={byPlace ? "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""}>
+            {/* Ranking beside the chart only while it is full width; from xl it shares the row with the feed. */}
+            <div className={byPlace ? "grid grid-cols-1 gap-6 lg:max-xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""}>
                 <div className="min-w-0">
                     {/* Legend carries identity and the 24-hour total */}
                     <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground" aria-label="Legend">

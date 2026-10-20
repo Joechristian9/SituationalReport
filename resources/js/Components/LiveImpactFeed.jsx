@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
-import { ChevronRight, Radio } from 'lucide-react';
+import { ChevronRight, Clock, Radio } from 'lucide-react';
 import { IMPACT_SERIES, Swatch } from '@/Components/Graphs/chartParts';
 import { EmptyState } from '@/Components/data/DataView';
 import { reporterLabel } from '@/hooks/useNewImpactReports';
@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils';
 const SERIES = Object.fromEntries(IMPACT_SERIES.map((s) => [s.key, s]));
 // The server sends up to 50 per type, so the largest choice is always filled.
 const SIZES = [10, 20, 50];
-const COLUMNS = 'md:grid md:grid-cols-[9rem_8rem_minmax(0,1fr)_minmax(0,2fr)] md:gap-4';
+// Narrow enough to fit the xl column beside the chart (~600px on a 1366px screen).
+const COLUMNS = 'md:grid md:grid-cols-[7rem_6.5rem_minmax(0,1fr)_minmax(0,2fr)] md:gap-4';
 
 function NewTag() {
     return (
@@ -46,8 +47,10 @@ function FilterButton({ active, onClick, label, count, color }) {
  * Live Feed tab: the newest Dead / Injured / Missing reports for the active
  * disaster (10, 20 or 50 of them), newest first. Rows link to the matching submissions page.
  */
-export default function LiveImpactFeed({ items = [], totals = null, fresh = new Set(), paused = false, disaster = null }) {
+export default function LiveImpactFeed({ items = [], totals = null, fresh = new Set(), paused = false, disaster = null, barangaysToday }) {
     const [type, setType] = useState('all');
+    // Items arrive newest first.
+    const latest = items[0]?.reportedAt ? parseISO(items[0].reportedAt) : null;
     const [size, setSize] = useState(20);
     const count = (key) => totals?.[key] ?? items.filter((i) => key === 'total' || i.type === key).length;
     const shown = (type === 'all' ? items : items.filter((i) => i.type === type)).slice(0, size);
@@ -55,8 +58,8 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
 
     return (
         <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-labelledby="live-feed-title">
-            <div className="space-y-3 border-b border-border p-4 sm:p-6 lg:flex lg:items-end lg:justify-between lg:gap-4 lg:space-y-0">
-                <div className="flex items-start justify-between gap-3 lg:block">
+            <div className="space-y-3 border-b border-border p-4 sm:p-6">
+                <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <h2 id="live-feed-title" className="flex flex-wrap items-center gap-2 text-lg font-semibold text-foreground">
                             Live feed
@@ -81,17 +84,33 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
                                 {paused ? 'Live updates are paused; resume them from the Live button at the top.' : 'Updates automatically.'}
                             </span>
                         </p>
+                        {/* Heartbeat: a long silence during a disaster means reporting has stalled. */}
+                        {latest && (
+                            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span>
+                                        Last report{' '}
+                                        <time dateTime={items[0].reportedAt} title={format(latest, 'MMM d, yyyy h:mm a')} className="font-medium text-foreground">
+                                            {formatDistanceToNowStrict(latest, { addSuffix: true })}
+                                        </time>
+                                    </span>
+                                </span>
+                                {barangaysToday != null && (
+                                    <span>
+                                        <span className="font-medium tabular-nums text-foreground">{barangaysToday}</span>{' '}
+                                        {barangaysToday === 1 ? 'barangay' : 'barangays'} reported in the last 24 h
+                                    </span>
+                                )}
+                            </p>
+                        )}
                     </div>
-                    {/* Phones: beside the title; lg and up it joins the filters */}
-                    <div className="shrink-0 lg:hidden">
+                    <div className="shrink-0">
                         <RowsPerPage rowsPerPage={size} setRowsPerPage={setSize} choices={SIZES} label="Show" />
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 lg:self-auto">
-                    <div className="hidden lg:block">
-                        <RowsPerPage rowsPerPage={size} setRowsPerPage={setSize} choices={SIZES} label="Show" />
-                    </div>
+                <div>
                     {/* Counts are the disaster's full totals, not just the rows listed. */}
                     <div className="grid w-full grid-cols-4 gap-1 rounded-xl bg-muted p-1 lg:inline-flex lg:w-auto lg:rounded-lg" role="group" aria-label="Filter by report type">
                         <FilterButton active={type === 'all'} onClick={() => setType('all')} label="All" count={count('total')} />
@@ -158,7 +177,7 @@ export default function LiveImpactFeed({ items = [], totals = null, fresh = new 
                                                     </time>
                                                 )}
                                             </span>
-                                            <span className="order-1 flex items-center gap-2 md:order-none">
+                                            <span className="order-1 flex flex-wrap items-center gap-x-2 gap-y-1 md:order-none">
                                                 <Swatch color={series.color} />
                                                 <span className="font-semibold text-foreground">{series.label}</span>
                                                 {isNew && <NewTag />}

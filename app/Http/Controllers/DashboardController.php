@@ -14,6 +14,7 @@ use App\Services\DisasterHistory;
 use App\Services\HumanImpactStats;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -85,10 +86,16 @@ class DashboardController extends Controller
                 ->latest()
                 ->limit(50)
                 ->get(['id', 'gauging_station', 'current_level', 'alarm_level', 'critical_level', 'updated_at'])),
+            // Totals per barangay, summed in SQL: a row limit here would silently cut the totals
+            // once a disaster has more evacuation-center rows than the limit.
             'preEmptiveReports' => Inertia::optional(fn () => PreEmptiveReport::where('disaster_id', $disasterId)
-                ->latest()
-                ->limit(100)
-                ->get(['id', 'barangay', 'families', 'persons', 'outside_families', 'outside_persons', 'total_families', 'total_persons'])),
+                ->whereNotNull('barangay')
+                ->groupBy('barangay')
+                ->selectRaw('barangay, SUM(families) as inside_families, SUM(persons) as inside_persons, SUM(outside_families) as outside_families, SUM(outside_persons) as outside_persons, SUM(total_families) as total_families, SUM(total_persons) as total_persons')
+                ->toBase()
+                ->get()
+                // MySQL returns SUM() as a string (null when every value is null).
+                ->map(fn ($row) => ['barangay' => $row->barangay, ...array_map('intval', Arr::except((array) $row, 'barangay'))])),
             'casualties' => $casualties,
             'injured' => $injured,
             'missing' => $missing,

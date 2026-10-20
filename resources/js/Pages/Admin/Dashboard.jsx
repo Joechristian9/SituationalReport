@@ -174,21 +174,22 @@ export default function Dashboard({
                                 {activeTab === "pagasa" && <PagasaPanel />}
 
                                 {activeTab === "live" && (
-                                    <div className="flex flex-col gap-4 sm:gap-6">
-                                        {/* Phones: the feed is what this tab is for, so it comes first; the 24-hour chart follows. */}
-                                        <div className="min-w-0 max-sm:order-2">
+                                    // The feed is what this tab is for, so it comes first; wide screens put the 24-hour chart beside it.
+                                    <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+                                        <LiveImpactFeed
+                                            items={recentImpact}
+                                            totals={impactSummary?.totals}
+                                            fresh={freshReports}
+                                            paused={live.paused}
+                                            disaster={typhoon?.active}
+                                            barangaysToday={impactSummary?.barangays24h?.ranking.filter((r) => !r.office).length}
+                                        />
+                                        {/* Stays in view while the feed scrolls (below the 4rem header); scrolls itself if taller than the screen.
+                                            The wrapper also stops the card's h-full from stretching to the feed's height. */}
+                                        <div className="min-w-0 xl:sticky xl:top-24 xl:max-h-[calc(100dvh-7.5rem)] xl:overflow-y-auto">
                                             <ImpactHourlyChart
                                                 hourly={impactSummary?.hourly || []}
                                                 byBarangay={impactSummary?.barangays24h}
-                                            />
-                                        </div>
-                                        <div className="min-w-0 max-sm:order-1">
-                                            <LiveImpactFeed
-                                                items={recentImpact}
-                                                totals={impactSummary?.totals}
-                                                fresh={freshReports}
-                                                paused={live.paused}
-                                                disaster={typhoon?.active}
                                             />
                                         </div>
                                     </div>
@@ -202,22 +203,23 @@ export default function Dashboard({
                                 )}
 
                                 {activeTab === "environment" && weatherReports !== undefined && (
-                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-                                        {/* Weather + Evacuation side by side on wide screens; Water Level spans the full width */}
-                                        <WeatherGraph
-                                            weatherReports={weatherReports}
-                                        />
-                                        <EvacuationGraph
-                                            preEmptiveReports={preEmptiveReports}
-                                            evacuationType={evacuationType}
-                                            onEvacuationTypeChange={
-                                                setEvacuationType
-                                            }
-                                            searchQuery={searchQuery}
-                                            onSearchChange={setSearchQuery}
-                                        />
-                                        <div className="xl:col-span-2 min-w-0">
+                                    // Danger first: rivers, then evacuees, then weather. Wide screens: rivers and weather
+                                    // side by side, evacuation full width below.
+                                    <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
+                                        <div className="min-w-0">
                                             <WaterLevelGraph waterLevels={waterLevels} />
+                                        </div>
+                                        <div className="min-w-0 xl:col-span-2 xl:row-start-2">
+                                            <EvacuationGraph
+                                                preEmptiveReports={preEmptiveReports}
+                                                evacuationType={evacuationType}
+                                                onEvacuationTypeChange={setEvacuationType}
+                                                searchQuery={searchQuery}
+                                                onSearchChange={setSearchQuery}
+                                            />
+                                        </div>
+                                        <div className="min-w-0 xl:col-start-2 xl:row-start-1">
+                                            <WeatherGraph weatherReports={weatherReports} />
                                         </div>
                                     </div>
                                 )}

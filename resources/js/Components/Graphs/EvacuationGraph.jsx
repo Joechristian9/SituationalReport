@@ -1,272 +1,124 @@
-import React, { useCallback, useMemo } from "react";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from "recharts";
-import { Filter, Users, Home, MapPin, TrendingUp } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
+import { Users } from "lucide-react";
 import GraphCard from "@/Components/ui/GraphCard";
-import ModernSelect from "@/Components/ui/ModernSelect";
 import SearchBar from "@/Components/ui/SearchBar";
+import { EmptyState } from "@/Components/data/DataView";
 import { buildSuggestions } from "@/lib/searchSuggestions";
+import { cn } from "@/lib/utils";
 
-// The CustomTooltip component remains unchanged.
-const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="p-3 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200">
-                <p className="font-bold text-gray-800">{label}</p>
-                {payload.map((entry, index) => (
-                    <p
-                        key={`item-${index}`}
-                        style={{ color: entry.fill }}
-                        className="text-sm"
+// Keys match the per-barangay totals the server sends (`total_persons`, `inside_families`, ...).
+const VIEWS = [
+    { key: "total", label: "Total" },
+    { key: "inside", label: "Inside" },
+    { key: "outside", label: "Outside" },
+];
+const TOP = 10;
+
+function Tile({ label, value }) {
+    return (
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">{value.toLocaleString()}</p>
+        </div>
+    );
+}
+
+/** Evacuees per barangay (inside / outside evacuation centers, or both), most evacuated first. */
+export default function EvacuationGraph({ preEmptiveReports = [], evacuationType = "total", onEvacuationTypeChange, searchQuery = "", onSearchChange }) {
+    const [showAll, setShowAll] = useState(false);
+    const persons = `${evacuationType}_persons`;
+    const families = `${evacuationType}_families`;
+
+    const suggest = useCallback((text) => buildSuggestions(preEmptiveReports, ["barangay"], text), [preEmptiveReports]);
+
+    const rows = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        return preEmptiveReports
+            .filter((r) => (r[persons] > 0 || r[families] > 0) && (!query || r.barangay.toLowerCase().includes(query)))
+            .sort((a, b) => b[persons] - a[persons] || a.barangay.localeCompare(b.barangay));
+    }, [preEmptiveReports, persons, families, searchQuery]);
+
+    const totalPersons = rows.reduce((sum, r) => sum + r[persons], 0);
+    const totalFamilies = rows.reduce((sum, r) => sum + r[families], 0);
+    const max = rows[0]?.[persons] || 1;
+    const shown = showAll ? rows : rows.slice(0, TOP);
+    const viewLabel = evacuationType === "total" ? "" : ` ${evacuationType} evacuation centers`;
+
+    const controls = (
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="flex rounded-lg bg-muted p-1" role="group" aria-label="Evacuees shown">
+                {VIEWS.map((v) => (
+                    <button
+                        key={v.key}
+                        type="button"
+                        aria-pressed={evacuationType === v.key}
+                        onClick={() => onEvacuationTypeChange(v.key)}
+                        className={cn(
+                            "min-h-11 flex-1 cursor-pointer rounded-md px-3 text-sm font-medium transition-colors sm:flex-none md:min-h-9",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
+                            evacuationType === v.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        )}
                     >
-                        {`${entry.name}: ${entry.value.toLocaleString()}`}
-                    </p>
+                        {v.label}
+                    </button>
                 ))}
             </div>
-        );
-    }
-    return null;
-};
-
-const EvacuationGraph = ({
-    preEmptiveReports = [],
-    evacuationType,
-    onEvacuationTypeChange,
-    searchQuery,
-    onSearchChange,
-}) => {
-    const aggregatedData = useMemo(() => {
-        if (!Array.isArray(preEmptiveReports) || preEmptiveReports.length === 0)
-            return [];
-        return Object.values(
-            preEmptiveReports.reduce((acc, report) => {
-                const {
-                    barangay,
-                    persons,
-                    families,
-                    outside_persons,
-                    outside_families,
-                    total_persons,
-                    total_families,
-                } = report;
-                if (!barangay) return acc;
-                if (!acc[barangay]) {
-                    acc[barangay] = {
-                        barangay,
-                        inside_persons: 0,
-                        inside_families: 0,
-                        outside_persons: 0,
-                        outside_families: 0,
-                        total_persons: 0,
-                        total_families: 0,
-                    };
-                }
-                acc[barangay].inside_persons += parseInt(persons, 10) || 0;
-                acc[barangay].inside_families += parseInt(families, 10) || 0;
-                acc[barangay].outside_persons +=
-                    parseInt(outside_persons, 10) || 0;
-                acc[barangay].outside_families +=
-                    parseInt(outside_families, 10) || 0;
-                acc[barangay].total_persons += parseInt(total_persons, 10) || 0;
-                acc[barangay].total_families +=
-                    parseInt(total_families, 10) || 0;
-                return acc;
-            }, {})
-        );
-    }, [preEmptiveReports]);
-
-    const filteredGraphData = useMemo(() => {
-        if (!searchQuery) return aggregatedData;
-        return aggregatedData.filter((item) =>
-            item.barangay.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [aggregatedData, searchQuery]);
-
-    const suggest = useCallback((text) => buildSuggestions(aggregatedData, ["barangay"], text), [aggregatedData]);
-
-    const { personsDataKey, familiesDataKey, personsBarName, familiesBarName } =
-        useMemo(() => {
-            switch (evacuationType) {
-                case "inside":
-                    return {
-                        personsDataKey: "inside_persons",
-                        familiesDataKey: "inside_families",
-                        personsBarName: "Persons (Inside)",
-                        familiesBarName: "Families (Inside)",
-                    };
-                case "outside":
-                    return {
-                        personsDataKey: "outside_persons",
-                        familiesDataKey: "outside_families",
-                        personsBarName: "Persons (Outside)",
-                        familiesBarName: "Families (Outside)",
-                    };
-                default:
-                    return {
-                        personsDataKey: "total_persons",
-                        familiesDataKey: "total_families",
-                        personsBarName: "Total Persons",
-                        familiesBarName: "Total Families",
-                    };
-            }
-        }, [evacuationType]);
-
-    // Calculate summary statistics
-    const stats = useMemo(() => {
-        if (!filteredGraphData || filteredGraphData.length === 0) return null;
-        
-        const totalPersons = filteredGraphData.reduce((sum, item) => sum + (item[personsDataKey] || 0), 0);
-        const totalFamilies = filteredGraphData.reduce((sum, item) => sum + (item[familiesDataKey] || 0), 0);
-        const totalBarangays = filteredGraphData.length;
-        
-        // Find highest evacuated barangay
-        const maxEvacuated = filteredGraphData.reduce((max, item) => 
-            (item[personsDataKey] || 0) > max.persons 
-                ? { barangay: item.barangay, persons: item[personsDataKey] || 0 }
-                : max
-        , { barangay: '', persons: 0 });
-        
-        return {
-            totalPersons,
-            totalFamilies,
-            totalBarangays,
-            maxEvacuated,
-        };
-    }, [filteredGraphData, personsDataKey, familiesDataKey]);
-
-    const filterOptions = [
-        { value: "total", label: "Total" },
-        { value: "inside", label: "Inside" },
-        { value: "outside", label: "Outside" },
-    ];
-
-    // ✅ ENHANCED: A single, responsive flex container for controls.
-    const graphActions = (
-        <div className="flex flex-col min-[400px]:flex-row min-[400px]:items-center gap-2 w-full sm:w-auto">
-            <ModernSelect
-                value={evacuationType}
-                onChange={onEvacuationTypeChange}
-                options={filterOptions}
-                ariaLabel="Evacuees shown"
-                className="w-full min-[400px]:w-32 shrink-0"
-            />
-            <div className="min-w-0 flex-grow sm:w-52">
+            <div className="min-w-0 sm:w-56">
                 <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="Search barangay" suggest={suggest} />
             </div>
         </div>
     );
 
     return (
-        <GraphCard
-            title="Evacuation"
-            icon={<Users size={24} />}
-            actions={graphActions}
-        >
-            {filteredGraphData.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-12 text-gray-500">
-                    <Users size={48} className="mb-4 text-gray-400" />
-                    <p className="font-semibold">
-                        {aggregatedData.length > 0
-                            ? `No results for "${searchQuery}"`
-                            : "No Evacuation Data"}
-                    </p>
-                </div>
+        <GraphCard title="Evacuation" icon={<Users size={24} />} actions={controls}>
+            {preEmptiveReports.length === 0 ? (
+                <EmptyState icon={Users} title="No evacuation reports" description="Evacuees appear here once barangays file the Pre-Emptive form." />
             ) : (
                 <>
-                    {/* Statistics Summary Cards */}
-                    {stats && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                            <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                    <Users size={12} className="text-blue-600" />
-                                    <span className="text-xs font-medium text-blue-700">Persons</span>
-                                </div>
-                                <p className="text-lg font-bold text-blue-900">{stats.totalPersons.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-green-50 rounded-lg p-2 border border-green-200">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                    <Home size={12} className="text-green-600" />
-                                    <span className="text-xs font-medium text-green-700">Families</span>
-                                </div>
-                                <p className="text-lg font-bold text-green-900">{stats.totalFamilies.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-purple-50 rounded-lg p-2 border border-purple-200">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                    <MapPin size={12} className="text-purple-600" />
-                                    <span className="text-xs font-medium text-purple-700">Barangays</span>
-                                </div>
-                                <p className="text-lg font-bold text-purple-900">{stats.totalBarangays}</p>
-                            </div>
-                            <div className="bg-orange-50 rounded-lg p-2 border border-orange-200">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                    <TrendingUp size={12} className="text-orange-600" />
-                                    <span className="text-xs font-medium text-orange-700">Highest</span>
-                                </div>
-                                <p className="text-xs font-bold text-orange-900 truncate" title={stats.maxEvacuated.barangay}>
-                                    {stats.maxEvacuated.barangay}
-                                </p>
-                                <p className="text-xs text-orange-600">{stats.maxEvacuated.persons.toLocaleString()} persons</p>
-                            </div>
-                        </div>
+                    <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+                        <Tile label="Persons" value={totalPersons} />
+                        <Tile label="Families" value={totalFamilies} />
+                        <Tile label="Barangays" value={rows.length} />
+                    </div>
+
+                    {rows.length === 0 ? (
+                        <EmptyState
+                            icon={Users}
+                            title={searchQuery ? `No barangay matches “${searchQuery}”` : `No evacuees${viewLabel}`}
+                            description={searchQuery ? "Check the spelling or clear the search." : "Switch the view to see the other evacuees."}
+                        />
+                    ) : (
+                        <>
+                            <ol className="space-y-3" aria-label={`Barangays by evacuees${viewLabel}, most first`}>
+                                {shown.map((r) => (
+                                    <li key={r.barangay} className="text-sm sm:grid sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_auto] sm:items-center sm:gap-3">
+                                        <div className="flex items-baseline justify-between gap-3 sm:contents">
+                                            <span className="min-w-0 break-words font-medium text-foreground">{r.barangay}</span>
+                                            <span className="shrink-0 text-muted-foreground sm:order-last">
+                                                <span className="font-semibold tabular-nums text-foreground">{r[persons].toLocaleString()}</span> persons ·{" "}
+                                                <span className="tabular-nums">{r[families].toLocaleString()}</span> families
+                                            </span>
+                                        </div>
+                                        <div className="mt-1.5 h-2 rounded-full bg-muted sm:mt-0" aria-hidden="true">
+                                            <div className="h-full rounded-full bg-primary" style={{ width: `${(r[persons] / max) * 100}%` }} />
+                                        </div>
+                                    </li>
+                                ))}
+                            </ol>
+                            {rows.length > TOP && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAll((v) => !v)}
+                                    aria-expanded={showAll}
+                                    className="mt-4 flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-border text-sm font-medium text-primary transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none md:min-h-9"
+                                >
+                                    {showAll ? `Show top ${TOP}` : `Show all ${rows.length} barangays`}
+                                </button>
+                            )}
+                        </>
                     )}
-                    <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                        data={filteredGraphData}
-                        margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis
-                            dataKey="barangay"
-                            angle={-40}
-                            textAnchor="end"
-                            height={70}
-                            interval={0}
-                            tick={{ fontSize: 11 }}
-                        />
-                        <YAxis
-                            allowDecimals={false}
-                            width={44}
-                            tick={{ fontSize: 11 }}
-                        />
-                        <Tooltip
-                            content={<CustomTooltip />}
-                            cursor={{ fill: "rgba(239, 246, 255, 0.6)" }}
-                        />
-                        <Legend
-                            verticalAlign="top"
-                            align="right"
-                            iconType="circle"
-                            iconSize={8}
-                            wrapperStyle={{ fontSize: 12, paddingBottom: 8 }}
-                        />
-                        <Bar
-                            dataKey={familiesDataKey}
-                            name={familiesBarName}
-                            fill="#10B981"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={30}
-                        />
-                        <Bar
-                            dataKey={personsDataKey}
-                            name={personsBarName}
-                            fill="#3B82F6"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={30}
-                        />
-                    </BarChart>
-                </ResponsiveContainer>
                 </>
             )}
         </GraphCard>
     );
-};
-
-export default EvacuationGraph;
+}
