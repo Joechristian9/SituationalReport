@@ -815,6 +815,13 @@
       "_index.esm-Dw9IacZb.js"
     ]
   },
+  "_wifi-ChdrvCMm.js": {
+    "file": "assets/wifi-ChdrvCMm.js",
+    "name": "wifi",
+    "imports": [
+      "_utils-D6WWLOnn.js"
+    ]
+  },
   "_wind-DnFAJuxt.js": {
     "file": "assets/wind-DnFAJuxt.js",
     "name": "wind",
@@ -1918,7 +1925,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/CommunicationForm.jsx": {
-    "file": "assets/CommunicationForm-C9hstui5.js",
+    "file": "assets/CommunicationForm-8Xbokg_A.js",
     "name": "CommunicationForm",
     "src": "resources/js/Components/SituationOverview/CommunicationForm.jsx",
     "isDynamicEntry": true,
@@ -1935,6 +1942,7 @@
       "_asOfNow-C2L737qT.js",
       "_AppLayout-_bGVpfrD.js",
       "_plus-DJvaHRxm.js",
+      "_wifi-ChdrvCMm.js",
       "_index-CuD_5Xph.js",
       "_index-DueMs09G.js",
       "_index-DS2Vh2fu.js",
@@ -3515,7 +3523,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-8DHQVSt6.js",
+    "file": "assets/Index-5ioNWw07.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -3681,7 +3689,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-JtzpliP2.js",
+    "file": "assets/app-CVD3HHV6.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -3700,6 +3708,7 @@
       "_refresh-cw-D1dS2W-l.js",
       "_triangle-alert-CInZrpmA.js",
       "_circle-check-CjQmpTzn.js",
+      "_wifi-ChdrvCMm.js",
       "_formatDistanceToNow-B6SwJr_k.js",
       "_trash-2-bcsEon2T.js",
       "_load-features-Bghi3FzC.js",
@@ -3747,7 +3756,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-DhDtTaHo.css"
+      "assets/app-BOGvdxMW.css"
     ]
   },
   "resources/js/lib/motionFeatures.js": {
