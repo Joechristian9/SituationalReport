@@ -35,8 +35,8 @@ const blankRow = () => ({ globe: "", smart: "", pldt_landline: "", pldt_internet
 export default function CommunicationForm({ data, setData, errors, disabled = false }) {
     const { auth } = usePage().props;
     const queryClient = useQueryClient();
-    const canManageServices =
-        auth?.user?.permissions?.some((p) => p.name === "access-communication-form") || auth?.user?.roles?.some((r) => r.name === "admin");
+    // Services are shared by every barangay's form; the server lets only admins change them.
+    const canManageServices = auth?.user?.roles?.some((r) => r.name === "admin");
 
     const reports = data?.communications ?? [];
     const setRows = useCallback((rows) => setData("communications", rows), [setData]);

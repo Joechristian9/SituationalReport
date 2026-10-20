@@ -11,18 +11,16 @@ class CommunicationServiceController extends Controller
     public function index()
     {
         $services = CommunicationService::active()->ordered()->get()->groupBy('category');
-        
+
         return response()->json([
-            'services' => $services
+            'services' => $services,
         ]);
     }
 
     public function store(Request $request)
     {
-        // Check if user has communication form access or is admin
-        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
-            abort(403, 'You do not have permission to add communication services');
-        }
+        // Services are shared fields on every barangay's form, so only admins change the list.
+        abort_unless(Auth::user()->hasRole('admin'), 403, 'Only admins can add communication services');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -41,25 +39,22 @@ class CommunicationServiceController extends Controller
 
         return response()->json([
             'message' => 'Service added successfully',
-            'service' => $service
+            'service' => $service,
         ]);
     }
 
     public function destroy($id)
     {
-        // Check if user has communication form access or is admin
-        if (!Auth::user()->hasPermissionTo('access-communication-form') && !Auth::user()->hasRole('admin')) {
-            abort(403, 'You do not have permission to remove communication services');
-        }
+        abort_unless(Auth::user()->hasRole('admin'), 403, 'Only admins can remove communication services');
 
         $service = CommunicationService::findOrFail($id);
-        
+
         // Soft delete by setting is_active to false instead of actually deleting
         // This preserves historical data
         $service->update(['is_active' => false]);
 
         return response()->json([
-            'message' => 'Service removed successfully'
+            'message' => 'Service removed successfully',
         ]);
     }
 }

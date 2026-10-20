@@ -44,3 +44,21 @@ it('clears an extra service status when it is saved empty', function () {
 
     expect(CommunicationServiceValue::sole()->status)->toBeNull();
 });
+
+it('lets only admins add or remove the shared communication services', function () {
+    $user = communicationAccount();
+    $admin = userWithRole('admin');
+    Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $admin->id]);
+    $dito = CommunicationService::create(['name' => 'DITO', 'category' => 'cellphone', 'order' => 1, 'is_active' => true]);
+
+    // A barangay account with the form permission still can't change every barangay's form.
+    $this->actingAs($user)->postJson(route('communication-services.store'), ['name' => 'Sky', 'category' => 'internet'])->assertForbidden();
+    $this->actingAs($user)->deleteJson(route('communication-services.destroy', $dito->id))->assertForbidden();
+    expect(CommunicationService::where('name', 'SKY')->exists())->toBeFalse()
+        ->and($dito->fresh()->is_active)->toBeTrue();
+
+    $this->actingAs($admin)->postJson(route('communication-services.store'), ['name' => 'Sky', 'category' => 'internet'])->assertOk();
+    $this->actingAs($admin)->deleteJson(route('communication-services.destroy', $dito->id))->assertOk();
+    expect(CommunicationService::where('name', 'SKY')->exists())->toBeTrue()
+        ->and($dito->fresh()->is_active)->toBeFalse();
+});
