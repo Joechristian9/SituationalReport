@@ -221,7 +221,8 @@ export default function OfflineStatus() {
     const expandable = items.length > 0 && !pill.action;
 
     return (
-        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[90] flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 sm:max-w-sm">
+        // Above the dashboard's bottom tab bar when there is one (SectionNav sets --section-nav-h).
+        <div className="fixed bottom-[var(--section-nav-h,max(1rem,env(safe-area-inset-bottom)))] left-4 z-[90] flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 sm:max-w-sm">
             {liveRegion}
 
             {open && expandable && (

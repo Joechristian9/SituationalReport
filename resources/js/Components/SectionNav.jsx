@@ -103,9 +103,27 @@ export default function SectionNav({ tabs, active, onChange, counts = {}, liveSt
     const [focused, setFocused] = useState(false);
     const hidden = useHideOnScroll(focused);
     const index = Math.max(0, tabs.findIndex((tab) => tab.key === active));
+    const navRef = useRef(null);
+
+    // Phones: the bar is fixed to the bottom, so publish its height and the offline status
+    // (OfflineStatus) floats above it instead of covering the tabs.
+    useEffect(() => {
+        const nav = navRef.current;
+        const root = document.documentElement;
+        const observer = new ResizeObserver(() => {
+            if (getComputedStyle(nav).position === "fixed") root.style.setProperty("--section-nav-h", `${nav.offsetHeight + 8}px`);
+            else root.style.removeProperty("--section-nav-h");
+        });
+        observer.observe(nav);
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty("--section-nav-h");
+        };
+    }, []);
 
     return (
         <nav
+            ref={navRef}
             aria-label="Dashboard sections"
             // Keyboard focus keeps the bar on screen; a touch tap also focuses the button, which must not.
             onFocus={(e) => setFocused(e.target.matches(":focus-visible"))}
