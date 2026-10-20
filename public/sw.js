@@ -94,8 +94,9 @@ async function remember(cache, request, response, max) {
 }
 
 // Addresses a phone shortcut or restored tab may reopen on. With no saved copy of their own
-// they open the saved home page instead of the offline page.
-const ENTRY_PATHS = [BASE, `${BASE}login`];
+// they open the saved home page instead of the offline page. /dashboard is the installed app's
+// start page: barangay users never have a copy of it (it redirects them to their reports).
+const ENTRY_PATHS = [BASE, `${BASE}login`, `${BASE}dashboard`];
 const HOME_PATHS = [`${BASE}situation-reports`, `${BASE}dashboard`];
 
 const escapeAttribute = (text) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

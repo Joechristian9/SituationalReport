@@ -2,7 +2,7 @@
     "name": "Situational Report",
     "short_name": "SitRep",
     "description": "Disaster situational reporting for CDRRMO and barangays. Works offline.",
-    "start_url": "./situation-reports",
+    "start_url": "./dashboard",
     "scope": "./",
     "display": "standalone",
     "background_color": "#f8fafc",
