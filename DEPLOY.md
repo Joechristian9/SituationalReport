@@ -117,12 +117,31 @@ ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com
 
 ---
 
+## Monitoring (one-time setup)
+
+1. **Error alerts (Sentry).** Create a free account at sentry.io → new project → platform
+   "Laravel" → copy the DSN. In the server's `.env` set `SENTRY_LARAVEL_DSN=<the DSN>`, then
+   `php artisan config:cache`. Each new error then emails you. Test it with
+   `php artisan sentry:test`. No names or user details are sent (`send_default_pii` is off).
+2. **Uptime alerts.** Free account at uptimerobot.com → New monitor → HTTP(s) →
+   `https://pitonmain.com/up`, every 5 minutes, alert by email (and SMS if you like).
+3. **Logs.** One file per day, 14 days kept: `storage/logs/laravel-YYYY-MM-DD.log`. If the server's
+   `.env` has `LOG_STACK=single`, change it to `daily` and run `php artisan config:cache`.
+4. **Only the deploy script goes live.** hPanel → Advanced → Git: turn off auto-deployment.
+   Otherwise every push to `main` goes live at once, without the backup, migrations or tests.
+   Check the tests passed (green tick on the commit in GitHub, from `.github/workflows/ci.yml`)
+   before running `deploy-production.sh`.
+
+---
+
 ## Backups and Restore
 
 ### What is backed up
 `php artisan backup:create` writes one zip to `storage/app/private/backups/` with the full
 database (`database.sql`) and the stored files (`storage/`: the disaster report PDFs).
 The newest 14 are kept (`BACKUP_KEEP`). It runs nightly at 01:00 and before every deploy.
+While a disaster is active it also runs every hour as `hourly-*.zip`; the newest 24 of those
+are kept (`BACKUP_KEEP_HOURLY`), separately, so they never push out the daily ones.
 
 ### One-time setup on the server
 1. **Turn on the scheduler.** hPanel → Advanced → Cron Jobs, every minute:
