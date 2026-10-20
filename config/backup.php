@@ -22,6 +22,10 @@ return [
     // Older backups beyond this many are deleted.
     'keep' => (int) env('BACKUP_KEEP', 14),
 
+    // Hourly backups (only while a disaster is active) are named hourly-*.zip and pruned
+    // on their own, so a busy disaster never pushes the daily ones out.
+    'keep_hourly' => (int) env('BACKUP_KEEP_HOURLY', 24),
+
     // Full path when mysqldump is not on PATH (XAMPP: C:/xampp/mysql/bin/mysqldump.exe).
     'mysqldump' => env('MYSQLDUMP_PATH', 'mysqldump'),
 

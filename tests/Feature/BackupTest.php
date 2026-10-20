@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Typhoon;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
@@ -116,4 +118,32 @@ it('refuses a connection that is not MySQL', function () {
 
 it('schedules a nightly backup', function () {
     $this->artisan('schedule:list')->expectsOutputToContain('backup:create');
+});
+
+it('keeps hourly backups apart, so they never push out the daily ones', function () {
+    config(['backup.keep' => 2, 'backup.keep_hourly' => 1]);
+    File::ensureDirectoryExists("{$this->backupRoot}/backups");
+    File::put("{$this->backupRoot}/backups/backup-2026-01-01_010000.zip", 'daily');
+    File::put("{$this->backupRoot}/backups/backup-2026-01-02_010000.zip", 'daily');
+    File::put("{$this->backupRoot}/backups/hourly-2026-01-02_090000.zip", 'old hourly');
+    fakeMysqldump();
+
+    $this->artisan('backup:create', ['--connection' => 'backup_test', '--hourly' => true])->assertSuccessful();
+
+    $names = collect(File::glob("{$this->backupRoot}/backups/*.zip"))->map(fn ($p) => basename($p));
+    expect($names->filter(fn ($n) => str_starts_with($n, 'backup-')))->toHaveCount(2)
+        ->and($names->filter(fn ($n) => str_starts_with($n, 'hourly-')))->toHaveCount(1)
+        ->and($names->contains('hourly-2026-01-02_090000.zip'))->toBeFalse();
+});
+
+it('schedules hourly backups that run only while a disaster is active', function () {
+    $hourly = collect(app(Schedule::class)->events())
+        ->first(fn ($event) => str_contains($event->command, 'backup:create --hourly'));
+    expect($hourly)->not->toBeNull()
+        ->and($hourly->expression)->toBe('0 * * * *')
+        ->and($hourly->filtersPass(app()))->toBeFalse();
+
+    Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => userWithRole('admin')->id]);
+
+    expect($hourly->filtersPass(app()))->toBeTrue();
 });

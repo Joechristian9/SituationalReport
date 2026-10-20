@@ -13,7 +13,8 @@ use ZipArchive;
 class CreateBackup extends Command
 {
     protected $signature = 'backup:create
-        {--connection= : Database connection to dump (default: the app\'s default)}';
+        {--connection= : Database connection to dump (default: the app\'s default)}
+        {--hourly : An hourly copy (hourly-*.zip), kept and pruned apart from the daily backups}';
 
     protected $description = 'Zip a database dump and the stored report PDFs into the backup folder';
 
@@ -31,9 +32,11 @@ class CreateBackup extends Command
         $directory = config('backup.path');
         File::ensureDirectoryExists($directory);
 
+        $hourly = (bool) $this->option('hourly');
+        $prefix = $hourly ? 'hourly' : 'backup';
         $stamp = now()->format('Y-m-d_His');
         $dumpPath = "{$directory}/database-{$stamp}.sql";
-        $zipPath = "{$directory}/backup-{$stamp}.zip";
+        $zipPath = "{$directory}/{$prefix}-{$stamp}.zip";
 
         try {
             $this->dumpDatabase($database, $dumpPath);
@@ -48,7 +51,7 @@ class CreateBackup extends Command
             File::delete($dumpPath);
         }
 
-        $this->prune($directory);
+        $this->prune($directory, $prefix, (int) config($hourly ? 'backup.keep_hourly' : 'backup.keep'));
         $this->info(sprintf('Backup written: %s (%s KB)', $zipPath, number_format(filesize($zipPath) / 1024)));
 
         return self::SUCCESS;
@@ -121,11 +124,11 @@ class CreateBackup extends Command
         }
     }
 
-    private function prune(string $directory): void
+    private function prune(string $directory, string $prefix, int $keep): void
     {
-        $backups = collect(File::glob("{$directory}/backup-*.zip"))->sort()->values();
+        $backups = collect(File::glob("{$directory}/{$prefix}-*.zip"))->sort()->values();
 
-        $backups->slice(0, max(0, $backups->count() - max(1, (int) config('backup.keep'))))
+        $backups->slice(0, max(0, $backups->count() - max(1, $keep)))
             ->each(fn (string $old) => File::delete($old));
     }
 }
