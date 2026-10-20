@@ -8,6 +8,7 @@ import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { cn } from "@/lib/utils";
+import useOnline from "@/hooks/useOnline";
 
 const PANAHON_URL = "https://www.panahon.gov.ph/";
 const FEED_URL = "https://publicalert.pagasa.dost.gov.ph/feeds/";
@@ -103,6 +104,7 @@ export default function PagasaPanel() {
     const [mapActive, setMapActive] = useState(false);
     const [reloads, setReloads] = useState(0);
     const frameRef = useRef(null);
+    const online = useOnline();
 
     // The iframe's load event can't tell a slow site from a stuck one, so offer the new tab after a while.
     useEffect(() => {
@@ -269,10 +271,12 @@ export default function PagasaPanel() {
                     <div className="flex flex-col items-center gap-4 border-t bg-muted px-6 py-10 text-center">
                         <MapIcon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
                         <p className="max-w-md text-sm text-muted-foreground">
-                            The map opens PAGASA&apos;s full PANaHON site inside this page. It uses more data, so it loads only when you ask.
+                            {online
+                                ? "The map opens PAGASA's full PANaHON site inside this page. It uses more data, so it loads only when you ask."
+                                : "The live map needs internet. It can be loaded once this device is back online."}
                         </p>
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                            <Button className="min-h-11 gap-2 md:min-h-9" onClick={() => setShowMap(true)}>
+                            <Button className="min-h-11 gap-2 md:min-h-9" onClick={() => setShowMap(true)} disabled={!online}>
                                 <MapIcon className="h-4 w-4" aria-hidden="true" />
                                 Load live map
                             </Button>

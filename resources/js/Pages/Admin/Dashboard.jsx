@@ -8,7 +8,9 @@ import LiveImpactFeed from "@/Components/LiveImpactFeed";
 import useNewImpactReports from "@/hooks/useNewImpactReports";
 import { Toaster } from "sonner";
 import { m as motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { Users, Sun, CloudSun, Radio } from "lucide-react";
+import { Users, Sun, CloudSun, CloudOff, Radio } from "lucide-react";
+import useOnline from "@/hooks/useOnline";
+import { EmptyState } from "@/Components/data/DataView";
 import SectionNav from "@/Components/SectionNav";
 import { SkeletonChart } from "@/Components/ui/skeleton";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
@@ -103,6 +105,11 @@ export default function Dashboard({
         const notLoaded = activeTab === "environment" && weatherReports === undefined;
         if (props && (notLoaded || typhoon?.hasActive)) router.reload({ only: props });
     }, [activeTab]);
+    // Opened offline: fetch the environment graphs once the connection is back.
+    const online = useOnline();
+    useEffect(() => {
+        if (online && activeTab === "environment" && weatherReports === undefined) router.reload({ only: TAB_PROPS.environment });
+    }, [online]);
     // The disaster ended while this page was open: fetch the history it now shows instead.
     useEffect(() => {
         if (!typhoon?.hasActive && !history) router.reload({ only: ["history"] });
@@ -195,7 +202,17 @@ export default function Dashboard({
                                     </div>
                                 )}
 
-                                {activeTab === "environment" && weatherReports === undefined && (
+                                {/* These graphs come from a partial reload, which is never saved for offline use. */}
+                                {activeTab === "environment" && weatherReports === undefined && !online && (
+                                    <div className="rounded-xl border border-border bg-card shadow-sm">
+                                        <EmptyState
+                                            icon={CloudOff}
+                                            title="Environment graphs need internet"
+                                            description="They load on their own as soon as this device is back online."
+                                        />
+                                    </div>
+                                )}
+                                {activeTab === "environment" && weatherReports === undefined && online && (
                                     <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2" aria-busy="true">
                                         <SkeletonChart />
                                         <SkeletonChart />
