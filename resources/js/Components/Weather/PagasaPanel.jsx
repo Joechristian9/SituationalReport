@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
-import { AlertTriangle, CheckCircle2, ExternalLink, Map as MapIcon, MapPin, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Hand, Loader2, Map as MapIcon, MapPin, Maximize2, RefreshCw, ShieldAlert, X } from "lucide-react";
 import { SkeletonList } from "@/Components/ui/skeleton";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
@@ -82,8 +82,46 @@ function AlertCard({ alert }) {
  * fetched and cached by the server) and the live PANaHON map. panahon.gov.ph has no
  * public API, so its map is embedded rather than rebuilt here.
  */
+function MapButton({ icon: Icon, label, onClick }) {
+    return (
+        <Button variant="outline" className="min-h-11 min-w-11 gap-2 px-3 md:min-h-9" onClick={onClick}>
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only">{label}</span>
+        </Button>
+    );
+}
+
+// Read once: iPhones have no element full screen, and only touch screens get the tap-to-use layer.
+const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled;
+const touch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+const SLOW_MS = 15000;
+
 export default function PagasaPanel() {
     const [showMap, setShowMap] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+    const [slow, setSlow] = useState(false);
+    const [mapActive, setMapActive] = useState(false);
+    const [reloads, setReloads] = useState(0);
+    const frameRef = useRef(null);
+
+    // The iframe's load event can't tell a slow site from a stuck one, so offer the new tab after a while.
+    useEffect(() => {
+        if (!showMap || loaded) return;
+        const timer = setTimeout(() => setSlow(true), SLOW_MS);
+        return () => clearTimeout(timer);
+    }, [showMap, loaded, reloads]);
+
+    const reloadMap = () => {
+        setLoaded(false);
+        setSlow(false);
+        setReloads((n) => n + 1);
+    };
+    const closeMap = () => {
+        setShowMap(false);
+        setLoaded(false);
+        setSlow(false);
+        setMapActive(false);
+    };
     const { data, isLoading, isError, isFetching, refetch } = useQuery({
         queryKey: ["pagasa-alerts"],
         queryFn: async () => (await axios.get(route("admin.pagasa-alerts"))).data,
@@ -164,21 +202,69 @@ export default function PagasaPanel() {
             </Card>
 
             <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">PANaHON live weather map</CardTitle>
-                    <CardDescription>
-                        Radar, rainfall, forecasts and weather stations from PAGASA.
-                        {showMap && " If the map stays blank, use Open PANaHON."}
-                    </CardDescription>
+                <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                    <div className="space-y-1">
+                        <CardTitle className="text-lg">PANaHON live weather map</CardTitle>
+                        <CardDescription>Radar, rainfall, forecasts and weather stations from PAGASA.</CardDescription>
+                    </div>
+                    {showMap && (
+                        <div className="flex gap-2">
+                            {/* Phones: icons only; the label stays for screen readers. */}
+                            <MapButton icon={RefreshCw} label="Reload" onClick={reloadMap} />
+                            {canFullscreen && <MapButton icon={Maximize2} label="Full screen" onClick={() => frameRef.current?.requestFullscreen()} />}
+                            <Button asChild variant="outline" className="min-h-11 min-w-11 gap-2 px-3 md:min-h-9">
+                                <a href={PANAHON_URL} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                                    <span className="sr-only sm:not-sr-only">New tab</span>
+                                </a>
+                            </Button>
+                            <MapButton icon={X} label="Close map" onClick={closeMap} />
+                        </div>
+                    )}
                 </CardHeader>
-                {/* Loaded on request: it is PAGASA's whole site (~2 MB, with its own console
-                    warnings) and on phones a full-height map traps page scrolling. */}
+                {/* Loaded on request: it is PAGASA's whole site (~2 MB, with its own console warnings). */}
                 {showMap ? (
-                    <iframe
-                        src={PANAHON_URL}
-                        title="PAGASA PANaHON live weather map"
-                        className="block h-[60svh] min-h-[360px] w-full border-t md:h-[70vh] md:min-h-[420px]"
-                    />
+                    <div className="relative border-t">
+                        <iframe
+                            key={reloads}
+                            ref={frameRef}
+                            src={PANAHON_URL}
+                            title="PAGASA PANaHON live weather map"
+                            onLoad={() => setLoaded(true)}
+                            className="block h-[60svh] min-h-[360px] w-full md:h-[70vh] md:min-h-[420px]"
+                        />
+                        {!loaded ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted px-6 text-center" role="status">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+                                <p className="text-sm font-medium text-foreground">Loading PANaHON…</p>
+                                {slow && (
+                                    <>
+                                        <p className="max-w-sm text-sm text-muted-foreground">This is taking a while. PAGASA&apos;s site may be slow or busy.</p>
+                                        <Button asChild variant="outline" className="min-h-11 gap-2 md:min-h-9">
+                                            <a href={PANAHON_URL} target="_blank" rel="noopener noreferrer">
+                                                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                                                Open in new tab
+                                            </a>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            // Touch screens: until tapped, swipes scroll the page instead of being caught by the map.
+                            touch && !mapActive && (
+                                <button
+                                    type="button"
+                                    onClick={() => setMapActive(true)}
+                                    className="absolute inset-0 flex cursor-pointer items-center justify-center bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                                >
+                                    <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-foreground shadow-md">
+                                        <Hand className="h-4 w-4" aria-hidden="true" />
+                                        Tap to use the map
+                                    </span>
+                                </button>
+                            )
+                        )}
+                    </div>
                 ) : (
                     <div className="flex flex-col items-center gap-4 border-t bg-muted px-6 py-10 text-center">
                         <MapIcon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
