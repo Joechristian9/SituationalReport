@@ -1324,7 +1324,7 @@
     ]
   },
   "resources/js/Components/Graphs/AgeSexTable.jsx": {
-    "file": "assets/AgeSexTable-cVXnOPWk.js",
+    "file": "assets/AgeSexTable-yFDuGB8s.js",
     "name": "AgeSexTable",
     "src": "resources/js/Components/Graphs/AgeSexTable.jsx",
     "isDynamicEntry": true,
@@ -1380,7 +1380,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-Bm5kLkSb.js",
+    "file": "assets/BarangayImpactChart-DrGfX4pL.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1435,7 +1435,7 @@
     ]
   },
   "resources/js/Components/Graphs/DisasterHistory.jsx": {
-    "file": "assets/DisasterHistory-cHMdONnC.js",
+    "file": "assets/DisasterHistory-3giOGKGj.js",
     "name": "DisasterHistory",
     "src": "resources/js/Components/Graphs/DisasterHistory.jsx",
     "isDynamicEntry": true,
@@ -1530,7 +1530,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-Dy_XA9Vq.js",
+    "file": "assets/ImpactHourlyChart-DeKmG9MH.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1587,7 +1587,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-DSrAd8nK.js",
+    "file": "assets/ImpactTrendChart-Bdb4uIug.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1644,7 +1644,7 @@
     ]
   },
   "resources/js/Components/Graphs/PersonBreakdownGraph.jsx": {
-    "file": "assets/PersonBreakdownGraph-O7FldC7R.js",
+    "file": "assets/PersonBreakdownGraph-DAbcJxXZ.js",
     "name": "PersonBreakdownGraph",
     "src": "resources/js/Components/Graphs/PersonBreakdownGraph.jsx",
     "isDynamicEntry": true,
@@ -1699,7 +1699,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-CNHi-NxJ.js",
+    "file": "assets/WaterLevelGraph-EspqF1_V.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1754,7 +1754,7 @@
     ]
   },
   "resources/js/Components/Graphs/WeatherGraph.jsx": {
-    "file": "assets/WeatherGraph-BTEPprMq.js",
+    "file": "assets/WeatherGraph-BEwH5Iu8.js",
     "name": "WeatherGraph",
     "src": "resources/js/Components/Graphs/WeatherGraph.jsx",
     "isDynamicEntry": true,
@@ -2334,7 +2334,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-NXjzWKim.js",
+    "file": "assets/Dashboard-y6DRrQMz.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -3681,7 +3681,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-DBTBOgk2.js",
+    "file": "assets/app-JtzpliP2.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -3747,7 +3747,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-DxK2DnqS.css"
+      "assets/app-DhDtTaHo.css"
     ]
   },
   "resources/js/lib/motionFeatures.js": {
