@@ -65,9 +65,6 @@ async function send(item, freshToken) {
                 Accept: 'application/json',
                 'X-Offline-Key': item.id,
                 'X-Offline-Disaster': item.disasterId ?? '',
-                // The page's X-CSRF-TOKEN belongs to the expired session and Laravel reads it
-                // first; blank it so the X-XSRF-TOKEN header axios adds from the cookie is used.
-                ...(freshToken.used ? { 'X-CSRF-TOKEN': '' } : {}),
             },
         });
 

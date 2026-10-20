@@ -3,25 +3,10 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-// Function to refresh CSRF token
-const refreshCSRFToken = () => {
-    const token = document.head.querySelector('meta[name="csrf-token"]');
-    if (token) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-    } else {
-        console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
-    }
-};
-
-// Set initial CSRF token
-refreshCSRFToken();
-
-// Refresh CSRF token on page visibility change (when user comes back to tab)
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        refreshCSRFToken();
-    }
-});
+// No X-CSRF-TOKEN from the page's <meta> tag: Inertia never reloads that HTML (and the
+// service worker can serve an old copy), so it goes stale, and Laravel checks it before the
+// cookie, giving 419 on logout and saves. Axios instead sends the XSRF-TOKEN cookie, which
+// Laravel renews on every response.
 
 // Add axios interceptor to handle 419 errors
 axios.interceptors.response.use(
