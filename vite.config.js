@@ -28,4 +28,9 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./resources/js"),
         },
     },
+
+    // `npm test`: logic tests next to the code (*.test.js), no browser needed.
+    test: {
+        include: ["resources/js/**/*.test.{js,jsx}"],
+    },
 });
