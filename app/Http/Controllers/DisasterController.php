@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Typhoon;
 use App\Models\User;
 use App\Notifications\FormReminder;
@@ -311,20 +312,38 @@ class DisasterController extends Controller
 
     /**
      * Download the final PDF of an ended disaster, building and storing it the first time
-     * (or again if the stored file is gone), so later downloads are instant.
+     * (or again if the stored file is gone or older than the disaster's last record change),
+     * so later downloads are instant.
      */
     public function downloadPdf(Typhoon $disaster)
     {
-        $stored = $disaster->pdf_path && file_exists(storage_path('app/public/'.$disaster->pdf_path));
+        $oldPath = $disaster->pdf_path ? storage_path('app/public/'.$disaster->pdf_path) : null;
+        // Admins can still edit records after the end; every report model is audited with its disaster_id.
+        $lastChange = AuditLog::where('disaster_id', $disaster->id)->whereIn('action', ['created', 'updated', 'deleted'])->max('created_at');
+        // Strictly newer: a change in the same second as the build may not be in it.
+        $current = $oldPath && file_exists($oldPath) && (! $lastChange || filemtime($oldPath) > strtotime($lastChange));
 
-        if (! $stored) {
+        if (! $current) {
             if ($disaster->status !== 'ended') {
                 return response()->json([
                     'message' => 'The final PDF report is available once the disaster has ended.',
                 ], 404);
             }
-            // shortcut: two admins downloading at the same moment each build a copy (one file is left unused); add a lock if that happens.
-            $disaster->update(['pdf_path' => $this->generatePdfReport($disaster)]);
+
+            try {
+                // shortcut: two admins downloading at the same moment each build a copy (one file is left unused); add a lock if that happens.
+                $disaster->update(['pdf_path' => $this->generatePdfReport($disaster)]);
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'The final PDF report could not be built. Please try again in a few minutes.',
+                ], 500);
+            }
+
+            if ($oldPath && $oldPath !== storage_path('app/public/'.$disaster->pdf_path) && file_exists($oldPath)) {
+                unlink($oldPath);
+            }
         }
 
         return response()->download(storage_path('app/public/'.$disaster->pdf_path));

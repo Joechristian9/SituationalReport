@@ -63,11 +63,11 @@ class AuditLog extends Model
      */
     public function getActionNameAttribute(): string
     {
-        if (!$this->action) {
+        if (! $this->action) {
             return 'Unknown';
         }
 
-        return match($this->action) {
+        return match ($this->action) {
             'created' => 'Created',
             'updated' => 'Updated',
             'deleted' => 'Deleted',
@@ -86,11 +86,11 @@ class AuditLog extends Model
      */
     public function getModelNameAttribute(): string
     {
-        if (!$this->auditable_type) {
+        if (! $this->auditable_type) {
             return 'System';
         }
 
-        return match($this->auditable_type) {
+        return match ($this->auditable_type) {
             'App\Models\WeatherReport', 'App\\Models\\WeatherReport' => 'Weather Report',
             'App\Models\WaterLevel', 'App\\Models\\WaterLevel' => 'Water Level',
             'App\Models\ElectricityService', 'App\\Models\\ElectricityService' => 'Electricity Service',
@@ -113,6 +113,7 @@ class AuditLog extends Model
             'App\Models\AssistanceExtended', 'App\\Models\\AssistanceExtended' => 'Assistance Extended',
             'App\Models\AssistanceProvidedLgu', 'App\\Models\\AssistanceProvidedLgu' => 'Assistance Provided by LGU',
             'App\Models\AgricultureReport', 'App\\Models\\AgricultureReport' => 'Agriculture Report',
+            'App\Models\UscDeclaration', 'App\\Models\\UscDeclaration' => 'State of Calamity Declaration',
             'App\Models\User', 'App\\Models\\User' => 'User',
             'App\Models\Disaster', 'App\\Models\\Disaster' => 'Disaster',
             default => class_basename($this->auditable_type),
@@ -127,11 +128,11 @@ class AuditLog extends Model
         if ($this->action === 'created' || $this->action === 'deleted') {
             return count($this->new_values ?? $this->old_values ?? []);
         }
-        
+
         if ($this->action === 'updated') {
             return count(array_keys($this->new_values ?? []));
         }
-        
+
         return 0;
     }
 

@@ -23,6 +23,7 @@ use App\Models\Road;
 use App\Models\SuspensionOfClass;
 use App\Models\SuspensionOfWork;
 use App\Models\Typhoon;
+use App\Models\UscDeclaration;
 use App\Models\User;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
@@ -143,6 +144,7 @@ class AppServiceProvider extends ServiceProvider
         SuspensionOfWork::observe(AuditableObserver::class);
         AssistanceExtended::observe(AuditableObserver::class);
         AssistanceProvidedLgu::observe(AuditableObserver::class);
+        UscDeclaration::observe(AuditableObserver::class);
 
         // System models
         User::observe(AuditableObserver::class);
