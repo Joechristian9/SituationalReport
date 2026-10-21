@@ -234,8 +234,8 @@
       "_index.esm-Dw9IacZb.js"
     ]
   },
-  "_ReportHistoryPage-BkSpY43a.js": {
-    "file": "assets/ReportHistoryPage-BkSpY43a.js",
+  "_ReportHistoryPage-DsfnLh6V.js": {
+    "file": "assets/ReportHistoryPage-DsfnLh6V.js",
     "name": "ReportHistoryPage",
     "imports": [
       "_index.esm-Dw9IacZb.js",
@@ -1358,7 +1358,7 @@
     ]
   },
   "resources/js/Components/Graphs/AgeSexTable.jsx": {
-    "file": "assets/AgeSexTable-Dq0Pekjd.js",
+    "file": "assets/AgeSexTable-Ck2lZ-cD.js",
     "name": "AgeSexTable",
     "src": "resources/js/Components/Graphs/AgeSexTable.jsx",
     "isDynamicEntry": true,
@@ -1414,7 +1414,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-vGOW4dWb.js",
+    "file": "assets/BarangayImpactChart-B3uKz5k4.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1469,7 +1469,7 @@
     ]
   },
   "resources/js/Components/Graphs/DisasterHistory.jsx": {
-    "file": "assets/DisasterHistory-Bgk3SyBd.js",
+    "file": "assets/DisasterHistory-B22uBRvH.js",
     "name": "DisasterHistory",
     "src": "resources/js/Components/Graphs/DisasterHistory.jsx",
     "isDynamicEntry": true,
@@ -1528,7 +1528,7 @@
     ]
   },
   "resources/js/Components/Graphs/EvacuationGraph.jsx": {
-    "file": "assets/EvacuationGraph-Dt_DjPjF.js",
+    "file": "assets/EvacuationGraph-BtOaWfUv.js",
     "name": "EvacuationGraph",
     "src": "resources/js/Components/Graphs/EvacuationGraph.jsx",
     "isDynamicEntry": true,
@@ -1565,7 +1565,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-l93qCTUv.js",
+    "file": "assets/ImpactHourlyChart-D9uuH7OE.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1623,7 +1623,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-CeM22WZd.js",
+    "file": "assets/ImpactTrendChart-DUFvC6Yk.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1681,7 +1681,7 @@
     ]
   },
   "resources/js/Components/Graphs/PersonBreakdownGraph.jsx": {
-    "file": "assets/PersonBreakdownGraph-BUs6rb7s.js",
+    "file": "assets/PersonBreakdownGraph-C2loD-Vn.js",
     "name": "PersonBreakdownGraph",
     "src": "resources/js/Components/Graphs/PersonBreakdownGraph.jsx",
     "isDynamicEntry": true,
@@ -1736,7 +1736,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-CyDf5Gtq.js",
+    "file": "assets/WaterLevelGraph-mU1LrT3z.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1791,7 +1791,7 @@
     ]
   },
   "resources/js/Components/Graphs/WeatherGraph.jsx": {
-    "file": "assets/WeatherGraph-CwWAwQVN.js",
+    "file": "assets/WeatherGraph-DQanI3yn.js",
     "name": "WeatherGraph",
     "src": "resources/js/Components/Graphs/WeatherGraph.jsx",
     "isDynamicEntry": true,
@@ -2144,31 +2144,36 @@
     ]
   },
   "resources/js/Components/Weather/PagasaPanel.jsx": {
-    "file": "assets/PagasaPanel-BFcBN5YP.js",
+    "file": "assets/PagasaPanel-Cqcggw6b.js",
     "name": "PagasaPanel",
     "src": "resources/js/Components/Weather/PagasaPanel.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
       "_popover-BxwSbUNA.js",
-      "_AppLayout-_bGVpfrD.js",
       "_badge-BcPK5L0D.js",
       "_button-em0zGThl.js",
       "_card-Bq49wlmp.js",
+      "_AppLayout-_bGVpfrD.js",
+      "_TablePagination-CV-6U4nP.js",
       "_utils-D6WWLOnn.js",
+      "_useMediaQuery-CYrNKFT1.js",
       "_useOnline-Bsx5S7tR.js",
-      "_refresh-cw-D1dS2W-l.js",
-      "_triangle-alert-CInZrpmA.js",
-      "_shield-alert-H0bCYMYS.js",
       "_circle-check-CjQmpTzn.js",
+      "_triangle-alert-CInZrpmA.js",
+      "_clock-O_t6NbbE.js",
+      "_shield-alert-H0bCYMYS.js",
+      "_refresh-cw-D1dS2W-l.js",
       "_dialog-BWr2HNBk.js",
+      "_chevron-down-BlSIgdtR.js",
       "_formatDistanceToNow-B6SwJr_k.js",
       "_format-C68athW7.js",
-      "_chevron-down-BlSIgdtR.js",
       "_index-CuD_5Xph.js",
       "_index-DueMs09G.js",
       "_index-DS2Vh2fu.js",
       "_index-BS9hhxva.js",
+      "_load-features-Bghi3FzC.js",
+      "_data-id-zZ7VyGQ0.js",
       "_label-KTP1Jcb5.js",
       "_plus-DJvaHRxm.js",
       "_LogoutDialog-CL6IHclO.js",
@@ -2180,8 +2185,8 @@
       "_download-DzIMp7wT.js",
       "_layout-dashboard-DnaJf4QU.js",
       "_en-US-x0HM9y1L.js",
-      "_load-features-Bghi3FzC.js",
-      "_data-id-zZ7VyGQ0.js",
+      "_RowsPerPage-YQ3PBQQ1.js",
+      "_chevron-left-DhNZ37Lt.js",
       "_differenceInSeconds-C1L3Rx2d.js"
     ]
   },
@@ -2375,7 +2380,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-BH4nT0rH.js",
+    "file": "assets/Dashboard-B-E0-7As.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -2712,14 +2717,14 @@
     ]
   },
   "resources/js/Pages/AgricultureHistory/Index.jsx": {
-    "file": "assets/Index-B7713MLh.js",
+    "file": "assets/Index-YufM1mUI.js",
     "name": "Index",
     "src": "resources/js/Pages/AgricultureHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -2967,14 +2972,14 @@
     ]
   },
   "resources/js/Pages/BridgeHistory/Index.jsx": {
-    "file": "assets/Index-BTx4vDpt.js",
+    "file": "assets/Index-BsAIwl3s.js",
     "name": "Index",
     "src": "resources/js/Pages/BridgeHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3014,14 +3019,14 @@
     ]
   },
   "resources/js/Pages/CommunicationHistory/Index.jsx": {
-    "file": "assets/Index-DICQB5-A.js",
+    "file": "assets/Index-d4qemLMw.js",
     "name": "Index",
     "src": "resources/js/Pages/CommunicationHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3149,14 +3154,14 @@
     ]
   },
   "resources/js/Pages/ElectricityHistory/Index.jsx": {
-    "file": "assets/Index-Cfpkr-mF.js",
+    "file": "assets/Index-CH_7F7rI.js",
     "name": "Index",
     "src": "resources/js/Pages/ElectricityHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3196,14 +3201,14 @@
     ]
   },
   "resources/js/Pages/IncidentHistory/Index.jsx": {
-    "file": "assets/Index-CzItIpPC.js",
+    "file": "assets/Index-BA-VguUT.js",
     "name": "Index",
     "src": "resources/js/Pages/IncidentHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3298,14 +3303,14 @@
     ]
   },
   "resources/js/Pages/PreEmptiveHistory/Index.jsx": {
-    "file": "assets/Index-p6OVthB3.js",
+    "file": "assets/Index-gToBYwrr.js",
     "name": "Index",
     "src": "resources/js/Pages/PreEmptiveHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3415,14 +3420,14 @@
     ]
   },
   "resources/js/Pages/ReportHistory/Index.jsx": {
-    "file": "assets/Index-pbqIcvk2.js",
+    "file": "assets/Index-BZq-FpAw.js",
     "name": "Index",
     "src": "resources/js/Pages/ReportHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3515,14 +3520,14 @@
     ]
   },
   "resources/js/Pages/RoadHistory/Index.jsx": {
-    "file": "assets/Index-DSR-fi6B.js",
+    "file": "assets/Index-BvT5AErH.js",
     "name": "Index",
     "src": "resources/js/Pages/RoadHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3620,14 +3625,14 @@
     ]
   },
   "resources/js/Pages/WaterServiceHistory/Index.jsx": {
-    "file": "assets/Index-CTQRQiW5.js",
+    "file": "assets/Index-CDVo6A34.js",
     "name": "Index",
     "src": "resources/js/Pages/WaterServiceHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3667,14 +3672,14 @@
     ]
   },
   "resources/js/Pages/WeatherHistory/Index.jsx": {
-    "file": "assets/Index-DK88UX73.js",
+    "file": "assets/Index-BEv_dzG1.js",
     "name": "Index",
     "src": "resources/js/Pages/WeatherHistory/Index.jsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_index.esm-Dw9IacZb.js",
-      "_ReportHistoryPage-BkSpY43a.js",
+      "_ReportHistoryPage-DsfnLh6V.js",
       "_chevron-down-BlSIgdtR.js",
       "_utils-D6WWLOnn.js",
       "_popover-BxwSbUNA.js",
@@ -3728,7 +3733,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-DjAPkvdU.js",
+    "file": "assets/app--YIdLb9y.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -3795,7 +3800,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-CTZlBu2T.css"
+      "assets/app-UsyoXx3_.css"
     ]
   },
   "resources/js/lib/motionFeatures.js": {
