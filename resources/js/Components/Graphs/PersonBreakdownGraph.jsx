@@ -253,6 +253,7 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({ casualti
 
     const filtered = useMemo(() => items.filter((item) => matchesFilters(item, { sex, age })), [items, sex, age]);
     const total = filtered.length;
+    const filterText = [sex !== "all" && (sex === "Unknown" ? "sex not specified" : sex.toLowerCase()), age !== "all" && `age ${age}`].filter(Boolean).join(", ");
 
     const counts = useMemo(() => {
         const c = { Male: 0, Female: 0, Unknown: 0 };
@@ -321,8 +322,13 @@ const PersonBreakdownGraph = React.memo(function PersonBreakdownGraph({ casualti
                 <div className="flex flex-col items-center px-4 py-10 text-center text-muted-foreground">
                     <SearchX size={40} className="mb-3 opacity-60" aria-hidden="true" />
                     <p className="text-sm font-medium text-foreground">
-                        {items.length === 0 ? `No ${type.unit} reported yet` : "No records match the filters"}
+                        {items.length === 0 ? `No ${type.unit} reported for this disaster yet` : `None of the ${items.length} ${type.unit} match: ${filterText}`}
                     </p>
+                    {items.length > 0 && (
+                        <Button type="button" variant="outline" size="sm" className="mt-3 h-11 md:h-9" onClick={() => { setSex("all"); setAge("all"); }}>
+                            Clear filters
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <>

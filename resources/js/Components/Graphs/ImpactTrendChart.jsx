@@ -94,7 +94,7 @@ export default function ImpactTrendChart({ trend = [] }) {
             </ul>
 
             {data.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">No reports filed yet.</p>
+                <p className="py-10 text-center text-sm text-muted-foreground">No dead, injured or missing persons have been filed for this disaster yet. Each day appears here once they are.</p>
             ) : asTable ? (
                 <div className="max-h-72 overflow-auto">
                     <table className="w-full text-sm">

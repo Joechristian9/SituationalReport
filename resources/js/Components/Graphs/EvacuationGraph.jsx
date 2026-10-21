@@ -101,7 +101,7 @@ export default function EvacuationGraph({ preEmptiveReports = [], evacuationType
     return (
         <GraphCard title="Evacuation" icon={<Users size={24} />} actions={controls}>
             {preEmptiveReports.length === 0 ? (
-                <EmptyState icon={Users} title="No evacuation reports" description="Evacuees appear here once barangays file the Pre-Emptive form." />
+                <EmptyState icon={Users} title="No evacuees reported for this disaster yet" description="Evacuees appear here once the Pre-emptive Evacuation form is filed for a barangay." />
             ) : (
                 <>
                     <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">

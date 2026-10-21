@@ -144,7 +144,7 @@ export default function WaterLevelGraph({ waterLevels = [] }) {
             }
         >
             {stations.length === 0 ? (
-                <EmptyState icon={Droplet} title="No water level readings" description="Readings appear here once the Water Level form is filled in." />
+                <EmptyState icon={Droplet} title="No water level readings for this disaster yet" description="Each station appears here once its level is entered in the Water Level form." />
             ) : (
                 <>
                     {/* Counts double as filters; tapping the active one shows every station again. */}
@@ -172,7 +172,7 @@ export default function WaterLevelGraph({ waterLevels = [] }) {
                         })}
                     </div>
                     {shown.length === 0 ? (
-                        <p className="py-6 text-center text-sm text-muted-foreground">No stations at {STATUS[filter].label.toLowerCase()} level.</p>
+                        <p className="py-6 text-center text-sm text-muted-foreground">No station is at {STATUS[filter].label.toLowerCase()} level right now. Tap the filter again to see all stations.</p>
                     ) : (
                         <ul className="divide-y divide-border" aria-label="Gauging stations, most urgent first">
                             {shown.map((station) => (

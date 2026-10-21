@@ -36,7 +36,7 @@ export default function WeatherGraph({ weatherReports = [] }) {
             actions={shown && <span className="text-sm text-muted-foreground">{when(shown, "MMM d, h:mm a")}</span>}
         >
             {!shown ? (
-                <EmptyState icon={CloudOff} title="No weather reports" description="Conditions appear here once the Weather form is filled in." />
+                <EmptyState icon={CloudOff} title="No weather report for this disaster yet" description="Conditions appear here once someone fills in the Weather form." />
             ) : (
                 <div className="space-y-4">
                     <div>
