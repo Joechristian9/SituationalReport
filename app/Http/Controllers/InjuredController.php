@@ -61,7 +61,7 @@ class InjuredController extends Controller
             'injured.*.name' => 'nullable|string|max:255',
             'injured.*.age' => 'nullable|integer',
             'injured.*.sex' => 'nullable|string|max:255',
-            'injured.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'injured.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(Injured::class, $request->input('injured')))],
             'injured.*.address' => 'nullable|string',
             'injured.*.diagnosis' => 'nullable|string',
             'injured.*.date_admitted' => 'nullable|date',
@@ -152,7 +152,7 @@ class InjuredController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
-            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$injured->barangay])],
             'address' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'date_admitted' => 'nullable|date',
@@ -161,7 +161,7 @@ class InjuredController extends Controller
         ]);
 
         if (array_key_exists('barangay', $validated)) {
-            $validated['barangay'] = Barangays::match($validated['barangay']);
+            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
         }
 
         $injured->update(array_merge($validated, [

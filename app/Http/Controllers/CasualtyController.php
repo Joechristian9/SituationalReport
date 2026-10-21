@@ -60,7 +60,7 @@ class CasualtyController extends Controller
             'casualties.*.name' => 'nullable|string|max:255',
             'casualties.*.age' => 'nullable|integer',
             'casualties.*.sex' => 'nullable|string|max:255',
-            'casualties.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'casualties.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(Casualty::class, $request->input('casualties')))],
             'casualties.*.address' => 'nullable|string|max:255',
             'casualties.*.cause_of_death' => 'nullable|string|max:255',
             'casualties.*.date_died' => 'nullable|date',
@@ -147,7 +147,7 @@ class CasualtyController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
-            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$casualty->barangay])],
             'address' => 'nullable|string|max:255',
             'cause_of_death' => 'nullable|string|max:255',
             'date_died' => 'nullable|date',
@@ -155,7 +155,7 @@ class CasualtyController extends Controller
         ]);
 
         if (array_key_exists('barangay', $validated)) {
-            $validated['barangay'] = Barangays::match($validated['barangay']);
+            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
         }
 
         $casualty->update(array_merge($validated, [

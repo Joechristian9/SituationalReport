@@ -63,7 +63,7 @@ class MissingController extends Controller
             'missing.*.name' => 'nullable|string|max:255',
             'missing.*.age' => 'nullable|integer',
             'missing.*.sex' => 'nullable|string|max:255',
-            'missing.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'missing.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(Missing::class, $request->input('missing')))],
             'missing.*.address' => 'nullable|string',
             'missing.*.cause' => 'nullable|string',
             'missing.*.remarks' => 'nullable|string',
@@ -154,14 +154,14 @@ class MissingController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
-            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$missing->barangay])],
             'address' => 'nullable|string',
             'cause' => 'nullable|string',
             'remarks' => 'nullable|string',
         ]);
 
         if (array_key_exists('barangay', $validated)) {
-            $validated['barangay'] = Barangays::match($validated['barangay']);
+            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
         }
 
         $missing->update($validated);

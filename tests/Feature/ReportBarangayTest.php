@@ -73,6 +73,26 @@ it('keeps an old damaged-house row typed before the list, but refuses that name 
     expect(DamagedHouseReport::latest('id')->first()->barangay)->toBe('Alibagu');
 });
 
+it('keeps a casualty barangay no longer on the list when the record is edited', function () {
+    $storm = activeStorm();
+    barangayWithPermissions('Alibagu');
+    $office = userWithPermissions('access-casualty-form');
+    // E.g. its barangay account was renamed since.
+    $old = Casualty::create(['name' => 'Juan', 'barangay' => 'Centro', 'user_id' => $office->id, 'disaster_id' => $storm->id]);
+
+    $this->actingAs($office)->putJson(route('casualties.update', $old), ['name' => 'Juan Cruz', 'barangay' => 'Centro'])->assertRedirect();
+    expect($old->fresh())->barangay->toBe('Centro')->name->toBe('Juan Cruz');
+
+    $this->actingAs($office)
+        ->postJson(route('casualties.store'), ['casualties' => [['id' => $old->id, 'name' => 'Juan D. Cruz', 'barangay' => 'Centro']]])
+        ->assertOk();
+    expect($old->fresh())->barangay->toBe('Centro')->name->toBe('Juan D. Cruz');
+
+    $this->actingAs($office)
+        ->postJson(route('casualties.store'), ['casualties' => [['name' => 'Pedro', 'barangay' => 'Centro']]])
+        ->assertUnprocessable();
+});
+
 it('fills the barangay of existing records from the address, else the reporting barangay', function () {
     $storm = activeStorm();
     $aggasian = barangayWithPermissions('Aggasian');
