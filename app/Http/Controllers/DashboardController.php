@@ -56,7 +56,7 @@ class DashboardController extends Controller
                 'recentImpact' => [],
                 'newReportCounts' => ReportView::newCountsFor(null),
                 // Nothing to monitor: show the history of past disasters instead.
-                'history' => fn () => DisasterHistory::for($request->only(['type', 'barangay', 'metric'])),
+                'history' => fn () => DisasterHistory::for($request->only(['type', 'barangay', 'metric', 'event'])),
             ]);
         }
 

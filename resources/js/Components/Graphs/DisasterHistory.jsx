@@ -1,22 +1,19 @@
 import React, { useState } from "react";
 import { router } from "@inertiajs/react";
-import { format, parseISO } from "date-fns";
 import { History, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Button } from "@/Components/ui/button";
-import HistoryTrendChart from "./HistoryTrendChart";
+import EventComparison from "./EventComparison";
+import TypeComparison from "./TypeComparison";
 import BarangayRanking from "./BarangayRanking";
+import { cn } from "@/lib/utils";
 
 const ALL = "all";
 const number = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
-const ordinal = (n) => {
-    const tens = n % 100;
-    return `${n}${tens >= 11 && tens <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[n % 10] ?? "th"}`;
-};
 
-function Filter({ id, label, value, onChange, options, disabled }) {
+function Filter({ id, label, value, onChange, options, disabled, className }) {
     return (
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className={cn("flex min-w-0 flex-col gap-1", className)}>
             <label htmlFor={id} className="text-xs font-medium text-muted-foreground">
                 {label}
             </label>
@@ -46,36 +43,19 @@ function Tile({ label, value, detail }) {
     );
 }
 
-// The latest disaster in plain words; the numbers and comparisons come from the server.
-function insightText(insight, group) {
-    const noun = group.type ? `${group.type.toLowerCase()} events` : "disasters";
-    const unit = { affected: "persons affected", housesDamaged: "houses damaged", evacuatedPersons: "persons evacuated" }[insight.key];
-    let place = "";
-    if (insight.of > 1 && insight.value > 0) {
-        place = insight.rank === 1 ? ` — the most of ${insight.of} ${noun}` : ` — ${ordinal(insight.rank)} highest of ${insight.of} ${noun}`;
-    }
-    let usual = "";
-    if (insight.average === 0 && insight.value > 0) {
-        usual = `; earlier ${noun} had none`;
-    } else if (insight.average !== null) {
-        usual = { above: `, above the usual ${number(insight.average)}`, below: `, below the usual ${number(insight.average)}`, about: ", about the usual" }[insight.comparison];
-    }
-    return `${number(insight.value)} ${unit}${place}${usual}.`;
-}
-
 /**
  * Shown on the admin dashboard while no disaster is active. One row of filters drives
  * everything below it; changing one reloads only this data from the server.
  */
 export default function DisasterHistory({ history }) {
     const [busy, setBusy] = useState(false);
-    const { filters, options, summary, series, ranking, latest } = history;
+    const { filters, options, summary, series, ranking, byType, focus } = history;
     const barangayName = options.barangays.find((b) => b.id === filters.barangay)?.name;
-    const metricLabel = options.metrics.find((m) => m.key === filters.metric)?.label ?? "Persons affected";
+    const metricLabel = options.metrics.find((m) => m.key === filters.metric)?.label ?? "Persons evacuated";
 
     const apply = (changes) => {
         const next = { ...filters, ...changes };
-        const query = Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== null && !(key === "metric" && value === "affected")));
+        const query = Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== null && !(key === "metric" && value === "evacuatedPersons")));
         router.get(route("dashboard"), query, {
             only: ["history"],
             preserveState: true,
@@ -90,7 +70,11 @@ export default function DisasterHistory({ history }) {
     const scope = `${filters.type ? `${filters.type.toLowerCase()} ` : ""}disaster${summary.events === 1 ? "" : "s"}`;
 
     return (
-        <section className="space-y-6" aria-labelledby="history-heading" aria-busy={busy}>
+        <section
+            className={cn("space-y-6 transition-opacity duration-200 motion-reduce:transition-none", busy && "opacity-60 delay-150")}
+            aria-labelledby="history-heading"
+            aria-busy={busy}
+        >
             <div className="space-y-1">
                 <h2 id="history-heading" className="flex items-center gap-2 text-lg font-semibold text-foreground">
                     <History className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
@@ -99,7 +83,7 @@ export default function DisasterHistory({ history }) {
                 <p className="text-sm text-muted-foreground">No disaster is active. Here is what past disasters did, so you can plan for the next one.</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 rounded-xl border bg-muted/40 p-3 sm:grid-cols-3" role="group" aria-label="Filters">
+            <div className="grid grid-cols-2 gap-3 rounded-xl border bg-muted/40 p-3 sm:grid-cols-3" role="group" aria-label="Filters">
                 <Filter
                     id="history-type"
                     label="Disaster type"
@@ -118,6 +102,7 @@ export default function DisasterHistory({ history }) {
                 />
                 <Filter
                     id="history-metric"
+                    className="col-span-2 sm:col-span-1"
                     label="Measure"
                     value={filters.metric}
                     onChange={(v) => apply({ metric: v })}
@@ -150,30 +135,30 @@ export default function DisasterHistory({ history }) {
                         <Tile label={`Persons evacuated ${where}`} value={summary.evacuatedPersons} />
                     </div>
 
-                    {latest && (
-                        <div className="rounded-xl border bg-card p-4 shadow-sm">
-                            <p className="text-sm text-muted-foreground">
-                                Latest: <span className="font-semibold text-foreground">{latest.name}</span>
-                                {latest.type ? ` (${latest.type})` : ""}, ended {format(parseISO(latest.endedAt), "MMM d, yyyy")}
-                                {barangayName ? `, in ${barangayName}` : ""}
-                            </p>
-                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
-                                {latest.insights.map((insight) => (
-                                    <li key={insight.key}>{insightText(insight, latest.group)}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    <HistoryTrendChart series={series} metricLabel={metricLabel} lineLabel={barangayName ?? "All barangays (citywide)"} />
-
-                    <BarangayRanking
-                        rows={ranking}
-                        events={summary.events}
+                    <EventComparison
+                        series={series}
+                        focus={focus}
+                        metric={filters.metric}
                         metricLabel={metricLabel}
-                        selected={filters.barangay}
-                        onSelect={(id) => apply({ barangay: id === filters.barangay ? null : id })}
+                        lineLabel={barangayName ?? "All barangays (citywide)"}
+                        where={where}
+                        onSelectEvent={(id) => apply({ event: id })}
+                        onSelectMetric={(metric) => apply({ metric })}
+                        disabled={busy}
                     />
+
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        <TypeComparison rows={byType} metricLabel={metricLabel} where={where} selected={filters.type} onSelect={(type) => apply({ type })} disabled={busy} />
+
+                        <BarangayRanking
+                            rows={ranking}
+                            events={summary.events}
+                            metricLabel={metricLabel}
+                            unassigned={history.unassigned}
+                            selected={filters.barangay}
+                            onSelect={(id) => apply({ barangay: id === filters.barangay ? null : id })}
+                        />
+                    </div>
                 </>
             )}
         </section>
