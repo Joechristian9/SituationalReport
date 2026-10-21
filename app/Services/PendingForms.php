@@ -75,6 +75,17 @@ class PendingForms
     }
 
     /**
+     * The report tables an account is assigned, once each, in the order of its permissions.
+     *
+     * @param  array<int, string>  $permissions
+     * @return array<int, string>
+     */
+    public static function required(array $permissions): array
+    {
+        return array_values(array_unique(array_filter(array_map(fn (string $permission) => self::PERMISSION_TABLES[$permission] ?? null, $permissions))));
+    }
+
+    /**
      * The tables still to submit, given the account's permissions and the tables it has submitted.
      *
      * @param  array<int, string>  $permissions
@@ -83,9 +94,7 @@ class PendingForms
      */
     public static function missing(array $permissions, array $submittedTables): array
     {
-        $tables = array_filter(array_map(fn (string $permission) => self::PERMISSION_TABLES[$permission] ?? null, $permissions));
-
-        return array_values(array_diff(array_unique($tables), $submittedTables));
+        return array_values(array_diff(self::required($permissions), $submittedTables));
     }
 
     /**

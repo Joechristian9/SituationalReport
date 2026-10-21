@@ -27,7 +27,8 @@ it('counts each account\'s records per form for the current disaster only', func
             ->where('users.0.submitted_forms.0.name', 'Weather Report')
             ->where('users.0.submitted_forms.1.name', 'Agriculture Report')
             ->where('users.0.last_submission', '2026-10-03 10:00:00')
-            ->where('users.0.pending_forms', ['Roads']));
+            ->where('users.0.pending_forms', ['Roads'])
+            ->where('users.0.forms', ['done' => 2, 'total' => 3, 'toSubmit' => ['Roads'], 'submitted' => ['Weather Report', 'Agriculture Report']]));
 });
 
 it('shows every account as not submitted when no disaster is running', function () {
@@ -39,5 +40,6 @@ it('shows every account as not submitted when no disaster is running', function 
         ->assertInertia(fn (Assert $page) => $page
             ->where('activeTyphoon', null)
             ->where('users.0.has_submitted', false)
-            ->where('users.0.pending_forms', []));
+            ->where('users.0.pending_forms', [])
+            ->where('users.0.forms', ['done' => 0, 'total' => 1, 'toSubmit' => ['Weather Report'], 'submitted' => []]));
 });

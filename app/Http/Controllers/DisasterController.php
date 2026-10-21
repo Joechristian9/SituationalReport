@@ -424,6 +424,8 @@ class DisasterController extends Controller
             return response()->json([
                 'message' => 'Failed to delete typhoon report. Please try again.',
             ], 500);
+                $required = PendingForms::required($user->permissions->pluck('name')->all());
+                $pending = $activeTyphoon ? array_values(array_diff($required, $submittedFormTypes)) : [];
         }
     }
 
@@ -490,9 +492,15 @@ class DisasterController extends Controller
                     'submitted_forms' => array_values($submittedForms),
                     'submitted_form_types' => $submittedFormTypes,
                     // Forms the account still has to file, and when an admin last reminded it.
-                    'pending_forms' => $activeTyphoon
-                        ? array_map([PendingForms::class, 'label'], PendingForms::missing($user->permissions->pluck('name')->all(), $submittedFormTypes))
-                        : [],
+                    'pending_forms' => array_map([PendingForms::class, 'label'], $pending),
+                    // Assigned forms filed so far; the status badge is complete only when done = total.
+                    'forms' => [
+                        'done' => $activeTyphoon ? count($required) - count($pending) : 0,
+                        'total' => count($required),
+                        // The badge's popup lists; with no disaster running, nothing counts as submitted.
+                        'toSubmit' => array_map([PendingForms::class, 'label'], $activeTyphoon ? $pending : $required),
+                        'submitted' => $activeTyphoon ? array_map([PendingForms::class, 'label'], array_values(array_diff($required, $pending))) : [],
+                    ],
                     'reminded_at' => ($remindedAt[$user->id] ?? null)?->toIso8601String(),
                 ];
             });

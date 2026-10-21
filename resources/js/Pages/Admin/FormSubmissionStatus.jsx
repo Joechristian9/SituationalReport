@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, AlertCircle, BellRing, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, BellRing, ChevronDown, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
 import {
@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/sheet";
 import axios from 'axios';
 import { router } from '@inertiajs/react';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { Toaster } from 'sonner';
 import RemindDialog from '@/Components/reminders/RemindDialog';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
@@ -49,10 +49,25 @@ import { buildSuggestions } from '@/lib/searchSuggestions';
 const REMIND_COOLDOWN_MS = 60 * 60 * 1000;
 const recentlyReminded = (user) => user.reminded_at && Date.now() - new Date(user.reminded_at).getTime() < REMIND_COOLDOWN_MS;
 
+/** 'all' | 'some' | 'none' from the server's assigned-form count; 'unassigned' when the account has no forms. */
+const formState = (user) => {
+    const { done = 0, total = 0 } = user.forms ?? {};
+    if (total === 0) return 'unassigned';
+    return done >= total ? 'all' : done > 0 ? 'some' : 'none';
+};
+const STATE_ORDER = { all: 0, some: 1, none: 2, unassigned: 3 };
+// Green only when every assigned form is in; amber part-way; red for none.
+const STATE_STYLE = {
+    all: { badge: 'border-success/30 bg-success/10 text-success', dot: 'bg-success' },
+    some: { badge: 'border-warning/30 bg-warning/10 text-warning', dot: 'bg-warning' },
+    none: { badge: 'border-destructive/30 bg-destructive/10 text-destructive', dot: 'bg-destructive' },
+    unassigned: { badge: 'border-border bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
+};
+
 const SUBMISSION_SORT = {
     name: (u) => u.name.toLowerCase(),
     email: (u) => u.email.toLowerCase(),
-    status: (u) => (u.has_submitted ? 0 : 1),
+    status: (u) => STATE_ORDER[formState(u)] * 1000 - (u.forms?.done ?? 0),
     last: (u) => (u.last_submission ? new Date(u.last_submission).getTime() : null),
 };
 
@@ -61,35 +76,40 @@ const HIDDEN_COLUMNS = ['id', 'typhoon_id', 'disaster_id', 'user_id', 'created_a
 
 const titleCase = (text) => text.replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-// Form permission => report table, for coloring the assigned-form chips.
-const permissionToTable = {
-    'access-weather-form': 'weather_reports',
-    'access-electricity-form': 'electricity_services',
-    'access-water-service-form': 'water_services',
-    'access-communication-form': 'communications',
-    'access-pre-emptive-form': 'pre_emptive_reports',
-    'access-incident-form': 'incident_monitored',
-    'access-agriculture-form': 'agriculture_reports',
-    'access-water-level-form': 'water_levels',
-    'access-road-form': 'roads',
-    'access-bridge-form': 'bridges',
-    'access-pre-positioning-form': 'pre_positionings',
-    'access-declaration-form': 'usc_declarations',
-    'access-response-operations': 'response_operations',
-    'access-assistance-extended': 'assistance_extendeds',
-    'access-casualty-form': 'casualties',
-    'access-injured-form': 'injureds',
-    'access-missing-form': 'missing',
-    'access-damaged-houses-form': 'damaged_house_reports',
-    'access-affected-tourists-form': 'affected_tourists',
-    'access-assistance-provided-lgus-form': 'assistance_provided_lgus',
-    'access-suspension-classes-form': 'suspension_of_classes',
-    'access-suspension-work-form': 'suspension_of_works',
-};
-
 /** "access-weather-form" -> "Weather" */
 const permissionLabel = (permission) =>
     titleCase(permission.replace('access-', '').replace('-form', '').replace(/-/g, ' '));
+
+function FormChips({ title, forms, submitted = false }) {
+    if (forms.length === 0) return null;
+    return (
+        <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {title} <span className="tabular-nums">({forms.length})</span>
+            </h4>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+                {forms.map((form) => (
+                    <li
+                        key={form}
+                        className={cn(
+                            'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium',
+                            submitted ? 'border-success/30 bg-success/10 text-success' : 'border-border bg-muted text-foreground'
+                        )}
+                    >
+                        {submitted && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}
+                        {form}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+// Year only when it is not this year, so the cell fits beside the pinned Actions column on laptops.
+const submittedAt = (value) => {
+    const date = new Date(value);
+    return format(date, date.getFullYear() === new Date().getFullYear() ? 'MMM d, h:mm a' : 'MMM d, yyyy, h:mm a');
+};
 
 const formatDate = (value) =>
     new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -271,93 +291,63 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
         setFormRows(null);
     };
 
-    const getStatusBadge = (hasSubmitted) => {
+    // `interactive`: the badge opens the list of forms still to submit and those already in (green).
+    const getStatusBadge = (user, { interactive = false } = {}) => {
+        const state = formState(user);
+        const { done, total } = user.forms ?? { done: 0, total: 0 };
+        const text = {
+            all: `All submitted · ${done}/${total}`,
+            some: `${done} of ${total} submitted`,
+            none: `Not submitted · 0/${total}`,
+            unassigned: 'No forms',
+        }[state];
+        const badgeClass = cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium tabular-nums', STATE_STYLE[state].badge);
+        const dot = <span className={cn('h-1.5 w-1.5 rounded-full', STATE_STYLE[state].dot)} aria-hidden="true" />;
+
+        if (!interactive || state === 'unassigned') {
+            return (
+                <span className={badgeClass}>
+                    {dot}
+                    {text}
+                </span>
+            );
+        }
+
+        const { toSubmit = [], submitted = [] } = user.forms ?? {};
         return (
-            <span
-                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                    hasSubmitted
-                        ? 'border-success/30 bg-success/10 text-success'
-                        : 'border-destructive/30 bg-destructive/10 text-destructive'
-                }`}
-            >
-                <span
-                    className={`h-1.5 w-1.5 rounded-full ${hasSubmitted ? 'bg-success' : 'bg-destructive'}`}
-                    aria-hidden="true"
-                />
-                {hasSubmitted ? 'Submitted' : 'Not submitted'}
-            </span>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <button
+                        type="button"
+                        aria-label={`${text}. Show ${user.name}'s forms`}
+                        // Keeps the badge's look; a 44px-tall hit area on phones without growing the pill.
+                        className={cn(badgeClass, 'relative cursor-pointer transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring before:absolute before:-inset-y-3 before:inset-x-0 md:before:hidden')}
+                    >
+                        {dot}
+                        {text}
+                        <ChevronDown className="h-3 w-3 opacity-70" aria-hidden="true" />
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[min(380px,calc(100vw-2rem))] space-y-4" align="start" collisionPadding={16}>
+                    <FormChips title="To submit" forms={toSubmit} />
+                    <FormChips title="Submitted" forms={submitted} submitted />
+                </PopoverContent>
+            </Popover>
         );
     };
 
     const formatPermissions = (permissions) => permissions.map(permissionLabel).join(', ');
 
 
-    const renderAssignedForms = (user) => {
-        if (!user.permissions || user.permissions.length === 0) {
-            return <span className="text-sm italic text-muted-foreground">No forms assigned</span>;
-        }
-
-        const submittedTables = user.submitted_form_types || [];
-        const totalForms = user.permissions.length;
-        
-        return (
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-11 gap-2 rounded-lg border-primary/30 text-primary hover:bg-accent hover:text-primary max-md:w-full md:h-8"
-                    >
-                        <FileText className="h-4 w-4" aria-hidden="true" />
-                        View forms ({totalForms})
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[min(420px,calc(100vw-2rem))]" align="start">
-                    <div className="space-y-3">
-                        <div>
-                            <h4 className="text-sm font-semibold text-foreground">Assigned forms</h4>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {user.permissions.filter((p) => submittedTables.includes(permissionToTable[p])).length} of {totalForms} submitted
-                            </p>
-                        </div>
-                        <div className="max-h-[350px] overflow-y-auto">
-                            <ul className="flex flex-wrap gap-2">
-                                {user.permissions.map((permission) => {
-                                    const tableName = permissionToTable[permission];
-                                    const isSubmitted = tableName && submittedTables.includes(tableName);
-
-                                    return (
-                                        <li
-                                            key={permission}
-                                            className={cn(
-                                                'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium',
-                                                isSubmitted
-                                                    ? 'border-success/30 bg-success/10 text-success'
-                                                    : 'border-border bg-muted text-muted-foreground'
-                                            )}
-                                        >
-                                            {isSubmitted && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}
-                                            {permissionLabel(permission)}
-                                            <span className="sr-only">{isSubmitted ? ' (submitted)' : ' (not submitted)'}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    </div>
-                </PopoverContent>
-            </Popover>
-        );
-    };
 
     // Sort users: most recent submissions first, then by submission status
     const sortedUsers = useMemo(() => {
         return [...users].sort((a, b) => {
-            // First, sort by whether they have submitted (submitted first)
-            if (a.has_submitted && !b.has_submitted) return -1;
-            if (!a.has_submitted && b.has_submitted) return 1;
-            
-            // If both submitted or both not submitted, sort by last_submission date (most recent first)
+            // All forms in first, then part-way, then none.
+            const byState = STATE_ORDER[formState(a)] - STATE_ORDER[formState(b)];
+            if (byState !== 0) return byState;
+
+            // Same state: most recent submission first
             if (a.last_submission && b.last_submission) {
                 return new Date(b.last_submission) - new Date(a.last_submission);
             }
@@ -372,7 +362,8 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
     const filteredUsers = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         return sortedUsers.filter((user) =>
-            (statusFilter === 'all' || user.has_submitted === (statusFilter === 'submitted')) &&
+            (statusFilter === 'all' ||
+                (statusFilter === 'submitted' ? formState(user) === 'all' : ['some', 'none'].includes(formState(user)))) &&
             (!query ||
                 user.name.toLowerCase().includes(query) ||
                 user.email.toLowerCase().includes(query) ||
@@ -422,7 +413,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
             : [
                   {
                       key: 'status',
-                      label: `Status: ${statusFilter === 'submitted' ? 'Submitted' : 'Not yet submitted'}`,
+                      label: `Status: ${statusFilter === 'submitted' ? 'All assigned forms submitted' : 'Missing assigned forms'}`,
                       onRemove: () => setStatusFilter('all'),
                   },
               ];
@@ -509,8 +500,8 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                 value={statusFilter}
                                                 onChange={setStatusFilter}
                                                 options={[
-                                                    { value: 'submitted', label: 'Submitted' },
-                                                    { value: 'pending', label: 'Not yet submitted' },
+                                                    { value: 'submitted', label: 'All assigned forms submitted' },
+                                                    { value: 'pending', label: 'Missing assigned forms' },
                                                 ]}
                                             />
                                         }
@@ -524,40 +515,31 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                             {!isWide ? (
                                             <ul className="space-y-3 p-3">
                                                 {paginationData.paginatedUsers.map((user) => {
-                                                    const permissions = user.permissions ?? [];
-                                                    const doneTables = user.submitted_form_types ?? [];
-                                                    const done = permissions.filter((p) => doneTables.includes(permissionToTable[p])).length;
-                                                    const percent = permissions.length ? Math.round((done / permissions.length) * 100) : 0;
+                                                    const { done = 0, total = 0 } = user.forms ?? {};
+                                                    const percent = total ? Math.round((done / total) * 100) : 0;
                                                     return (
                                                         <li key={user.id} className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <div className="min-w-0">
-                                                                    <p className="truncate text-base font-semibold text-foreground">{user.name}</p>
-                                                                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
-                                                                </div>
-                                                                {getStatusBadge(user.has_submitted)}
+                                                            <div className="min-w-0">
+                                                                <p className="truncate text-base font-semibold text-foreground">{user.name}</p>
+                                                                <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                                                             </div>
 
-                                                            {permissions.length > 0 && (
-                                                                <div className="mt-3">
-                                                                    <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                                                                        <span>Forms submitted</span>
-                                                                        <span className="tabular-nums">
-                                                                            <span className="font-semibold text-foreground">{done}</span> of {permissions.length}
-                                                                        </span>
-                                                                    </div>
+                                                            {/* The badge already says "3 of 5"; the bar beside it shows the same at a glance. */}
+                                                            <div className="mt-3 flex items-center gap-3">
+                                                                {getStatusBadge(user, { interactive: true })}
+                                                                {total > 0 && (
                                                                     <div
                                                                         role="progressbar"
                                                                         aria-label={`Forms submitted by ${user.name}`}
                                                                         aria-valuemin={0}
-                                                                        aria-valuemax={permissions.length}
+                                                                        aria-valuemax={total}
                                                                         aria-valuenow={done}
-                                                                        className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"
+                                                                        className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"
                                                                     >
-                                                                        <div className="h-full rounded-full bg-success" style={{ width: `${percent}%` }} />
+                                                                        <div className={cn('h-full rounded-full', STATE_STYLE[formState(user)].dot)} style={{ width: `${percent}%` }} />
                                                                     </div>
-                                                                </div>
-                                                            )}
+                                                                )}
+                                                            </div>
 
                                                             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                                                                 <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -565,13 +547,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                     <span className="tabular-nums">
                                                                         Last submission{' '}
                                                                         <span className="font-medium text-foreground">
-                                                                            {new Date(user.last_submission).toLocaleString('en-US', {
-                                                                                month: 'short',
-                                                                                day: 'numeric',
-                                                                                year: 'numeric',
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit',
-                                                                            })}
+                                                                            {submittedAt(user.last_submission)}
                                                                         </span>
                                                                     </span>
                                                                 ) : (
@@ -607,20 +583,17 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                 </div>
                                                             )}
 
-                                                            <div className={cn('mt-3 grid gap-2', user.has_submitted ? 'grid-cols-2' : 'grid-cols-1')}>
-                                                                {renderAssignedForms(user)}
-                                                                {user.has_submitted && (
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        onClick={() => handleViewDetails(user)}
-                                                                        className="h-11 gap-1 rounded-lg font-medium text-primary hover:bg-accent hover:text-primary"
-                                                                        aria-label={`View submissions from ${user.name}`}
-                                                                    >
-                                                                        View
-                                                                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
+                                                            {user.has_submitted && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => handleViewDetails(user)}
+                                                                    className="mt-3 h-11 w-full gap-1 rounded-lg font-medium text-primary hover:bg-accent hover:text-primary"
+                                                                    aria-label={`View submissions from ${user.name}`}
+                                                                >
+                                                                    View
+                                                                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                                                </Button>
+                                                            )}
                                                         </li>
                                                     );
                                                 })}
@@ -634,10 +607,8 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                             <span className="sr-only">Row</span>
                                                         </TableHead>
                                                         <SortableHead sortKey="name" sort={sort} onSort={toggleSort}>Name</SortableHead>
-                                                        <SortableHead sortKey="email" sort={sort} onSort={toggleSort}>Email</SortableHead>
+                                                        <SortableHead sortKey="email" sort={sort} onSort={toggleSort} className="hidden xl:table-cell">Email</SortableHead>
                                                         <SortableHead sortKey="status" sort={sort} onSort={toggleSort}>Status</SortableHead>
-                                                        <TableHead>Assigned forms</TableHead>
-                                                        {activeTyphoon && <TableHead>To submit</TableHead>}
                                                         <SortableHead sortKey="last" sort={sort} onSort={toggleSort}>Last submission</SortableHead>
                                                         <TableHead className="sticky right-0 z-[1] border-l border-border/60 bg-[color-mix(in_srgb,hsl(var(--accent))_50%,hsl(var(--card)))] text-right">Actions</TableHead>
                                                     </TableRow>
@@ -648,54 +619,26 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                             <TableCell className="text-right tabular-nums text-muted-foreground">
                                                                 {paginationData.startIndex + index + 1}
                                                             </TableCell>
-                                                            <TableCell className="font-medium text-foreground">
-                                                                {user.name}
+                                                            <TableCell className="max-w-[16rem]">
+                                                                <span className="block font-medium text-foreground">{user.name}</span>
+                                                                {/* Below 1280px the Email column is hidden, so the address rides under the name. */}
+                                                                <span className="block truncate text-xs text-muted-foreground xl:hidden" title={user.email}>{user.email}</span>
                                                             </TableCell>
-                                                            <TableCell label="Email" className="max-w-[14rem] truncate text-muted-foreground" title={user.email}>
+                                                            <TableCell label="Email" className="hidden max-w-[14rem] truncate text-muted-foreground xl:table-cell" title={user.email}>
                                                                 {user.email}
                                                             </TableCell>
-                                                            <TableCell label="Status">
-                                                                {getStatusBadge(user.has_submitted)}
+                                                            <TableCell label="Status" className="min-w-[11rem]">
+                                                                {getStatusBadge(user, { interactive: true })}
+                                                                {activeTyphoon && user.pending_forms?.length > 0 && user.reminded_at && (
+                                                                    <p className="mt-1 whitespace-nowrap text-xs text-muted-foreground">
+                                                                        Reminded {formatDistanceToNowStrict(new Date(user.reminded_at), { addSuffix: true })}
+                                                                    </p>
+                                                                )}
                                                             </TableCell>
-                                                            <TableCell label="Assigned forms">
-                                                                {renderAssignedForms(user)}
-                                                            </TableCell>
-                                                            {activeTyphoon && (
-                                                                <TableCell label="To submit">
-                                                                    {user.pending_forms?.length > 0 ? (
-                                                                        <div className="space-y-1">
-                                                                            <span
-                                                                                className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning"
-                                                                                title={user.pending_forms.join(', ')}
-                                                                            >
-                                                                                <Clock className="h-3 w-3" aria-hidden="true" />
-                                                                                {user.pending_forms.length} {user.pending_forms.length === 1 ? 'form' : 'forms'}
-                                                                            </span>
-                                                                            <span className="sr-only">Missing: {user.pending_forms.join(', ')}</span>
-                                                                            {user.reminded_at && (
-                                                                                <p className="whitespace-nowrap text-xs text-muted-foreground">
-                                                                                    Reminded {formatDistanceToNowStrict(new Date(user.reminded_at), { addSuffix: true })}
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                                                                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                                                            All submitted
-                                                                        </span>
-                                                                    )}
-                                                                </TableCell>
-                                                            )}
                                                             <TableCell label="Last submission" className="whitespace-nowrap tabular-nums">
                                                                 {user.last_submission ? (
                                                                     <span className="text-muted-foreground">
-                                                                        {new Date(user.last_submission).toLocaleString('en-US', {
-                                                                            month: 'short',
-                                                                            day: 'numeric',
-                                                                            year: 'numeric',
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit'
-                                                                        })}
+                                                                        {submittedAt(user.last_submission)}
                                                                     </span>
                                                                 ) : (
                                                                     <span className="italic text-muted-foreground">No submissions yet</span>
@@ -710,12 +653,12 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                                             size="sm"
                                                                             onClick={() => setRemindTargets([user])}
                                                                             disabled={recentlyReminded(user)}
-                                                                            title={recentlyReminded(user) ? 'Reminded within the last hour' : undefined}
-                                                                            className="h-11 gap-1.5 bg-card font-medium shadow-sm md:h-8"
+                                                                            // Icon only: the hover title names the action; screen readers get the aria-label.
+                                                                            title={recentlyReminded(user) ? 'Reminded within the last hour' : 'Notify'}
+                                                                            className="h-11 w-11 bg-card p-0 shadow-sm md:h-8 md:w-8"
                                                                             aria-label={`Remind ${user.name} to submit ${user.pending_forms.length} ${user.pending_forms.length === 1 ? 'form' : 'forms'}`}
                                                                         >
                                                                             <BellRing className="h-4 w-4" aria-hidden="true" />
-                                                                            Notify
                                                                         </Button>
                                                                     )}
                                                                     {user.has_submitted ? (
@@ -780,11 +723,9 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                 <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden border-l border-border bg-background p-0 sm:max-w-3xl sm:rounded-l-2xl">
                     {(() => {
                         const submitted = selectedUser?.submitted_forms ?? [];
-                        const permissions = selectedUser?.permissions ?? [];
-                        const submittedTables = selectedUser?.submitted_form_types ?? [];
-                        const pending = permissions.filter((p) => !submittedTables.includes(permissionToTable[p]));
-                        const assigned = Math.max(permissions.length, submitted.length);
-                        const percent = assigned ? Math.round((submitted.length / assigned) * 100) : 0;
+                        const pending = selectedUser?.forms?.toSubmit ?? [];
+                        const { done = 0, total = 0 } = selectedUser?.forms ?? {};
+                        const percent = total ? Math.round((done / total) * 100) : 0;
 
                         return (
                             <>
@@ -802,7 +743,7 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                 {selectedUser?.name}
                                             </SheetTitle>
                                             <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                                                {getStatusBadge(Boolean(selectedUser?.has_submitted))}
+                                                {getStatusBadge(selectedUser ?? {})}
                                                 <span className="min-w-0 break-all">{selectedUser?.email}</span>
                                                 {activeTyphoon && (
                                                     <>
@@ -817,18 +758,18 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                         <div className="flex items-baseline justify-between gap-2 text-sm">
                                             <span className="font-medium text-foreground">Forms submitted</span>
                                             <span className="tabular-nums text-muted-foreground">
-                                                <span className="font-semibold text-foreground">{submitted.length}</span> of {assigned}
+                                                <span className="font-semibold text-foreground">{done}</span> of {total}
                                             </span>
                                         </div>
                                         <div
                                             role="progressbar"
                                             aria-label="Forms submitted"
                                             aria-valuemin={0}
-                                            aria-valuemax={assigned}
-                                            aria-valuenow={submitted.length}
+                                            aria-valuemax={total}
+                                            aria-valuenow={done}
                                             className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"
                                         >
-                                            <div className="h-full rounded-full bg-success" style={{ width: `${percent}%` }} />
+                                            <div className={cn('h-full rounded-full', STATE_STYLE[formState(selectedUser ?? {})].dot)} style={{ width: `${percent}%` }} />
                                         </div>
                                     </div>
                                 </SheetHeader>
@@ -931,13 +872,13 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
                                                 </span>
                                             </h3>
                                             <ul className="flex flex-wrap gap-2">
-                                                {pending.map((permission) => (
+                                                {pending.map((form) => (
                                                     <li
-                                                        key={permission}
+                                                        key={form}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
                                                     >
                                                         <Clock className="h-3 w-3" aria-hidden="true" />
-                                                        {permissionLabel(permission)}
+                                                        {form}
                                                     </li>
                                                 ))}
                                             </ul>
