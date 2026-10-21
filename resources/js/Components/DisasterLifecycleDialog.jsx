@@ -45,7 +45,7 @@ const ACTIONS = {
         effects: [
             { icon: Lock, text: 'Forms close permanently for all field users.' },
             { icon: Archive, text: 'The disaster moves to history with the status Ended.' },
-            { icon: FileText, text: 'The final PDF report is prepared in the background. Download it from the history table.' },
+            { icon: FileText, text: 'Download the final PDF report from the history table. The first download takes a few seconds while it is built.' },
         ],
         acknowledge: 'I have checked that all barangay and office reports are in.',
         confirm: 'End disaster',
@@ -82,7 +82,7 @@ export default function DisasterLifecycleDialog({ action, disaster, onActionChan
             const { data } = await axios.post(route(`disasters.${action}`, disaster.id));
             onActionChange(null);
             router.reload({ only: ['typhoons', 'typhoon'] });
-            toast.success(data.message, action === 'end' ? { description: 'The final PDF report will be ready in the history table shortly.' } : undefined);
+            toast.success(data.message, action === 'end' ? { description: 'Download the final PDF report from the history table.' } : undefined);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Something went wrong. Please try again.');
         } finally {

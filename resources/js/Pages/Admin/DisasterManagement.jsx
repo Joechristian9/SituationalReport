@@ -525,24 +525,10 @@ export default function DisasterManagement({ typhoons }) {
         }
     }, [selectedTyphoon, deletePassword]);
 
-    // The final PDF is normally built right after a disaster ends; this builds it on demand
-    // when that didn't happen. Returns whether the PDF now exists.
-    const generatePdf = useCallback(async (typhoon) => {
-        const loadingToast = toast.loading('Generating PDF report...');
-        try {
-            await axios.post(route('disasters.regenerate-pdf', typhoon.id));
-            toast.success('PDF generated successfully', { id: loadingToast });
-            router.reload({ only: ['typhoons'] });
-            return true;
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to generate PDF', { id: loadingToast });
-            return false;
-        }
-    }, []);
-
-    const handleDownloadPdf = async (typhoon) => {
-        if (!typhoon.pdf_path && !(await generatePdf(typhoon))) return;
+    // The server builds the final PDF on the first download (a few seconds), then reuses it.
+    const handleDownloadPdf = (typhoon) => {
         window.open(route('disasters.download', typhoon.id), '_blank');
+        if (!typhoon.pdf_path) toast.info('Preparing the final PDF report. It opens in the new tab in a few seconds.');
     };
 
     const openView = (typhoon) => {

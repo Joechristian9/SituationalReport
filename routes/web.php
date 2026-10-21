@@ -395,7 +395,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/{disaster}/resume', [DisasterController::class, 'resume'])->name('disasters.resume');
         Route::get('/{disaster}/snapshot', [DisasterController::class, 'downloadSnapshot'])->middleware('throttle:pdf')->name('disasters.snapshot');
         Route::post('/{disaster}/end', [DisasterController::class, 'end'])->name('disasters.end');
-        Route::post('/{disaster}/regenerate-pdf', [DisasterController::class, 'regeneratePdf'])->middleware('throttle:pdf')->name('disasters.regenerate-pdf');
         Route::delete('/{disaster}', [DisasterController::class, 'destroy'])->name('disasters.destroy');
         Route::get('/{disaster}/download', [DisasterController::class, 'downloadPdf'])->middleware('throttle:pdf')->name('disasters.download');
     });

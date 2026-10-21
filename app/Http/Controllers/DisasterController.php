@@ -13,8 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-use function Illuminate\Support\defer;
-
 class DisasterController extends Controller
 {
     /**
@@ -245,9 +243,9 @@ class DisasterController extends Controller
     }
 
     /**
-     * End a disaster report. The final PDF takes several seconds to render, so it is
-     * built after the response is sent (there is no queue worker on the host). If that
-     * fails, downloading the report from the history table generates it on demand.
+     * End a disaster report. The final PDF (seconds to render) is not built here: servers
+     * without fastcgi/litespeed_finish_request would keep the admin waiting for it even when
+     * deferred. downloadPdf() builds it the first time someone downloads it.
      */
     public function end(Typhoon $disaster): JsonResponse
     {
@@ -262,21 +260,6 @@ class DisasterController extends Controller
             'ended_at' => now(),
             'ended_by' => auth()->id(),
         ]);
-
-        defer(function () use ($disaster) {
-            if ($disaster->fresh()->pdf_path) {
-                return;
-            }
-
-            try {
-                $disaster->update(['pdf_path' => $this->generatePdfReport($disaster)]);
-            } catch (\Throwable $e) {
-                \Log::error('PDF Generation Failed', [
-                    'disaster_id' => $disaster->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        });
 
         return response()->json([
             'message' => "{$disaster->name} has ended. Forms are now closed.",
@@ -327,62 +310,24 @@ class DisasterController extends Controller
     }
 
     /**
-     * Download typhoon PDF report
+     * Download the final PDF of an ended disaster, building and storing it the first time
+     * (or again if the stored file is gone), so later downloads are instant.
      */
     public function downloadPdf(Typhoon $disaster)
     {
-        if (! $disaster->pdf_path) {
-            return response()->json([
-                'message' => 'PDF report not available for this typhoon.',
-            ], 404);
+        $stored = $disaster->pdf_path && file_exists(storage_path('app/public/'.$disaster->pdf_path));
+
+        if (! $stored) {
+            if ($disaster->status !== 'ended') {
+                return response()->json([
+                    'message' => 'The final PDF report is available once the disaster has ended.',
+                ], 404);
+            }
+            // shortcut: two admins downloading at the same moment each build a copy (one file is left unused); add a lock if that happens.
+            $disaster->update(['pdf_path' => $this->generatePdfReport($disaster)]);
         }
 
-        $fullPath = storage_path('app/public/'.$disaster->pdf_path);
-
-        if (! file_exists($fullPath)) {
-            return response()->json([
-                'message' => 'PDF file not found.',
-            ], 404);
-        }
-
-        return response()->download($fullPath);
-    }
-
-    /**
-     * Regenerate PDF for an ended typhoon
-     */
-    public function regeneratePdf(Typhoon $disaster)
-    {
-        if ($disaster->status !== 'ended') {
-            return response()->json([
-                'message' => 'Can only regenerate PDF for ended typhoons.',
-            ], 422);
-        }
-
-        try {
-            $pdfPath = $this->generatePdfReport($disaster);
-
-            $disaster->update([
-                'pdf_path' => $pdfPath,
-            ]);
-
-            return response()->json([
-                'message' => 'PDF generated successfully.',
-                'typhoon' => $disaster->load(['creator:id,name', 'ender:id,name']),
-                'pdf_path' => $pdfPath,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('PDF Regeneration Failed', [
-                'disaster_id' => $disaster->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'message' => 'PDF generation failed: '.$e->getMessage(),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->download(storage_path('app/public/'.$disaster->pdf_path));
     }
 
     /**
@@ -424,8 +369,6 @@ class DisasterController extends Controller
             return response()->json([
                 'message' => 'Failed to delete typhoon report. Please try again.',
             ], 500);
-                $required = PendingForms::required($user->permissions->pluck('name')->all());
-                $pending = $activeTyphoon ? array_values(array_diff($required, $submittedFormTypes)) : [];
         }
     }
 
@@ -481,6 +424,8 @@ class DisasterController extends Controller
 
                 // Get list of submitted form types (for coloring in UI)
                 $submittedFormTypes = array_keys($submittedForms);
+                $required = PendingForms::required($user->permissions->pluck('name')->all());
+                $pending = $activeTyphoon ? array_values(array_diff($required, $submittedFormTypes)) : [];
 
                 return [
                     'id' => $user->id,
