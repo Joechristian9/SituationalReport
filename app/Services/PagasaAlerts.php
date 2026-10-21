@@ -100,14 +100,20 @@ class PagasaAlerts
 
         $responses = Http::pool(fn ($pool) => array_map(fn (string $url) => $pool->timeout(15)->get($url), $urls));
 
+        // Keyed by headline: PAGASA re-issues a bulletin minutes apart without cancelling the
+        // old one (sometimes relabelling its region), so only the newest of each is kept.
         $alerts = [];
         foreach ($responses as $response) {
             if (! $response instanceof Response || ! $response->successful()) {
                 continue;
             }
             $alert = self::parse($response->body());
-            if ($alert && self::concernsIsabela($alert)) {
-                $alerts[$alert['id']] = $alert;
+            if (! $alert || ! self::concernsIsabela($alert)) {
+                continue;
+            }
+            $key = $alert['headline'] ?: $alert['event'];
+            if (! isset($alerts[$key]) || Carbon::parse($alert['sent'])->gt(Carbon::parse($alerts[$key]['sent']))) {
+                $alerts[$key] = $alert;
             }
         }
 

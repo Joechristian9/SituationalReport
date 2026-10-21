@@ -9,12 +9,12 @@ function capEntry(string $title, string $href): string
     return "<entry><title>{$title}</title><link type=\"application/cap+xml\" href=\"{$href}\"/></entry>";
 }
 
-function capAlert(string $id, string $event, string $region, string $area, string $expires, string $severity = 'Moderate'): string
+function capAlert(string $id, string $event, string $region, string $area, string $expires, string $severity = 'Moderate', string $sent = '2026-10-05T08:00:00+08:00'): string
 {
     return <<<XML
     <?xml version="1.0"?>
     <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
-      <identifier>{$id}</identifier><sent>2026-10-05T08:00:00+08:00</sent><status>Actual</status><msgType>Alert</msgType>
+      <identifier>{$id}</identifier><sent>{$sent}</sent><status>Actual</status><msgType>Alert</msgType>
       <info>
         <event>{$event}</event><severity>{$severity}</severity><urgency>Expected</urgency><certainty>Likely</certainty>
         <expires>{$expires}</expires><headline>{$event}</headline>
@@ -60,6 +60,24 @@ it('shows admins the active PAGASA alerts that concern Isabela', function () {
         ->and($response->json('alerts.0.mentionsIsabela'))->toBeTrue()
         ->and($response->json('alerts.0.description'))->toBe('Rivers in Isabela may overflow.');
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'davao.cap'));
+});
+
+it('shows only the newest copy of a bulletin PAGASA re-issued', function () {
+    $future = now()->addHours(6)->toIso8601String();
+    // The re-issue relabels the region, as PAGASA did with Rosal's Signal #1.
+    $warning = fn (string $id, string $sent, string $region) => Http::response(capAlert($id, 'Tropical Cyclone Warning', $region, 'Isabela', $future, sent: $sent));
+    Http::fake([
+        PagasaAlerts::FEED_URL => Http::response('<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom">'
+            .capEntry('Tropical Cyclone Warning : Rosal', 'https://publicalert.pagasa.dost.gov.ph/output/tcws/newer.cap')
+            .capEntry('Tropical Cyclone Warning : Rosal', 'https://publicalert.pagasa.dost.gov.ph/output/tcws/older.cap')
+            .'</feed>'),
+        'publicalert.pagasa.dost.gov.ph/output/tcws/newer.cap' => $warning('newer', '2026-10-21T16:51:00+08:00', 'Luzon'),
+        'publicalert.pagasa.dost.gov.ph/output/tcws/older.cap' => $warning('older', '2026-10-21T16:49:00+08:00', 'Northern Luzon'),
+    ]);
+
+    $response = $this->actingAs(userWithRole('admin'))->getJson(route('admin.pagasa-alerts'))->assertOk();
+
+    expect(collect($response->json('alerts'))->pluck('id')->all())->toBe(['newer']);
 });
 
 it('keeps regular users out', function () {
