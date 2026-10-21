@@ -2,8 +2,9 @@
 // MASTER §3), so every form looks the same and follows light/dark mode.
 // Use with STACKED_TABLE / CELL_LABEL from lib/responsiveTable on phones.
 
-// The table's only frame: the form already sits inside the page card.
-export const TABLE_WRAP = 'md:overflow-x-auto md:rounded-lg md:border md:border-border';
+// The table's only frame: the form already sits inside the page card. `relative` keeps
+// absolutely positioned bits (sr-only labels) inside the scroll box, so they can't widen the page.
+export const TABLE_WRAP = 'md:relative md:overflow-x-auto md:rounded-lg md:border md:border-border';
 export const THEAD = 'bg-muted/60';
 export const TH = 'px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 export const ROW = 'md:border-t md:border-border md:hover:bg-muted/30';
