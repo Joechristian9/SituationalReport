@@ -60,9 +60,9 @@ export default function ReportHistoryPage({ type }) {
         if (data && groups.length === 0 && meta.total > 0 && page > meta.last_page) setPage(meta.last_page);
     }, [data]);
 
-    // The newest disaster starts open; everything else is the user's choice.
-    const [open, setOpen] = useState({});
-    const isOpen = (id, index) => open[id] ?? index === 0;
+    // One disaster open at a time; the newest starts open (undefined = not touched yet, null = all closed).
+    const [openId, setOpenId] = useState(undefined);
+    const isOpen = (id, index) => (openId === undefined ? index === 0 : openId === id);
 
     return (
         <AppLayout
@@ -116,7 +116,7 @@ export default function ReportHistoryPage({ type }) {
                                             columns={columns}
                                             isWide={isWide}
                                             open={isOpen(group.typhoon.id, index)}
-                                            onToggle={() => setOpen((prev) => ({ ...prev, [group.typhoon.id]: !isOpen(group.typhoon.id, index) }))}
+                                            onToggle={() => setOpenId(isOpen(group.typhoon.id, index) ? null : group.typhoon.id)}
                                         />
                                     );
                                 })}

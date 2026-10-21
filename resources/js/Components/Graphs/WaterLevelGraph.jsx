@@ -116,19 +116,15 @@ function StationRow({ station, expanded, onToggle }) {
 /** One row per gauging station: its level against its own alarm and critical thresholds, worst first. */
 export default function WaterLevelGraph({ waterLevels = [] }) {
     const [filter, setFilter] = useState(null); // null = every status
-    const [open, setOpen] = useState(() => new Set());
+    // One station open at a time: opening another closes it.
+    const [open, setOpen] = useState(null);
 
     const stations = useMemo(() => stationsFrom(waterLevels), [waterLevels]);
 
     const counts = Object.fromEntries(ORDER.map((key) => [key, stations.filter((s) => s.status === key).length]));
     const latest = stations.reduce((max, s) => (s.updatedAt && (!max || s.updatedAt > max) ? s.updatedAt : max), null);
     const shown = filter ? stations.filter((s) => s.status === filter) : stations;
-    const toggle = (id) =>
-        setOpen((prev) => {
-            const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
-            return next;
-        });
+    const toggle = (id) => setOpen((prev) => (prev === id ? null : id));
 
     return (
         <GraphCard
@@ -176,7 +172,7 @@ export default function WaterLevelGraph({ waterLevels = [] }) {
                     ) : (
                         <ul className="divide-y divide-border" aria-label="Gauging stations, most urgent first">
                             {shown.map((station) => (
-                                <StationRow key={station.id} station={station} expanded={open.has(station.id)} onToggle={() => toggle(station.id)} />
+                                <StationRow key={station.id} station={station} expanded={open === station.id} onToggle={() => toggle(station.id)} />
                             ))}
                         </ul>
                     )}

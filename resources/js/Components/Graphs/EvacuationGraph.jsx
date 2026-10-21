@@ -48,13 +48,9 @@ function Tile({ label, value }) {
 /** Evacuees per barangay (inside / outside evacuation centers, or both), most evacuated first. */
 export default function EvacuationGraph({ preEmptiveReports = [], evacuationType = "total", onEvacuationTypeChange, searchQuery = "", onSearchChange }) {
     const [showAll, setShowAll] = useState(false);
-    const [open, setOpen] = useState(() => new Set());
-    const toggle = (barangay) =>
-        setOpen((prev) => {
-            const next = new Set(prev);
-            next.has(barangay) ? next.delete(barangay) : next.add(barangay);
-            return next;
-        });
+    // One barangay open at a time: opening another closes it.
+    const [open, setOpen] = useState(null);
+    const toggle = (barangay) => setOpen((prev) => (prev === barangay ? null : barangay));
     const persons = `${evacuationType}_persons`;
     const families = `${evacuationType}_families`;
 
@@ -120,7 +116,7 @@ export default function EvacuationGraph({ preEmptiveReports = [], evacuationType
                         <>
                             <ol className="space-y-1" aria-label={`Barangays by evacuees${viewLabel}, most first. Tap one for inside and outside counts.`}>
                                 {shown.map((r) => {
-                                    const expanded = open.has(r.barangay);
+                                    const expanded = open === r.barangay;
                                     const id = `evac-${r.barangay.replace(/\W+/g, "-")}`;
                                     return (
                                         <li key={r.barangay} className="text-sm">
