@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Injured;
 use App\Models\Modification;
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
@@ -60,6 +61,7 @@ class InjuredController extends Controller
             'injured.*.name' => 'nullable|string|max:255',
             'injured.*.age' => 'nullable|integer',
             'injured.*.sex' => 'nullable|string|max:255',
+            'injured.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'injured.*.address' => 'nullable|string',
             'injured.*.diagnosis' => 'nullable|string',
             'injured.*.date_admitted' => 'nullable|date',
@@ -74,6 +76,8 @@ class InjuredController extends Controller
             $dataToCheck = $injuredData;
             unset($dataToCheck['sex']);
             unset($dataToCheck['id']);
+            // Pre-filled on new rows, so on its own it does not make a row worth saving.
+            unset($dataToCheck['barangay']);
 
             // Remove empty values (null, '', whitespace, 0, '0')
             $dataToCheck = array_filter($dataToCheck, function ($value) {
@@ -92,6 +96,7 @@ class InjuredController extends Controller
                 'name' => $injuredData['name'] ?? null,
                 'age' => $injuredData['age'] ?? null,
                 'sex' => $injuredData['sex'] ?? null,
+                'barangay' => Barangays::forRow($injuredData['barangay'] ?? null, Auth::user()),
                 'address' => $injuredData['address'] ?? null,
                 'diagnosis' => $injuredData['diagnosis'] ?? null,
                 'date_admitted' => $injuredData['date_admitted'] ?? null,
@@ -147,12 +152,17 @@ class InjuredController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'address' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'date_admitted' => 'nullable|date',
             'place_of_incident' => 'nullable|string|max:255',
             'remarks' => 'nullable|string',
         ]);
+
+        if (array_key_exists('barangay', $validated)) {
+            $validated['barangay'] = Barangays::match($validated['barangay']);
+        }
 
         $injured->update(array_merge($validated, [
             'updated_by' => Auth::id(),
@@ -211,6 +221,6 @@ class InjuredController extends Controller
      */
     public function submissions(Request $request): Response
     {
-        return $this->submissionsPage($request, Injured::class, 'injured', ['name', 'address', 'diagnosis'], 'Admin/InjuredSubmissions', 'injured');
+        return $this->submissionsPage($request, Injured::class, 'injured', ['name', 'barangay', 'address', 'diagnosis'], 'Admin/InjuredSubmissions', 'injured');
     }
 }

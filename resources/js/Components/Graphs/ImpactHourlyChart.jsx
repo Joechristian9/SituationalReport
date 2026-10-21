@@ -21,7 +21,6 @@ const hourRange = (iso) => {
     const start = parseISO(iso);
     return `${format(start, "MMM d, h:mm")}–${format(addHours(start, 1), "h:mm a")}`;
 };
-const placeLabel = (place) => (place.office ? `${place.name} (office)` : place.name);
 
 /**
  * Color follows the barangay, never its rank: a barangay keeps its color while it
@@ -58,7 +57,7 @@ function HourTooltip({ active, payload, label, series, showZeros }) {
         <div className="max-w-64 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
             <p className="mb-1.5 text-muted-foreground">{hourRange(label)}</p>
             {listed.length === 0 ? (
-                <p className="text-muted-foreground">No reports this hour</p>
+                <p className="text-muted-foreground">Nothing filed this hour</p>
             ) : (
                 <ul className="space-y-1">
                     {listed.map((s) => (
@@ -94,7 +93,7 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Click a barangay to highlight its line (up to {MAX_HIGHLIGHT}).</p>
             {rows.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">No barangay reports in the last 24 hours.</p>
+                <p className="mt-2 text-sm text-muted-foreground">No dead, injured or missing filed for any barangay in the last 24 hours.</p>
             ) : (
                 <div className="mt-2 sm:max-h-80 sm:overflow-y-auto">
                     <table className="w-full text-sm">
@@ -126,7 +125,7 @@ function Ranking({ rows, colorFor, onToggle, onReset, customized }) {
                                                 <span className="w-5 shrink-0 tabular-nums text-muted-foreground">{i + 1}</span>
                                                 {color ? <LineKey color={color} /> : <MutedKey />}
                                                 <span className="min-w-0">
-                                                    <span className={`block break-words ${color ? "font-medium text-foreground" : "text-foreground"}`}>{placeLabel(row)}</span>
+                                                    <span className={`block break-words ${color ? "font-medium text-foreground" : "text-foreground"}`}>{row.name}</span>
                                                     {/* Phones: the three type columns fold into one line under the name. */}
                                                     <span className="block text-xs tabular-nums text-muted-foreground sm:hidden">
                                                         {IMPACT_SERIES.map((s) => `${s.label} ${row[s.key]}`).join(" · ")}
@@ -182,7 +181,7 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
     const series = byPlace
         ? places.ranking.map((r) => {
               const color = colorFor(r.key);
-              return { key: r.key, label: placeLabel(r), color: color ?? MUTED_COLOR, muted: !color, total: r.total };
+              return { key: r.key, label: r.name, color: color ?? MUTED_COLOR, muted: !color, total: r.total };
           })
         : IMPACT_SERIES.map((s) => ({ key: s.key, label: s.label, color: s.color }));
     const data = byPlace ? places.hourly : hourly;
@@ -224,12 +223,12 @@ export default function ImpactHourlyChart({ hourly = [], byBarangay = null }) {
     const summary = byPlace
         ? `${series.length} barangays reported in the last 24 hours. Most reports: ${places.ranking
               .slice(0, 3)
-              .map((r) => `${placeLabel(r)} ${r.total}`)
+              .map((r) => `${r.name} ${r.total}`)
               .join(", ")}.`
         : `Reports filed per hour over the last 24 hours: ${series.map((s) => `${s.label} ${totalOf(s.key)}`).join(", ")}.`;
 
     const chart = !hasReports ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">No reports filed in the last 24 hours.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">No dead, injured or missing persons filed in the last 24 hours. Earlier reports still count in the totals above.</p>
     ) : asTable ? (
         <div className="max-h-72 overflow-auto">
             <table className="w-full text-sm">

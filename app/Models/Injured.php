@@ -26,6 +26,7 @@ class Injured extends Model
         'name',
         'age',
         'sex',
+        'barangay',
         'address',
         'diagnosis',
         'date_admitted',

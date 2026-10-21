@@ -27,6 +27,7 @@ class Missing extends Model
         'name',
         'age',
         'sex',
+        'barangay',
         'address',
         'cause', // Changed from diagnosis/etc.
         'remarks',

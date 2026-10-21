@@ -10,15 +10,13 @@ use App\Models\User;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * Aggregates Dead / Injured / Missing records for one disaster, straight from the
  * database (no row limits), for the admin dashboard visualizations.
  *
- * "Barangay" is the submitting account: every barangay has its own user account
- * named after it, with an email ending in @barangay.local (see BarangaySeeder).
- * Any other account (e.g. CDRRMO) is flagged as an office so it is not mistaken for a barangay.
+ * "Barangay" is the one chosen on each record (see Barangays), so a city office can file
+ * for any barangay. Records without one are grouped as "No barangay given".
  */
 class HumanImpactStats
 {
@@ -78,17 +76,17 @@ class HumanImpactStats
 
         $totals = [];
         $last24h = [];
-        $byAccount = [];
+        $byPlace = [];
         $byDay = [];
         $since = now()->subDay();
         $hourly = self::emptyHours();
         $firstHour = Carbon::parse(array_key_first($hourly));
         // The rows behind both the 24-hour count and the hourly chart, read once.
         $from = $since->lt($firstHour) ? $since : $firstHour;
-        $dayTypes = [];   // [user_id][type] => count, last 24 hours
-        $dayHours = [];   // [user_id][hour key] => count, last 24 hours
+        $dayTypes = [];   // [barangay][type] => count, last 24 hours ('' = none given)
+        $dayHours = [];   // [barangay][hour key] => count, last 24 hours
 
-        // Three queries per type. Totals come from the per-account counts and the 24-hour
+        // Three queries per type. Totals come from the per-barangay counts and the 24-hour
         // count from the recent rows, so neither needs a COUNT query of its own.
         foreach (self::TYPES as $type => $model) {
             $base = $model::query()->where('disaster_id', $disaster->id);
@@ -97,7 +95,7 @@ class HumanImpactStats
             // Bucketed in PHP so it works on MySQL and SQLite alike; at most a day of rows.
             (clone $base)
                 ->where('created_at', '>=', $from)
-                ->get(['user_id', 'created_at'])
+                ->get(['barangay', 'created_at'])
                 ->each(function ($record) use (&$hourly, &$dayTypes, &$dayHours, &$last24h, $type, $since) {
                     $createdAt = Carbon::parse($record->created_at);
                     if ($createdAt->gte($since)) {
@@ -107,19 +105,21 @@ class HumanImpactStats
                     if (! isset($hourly[$key])) {
                         return;
                     }
-                    $userId = $record->user_id ?? 0;
+                    $place = Barangays::match($record->barangay) ?? '';
                     $hourly[$key][$type]++;
-                    $dayTypes[$userId][$type] = ($dayTypes[$userId][$type] ?? 0) + 1;
-                    $dayHours[$userId][$key] = ($dayHours[$userId][$key] ?? 0) + 1;
+                    $dayTypes[$place][$type] = ($dayTypes[$place][$type] ?? 0) + 1;
+                    $dayHours[$place][$key] = ($dayHours[$place][$key] ?? 0) + 1;
                 });
 
             $totals[$type] = 0;
             (clone $base)
-                ->selectRaw('user_id, COUNT(*) as aggregate')
-                ->groupBy('user_id')
+                ->selectRaw('barangay, COUNT(*) as aggregate')
+                ->groupBy('barangay')
                 ->get()
-                ->each(function ($row) use (&$byAccount, &$totals, $type) {
-                    $byAccount[$row->user_id ?? 0][$type] = (int) $row->aggregate;
+                ->each(function ($row) use (&$byPlace, &$totals, $type) {
+                    // +=: differently typed old values can match the same barangay.
+                    $place = Barangays::match($row->barangay) ?? '';
+                    $byPlace[$place][$type] = ($byPlace[$place][$type] ?? 0) + (int) $row->aggregate;
                     $totals[$type] += (int) $row->aggregate;
                 });
 
@@ -134,36 +134,32 @@ class HumanImpactStats
 
         $totals['total'] = $totals['dead'] + $totals['injured'] + $totals['missing'];
 
-        // One lookup for every account named in either chart (the last day's are a subset).
-        $users = User::whereIn('id', array_filter(array_keys($byAccount)))
-            ->get(['id', 'name', 'email'])
-            ->keyBy('id');
-
         return [
             'totals' => $totals,
             'last24h' => $last24h,
-            'byBarangay' => self::barangayRows($byAccount, $users),
+            'byBarangay' => self::barangayRows($byPlace),
             'trend' => self::trendRows($byDay),
             'hourly' => array_values($hourly),
-            'barangays24h' => self::barangaysLastDay($dayTypes, $dayHours, array_keys($hourly), $users),
+            'barangays24h' => self::barangaysLastDay($dayTypes, $dayHours, array_keys($hourly)),
             'generatedAt' => now()->toIso8601String(),
         ];
     }
 
     /**
-     * Every account that reported in the last 24 hours: a ranking with dead /
-     * injured / missing counts, and per-hour totals keyed "a{user_id}" (one line
-     * per barangay on the chart).
+     * Every barangay with reports in the last 24 hours: a ranking with dead / injured /
+     * missing counts, and per-hour totals keyed "a{account id}" (one line per barangay on the chart).
+     * The key must not change between polls: the chart remembers highlighted lines by it.
      */
-    private static function barangaysLastDay(array $dayTypes, array $dayHours, array $hourKeys, Collection $users): array
+    private static function barangaysLastDay(array $dayTypes, array $dayHours, array $hourKeys): array
     {
+        $ids = Barangays::accounts()->pluck('id', 'name');
+        // Names can hold dots, which chart keys cannot, so the barangay's account id is the key.
+        $key = fn (string $place) => $place === '' ? 'none' : 'a'.$ids[$place];
         $ranking = [];
-        foreach ($dayTypes as $userId => $counts) {
-            $user = $users->get($userId);
+        foreach ($dayTypes as $place => $counts) {
             $row = [
-                'key' => "a{$userId}",
-                'name' => $user?->name ?? 'Unknown account',
-                'office' => self::isOffice($user),
+                'key' => $key((string) $place),
+                ...self::place((string) $place),
                 'dead' => $counts['dead'] ?? 0,
                 'injured' => $counts['injured'] ?? 0,
                 'missing' => $counts['missing'] ?? 0,
@@ -174,10 +170,10 @@ class HumanImpactStats
         usort($ranking, fn ($a, $b) => [$b['total'], $a['name']] <=> [$a['total'], $b['name']]);
 
         // Zeros are included so every line stays continuous.
-        $hourly = array_map(function (string $hourKey) use ($dayHours) {
+        $hourly = array_map(function (string $hourKey) use ($dayHours, $key) {
             $row = ['hour' => Carbon::parse($hourKey)->toIso8601String()];
-            foreach ($dayHours as $userId => $hours) {
-                $row["a{$userId}"] = $hours[$hourKey] ?? 0;
+            foreach ($dayHours as $place => $hours) {
+                $row[$key((string) $place)] = $hours[$hourKey] ?? 0;
             }
 
             return $row;
@@ -203,14 +199,18 @@ class HumanImpactStats
         return $hours;
     }
 
-    private static function barangayRows(array $byAccount, Collection $users): array
+    /** @return array{name: string, unplaced: bool} */
+    private static function place(string $barangay): array
+    {
+        return ['name' => $barangay !== '' ? $barangay : 'No barangay given', 'unplaced' => $barangay === ''];
+    }
+
+    private static function barangayRows(array $byPlace): array
     {
         $rows = [];
-        foreach ($byAccount as $userId => $counts) {
-            $user = $users->get($userId);
+        foreach ($byPlace as $place => $counts) {
             $row = [
-                'name' => $user?->name ?? 'Unknown account',
-                'office' => self::isOffice($user),
+                ...self::place((string) $place),
                 'dead' => $counts['dead'] ?? 0,
                 'injured' => $counts['injured'] ?? 0,
                 'missing' => $counts['missing'] ?? 0,

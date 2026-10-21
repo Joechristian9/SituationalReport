@@ -189,7 +189,7 @@ export default function Dashboard({
                                             fresh={freshReports}
                                             paused={live.paused}
                                             disaster={typhoon?.active}
-                                            barangaysToday={impactSummary?.barangays24h?.ranking.filter((r) => !r.office).length}
+                                            barangaysToday={impactSummary?.barangays24h?.ranking.filter((r) => !r.unplaced).length}
                                         />
                                         {/* Stays in view while the feed scrolls (below the 4rem header); scrolls itself if taller than the screen.
                                             The wrapper also stops the card's h-full from stretching to the feed's height. */}

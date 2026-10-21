@@ -1,6 +1,6 @@
 // resources/js/Components/Effects/CasualtyForm.jsx
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { UserX } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
 import useTableFilter from "@/hooks/useTableFilter";
@@ -10,24 +10,30 @@ import FormActions from "@/Components/forms/FormActions";
 import ReportTable from "@/Components/forms/ReportTable";
 import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
+import useBarangays from "@/hooks/useBarangays";
 
 const SEX = ["Male", "Female"];
 
-const COLUMNS = [
+const columnsFor = (barangays) => [
     { name: "name", label: "Name", placeholder: "Full name" },
     { name: "age", label: "Age", type: "number", min: 0, step: 1, className: "w-24" },
     { name: "sex", label: "Sex", type: "select", options: SEX, className: "w-32" },
-    { name: "address", label: "Address" },
+    { name: "barangay", label: "Barangay", type: "select", options: barangays, placeholder: "Select barangay…", className: "w-48" },
+    { name: "address", label: "Address (purok / street)" },
     { name: "cause_of_death", label: "Cause of death" },
     { name: "date_died", label: "Date died", type: "date", className: "w-40" },
     { name: "place_of_incident", label: "Place of incident" },
 ];
 
-const blankRow = () => ({ name: "", age: "", sex: "", address: "", cause_of_death: "", date_died: "", place_of_incident: "" });
+const BLANK = { name: "", age: "", sex: "", barangay: "", address: "", cause_of_death: "", date_died: "", place_of_incident: "" };
 
 export default function CasualtyForm({ data, setData, errors, disabled = false }) {
     const casualties = data?.casualties ?? [];
     const setRows = useCallback((rows) => setData("casualties", rows), [setData]);
+    const { barangays, own } = useBarangays();
+    const columns = useMemo(() => columnsFor(barangays), [barangays]);
+    // New rows start under the reporting barangay; a city office picks one.
+    const blankRow = useCallback(() => ({ ...BLANK, barangay: own }), [own]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.casualties");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
         rows: casualties,
@@ -39,7 +45,7 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
         successMessage: "Casualties saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(casualties, ["name", "address"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(casualties, ["name", "barangay", "address"], 5);
 
     return (
         <div className="space-y-5">
@@ -49,13 +55,13 @@ export default function CasualtyForm({ data, setData, errors, disabled = false }
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
                 suggest={suggest}
-                searchPlaceholder="Search by name or address"
+                searchPlaceholder="Search by name, barangay or address"
                 excel={{ data: casualties, fileName: "Casualties_Dead_Report", sheetName: "Casualties" }}
             />
 
             <ReportTable
                 caption="Casualties: dead"
-                columns={COLUMNS}
+                columns={columns}
                 rows={paginatedData}
                 onChange={updateRow}
                 onRemove={removeRow}

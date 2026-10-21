@@ -17,6 +17,7 @@ class Casualty extends Model
         'name',
         'age',
         'sex',
+        'barangay',
         'address',
         'cause_of_death',
         'date_died',

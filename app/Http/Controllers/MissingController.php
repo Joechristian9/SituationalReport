@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Missing; // 1. Use the Missing model
 use App\Models\Modification;
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
@@ -62,6 +63,7 @@ class MissingController extends Controller
             'missing.*.name' => 'nullable|string|max:255',
             'missing.*.age' => 'nullable|integer',
             'missing.*.sex' => 'nullable|string|max:255',
+            'missing.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'missing.*.address' => 'nullable|string',
             'missing.*.cause' => 'nullable|string',
             'missing.*.remarks' => 'nullable|string',
@@ -74,6 +76,8 @@ class MissingController extends Controller
             $dataToCheck = $missingData;
             unset($dataToCheck['sex']);
             unset($dataToCheck['id']);
+            // Pre-filled on new rows, so on its own it does not make a row worth saving.
+            unset($dataToCheck['barangay']);
 
             // Remove empty values (null, '', whitespace, 0, '0')
             $dataToCheck = array_filter($dataToCheck, function ($value) {
@@ -92,6 +96,7 @@ class MissingController extends Controller
                 'name' => $missingData['name'] ?? null,
                 'age' => $missingData['age'] ?? null,
                 'sex' => $missingData['sex'] ?? null,
+                'barangay' => Barangays::forRow($missingData['barangay'] ?? null, Auth::user()),
                 'address' => $missingData['address'] ?? null,
                 'cause' => $missingData['cause'] ?? null,
                 'remarks' => $missingData['remarks'] ?? null,
@@ -149,10 +154,15 @@ class MissingController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'address' => 'nullable|string',
             'cause' => 'nullable|string',
             'remarks' => 'nullable|string',
         ]);
+
+        if (array_key_exists('barangay', $validated)) {
+            $validated['barangay'] = Barangays::match($validated['barangay']);
+        }
 
         $missing->update($validated);
 
@@ -213,6 +223,6 @@ class MissingController extends Controller
      */
     public function submissions(Request $request): Response
     {
-        return $this->submissionsPage($request, Missing::class, 'missing', ['name', 'address', 'cause'], 'Admin/MissingSubmissions', 'missing');
+        return $this->submissionsPage($request, Missing::class, 'missing', ['name', 'barangay', 'address', 'cause'], 'Admin/MissingSubmissions', 'missing');
     }
 }

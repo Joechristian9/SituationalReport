@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DamagedHouseReport;
 use App\Models\Modification;
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
@@ -55,12 +56,14 @@ class DamagedHouseReportController extends Controller
         $validated = $request->validate([
             'damaged_houses' => 'required|array',
             'damaged_houses.*.id' => 'nullable|integer',
-            'damaged_houses.*.barangay' => 'nullable|string|max:255',
+            'damaged_houses.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(DamagedHouseReport::class, $request->input('damaged_houses')))],
             'damaged_houses.*.partially' => 'nullable|integer|min:0',
             'damaged_houses.*.totally' => 'nullable|integer|min:0',
         ]);
 
         foreach ($validated['damaged_houses'] as $reportData) {
+            // Empty-row checks below use what was typed; an empty barangay is saved as the reporter's own.
+            $barangay = Barangays::forRow($reportData['barangay'] ?? null, Auth::user());
             // If an ID exists and is numeric, try to find and update that specific record
             if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
                 $reportQuery = DamagedHouseReport::where('id', $reportData['id']);
@@ -75,7 +78,7 @@ class DamagedHouseReportController extends Controller
                 if ($report) {
                     // Update existing record
                     $report->update([
-                        'barangay' => $reportData['barangay'] ?? null,
+                        'barangay' => $barangay,
                         'partially' => $reportData['partially'] ?? 0,
                         'totally' => $reportData['totally'] ?? 0,
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
@@ -90,7 +93,7 @@ class DamagedHouseReportController extends Controller
                     }
 
                     DamagedHouseReport::create([
-                        'barangay' => $reportData['barangay'],
+                        'barangay' => $barangay,
                         'partially' => $reportData['partially'] ?? 0,
                         'totally' => $reportData['totally'] ?? 0,
                         'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
@@ -108,7 +111,7 @@ class DamagedHouseReportController extends Controller
                 }
 
                 DamagedHouseReport::create([
-                    'barangay' => $reportData['barangay'],
+                    'barangay' => $barangay,
                     'partially' => $reportData['partially'] ?? 0,
                     'totally' => $reportData['totally'] ?? 0,
                     'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
@@ -147,10 +150,14 @@ class DamagedHouseReportController extends Controller
         $this->authorizeRecordWrite($damagedHouseReport);
 
         $validated = $request->validate([
-            'barangay' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$damagedHouseReport->barangay])],
             'partially' => 'nullable|integer|min:0',
             'totally' => 'nullable|integer|min:0',
         ]);
+
+        if (array_key_exists('barangay', $validated)) {
+            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
+        }
 
         // Add the server-calculated total
         $validated['total'] = ($validated['partially'] ?? 0) + ($validated['totally'] ?? 0);

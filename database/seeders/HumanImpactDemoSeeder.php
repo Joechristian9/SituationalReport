@@ -151,6 +151,7 @@ class HumanImpactDemoSeeder extends Seeder
             'age' => mt_rand(1, 100) <= 4 ? null : $age,
             'sex' => $sex,
             'address' => $address,
+            'barangay' => $barangay->name,
             'disaster_id' => $disasterId,
             'user_id' => $barangay->id,
             'created_at' => $reportedAt,

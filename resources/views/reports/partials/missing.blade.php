@@ -23,7 +23,7 @@
                 <td class="align-left">{{ $casualty['name'] }}</td>
                 <td>{{ $casualty['age'] }}</td>
                 <td>{{ $casualty['sex'] }}</td>
-                <td class="align-left">{{ $casualty['address'] }}</td>
+                <td class="align-left">{{ \App\Services\Barangays::withAddress($casualty['address'], $casualty['barangay'] ?? null) }}</td>
                 <td class="align-left">{{ $casualty['cause'] }}</td>
                 <td class="align-left">{{ $casualty['remarks'] }}</td>
             </tr>

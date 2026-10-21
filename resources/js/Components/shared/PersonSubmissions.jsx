@@ -206,10 +206,14 @@ function RecordCard({ record, config, accent, onOpen }) {
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-semibold text-foreground">{record.name || 'No name'}</span>
                 <span className="block text-sm text-muted-foreground">{ageSex(record)}</span>
-                {record.address && (
+                {(record.barangay || record.address) && (
                     <span className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
                         <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span className="line-clamp-1">{record.address}</span>
+                        <span className="line-clamp-1">
+                            {record.barangay && <span className="font-medium text-foreground">{record.barangay}</span>}
+                            {record.barangay && record.address && " · "}
+                            {record.address}
+                        </span>
                     </span>
                 )}
                 {chips.length > 0 && (
@@ -548,7 +552,7 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Person</TableHead>
-                                                <TableHead>Address</TableHead>
+                                                <TableHead>Barangay / address</TableHead>
                                                 {config.columns.map((col) => (
                                                     <TableHead key={col.key}>{col.label}</TableHead>
                                                 ))}
@@ -585,8 +589,9 @@ export default function PersonSubmissions({ config, records, users = [], filters
                                                             </div>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell label="Address" className="text-muted-foreground">
-                                                        <span className="line-clamp-2 max-w-[16rem]">{record.address || '—'}</span>
+                                                    <TableCell label="Barangay / address" className="text-muted-foreground">
+                                                        <span className="block font-medium text-foreground">{record.barangay || 'No barangay given'}</span>
+                                                        {record.address && <span className="line-clamp-2 max-w-[16rem] text-xs">{record.address}</span>}
                                                     </TableCell>
                                                     {config.columns.map((col) => (
                                                         <TableCell key={col.key} label={col.label} className="text-foreground">
@@ -683,6 +688,9 @@ export default function PersonSubmissions({ config, records, users = [], filters
 
                                 <div ref={sheetBodyRef} className="min-h-0 flex-1 overflow-y-auto border-t border-border px-5 py-4">
                                     <dl className="space-y-4">
+                                        <DetailRow label="Barangay">
+                                            {selected.barangay || <Empty>Not given</Empty>}
+                                        </DetailRow>
                                         <DetailRow label="Address">
                                             {selected.address ? (
                                                 <span className="inline-flex gap-1.5">

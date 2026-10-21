@@ -7,12 +7,13 @@ use App\Services\HumanImpactStats;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
-function insertPeople(string $table, int $userId, int $disasterId, string $createdAt, int $count): void
+function insertPeople(string $table, int $userId, int $disasterId, string $createdAt, int $count, ?string $barangay = null): void
 {
     for ($i = 0; $i < $count; $i++) {
         DB::table($table)->insert([
             'name' => "Person {$i}",
             'user_id' => $userId,
+            'barangay' => $barangay,
             'disaster_id' => $disasterId,
             'created_at' => $createdAt,
             'updated_at' => $createdAt,
@@ -23,14 +24,15 @@ function insertPeople(string $table, int $userId, int $disasterId, string $creat
 it('aggregates dead, injured and missing for one disaster from the database', function () {
     $this->travelTo('2026-09-20 12:00:00');
 
-    $alibagu = User::factory()->create(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local']);
+    $alibagu = User::factory()->create(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local'])->assignRole(Role::findOrCreate('user'));
     $office = User::factory()->create(['name' => 'Cdrrmo', 'email' => 'cdrrmo@example.com']);
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $office->id]);
     $older = Typhoon::create(['name' => 'Old Storm', 'status' => 'ended', 'created_by' => $office->id]);
 
-    insertPeople('casualties', $alibagu->id, $disaster->id, '2026-09-18 08:00:00', 2);
+    insertPeople('casualties', $alibagu->id, $disaster->id, '2026-09-18 08:00:00', 2, 'Alibagu');
     insertPeople('casualties', $office->id, $disaster->id, '2026-09-20 09:00:00', 1);
-    insertPeople((new Injured)->getTable(), $alibagu->id, $disaster->id, '2026-09-20 10:00:00', 3);
+    // Filed by the office, for Alibagu: counted under Alibagu, as typed in any case.
+    insertPeople((new Injured)->getTable(), $office->id, $disaster->id, '2026-09-20 10:00:00', 3, 'alibagu');
     insertPeople('missing', $office->id, $disaster->id, '2026-09-18 11:00:00', 1);
     insertPeople('casualties', $alibagu->id, $older->id, '2026-09-19 08:00:00', 5); // other disaster: ignored
 
@@ -40,8 +42,8 @@ it('aggregates dead, injured and missing for one disaster from the database', fu
         ->and($stats['last24h'])->toBe(['dead' => 1, 'injured' => 3, 'missing' => 0]);
 
     expect($stats['byBarangay'])->toBe([
-        ['name' => 'Alibagu', 'office' => false, 'dead' => 2, 'injured' => 3, 'missing' => 0, 'total' => 5],
-        ['name' => 'Cdrrmo', 'office' => true, 'dead' => 1, 'injured' => 0, 'missing' => 1, 'total' => 2],
+        ['name' => 'Alibagu', 'unplaced' => false, 'dead' => 2, 'injured' => 3, 'missing' => 0, 'total' => 5],
+        ['name' => 'No barangay given', 'unplaced' => true, 'dead' => 1, 'injured' => 0, 'missing' => 1, 'total' => 2],
     ]);
 
     // Continuous days from first to last report, gaps filled with zero.
@@ -77,11 +79,11 @@ it('ranks every barangay over the last 24 hours with its own hourly line', funct
     $this->travelTo('2026-09-20 12:30:00');
 
     $accounts = collect(['Alibagu' => 4, 'Bigao' => 3, 'Fugu' => 2, 'Rugao' => 1])
-        ->map(fn ($count, $name) => [User::factory()->create(['name' => $name, 'email' => strtolower($name).'@barangay.local']), $count]);
+        ->map(fn ($count, $name) => [User::factory()->create(['name' => $name, 'email' => strtolower($name).'@barangay.local'])->assignRole(Role::findOrCreate('user')), $count]);
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $accounts['Alibagu'][0]->id]);
 
     foreach ($accounts as [$user, $count]) {
-        insertPeople((new Injured)->getTable(), $user->id, $disaster->id, '2026-09-20 11:10:00', $count);
+        insertPeople((new Injured)->getTable(), $user->id, $disaster->id, '2026-09-20 11:10:00', $count, $user->name);
     }
     insertPeople('casualties', $accounts['Rugao'][0]->id, $disaster->id, '2026-09-18 08:00:00', 9); // older than 24h: ignored
 
@@ -96,6 +98,9 @@ it('ranks every barangay over the last 24 hours with its own hourly line', funct
             $places['ranking'][3]['key'] => 1,
         ])
         ->and($places['hourly'][0][$places['ranking'][3]['key']])->toBe(0); // zeros kept so lines stay continuous
+
+    // Keyed by account, not position: a new barangay reporting must not move another one's line.
+    expect(array_column($places['ranking'], 'key'))->toBe($accounts->map(fn ($account) => 'a'.$account[0]->id)->values()->all());
 });
 
 it('returns empty data when there is no disaster', function () {
@@ -108,7 +113,7 @@ it('returns empty data when there is no disaster', function () {
 });
 
 it('lists the newest reports across all three types for the live feed', function () {
-    $alibagu = User::factory()->create(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local']);
+    $alibagu = User::factory()->create(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local'])->assignRole(Role::findOrCreate('user'));
     $office = User::factory()->create(['name' => 'Cdrrmo', 'email' => 'cdrrmo@example.com']);
     $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $office->id]);
     $older = Typhoon::create(['name' => 'Old Storm', 'status' => 'ended', 'created_by' => $office->id]);

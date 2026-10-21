@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Modification;
 use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use App\Services\ReportHistory;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +32,7 @@ class PreEmptiveReportController extends Controller
         $validated = $request->validate([
             'reports' => 'required|array',
 
-            'reports.*.barangay' => 'nullable|string|max:255',
+            'reports.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'reports.*.evacuation_center' => 'nullable|string|max:255',
             'reports.*.families' => 'nullable|integer|min:0',
             'reports.*.persons' => 'nullable|integer|min:0',
@@ -53,7 +54,7 @@ class PreEmptiveReportController extends Controller
             }
 
             PreEmptiveReport::create([
-                'barangay' => $report['barangay'] ?? null,
+                'barangay' => Barangays::forRow($report['barangay'] ?? null, Auth::user()),
                 'evacuation_center' => $report['evacuation_center'] ?? null,
                 'families' => $report['families'] ?? null,
                 'persons' => $report['persons'] ?? null,
@@ -77,7 +78,7 @@ class PreEmptiveReportController extends Controller
     public function update(Request $request, PreEmptiveReport $preEmptiveReport)
     {
         $validated = $request->validate([
-            'barangay' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$preEmptiveReport->barangay])],
             'evacuation_center' => 'nullable|string|max:255',
             'families' => 'nullable|integer|min:0',
             'persons' => 'nullable|integer|min:0',
@@ -87,6 +88,10 @@ class PreEmptiveReportController extends Controller
             'total_families' => 'nullable|integer|min:0',
             'total_persons' => 'nullable|integer|min:0',
         ]);
+
+        if (array_key_exists('barangay', $validated)) {
+            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
+        }
 
         $preEmptiveReport->update(array_merge($validated, [
             'updated_by' => Auth::id(),
@@ -116,7 +121,7 @@ class PreEmptiveReportController extends Controller
         $validated = $request->validate([
             'reports' => 'required|array',
             'reports.*.id' => 'nullable',
-            'reports.*.barangay' => 'nullable|string|max:255',
+            'reports.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(PreEmptiveReport::class, $request->input('reports')))],
             'reports.*.evacuation_center' => 'nullable|string|max:255',
             'reports.*.families' => 'nullable|integer|min:0',
             'reports.*.persons' => 'nullable|integer|min:0',
@@ -143,6 +148,7 @@ class PreEmptiveReportController extends Controller
             $reportData['total_families'] = (int) ($reportData['families'] ?? 0) + (int) ($reportData['outside_families'] ?? 0);
             $reportData['total_persons'] = (int) ($reportData['persons'] ?? 0) + (int) ($reportData['outside_persons'] ?? 0);
 
+            $reportData['barangay'] = Barangays::forRow($reportData['barangay'] ?? null, Auth::user());
             $reportId = $reportData['id'] ?? null;
 
             if ($reportId && is_numeric($reportId)) {

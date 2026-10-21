@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Once;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -26,5 +27,14 @@ abstract class TestCase extends BaseTestCase
         }
 
         return $app;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Migrations run in the test's own process (RefreshDatabase), so anything they memoized
+        // with once(), like the barangay list, would otherwise outlive them into the test.
+        Once::flush();
     }
 }

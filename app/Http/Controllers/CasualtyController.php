@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Casualty;
 use App\Models\Modification;
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
@@ -59,6 +60,7 @@ class CasualtyController extends Controller
             'casualties.*.name' => 'nullable|string|max:255',
             'casualties.*.age' => 'nullable|integer',
             'casualties.*.sex' => 'nullable|string|max:255',
+            'casualties.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'casualties.*.address' => 'nullable|string|max:255',
             'casualties.*.cause_of_death' => 'nullable|string|max:255',
             'casualties.*.date_died' => 'nullable|date',
@@ -72,6 +74,8 @@ class CasualtyController extends Controller
             $dataToCheck = $casualty;
             unset($dataToCheck['sex']);
             unset($dataToCheck['id']);
+            // Pre-filled on new rows, so on its own it does not make a row worth saving.
+            unset($dataToCheck['barangay']);
 
             // Remove empty values (null, '', whitespace, 0)
             $dataToCheck = array_filter($dataToCheck, function ($value) {
@@ -87,6 +91,7 @@ class CasualtyController extends Controller
                 'name' => $casualty['name'] ?? null,
                 'age' => $casualty['age'] ?? null,
                 'sex' => $casualty['sex'] ?? null,
+                'barangay' => Barangays::forRow($casualty['barangay'] ?? null, Auth::user()),
                 'address' => $casualty['address'] ?? null,
                 'cause_of_death' => $casualty['cause_of_death'] ?? null,
                 'date_died' => $casualty['date_died'] ?? null,
@@ -142,11 +147,16 @@ class CasualtyController extends Controller
             'name' => 'nullable|string|max:255',
             'age' => 'nullable|integer',
             'sex' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
             'address' => 'nullable|string|max:255',
             'cause_of_death' => 'nullable|string|max:255',
             'date_died' => 'nullable|date',
             'place_of_incident' => 'nullable|string|max:255',
         ]);
+
+        if (array_key_exists('barangay', $validated)) {
+            $validated['barangay'] = Barangays::match($validated['barangay']);
+        }
 
         $casualty->update(array_merge($validated, [
             'updated_by' => Auth::id(),
@@ -195,6 +205,6 @@ class CasualtyController extends Controller
      */
     public function submissions(Request $request): Response
     {
-        return $this->submissionsPage($request, Casualty::class, 'casualties', ['name', 'address', 'cause_of_death'], 'Admin/CasualtySubmissions', 'casualties');
+        return $this->submissionsPage($request, Casualty::class, 'casualties', ['name', 'barangay', 'address', 'cause_of_death'], 'Admin/CasualtySubmissions', 'casualties');
     }
 }

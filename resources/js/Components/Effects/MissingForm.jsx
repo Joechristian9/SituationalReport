@@ -1,6 +1,6 @@
 // resources/js/Components/Effects/MissingForm.jsx
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { UserSearch } from "lucide-react";
 import TablePagination from "@/Components/ui/TablePagination";
 import useTableFilter from "@/hooks/useTableFilter";
@@ -10,21 +10,27 @@ import FormActions from "@/Components/forms/FormActions";
 import ReportTable from "@/Components/forms/ReportTable";
 import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
+import useBarangays from "@/hooks/useBarangays";
 
-const COLUMNS = [
+const columnsFor = (barangays) => [
     { name: "name", label: "Name", placeholder: "Full name" },
     { name: "age", label: "Age", type: "number", min: 0, step: 1, className: "w-24" },
     { name: "sex", label: "Sex", type: "select", options: ["Male", "Female"], className: "w-32" },
-    { name: "address", label: "Address" },
+    { name: "barangay", label: "Barangay", type: "select", options: barangays, placeholder: "Select barangay…", className: "w-48" },
+    { name: "address", label: "Address (purok / street)" },
     { name: "cause", label: "Cause" },
     { name: "remarks", label: "Remarks", type: "textarea" },
 ];
 
-const blankRow = () => ({ name: "", age: "", sex: "", address: "", cause: "", remarks: "" });
+const BLANK = { name: "", age: "", sex: "", barangay: "", address: "", cause: "", remarks: "" };
 
 export default function MissingForm({ data, setData, errors, disabled = false }) {
     const missingList = data?.missing ?? [];
     const setRows = useCallback((rows) => setData("missing", rows), [setData]);
+    const { barangays, own } = useBarangays();
+    const columns = useMemo(() => columnsFor(barangays), [barangays]);
+    // New rows start under the reporting barangay; a city office picks one.
+    const blankRow = useCallback(() => ({ ...BLANK, barangay: own }), [own]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.missing");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
         rows: missingList,
@@ -36,7 +42,7 @@ export default function MissingForm({ data, setData, errors, disabled = false })
         successMessage: "Missing persons saved.",
         disabled,
     });
-    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(missingList, ["name", "address"], 5);
+    const { paginatedData, searchTerm, suggest, setSearchTerm, pagination, showNewRow } = useTableFilter(missingList, ["name", "barangay", "address"], 5);
 
     return (
         <div className="space-y-5">
@@ -46,13 +52,13 @@ export default function MissingForm({ data, setData, errors, disabled = false })
                 searchTerm={searchTerm}
                 onSearch={setSearchTerm}
                 suggest={suggest}
-                searchPlaceholder="Search by name or address"
+                searchPlaceholder="Search by name, barangay or address"
                 excel={{ data: missingList, fileName: "Casualties_Missing_Report", sheetName: "Missing" }}
             />
 
             <ReportTable
                 caption="Casualties: missing"
-                columns={COLUMNS}
+                columns={columns}
                 rows={paginatedData}
                 onChange={updateRow}
                 onRemove={removeRow}

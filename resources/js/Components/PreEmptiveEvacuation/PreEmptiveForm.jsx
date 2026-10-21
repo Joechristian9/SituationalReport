@@ -10,6 +10,7 @@ import FormActions from "@/Components/forms/FormActions";
 import ReportTable from "@/Components/forms/ReportTable";
 import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
+import useBarangays from "@/hooks/useBarangays";
 
 const count = (value) => parseInt(value, 10) || 0;
 const people = (label) => ({ type: "number", min: 0, step: 1, align: "right", className: "w-28", label });
@@ -17,8 +18,8 @@ const people = (label) => ({ type: "number", min: 0, step: 1, align: "right", cl
 const totalFamilies = (row) => count(row.families) + count(row.outside_families);
 const totalPersons = (row) => count(row.persons) + count(row.outside_persons);
 
-const COLUMNS = [
-    { name: "barangay", label: "Barangay" },
+const columnsFor = (barangays) => [
+    { name: "barangay", label: "Barangay", type: "select", options: barangays, placeholder: "Select barangay…", className: "w-48" },
     { name: "evacuation_center", label: "Evacuation center" },
     { name: "families", ...people("Families in center") },
     { name: "persons", ...people("Persons in center") },
@@ -34,6 +35,8 @@ const blankRow = () => ({ barangay: "", evacuation_center: "", families: "", per
 export default function PreEmptiveForm({ data, setData, errors, disabled = false }) {
     const reports = data?.reports ?? [];
     const setRows = useCallback((rows) => setData("reports", rows), [setData]);
+    const { barangays } = useBarangays();
+    const columns = useMemo(() => columnsFor(barangays), [barangays]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.pre-emptive");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
         rows: reports,
@@ -74,7 +77,7 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
 
             <ReportTable
                 caption="Pre-emptive evacuation per barangay"
-                columns={COLUMNS}
+                columns={columns}
                 rows={paginatedData}
                 onChange={updateRow}
                 onRemove={removeRow}

@@ -10,13 +10,14 @@ import FormActions from "@/Components/forms/FormActions";
 import ReportTable from "@/Components/forms/ReportTable";
 import useRowEditor from "@/Components/forms/useRowEditor";
 import useFieldHistory from "@/Components/forms/useFieldHistory";
+import useBarangays from "@/hooks/useBarangays";
 
 const count = (value) => parseInt(value, 10) || 0;
 // The server stores the same sum; this only shows it while typing.
 const rowTotal = (row) => count(row.partially) + count(row.totally);
 
-const COLUMNS = [
-    { name: "barangay", label: "Barangay" },
+const columnsFor = (barangays) => [
+    { name: "barangay", label: "Barangay", type: "select", options: barangays, placeholder: "Select barangay…", className: "w-48" },
     { name: "partially", label: "Partially damaged", type: "number", min: 0, step: 1, align: "right", className: "w-40" },
     { name: "totally", label: "Totally damaged", type: "number", min: 0, step: 1, align: "right", className: "w-40" },
     { name: "total", label: "Total", type: "computed", compute: rowTotal, align: "right", className: "w-28" },
@@ -27,6 +28,8 @@ const blankRow = () => ({ barangay: "", partially: "", totally: "" });
 export default function DamagedHousesForm({ data, setData, errors, disabled = false }) {
     const reports = data?.damaged_houses ?? [];
     const setRows = useCallback((rows) => setData("damaged_houses", rows), [setData]);
+    const { barangays } = useBarangays();
+    const columns = useMemo(() => columnsFor(barangays), [barangays]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.damaged-houses");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
         rows: reports,
@@ -60,7 +63,7 @@ export default function DamagedHousesForm({ data, setData, errors, disabled = fa
 
             <ReportTable
                 caption="Damaged houses per barangay"
-                columns={COLUMNS}
+                columns={columns}
                 rows={paginatedData}
                 onChange={updateRow}
                 onRemove={removeRow}

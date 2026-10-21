@@ -50,7 +50,6 @@ function BarangayTable({ rows }) {
                         <tr key={r.name}>
                             <td className="py-1.5 pr-2">
                                 {r.name}
-                                {r.office && <span className="ml-1.5 text-xs text-muted-foreground">(office)</span>}
                             </td>
                             {IMPACT_SERIES.map((s) => (
                                 <td key={s.key} className="px-2 py-1.5 text-right tabular-nums">{r[s.key]}</td>
@@ -76,15 +75,12 @@ function BarangayBars({ rows, max, grand }) {
                     <li
                         key={row.name}
                         tabIndex={0}
-                        aria-label={`${row.name}${row.office ? " (office)" : ""}: ${row.total} (${describe(row)})`}
+                        aria-label={`${row.name}: ${row.total} (${describe(row)})`}
                         className="group rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                         {...tip.bind(<BarangayTip row={row} grand={grand} />)}
                     >
                         <p className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm text-foreground">
                             <span className="break-words">{row.name}</span>
-                            {row.office && (
-                                <span className="rounded border px-1.5 text-[11px] leading-4 text-muted-foreground">City office</span>
-                            )}
                         </p>
                         <div className="flex items-center gap-2 border-l border-[color:var(--viz-axis)]">
                             <div
@@ -120,16 +116,16 @@ export default function BarangayImpactChart({ rows = [] }) {
     const visible = showAll ? rows : rows.slice(0, ROW_LIMIT);
     const max = Math.max(1, ...rows.map((r) => r.total));
     const grand = rows.reduce((sum, r) => sum + r.total, 0);
-    const barangayCount = rows.filter((r) => !r.office).length;
+    const barangayCount = rows.filter((r) => !r.unplaced).length;
 
     return (
         <GraphCard title="Affected persons by barangay" icon={<MapPin size={24} />}>
             <p className="-mt-2 mb-4 text-sm text-muted-foreground">
-                Grouped by the barangay account that submitted each report.
+                Grouped by the barangay chosen on each report, whoever filed it.
                 {rows.length > 0 &&
                     (barangayCount > 0
                         ? ` ${barangayCount} barangay${barangayCount === 1 ? "" : "s"} reporting.`
-                        : " No barangay account has reported yet; all reports so far came from city office accounts.")}
+                        : " None of the reports so far names a barangay.")}
             </p>
 
             <ul className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground" aria-label="Legend">

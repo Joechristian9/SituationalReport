@@ -25,7 +25,7 @@
                 <td class="align-left">{{ $casualty['name'] }}</td>
                 <td>{{ $casualty['age'] }}</td>
                 <td>{{ $casualty['sex'] }}</td>
-                <td class="align-left">{{ $casualty['address'] }}</td>
+                <td class="align-left">{{ \App\Services\Barangays::withAddress($casualty['address'], $casualty['barangay'] ?? null) }}</td>
                 <td class="align-left">{{ $casualty['diagnosis'] }}</td>
                 <td>{{ \Carbon\Carbon::parse($casualty['date_admitted'])->format('F d, Y') }}</td>
                 <td class="align-left">{{ $casualty['place_of_incident'] }}</td>

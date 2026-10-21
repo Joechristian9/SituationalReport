@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Typhoon;
+use App\Services\Barangays;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -14,6 +15,15 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    /**
+     * Routes rendering SituationReports/Index or IncidentMonitored/Index, the pages with barangay
+     * dropdowns. A new route rendering either page must be added here (ReportBarangayTest checks two).
+     */
+    private const FORM_PAGES = [
+        'situation-reports.index', 'incident-monitored.index', 'casualties.index', 'injured.index',
+        'missing.index', 'damaged-houses.index', 'affected-tourists.index',
+    ];
 
     /**
      * Determine the current asset version.
@@ -67,6 +77,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            // The report forms' barangay lists, only on the pages that host those forms.
+            'barangays' => fn () => $request->user() && $request->routeIs(self::FORM_PAGES) ? Barangays::names() : [],
             'typhoon' => [
                 'active' => fn () => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
                 'hasActive' => fn () => Typhoon::hasActiveTyphoon(),

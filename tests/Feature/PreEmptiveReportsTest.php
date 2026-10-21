@@ -17,6 +17,7 @@ function preEmptiveAccount(): User
 it('computes the totals on the server, ignoring totals sent by the browser', function () {
     $user = preEmptiveAccount();
     Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $user->id]);
+    userWithRole('user')->update(['name' => 'Rugao', 'email' => 'rugao@barangay.local']); // the barangay picked below
 
     $this->actingAs($user)->postJson(route('pre-emptive-reports.store'), [
         'reports' => [[

@@ -162,11 +162,14 @@ export function Field({ id, column, value, disabled, onChange }) {
         // Stored values may differ in case ("male"); match them to an option so they still show.
         const stored = String(value ?? '');
         const selected = column.options.find((option) => option.toLowerCase() === stored.toLowerCase()) ?? stored;
+        // A value typed before the list existed stays visible (and saved) until someone picks another.
+        const offList = selected !== '' && !column.options.includes(selected);
         return (
             // Nothing picked: the "Select…" text takes the placeholder color, like an empty input.
             // Options keep the normal color, since some browsers draw the open list in the select's color.
             <select {...common} value={selected} className={cn(FIELD, !selected && 'text-[hsl(var(--placeholder))]')}>
                 <option value="">{column.placeholder ?? 'Select…'}</option>
+                {offList && <option value={selected}>{selected} (not on the list)</option>}
                 {column.options.map((option) => (
                     <option key={option} value={option} className="text-foreground">
                         {option}
