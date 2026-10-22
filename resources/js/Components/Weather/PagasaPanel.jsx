@@ -78,7 +78,7 @@ function AlertRow({ alert, markIsabela }) {
                 {markIsabela && alert.mentionsIsabela && (
                     <p className={cn("mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium", TONE.destructive)}>
                         <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        Names Isabela
+                        Mentions Isabela
                     </p>
                 )}
             </div>
@@ -206,7 +206,7 @@ export default function PagasaPanel() {
         setAlertPage(next);
         listRef.current?.scrollTo({ top: 0 });
     };
-    const naming = isabela === 0 ? "" : isabela === alerts.length && isabela > 1 ? ", all naming Isabela" : `, ${isabela} naming Isabela`;
+    const naming = isabela === 0 ? "" : isabela === alerts.length && isabela > 1 ? ", all mention Isabela" : `, ${isabela} ${isabela === 1 ? "mentions" : "mention"} Isabela`;
     // No data once loading is over means the request failed.
     const status = isLoading
         ? { tone: "muted", icon: Loader2, title: "Checking PAGASA alerts…", detail: null }
