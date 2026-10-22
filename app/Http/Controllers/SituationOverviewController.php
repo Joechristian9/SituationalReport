@@ -160,9 +160,6 @@ class SituationOverviewController extends Controller
                 'integer',
                 Rule::exists('weather_reports', 'id'),
             ],
-            // Municipality is now required to create a new record.
-            // It can be null only if other fields are also null (which we handle below).
-            'reports.*.municipality' => 'required|string|max:255',
             'reports.*.sky_condition' => 'nullable|string|max:255',
             'reports.*.wind' => 'nullable|string|max:255',
             'reports.*.precipitation' => 'nullable|string|max:255',
@@ -179,9 +176,6 @@ class SituationOverviewController extends Controller
                     // Only update fields that have actually changed
                     $fieldsToUpdate = [];
 
-                    if ($weatherReport->municipality !== $reportData['municipality']) {
-                        $fieldsToUpdate['municipality'] = $reportData['municipality'];
-                    }
                     if ($weatherReport->sky_condition !== ($reportData['sky_condition'] ?? null)) {
                         $fieldsToUpdate['sky_condition'] = $reportData['sky_condition'] ?? null;
                     }
@@ -204,13 +198,9 @@ class SituationOverviewController extends Controller
             }
             // If no ID, it's a new record. We create it.
             else {
-                // Skip creating a record if the municipality is empty.
-                if (empty($reportData['municipality'])) {
-                    continue;
-                }
-
+                // Weather is PAGASA's forecast for Ilagan only, whatever location is sent.
                 WeatherReport::create([
-                    'municipality' => $reportData['municipality'],
+                    'municipality' => 'City of Ilagan',
                     'sky_condition' => $reportData['sky_condition'],
                     'wind' => $reportData['wind'],
                     'precipitation' => $reportData['precipitation'],

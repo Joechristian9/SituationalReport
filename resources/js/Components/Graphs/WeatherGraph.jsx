@@ -36,7 +36,7 @@ export default function WeatherGraph({ weatherReports = [] }) {
             actions={shown && <span className="text-sm text-muted-foreground">{when(shown, "MMM d, h:mm a")}</span>}
         >
             {!shown ? (
-                <EmptyState icon={CloudOff} title="No weather report for this disaster yet" description="Conditions appear here once someone fills in the Weather form." />
+                <EmptyState icon={CloudOff} title="No weather report for this disaster yet" description="PAGASA's forecast for Ilagan appears here once CDRRMO enters it." />
             ) : (
                 <div className="space-y-4">
                     <div>
@@ -68,6 +68,7 @@ export default function WeatherGraph({ weatherReports = [] }) {
                                 </div>
                             ))}
                         </dl>
+                        <p className="mt-2 text-xs text-muted-foreground">Source: PAGASA forecast, entered by CDRRMO</p>
                     </div>
 
                     {reports.length > 1 && (

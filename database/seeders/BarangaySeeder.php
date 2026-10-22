@@ -108,9 +108,8 @@ class BarangaySeeder extends Seeder
         'Villa Imelda (Maplas)',
     ];
 
-    // Barangays submit only these forms (no electricity or water service).
+    // Barangays submit only these forms (no electricity or water service; weather is CDRRMO's).
     private const PERMISSIONS = [
-        'access-weather-form',
         'access-communication-form',
         'access-road-form',
         'access-bridge-form',
