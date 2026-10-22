@@ -40,6 +40,7 @@ export default function ReportHistoryPage({ type }) {
     useEffect(() => {
         setTerm(search.trim());
         setPage(1);
+        setOpenId(undefined); // new search: open its newest disaster again
     }, [search]);
 
     const { data, isLoading, isError, refetch, isFetching, isPlaceholderData } = useQuery({
