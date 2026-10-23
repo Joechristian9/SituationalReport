@@ -56,7 +56,7 @@ export function splitHeadline(text) {
     return at === -1 ? [null, text] : [text.slice(0, at), text.slice(at + 3)];
 }
 
-/** `markIsabela`: tag alerts naming Isabela; off when every alert does, since then it tells nothing apart. */
+/** `markIsabela`: tag alerts that mention Isabela; off when every alert does, since then it tells nothing apart. */
 function AlertRow({ alert, markIsabela }) {
     const [kind, title] = splitHeadline(alert.headline || alert.event);
     const hasDetails = alert.areas.length > 0 || alert.description || alert.instruction;
@@ -196,7 +196,7 @@ export default function PagasaPanel() {
     const alerts = data?.alerts ?? [];
     const checked = data?.fetchedAt ? formatDistanceToNow(new Date(data.fetchedAt), { addSuffix: true }) : null;
     const isabela = alerts.filter((alert) => alert.mentionsIsabela).length;
-    // Alerts naming Isabela come first (server order); the first page is stretched to hold them all.
+    // Alerts that mention Isabela come first (server order); the first page is stretched to hold them all.
     const perPage = Math.max(PAGE_SIZE, isabela);
     const totalPages = Math.max(1, Math.ceil(alerts.length / perPage));
     // A refresh can shrink the list under the current page.
