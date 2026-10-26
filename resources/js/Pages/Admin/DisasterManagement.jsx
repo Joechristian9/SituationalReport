@@ -583,18 +583,30 @@ export default function DisasterManagement({ typhoons }) {
                 <Button
                     onClick={() => setIsCreateModalOpen(true)}
                     disabled={!!activeTyphoon}
-                    className="gap-2 shadow-sm"
+                    className="gap-2 shadow-sm max-sm:hidden"
                     title={activeTyphoon ? "End the active disaster before creating a new one" : "Create a new disaster report"}
                 >
                     <Plus className="w-4 h-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">Create New Disaster Report</span>
-                    <span className="sm:hidden">New Report</span>
+                    Create New Disaster Report
                 </Button>
             }
         >
             <Toaster position="top-right" richColors />
 
-                <div className="flex-1 overflow-auto p-4 sm:p-6">
+            {/* Phones: a floating + instead of the header button, hidden while a disaster is active
+                (only one can run, and End disaster is right on the page). Sits above the offline card. */}
+            {!activeTyphoon && (
+                <Button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    size="icon"
+                    aria-label="Create new disaster report"
+                    className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom)+var(--offline-status-h,0px))] right-4 z-30 h-14 w-14 rounded-full shadow-lg sm:hidden [&_svg]:size-6"
+                >
+                    <Plus aria-hidden="true" />
+                </Button>
+            )}
+
+                <div className="flex-1 overflow-auto p-4 max-sm:pb-24 sm:p-6">
                     <div className="mx-auto max-w-7xl space-y-6">
                     
                     {/* Disaster Overview - Featured + Grid Layout */}
@@ -1029,7 +1041,9 @@ export default function DisasterManagement({ typhoons }) {
                                 ) : (
                                     <>
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Create Disaster Report
+                                        {/* The full label does not fit beside Cancel on a phone. */}
+                                        <span className="sm:hidden">Create report</span>
+                                        <span className="hidden sm:inline">Create Disaster Report</span>
                                     </>
                                 )}
                             </Button>
@@ -1091,7 +1105,7 @@ export default function DisasterManagement({ typhoons }) {
                             <InputError id="delete-disaster-password-error" message={deleteError} />
                         </div>
     
-                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <DialogFooter>
                             <Button
                                 type="button"
                                 variant="outline"
