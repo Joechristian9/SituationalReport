@@ -35,6 +35,8 @@ export default function ReportHistoryPage({ type }) {
     const [term, setTerm] = useState('');
     const [perPage, setPerPage] = useState(DISASTERS_PER_PAGE);
     const [page, setPage] = useState(1);
+    // One disaster open at a time; the newest starts open (undefined = not touched yet, null = all closed).
+    const [openId, setOpenId] = useState(undefined);
 
     // No wait needed: the search box only sends a search on Enter or a picked suggestion.
     useEffect(() => {
@@ -61,8 +63,6 @@ export default function ReportHistoryPage({ type }) {
         if (data && groups.length === 0 && meta.total > 0 && page > meta.last_page) setPage(meta.last_page);
     }, [data]);
 
-    // One disaster open at a time; the newest starts open (undefined = not touched yet, null = all closed).
-    const [openId, setOpenId] = useState(undefined);
     const isOpen = (id, index) => (openId === undefined ? index === 0 : openId === id);
 
     return (
