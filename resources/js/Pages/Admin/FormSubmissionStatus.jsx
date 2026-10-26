@@ -511,14 +511,14 @@ export default function FormSubmissionStatus({ users, activeTyphoon }) {
 
                                     {paginationData.paginatedUsers.length > 0 ? (
                                         <>
-                                            {/* Phones: one compact card per user instead of a tall stack of labelled cells. */}
+                                            {/* Phones: one compact row per user in a flat list, instead of a tall stack of labelled cells. */}
                                             {!isWide ? (
-                                            <ul className="space-y-3 p-3">
+                                            <ul className="divide-y divide-border">
                                                 {paginationData.paginatedUsers.map((user) => {
                                                     const { done = 0, total = 0 } = user.forms ?? {};
                                                     const percent = total ? Math.round((done / total) * 100) : 0;
                                                     return (
-                                                        <li key={user.id} className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+                                                        <li key={user.id} className="px-4 py-3.5">
                                                             <div className="min-w-0">
                                                                 <p className="truncate text-base font-semibold text-foreground">{user.name}</p>
                                                                 <p className="truncate text-sm text-muted-foreground">{user.email}</p>

@@ -4,13 +4,15 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useDensity } from "@/Components/data/density";
 import { Skeleton } from "@/Components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { CELL_LABEL, STACKED_TABLE } from "@/lib/responsiveTable";
+import { CELL_LABEL } from "@/lib/responsiveTable";
 
-// Phones: each row becomes a padded card (see lib/responsiveTable.js).
-const STACKED_DATA = cn(
-    STACKED_TABLE,
-    "max-md:[&_tbody]:p-3 max-md:[&_tr]:py-1.5 max-md:[&_tr]:shadow-sm max-md:[&_td]:py-1.5"
-);
+// Phones: rows stack into a flat list split by the rows' own divider lines, not cards
+// inside the panel's card (editable form tables keep their cards: lib/responsiveTable.js).
+const STACKED_DATA = [
+    "max-md:block max-md:[&_thead]:hidden max-md:[&_tbody]:block max-md:[&_tfoot]:block",
+    "max-md:[&_tr]:block max-md:[&_tr]:py-3",
+    "max-md:[&_td]:block max-md:[&_td]:w-full max-md:[&_td]:py-1.5",
+].join(" ");
 
 const Table = React.forwardRef(({ className, stacked = false, ...props }, ref) => {
     const { density } = useDensity();

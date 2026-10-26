@@ -153,7 +153,7 @@ function MobileLogCard({ log, onOpen }) {
             type="button"
             onClick={() => onOpen(log)}
             aria-label={`View entry: ${name} ${log.action_name}`}
-            className="block min-h-11 w-full rounded-xl border border-border bg-card p-3.5 text-left shadow-sm transition-colors duration-150 active:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+            className="block min-h-11 w-full px-4 py-3.5 text-left transition-colors duration-150 active:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
         >
             <div className="flex items-start gap-3">
                 <ActionIcon action={log.action} size="h-10 w-10" />
@@ -194,9 +194,9 @@ function MobileLogCard({ log, onOpen }) {
 
 function MobileLogSkeleton() {
     return (
-        <div className="space-y-3 p-3" aria-hidden="true">
+        <div className="divide-y divide-border" aria-hidden="true">
             {Array.from({ length: 5 }, (_, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-3.5">
+                <div key={i} className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
                         <div className="flex-1 space-y-1.5">
@@ -593,20 +593,20 @@ export default function AuditLogs({ logs, filters, filterOptions, summary }) {
                                 />
                             ) : (
                                 <>
-                                    {/* Phones: cards grouped by day. */}
+                                    {/* Phones: a flat list grouped by day, each day under a tinted heading band. */}
                                     <div className="md:hidden">
                                         {showSkeleton ? (
                                             <MobileLogSkeleton />
                                         ) : (
-                                            <ul className="space-y-2 p-3" aria-busy={loading}>
+                                            <ul className="divide-y divide-border" aria-busy={loading}>
                                                 {logs.data.map((log, i) => {
                                                     const day = log.created_at_iso ? dateOf(log.created_at_iso) : 'Unknown date';
                                                     const prev = logs.data[i - 1];
                                                     const newDay = !prev || (prev.created_at_iso ? dateOf(prev.created_at_iso) : 'Unknown date') !== day;
                                                     return (
-                                                        <li key={log.id} className={newDay && i > 0 ? 'pt-2' : undefined}>
+                                                        <li key={log.id}>
                                                             {newDay && (
-                                                                <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                <h3 className="border-b border-border bg-muted/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                                                     {day}
                                                                 </h3>
                                                             )}
