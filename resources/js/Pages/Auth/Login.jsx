@@ -78,7 +78,7 @@ export default function Login({ status, canResetPassword }) {
                             spellCheck={false}
                             autoFocus
                             required
-                            placeholder="BarangayName@barangay.local"
+                            placeholder="Barangay@barangay.local"
                             aria-invalid={errors.email ? true : undefined}
                             aria-describedby={errors.email ? 'email-error' : undefined}
                             className={cn(fieldInput, errors.email && 'border-destructive focus-visible:ring-destructive')}
