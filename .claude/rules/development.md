@@ -42,7 +42,7 @@
 - UI is used on phones in the field: new screens must work at mobile widths.
 
 ## 7. Reports, PDF, and Excel
-- PDF output uses dompdf Blade views in `resources/views/reports`; Excel uses `xlsx`/jspdf on the client. Keep numbers and totals computed in one place (controller/service), not duplicated in both view and JS.
+- PDF output uses dompdf Blade views in `resources/views/reports`; Excel uses `xlsx` on the client. Keep numbers and totals computed in one place (controller/service), not duplicated in both view and JS.
 - Test report changes against a real disaster with data, including empty states.
 
 ## 8. Code style
