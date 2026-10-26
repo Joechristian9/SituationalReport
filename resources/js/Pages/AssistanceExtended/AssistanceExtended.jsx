@@ -14,7 +14,7 @@ import useAppUrl from "@/hooks/useAppUrl";
 import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
 
-import { HandCoins, Loader2, PlusCircle, Save } from "lucide-react";
+import { ArrowUpFromLine, HandCoins, Loader2, PlusCircle } from "lucide-react";
 import { savedMessage } from "@/lib/offline/queue";
 
 const formatFieldName = (field) => {
@@ -386,7 +386,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
                             </>
                         ) : (
                             <>
-                                <Save className="w-5 h-5" />
+                                <ArrowUpFromLine className="w-5 h-5" aria-hidden="true" />
                                 <span>
                                     {disabled 
                                         ? 'Forms Disabled' 

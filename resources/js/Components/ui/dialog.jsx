@@ -75,9 +75,9 @@ const DialogFooter = ({
   ...props
 }) => (
   <div
-    // Phones: full-width buttons stacked with the primary action on top, 44px tall.
+    // Phones: the buttons share the row equally (Cancel left, action right), 44px tall.
     className={cn(
-      "flex flex-col-reverse gap-2 max-sm:[&_button]:min-h-11 sm:flex-row sm:justify-end",
+      "flex flex-row justify-end gap-2 max-sm:[&>*]:flex-1 max-sm:[&_button]:min-h-11",
       className
     )}
     {...props}

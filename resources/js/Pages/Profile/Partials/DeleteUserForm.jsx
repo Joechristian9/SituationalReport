@@ -104,7 +104,7 @@ export default function DeleteUserForm({ className = '' }) {
                         />
                     </div>
 
-                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <div className="mt-6 flex justify-end gap-3 max-sm:[&>*]:flex-1">
                         <SecondaryButton onClick={closeModal} className="min-h-11 justify-center sm:min-h-0">
                             Cancel
                         </SecondaryButton>

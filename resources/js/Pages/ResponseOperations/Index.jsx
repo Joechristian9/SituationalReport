@@ -17,7 +17,7 @@ import AppLayout from "@/Layouts/AppLayout";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Save, ActivitySquare } from "lucide-react";
+import { Loader2, PlusCircle, ArrowUpFromLine, ActivitySquare } from "lucide-react";
 import { m as motion } from "framer-motion";
 import { savedMessage } from "@/lib/offline/queue";
 
@@ -367,7 +367,7 @@ export default function Index() {
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="w-5 h-5" />
+                                                <ArrowUpFromLine className="w-5 h-5" aria-hidden="true" />
                                                 <span>Save Response Operations</span>
                                             </>
                                         )}
