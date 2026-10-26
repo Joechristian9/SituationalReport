@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { BellRing, History, Loader2, Send, Users } from 'lucide-react';
+import { AlertCircle, BellRing, History, Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/Components/ui/button';
 import {
@@ -19,14 +19,28 @@ const NOTE_LIMIT = 200;
 const SUGGESTION_LIMIT = 4;
 const RECENT_KEY = 'reminder-recent-messages';
 const RECENT_KEPT = 3;
+// Forms shown before the rest fold behind "+N more" (the bell does the same).
+const FORMS_SHOWN = 6;
 
-// Ready-made messages the admin can pick instead of typing one.
-const SUGGESTIONS = [
-    'Please submit your reports as soon as possible.',
-    'Please submit your pending reports before noon today.',
-    'Kindly complete your report submissions by the end of the day.',
-    'The disaster report is still open. Please submit the forms that are missing.',
+// Ready-made messages the admin can pick instead of typing one; `what` names the forms to submit.
+export const SUGGESTIONS = [
+    (what) => `Please submit your ${what} as soon as possible.`,
+    (what) => `Please submit your ${what} before noon today.`,
+    (what) => `Kindly complete your ${what} by the end of the day.`,
+    (what) => `The disaster report is still open. Please submit your ${what}.`,
 ];
+
+// "Roads form", "Roads and Bridges forms", "Roads, Bridges and Water Levels forms".
+const formsPhrase = (labels) =>
+    labels.length === 0
+        ? 'pending forms'
+        : `${labels.length === 1 ? labels[0] : `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`} ${labels.length === 1 ? 'form' : 'forms'}`;
+
+// Names the forms while the message fits the limit, otherwise counts them.
+export const suggestionText = (make, labels) => {
+    const named = make(formsPhrase(labels));
+    return named.length <= NOTE_LIMIT ? named : make(`${labels.length} pending forms`);
+};
 
 const readRecent = () => {
     try {
@@ -54,24 +68,34 @@ export default function RemindDialog({ users, onClose, onSent }) {
     const [note, setNote] = useState('');
     const [sending, setSending] = useState(false);
     const [recent, setRecent] = useState([]);
+    const [allForms, setAllForms] = useState(false);
     const open = users !== null;
 
     useEffect(() => {
         if (open) {
             setNote('');
             setRecent(readRecent());
+            setAllForms(false);
         }
     }, [open]);
 
     const one = users?.length === 1 ? users[0] : null;
 
-    // Autocomplete: recent messages first, then the ready-made ones, narrowed by what is typed.
+    // The forms the suggestions name. The message is shared, so with several accounts it names
+    // them only when every account misses the same forms; otherwise it says "pending forms".
+    const formLabels = useMemo(() => {
+        const first = users?.[0]?.pending_forms ?? [];
+        return users?.every((user) => user.pending_forms?.join('|') === first.join('|')) ? first : [];
+    }, [users]);
+
+    // Autocomplete: recent messages first, then the ready-made ones naming the forms, narrowed by what is typed.
     const suggestions = useMemo(() => {
         const typed = note.trim().toLowerCase();
-        return [...recent.map((text) => ({ text, recent: true })), ...SUGGESTIONS.filter((text) => !recent.includes(text)).map((text) => ({ text, recent: false }))]
+        const ready = SUGGESTIONS.map((make) => suggestionText(make, formLabels)).filter((text) => !recent.includes(text));
+        return [...recent.map((text) => ({ text, recent: true })), ...ready.map((text) => ({ text, recent: false }))]
             .filter(({ text }) => text !== note && (!typed || text.toLowerCase().includes(typed)))
             .slice(0, SUGGESTION_LIMIT);
-    }, [note, recent]);
+    }, [note, recent, formLabels]);
 
     const send = async () => {
         setSending(true);
@@ -98,31 +122,50 @@ export default function RemindDialog({ users, onClose, onSent }) {
     return (
         <Dialog open={open} onOpenChange={(next) => !next && !sending && onClose()}>
             <DialogContent centered className="sm:max-w-md">
-                <DialogHeader className="space-y-3 text-left">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
-                        {one ? <BellRing className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+                {/* Icon beside the title, not above it: on phones the message and Send stay in view. */}
+                <DialogHeader className="flex-row items-start gap-3 space-y-0">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
+                        <BellRing className="h-4 w-4" />
                     </span>
-                    <div className="space-y-1.5">
-                        <DialogTitle>{one ? `Remind ${one.name} to submit?` : `Remind ${users?.length ?? 0} accounts to submit?`}</DialogTitle>
+                    <div className="min-w-0 space-y-1">
+                        <DialogTitle className="break-words">
+                            {one
+                                ? `Remind ${one.name} to submit ${one.pending_forms.length} ${one.pending_forms.length === 1 ? 'form' : 'forms'}?`
+                                : `Remind ${users?.length ?? 0} accounts?`}
+                        </DialogTitle>
                         <DialogDescription>
                             {one
-                                ? 'They get a reminder in the app listing the forms they still have to submit.'
-                                : 'Each account gets a reminder in the app listing its own missing forms. Accounts reminded within the last hour are skipped.'}
+                                ? 'They get a reminder in the app listing these forms.'
+                                : 'Each gets a reminder in the app with its own missing forms. Anyone reminded in the last hour is skipped.'}
                         </DialogDescription>
                     </div>
                 </DialogHeader>
 
                 {one && (
-                    <div className="space-y-1.5 rounded-xl border border-border bg-muted/40 p-3">
-                        <p className="text-xs font-medium text-muted-foreground">
-                            {one.pending_forms.length} {one.pending_forms.length === 1 ? 'form' : 'forms'} still to submit
+                    <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
+                        <p id="reminder-forms" className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                            <AlertCircle className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
+                            Still to submit
                         </p>
-                        <ul className="flex flex-wrap gap-1.5" aria-label="Forms still to submit">
-                            {one.pending_forms.map((form) => (
-                                <li key={form} className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                        {/* Neutral chips: fifteen warning-colored pills drown out the warning itself. */}
+                        <ul className="flex flex-wrap items-center gap-1.5" aria-labelledby="reminder-forms">
+                            {(allForms ? one.pending_forms : one.pending_forms.slice(0, FORMS_SHOWN)).map((form) => (
+                                <li key={form} className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-medium text-foreground">
                                     {form}
                                 </li>
                             ))}
+                            {one.pending_forms.length > FORMS_SHOWN && (
+                                <li>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAllForms((value) => !value)}
+                                        aria-expanded={allForms}
+                                        className="inline-flex min-h-9 items-center rounded-full px-2 text-xs font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-7"
+                                    >
+                                        {allForms ? 'Show less' : `+${one.pending_forms.length - FORMS_SHOWN} more`}
+                                    </button>
+                                </li>
+                            )}
                         </ul>
                     </div>
                 )}
@@ -168,7 +211,7 @@ export default function RemindDialog({ users, onClose, onSent }) {
                     )}
                 </div>
 
-                <DialogFooter className="gap-2 max-sm:flex-col-reverse">
+                <DialogFooter>
                     <Button type="button" variant="outline" onClick={onClose} disabled={sending} className="h-11 md:h-9">
                         Cancel
                     </Button>
