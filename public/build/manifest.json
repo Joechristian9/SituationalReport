@@ -1346,7 +1346,7 @@
     ]
   },
   "resources/js/Components/Graphs/AgeSexTable.jsx": {
-    "file": "assets/AgeSexTable-efYkklOE.js",
+    "file": "assets/AgeSexTable-DjBG7iS0.js",
     "name": "AgeSexTable",
     "src": "resources/js/Components/Graphs/AgeSexTable.jsx",
     "isDynamicEntry": true,
@@ -1356,6 +1356,7 @@
       "_utils-9gjXS1e5.js",
       "_personStats-HObdQiv0.js",
       "resources/js/Pages/Admin/Dashboard.jsx",
+      "_QueryClientProvider-BynIVAOV.js",
       "_table-2-B25DLCDz.js",
       "_preload-helper-I4rgV-VL.js",
       "_AppLayout-BuL72AUx.js",
@@ -1367,7 +1368,6 @@
       "_dialog-BdTu-vxa.js",
       "_label-BA-WIMEY.js",
       "_popover-Dz2AiM7u.js",
-      "_QueryClientProvider-BynIVAOV.js",
       "_plus-qu41zQcv.js",
       "_LogoutDialog-czEFCg_w.js",
       "_install-Bn3RR-E6.js",
@@ -1399,7 +1399,7 @@
     ]
   },
   "resources/js/Components/Graphs/BarangayImpactChart.jsx": {
-    "file": "assets/BarangayImpactChart-JpZ2x14e.js",
+    "file": "assets/BarangayImpactChart-CYbbEVj1.js",
     "name": "BarangayImpactChart",
     "src": "resources/js/Components/Graphs/BarangayImpactChart.jsx",
     "isDynamicEntry": true,
@@ -1451,7 +1451,7 @@
     ]
   },
   "resources/js/Components/Graphs/DisasterHistory.jsx": {
-    "file": "assets/DisasterHistory-B7UJ4Vgs.js",
+    "file": "assets/DisasterHistory-BktYD9tC.js",
     "name": "DisasterHistory",
     "src": "resources/js/Components/Graphs/DisasterHistory.jsx",
     "isDynamicEntry": true,
@@ -1543,7 +1543,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactHourlyChart.jsx": {
-    "file": "assets/ImpactHourlyChart-BACvDOSC.js",
+    "file": "assets/ImpactHourlyChart-CoKBKWDu.js",
     "name": "ImpactHourlyChart",
     "src": "resources/js/Components/Graphs/ImpactHourlyChart.jsx",
     "isDynamicEntry": true,
@@ -1598,7 +1598,7 @@
     ]
   },
   "resources/js/Components/Graphs/ImpactTrendChart.jsx": {
-    "file": "assets/ImpactTrendChart-lXPZztD2.js",
+    "file": "assets/ImpactTrendChart-B5mv2de6.js",
     "name": "ImpactTrendChart",
     "src": "resources/js/Components/Graphs/ImpactTrendChart.jsx",
     "isDynamicEntry": true,
@@ -1653,7 +1653,7 @@
     ]
   },
   "resources/js/Components/Graphs/PersonBreakdownGraph.jsx": {
-    "file": "assets/PersonBreakdownGraph-Jqmsrf8d.js",
+    "file": "assets/PersonBreakdownGraph-C-lp3zOS.js",
     "name": "PersonBreakdownGraph",
     "src": "resources/js/Components/Graphs/PersonBreakdownGraph.jsx",
     "isDynamicEntry": true,
@@ -1705,7 +1705,7 @@
     ]
   },
   "resources/js/Components/Graphs/WaterLevelGraph.jsx": {
-    "file": "assets/WaterLevelGraph-y1ADmr4n.js",
+    "file": "assets/WaterLevelGraph-CUnn1eYY.js",
     "name": "WaterLevelGraph",
     "src": "resources/js/Components/Graphs/WaterLevelGraph.jsx",
     "isDynamicEntry": true,
@@ -1758,7 +1758,7 @@
     ]
   },
   "resources/js/Components/Graphs/WeatherGraph.jsx": {
-    "file": "assets/WeatherGraph-nFuZASdC.js",
+    "file": "assets/WeatherGraph-gfF29TJ3.js",
     "name": "WeatherGraph",
     "src": "resources/js/Components/Graphs/WeatherGraph.jsx",
     "isDynamicEntry": true,
@@ -2107,7 +2107,7 @@
     ]
   },
   "resources/js/Components/Weather/PagasaPanel.jsx": {
-    "file": "assets/PagasaPanel-Edr2nOxl.js",
+    "file": "assets/PagasaPanel-KYr3pebv.js",
     "name": "PagasaPanel",
     "src": "resources/js/Components/Weather/PagasaPanel.jsx",
     "isDynamicEntry": true,
@@ -2341,7 +2341,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.jsx": {
-    "file": "assets/Dashboard-B11IWXe2.js",
+    "file": "assets/Dashboard-rk4F1lPb.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.jsx",
     "isEntry": true,
@@ -2403,7 +2403,7 @@
     ]
   },
   "resources/js/Pages/Admin/DisasterManagement.jsx": {
-    "file": "assets/DisasterManagement-Ck-oBMLZ.js",
+    "file": "assets/DisasterManagement-DoLbbsug.js",
     "name": "DisasterManagement",
     "src": "resources/js/Pages/Admin/DisasterManagement.jsx",
     "isEntry": true,
@@ -2716,7 +2716,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx": {
-    "file": "assets/AssistanceExtended-MskLqjpp.js",
+    "file": "assets/AssistanceExtended-XAgR-ynW.js",
     "name": "AssistanceExtended",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceExtended.jsx",
     "isEntry": true,
@@ -2753,7 +2753,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx": {
-    "file": "assets/AssistanceIndex-7OpfqXnW.js",
+    "file": "assets/AssistanceIndex-D133BkJI.js",
     "name": "AssistanceIndex",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceIndex.jsx",
     "isEntry": true,
@@ -2797,7 +2797,7 @@
     ]
   },
   "resources/js/Pages/AssistanceExtended/AssistanceProvidedLgu.jsx": {
-    "file": "assets/AssistanceProvidedLgu-D_Ajs1cd.js",
+    "file": "assets/AssistanceProvidedLgu-JcA3Uh6m.js",
     "name": "AssistanceProvidedLgu",
     "src": "resources/js/Pages/AssistanceExtended/AssistanceProvidedLgu.jsx",
     "isEntry": true,
@@ -2857,7 +2857,7 @@
     ]
   },
   "resources/js/Pages/Auth/Login.jsx": {
-    "file": "assets/Login-C0Khz-5P.js",
+    "file": "assets/Login-DHWYh7JS.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.jsx",
     "isEntry": true,
@@ -3513,7 +3513,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-D32t_izs.js",
+    "file": "assets/Index-BWznIxZW.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -3677,7 +3677,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-COnhNU1s.js",
+    "file": "assets/app-B91kw_Nx.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -3744,7 +3744,7 @@
       "resources/js/Pages/Welcome.jsx"
     ],
     "css": [
-      "assets/app-BxS_SuJf.css"
+      "assets/app-bx5ZC2Lb.css"
     ]
   },
   "resources/js/lib/motionFeatures.js": {
