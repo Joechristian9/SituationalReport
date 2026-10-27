@@ -156,7 +156,7 @@ export default function BarangayImpactChart({ rows = [] }) {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-9 px-2 text-muted-foreground"
+                                className="h-11 px-2 text-muted-foreground md:h-9"
                                 aria-expanded={showAll}
                                 onClick={() => setShowAll((v) => !v)}
                             >
@@ -167,7 +167,7 @@ export default function BarangayImpactChart({ rows = [] }) {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-9 gap-1.5 px-2 text-muted-foreground"
+                            className="h-11 gap-1.5 px-2 text-muted-foreground md:h-9"
                             onClick={() => setAsTable((v) => !v)}
                         >
                             {asTable ? <BarChart3 className="h-4 w-4" aria-hidden="true" /> : <Table2 className="h-4 w-4" aria-hidden="true" />}

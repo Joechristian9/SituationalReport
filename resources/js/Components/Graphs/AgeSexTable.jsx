@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Table2 } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ChevronDown, Table2 } from "lucide-react";
 import GraphCard from "../ui/GraphCard";
 import { cn } from "@/lib/utils";
 import { AGE_BRACKETS, ageBracket, sexOf } from "./personStats";
@@ -45,64 +45,81 @@ export default function AgeSexTable({ casualties = [], injured = [], missing = [
     const totals = TYPES.flatMap((t) => SEXES.map((s) => ages.reduce((sum, age) => sum + counts[t.key][age][s.key], 0)));
     const sum = (values) => values.reduce((a, b) => a + b, 0);
     const groupStart = (i) => i % SEXES.length === 0 && "border-l border-border";
+    const [open, setOpen] = useState(false);
 
     return (
         <GraphCard title="Age & sex by type" icon={<Table2 size={24} />}>
-            <p className="-mt-2 mb-3 text-sm text-muted-foreground">Every report for this disaster; the filters above don't apply.</p>
-            <div className="-mx-4 overflow-x-auto sm:-mx-6" tabIndex={0} role="region" aria-label="Age and sex by type, scrolls sideways">
-                <table className="w-full min-w-[40rem] text-sm">
-                    <caption className="sr-only">Dead, injured and missing by age group and sex</caption>
-                    <thead className="text-xs text-muted-foreground">
-                        <tr>
-                            <td className={stickyCell} />
-                            {TYPES.map((t) => (
-                                <th key={t.key} scope="colgroup" colSpan={SEXES.length} className="border-l border-border px-2.5 pt-1 text-center text-sm font-semibold text-foreground">
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <Swatch color={t.color} />
-                                        {t.label}
-                                    </span>
-                                </th>
-                            ))}
-                            <td className={cell} />
-                        </tr>
-                        <tr className="border-b border-border">
-                            <th scope="col" className={cn(stickyCell, "font-medium")}>Age group</th>
-                            {TYPES.flatMap((t) =>
-                                SEXES.map((s, i) => (
-                                    <th key={`${t.key}-${s.key}`} scope="col" className={cn(cell, "font-medium", i === 0 && "border-l border-border")}>
-                                        <abbr title={s.label} className="no-underline">{s.short}</abbr>
+            {/* Phones: the wide table waits behind a tap; "Who is affected" above already shows each type. */}
+            <button
+                type="button"
+                onClick={() => setOpen((value) => !value)}
+                aria-expanded={open}
+                aria-controls="age-sex-table"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
+            >
+                {open ? "Hide" : "Show"} age &amp; sex table
+                <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                />
+            </button>
+            <div id="age-sex-table" className={cn(!open && "max-sm:hidden", "max-sm:mt-3")}>
+                <p className="-mt-2 mb-3 text-sm text-muted-foreground max-sm:mt-0">Every report for this disaster; the filters above don't apply.</p>
+                <div className="-mx-4 overflow-x-auto sm:-mx-6" tabIndex={0} role="region" aria-label="Age and sex by type, scrolls sideways">
+                    <table className="w-full min-w-[40rem] text-sm">
+                        <caption className="sr-only">Dead, injured and missing by age group and sex</caption>
+                        <thead className="text-xs text-muted-foreground">
+                            <tr>
+                                <td className={stickyCell} />
+                                {TYPES.map((t) => (
+                                    <th key={t.key} scope="colgroup" colSpan={SEXES.length} className="border-l border-border px-2.5 pt-1 text-center text-sm font-semibold text-foreground">
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Swatch color={t.color} />
+                                            {t.label}
+                                        </span>
                                     </th>
-                                )),
-                            )}
-                            <th scope="col" className={cn(cell, "pr-4 font-medium sm:pr-6")}>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                        {ages.map((age) => {
-                            const values = rowCells(age);
-                            return (
-                                <tr key={age} className="hover:bg-muted/40">
-                                    <th scope="row" className={cn(stickyCell, "font-medium text-foreground")}>{age}</th>
-                                    {values.map((value, i) => (
-                                        <td key={i} className={cn(cell, groupStart(i), value === 0 && "text-muted-foreground")}>
-                                            {value}
-                                        </td>
-                                    ))}
-                                    <td className={cn(cell, "pr-4 font-semibold sm:pr-6")}>{sum(values)}</td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                    <tfoot>
-                        <tr className="border-t-2 border-border font-semibold">
-                            <th scope="row" className={stickyCell}>Total</th>
-                            {totals.map((value, i) => (
-                                <td key={i} className={cn(cell, groupStart(i))}>{value}</td>
-                            ))}
-                            <td className={cn(cell, "pr-4 sm:pr-6")}>{sum(totals)}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                                ))}
+                                <td className={cell} />
+                            </tr>
+                            <tr className="border-b border-border">
+                                <th scope="col" className={cn(stickyCell, "font-medium")}>Age group</th>
+                                {TYPES.flatMap((t) =>
+                                    SEXES.map((s, i) => (
+                                        <th key={`${t.key}-${s.key}`} scope="col" className={cn(cell, "font-medium", i === 0 && "border-l border-border")}>
+                                            <abbr title={s.label} className="no-underline">{s.short}</abbr>
+                                        </th>
+                                    )),
+                                )}
+                                <th scope="col" className={cn(cell, "pr-4 font-medium sm:pr-6")}>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {ages.map((age) => {
+                                const values = rowCells(age);
+                                return (
+                                    <tr key={age} className="hover:bg-muted/40">
+                                        <th scope="row" className={cn(stickyCell, "font-medium text-foreground")}>{age}</th>
+                                        {values.map((value, i) => (
+                                            <td key={i} className={cn(cell, groupStart(i), value === 0 && "text-muted-foreground")}>
+                                                {value}
+                                            </td>
+                                        ))}
+                                        <td className={cn(cell, "pr-4 font-semibold sm:pr-6")}>{sum(values)}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                        <tfoot>
+                            <tr className="border-t-2 border-border font-semibold">
+                                <th scope="row" className={stickyCell}>Total</th>
+                                {totals.map((value, i) => (
+                                    <td key={i} className={cn(cell, groupStart(i))}>{value}</td>
+                                ))}
+                                <td className={cn(cell, "pr-4 sm:pr-6")}>{sum(totals)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </GraphCard>
     );
