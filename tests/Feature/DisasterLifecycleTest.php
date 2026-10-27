@@ -93,11 +93,12 @@ it('names every disaster of the year in the yearly report subject', function () 
     $admin = userWithRole('admin');
     Typhoon::create(['name' => 'Kristine', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2026-07-01', 'created_by' => $admin->id]);
     Typhoon::create(['name' => 'Magnitude 6.5 Ilagan', 'disaster_type' => 'Earthquake', 'status' => 'active', 'started_at' => '2026-09-15', 'created_by' => $admin->id]);
-    Typhoon::create(['name' => 'Aghon', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2025-05-20', 'created_by' => $admin->id]);
+    Typhoon::create(['name' => 'Aghon', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2025-05-20', 'ended_at' => '2025-05-25', 'created_by' => $admin->id]);
+    Typhoon::create(['name' => 'Odette', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2025-12-28', 'ended_at' => '2026-01-03', 'created_by' => $admin->id]);
 
     $this->actingAs($admin)->get(route('reports.view', ['year' => 2026]))
         ->assertOk()
-        ->assertSee('TERMINAL REPORT re: TYPHOON "KRISTINE", EARTHQUAKE "MAGNITUDE 6.5 ILAGAN"')
+        ->assertSee('TERMINAL REPORT re: TYPHOON "ODETTE", TYPHOON "KRISTINE", EARTHQUAKE "MAGNITUDE 6.5 ILAGAN"')
         ->assertDontSee('AGHON');
     $this->actingAs($admin)->get(route('reports.view', ['year' => 2024]))->assertSee('TERMINAL REPORT re: CY 2024');
 });

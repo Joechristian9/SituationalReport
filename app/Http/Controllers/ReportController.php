@@ -121,10 +121,12 @@ class ReportController extends Controller
         ]));
     }
 
-    /** Every disaster that started in the year, e.g. TYPHOON "KRISTINE", EARTHQUAKE "MAGNITUDE 6.5 ILAGAN"; just the year when there were none. */
+    /** Every disaster running at some point in the year, e.g. TYPHOON "KRISTINE", EARTHQUAKE "MAGNITUDE 6.5 ILAGAN"; just the year when there were none. */
     private function yearSubject(int|string $year): string
     {
-        $subject = Typhoon::whereYear('started_at', $year)
+        // Overlap, not start year: the report body goes by filing date, so a disaster crossing New Year has records in both years.
+        $subject = Typhoon::whereYear('started_at', '<=', $year)
+            ->where(fn ($query) => $query->whereNull('ended_at')->orWhereYear('ended_at', '>=', $year))
             ->orderBy('started_at')
             ->get(['name', 'disaster_type'])
             ->map(fn (Typhoon $disaster) => $disaster->reportSubject())
