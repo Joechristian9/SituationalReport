@@ -209,21 +209,21 @@ export default function Index() {
                                 lastKnown.status === "active"
                             ) {
                                 toast.error(
-                                    "Typhoon report has been paused. Forms are now disabled."
+                                    "Disaster report has been paused. Forms are now disabled."
                                 );
                             } else if (
                                 newStatus === "active" &&
                                 lastKnown.status === "paused"
                             ) {
                                 toast.success(
-                                    "Typhoon report has been resumed. Forms are now enabled."
+                                    "Disaster report has been resumed. Forms are now enabled."
                                 );
                             } else if (!newHasActive && lastKnown.hasActive) {
                                 toast.error(
-                                    "Typhoon report has been ended. Forms are now disabled."
+                                    "Disaster report has been ended. Forms are now disabled."
                                 );
                             } else if (newHasActive && !lastKnown.hasActive) {
-                                toast.success("New typhoon report created!");
+                                toast.success("New disaster report created!");
                             }
                         },
                     });

@@ -116,14 +116,14 @@ class DisasterController extends Controller
         // Only allow updating if typhoon is still active
         if ($disaster->status === 'ended') {
             return response()->json([
-                'message' => 'Cannot update an ended typhoon report.',
+                'message' => 'Cannot update an ended disaster report.',
             ], 422);
         }
 
         $disaster->update($validated);
 
         return response()->json([
-            'message' => 'Typhoon report updated successfully.',
+            'message' => 'Disaster report updated successfully.',
             'typhoon' => $disaster->load('creator:id,name'),
         ]);
     }
@@ -143,13 +143,13 @@ class DisasterController extends Controller
     {
         if ($disaster->status === 'ended') {
             return response()->json([
-                'message' => 'Cannot pause an ended typhoon report.',
+                'message' => 'Cannot pause an ended disaster report.',
             ], 422);
         }
 
         if ($disaster->status === 'paused') {
             return response()->json([
-                'message' => 'This typhoon report is already paused.',
+                'message' => 'This disaster report is already paused.',
             ], 422);
         }
 
@@ -172,7 +172,7 @@ class DisasterController extends Controller
             \Log::error('Typhoon pause failed', ['error' => $e->getMessage()]);
 
             return response()->json([
-                'message' => 'Failed to pause typhoon report. Please try again.',
+                'message' => 'Failed to pause disaster report. Please try again.',
             ], 500);
         }
     }
@@ -184,7 +184,7 @@ class DisasterController extends Controller
     {
         if ($disaster->status !== 'paused') {
             return response()->json([
-                'message' => 'Can only resume a paused typhoon report.',
+                'message' => 'Can only resume a paused disaster report.',
             ], 422);
         }
 
@@ -207,7 +207,7 @@ class DisasterController extends Controller
             \Log::error('Typhoon resume failed', ['error' => $e->getMessage()]);
 
             return response()->json([
-                'message' => 'Failed to resume typhoon report. Please try again.',
+                'message' => 'Failed to resume disaster report. Please try again.',
             ], 500);
         }
     }
@@ -279,7 +279,7 @@ class DisasterController extends Controller
 
         // Add missing variables for the blade template
         $reportData['selectedYear'] = $typhoon->started_at->year;
-        $reportData['typhoonName'] = $typhoon->name;
+        $reportData['reportSubject'] = $typhoon->reportSubject();
         $reportData['isDownloading'] = true;
 
         // Generate PDF
@@ -293,8 +293,7 @@ class DisasterController extends Controller
             'dpi' => 96,
         ]);
 
-        // Create filename with typhoon name and date
-        $filename = 'Typhoon_'.str_replace(' ', '_', $typhoon->name).'_Report_'.now()->format('Y-m-d_His').'.pdf';
+        $filename = str_replace(' ', '_', trim($typhoon->reportType().' '.$typhoon->name)).'_Report_'.now()->format('Y-m-d_His').'.pdf';
         $filePath = 'reports/'.$filename;
 
         // Ensure directory exists
@@ -379,14 +378,14 @@ class DisasterController extends Controller
             \DB::commit();
 
             return response()->json([
-                'message' => 'Typhoon report deleted successfully.',
+                'message' => 'Disaster report deleted successfully.',
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
             \Log::error('Typhoon deletion failed', ['error' => $e->getMessage()]);
 
             return response()->json([
-                'message' => 'Failed to delete typhoon report. Please try again.',
+                'message' => 'Failed to delete disaster report. Please try again.',
             ], 500);
         }
     }
@@ -443,7 +442,7 @@ class DisasterController extends Controller
 
                 // Get list of submitted form types (for coloring in UI)
                 $submittedFormTypes = array_keys($submittedForms);
-                $required = PendingForms::required($user->permissions->pluck('name')->all());
+                $required = PendingForms::required($user->permissions->pluck('name')->all(), $activeTyphoon?->disaster_type);
                 $pending = $activeTyphoon ? array_values(array_diff($required, $submittedFormTypes)) : [];
 
                 return [

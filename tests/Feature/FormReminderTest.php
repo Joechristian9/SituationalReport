@@ -38,6 +38,17 @@ it('reminds every account that still has forms to file', function () {
     expect(AuditLog::where('action', 'reminded')->count())->toBe(1);
 });
 
+it('does not ask for weather or water levels during an earthquake', function () {
+    remindableDisaster()->update(['disaster_type' => 'Earthquake']);
+    $both = userWithPermissions('access-weather-form', 'access-water-level-form', 'access-road-form');
+    $weatherOnly = userWithPermissions('access-weather-form');
+
+    remind()->assertOk()->assertJson(['notified' => 1]);
+
+    expect($both->notifications->first()->data['tables'])->toBe(['roads'])
+        ->and($weatherOnly->notifications)->toHaveCount(0);
+});
+
 it('reminds only the accounts the admin picked', function () {
     remindableDisaster();
     $picked = userWithPermissions('access-weather-form');

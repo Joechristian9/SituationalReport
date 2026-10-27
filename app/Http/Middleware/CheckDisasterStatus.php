@@ -41,7 +41,7 @@ class CheckDisasterStatus
         // may be saved. Inertia form posts don't ask for JSON, so writes are blocked by
         // method rather than by expectsJson().
         if ($typhoon->status === 'paused' && ($request->expectsJson() || ! $request->isMethodSafe())) {
-            $message = 'Typhoon report is currently paused. Forms are temporarily disabled.';
+            $message = 'Disaster report is currently paused. Forms are temporarily disabled.';
 
             if (! $request->expectsJson()) {
                 return back()->with('error', $message);

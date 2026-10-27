@@ -466,7 +466,7 @@ export default function DisasterManagement({ typhoons }) {
         e.preventDefault();
         
         if (!formData.name.trim()) {
-            toast.error('Typhoon name is required');
+            toast.error('Disaster name is required');
             return;
         }
         

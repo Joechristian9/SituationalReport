@@ -35,7 +35,7 @@ class NotificationController extends Controller
             ->limit(self::LIMIT)
             ->get(['id', 'data', 'created_at', 'read_at']);
 
-        $missing = $reminders->isEmpty() ? [] : PendingForms::missing($user->getPermissionNames()->all(), PendingForms::submittedBy($user, $disaster));
+        $missing = $reminders->isEmpty() ? [] : PendingForms::missing($user->getPermissionNames()->all(), PendingForms::submittedBy($user, $disaster), $disaster->disaster_type);
         $forms = array_map([PendingForms::class, 'label'], $missing);
 
         $items = $missing === [] ? collect() : $reminders->map(fn ($reminder) => [

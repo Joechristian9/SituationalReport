@@ -72,6 +72,36 @@ it('rebuilds the final PDF when a record changed after it was built', function (
     ]),
 ]);
 
+it('names the final PDF after the disaster type without repeating it', function (string $name, string $type, string $prefix) {
+    $disaster = runningDisaster();
+    $disaster->update(['name' => $name, 'disaster_type' => $type]);
+    $admin = userWithRole('admin');
+    $this->actingAs($admin)->postJson(route('disasters.end', $disaster))->assertOk();
+
+    $this->actingAs($admin)->get(route('disasters.download', $disaster))->assertOk()->assertDownload();
+    $pdfPath = $disaster->fresh()->pdf_path;
+    expect($pdfPath)->toStartWith("reports/{$prefix}_Report_");
+
+    unlink(storage_path('app/public/'.$pdfPath));
+})->with([
+    'an earthquake' => ['Magnitude 6.5 Ilagan', 'Earthquake', 'Earthquake_Magnitude_6.5_Ilagan'],
+    'a name that already says the type' => ['Tropical Storm Aghon', 'Tropical Storm', 'Tropical_Storm_Aghon'],
+    'type Other' => ['Gas Leak Baligatan', 'Other', 'Gas_Leak_Baligatan'],
+]);
+
+it('names every disaster of the year in the yearly report subject', function () {
+    $admin = userWithRole('admin');
+    Typhoon::create(['name' => 'Kristine', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2026-07-01', 'created_by' => $admin->id]);
+    Typhoon::create(['name' => 'Magnitude 6.5 Ilagan', 'disaster_type' => 'Earthquake', 'status' => 'active', 'started_at' => '2026-09-15', 'created_by' => $admin->id]);
+    Typhoon::create(['name' => 'Aghon', 'disaster_type' => 'Typhoon', 'status' => 'ended', 'started_at' => '2025-05-20', 'created_by' => $admin->id]);
+
+    $this->actingAs($admin)->get(route('reports.view', ['year' => 2026]))
+        ->assertOk()
+        ->assertSee('TERMINAL REPORT re: TYPHOON "KRISTINE", EARTHQUAKE "MAGNITUDE 6.5 ILAGAN"')
+        ->assertDontSee('AGHON');
+    $this->actingAs($admin)->get(route('reports.view', ['year' => 2024]))->assertSee('TERMINAL REPORT re: CY 2024');
+});
+
 it('has no final PDF to download while the disaster is still running', function () {
     $this->actingAs(userWithRole('admin'))
         ->getJson(route('disasters.download', runningDisaster()))

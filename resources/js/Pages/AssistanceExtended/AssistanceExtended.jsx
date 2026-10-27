@@ -153,7 +153,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
 
     const handleSubmit = async () => {
         if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            toast.error("Forms are currently disabled. Please wait for an active disaster report.");
             return;
         }
         

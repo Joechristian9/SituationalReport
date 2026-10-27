@@ -107,7 +107,7 @@ export default function AssistanceProvidedLgu({ disabled = false }) {
     // Submit handler
     const handleSubmit = () => {
         if (disabled) {
-            toast.error("Forms are currently disabled. Please wait for an active typhoon report.");
+            toast.error("Forms are currently disabled. Please wait for an active disaster report.");
             return;
         }
         post(route("assistance-provided-lgus.store"), { 

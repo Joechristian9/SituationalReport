@@ -272,7 +272,7 @@
                 <td style="border: none; padding: 5px 0; font-weight: bold;">SUBJECT</td>
                 <td style="border: none; padding: 5px 0;">:</td>
                 <td style="border: none; padding: 5px 0; font-weight: bold;">
-                    TERMINAL REPORT re: TYPHOON "{{ strtoupper($typhoonName ?? 'N/A') }}"
+                    TERMINAL REPORT re: {{ $reportSubject ?? 'N/A' }}
                 </td>
             </tr>
             <tr style="border: none;">

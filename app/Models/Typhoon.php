@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Typhoon extends Model
 {
@@ -140,6 +141,20 @@ class Typhoon extends Model
     public static function hasActiveTyphoon()
     {
         return self::whereIn('status', ['active', 'paused'])->exists();
+    }
+
+    /** The type printed before the name in reports; null when the name already says it or it is just "Other". */
+    public function reportType(): ?string
+    {
+        $type = $this->disaster_type;
+
+        return $type && $type !== 'Other' && ! Str::contains($this->name, $type, true) ? $type : null;
+    }
+
+    /** The PDF subject for this disaster, e.g. EARTHQUAKE "MAGNITUDE 6.5 ILAGAN". */
+    public function reportSubject(): string
+    {
+        return ltrim(mb_strtoupper($this->reportType().' "'.$this->name.'"'));
     }
 
     /**

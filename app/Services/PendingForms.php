@@ -68,6 +68,13 @@ class PendingForms
         'access-suspension-work-form' => 'suspension_of_works',
     ];
 
+    /** Disaster type => forms it has no use for. They stay open but never count as still to submit. */
+    public const NOT_NEEDED = [
+        'Earthquake' => ['weather_reports', 'water_levels'],
+        'Fire' => ['weather_reports', 'water_levels'],
+        'Volcanic Eruption' => ['weather_reports', 'water_levels'],
+    ];
+
     /** The name shown for a report table. */
     public static function label(string $table): string
     {
@@ -75,14 +82,17 @@ class PendingForms
     }
 
     /**
-     * The report tables an account is assigned, once each, in the order of its permissions.
+     * The report tables an account is assigned, once each, in the order of its permissions,
+     * minus the ones the disaster's type has no use for.
      *
      * @param  array<int, string>  $permissions
      * @return array<int, string>
      */
-    public static function required(array $permissions): array
+    public static function required(array $permissions, ?string $disasterType = null): array
     {
-        return array_values(array_unique(array_filter(array_map(fn (string $permission) => self::PERMISSION_TABLES[$permission] ?? null, $permissions))));
+        $tables = array_unique(array_filter(array_map(fn (string $permission) => self::PERMISSION_TABLES[$permission] ?? null, $permissions)));
+
+        return array_values(array_diff($tables, self::NOT_NEEDED[$disasterType] ?? []));
     }
 
     /**
@@ -92,9 +102,9 @@ class PendingForms
      * @param  array<int, string>  $submittedTables
      * @return array<int, string> report tables, in the order of $permissions
      */
-    public static function missing(array $permissions, array $submittedTables): array
+    public static function missing(array $permissions, array $submittedTables, ?string $disasterType = null): array
     {
-        return array_values(array_diff(self::required($permissions), $submittedTables));
+        return array_values(array_diff(self::required($permissions, $disasterType), $submittedTables));
     }
 
     /**
@@ -190,7 +200,7 @@ class PendingForms
             if ($agricultureFiled) {
                 $filed[] = self::AGRICULTURE_TABLE;
             }
-            $missing[$user->id] = self::missing($user->permissions->pluck('name')->all(), $filed);
+            $missing[$user->id] = self::missing($user->permissions->pluck('name')->all(), $filed, $disaster->disaster_type);
         }
 
         return $missing;
