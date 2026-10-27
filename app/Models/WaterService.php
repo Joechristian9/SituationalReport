@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\LogsModification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\LogsModification;
 
 class WaterService extends Model
 {
@@ -23,12 +23,12 @@ class WaterService extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 
     public function updater()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by')->withTrashed();
     }
 
     public function typhoon()

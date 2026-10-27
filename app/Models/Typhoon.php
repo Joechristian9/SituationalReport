@@ -52,7 +52,7 @@ class Typhoon extends Model
      */
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
     /**
@@ -60,7 +60,7 @@ class Typhoon extends Model
      */
     public function ender()
     {
-        return $this->belongsTo(User::class, 'ended_by');
+        return $this->belongsTo(User::class, 'ended_by')->withTrashed();
     }
 
     /**
@@ -68,7 +68,7 @@ class Typhoon extends Model
      */
     public function pauser()
     {
-        return $this->belongsTo(User::class, 'paused_by');
+        return $this->belongsTo(User::class, 'paused_by')->withTrashed();
     }
 
     /**
@@ -76,7 +76,7 @@ class Typhoon extends Model
      */
     public function resumer()
     {
-        return $this->belongsTo(User::class, 'resumed_by');
+        return $this->belongsTo(User::class, 'resumed_by')->withTrashed();
     }
 
     /**

@@ -36,7 +36,7 @@ class AuditLog extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class)->withDefault([
+        return $this->belongsTo(User::class)->withTrashed()->withDefault([
             'name' => 'System',
             'email' => 'system@system.local',
         ]);

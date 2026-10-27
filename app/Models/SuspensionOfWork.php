@@ -30,7 +30,7 @@ class SuspensionOfWork extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 
     /**
@@ -38,7 +38,7 @@ class SuspensionOfWork extends Model
      */
     public function updater()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by')->withTrashed();
     }
 
     /**

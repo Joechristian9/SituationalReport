@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Casualty;
+use App\Models\Typhoon;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -76,21 +78,21 @@ class ProfileTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertSoftDeleted($user);
     }
 
     public function test_regular_user_cannot_delete_their_account_or_its_reports(): void
     {
         $user = userWithRole('user');
-        $disaster = \App\Models\Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
-        \App\Models\Casualty::factory()->create(['user_id' => $user->id, 'disaster_id' => $disaster->id]);
+        $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
+        Casualty::factory()->create(['user_id' => $user->id, 'disaster_id' => $disaster->id]);
 
         $this->actingAs($user)
             ->delete('/profile', ['password' => 'password'])
             ->assertForbidden();
 
         $this->assertNotNull($user->fresh());
-        $this->assertSame(1, \App\Models\Casualty::where('user_id', $user->id)->count());
+        $this->assertSame(1, Casualty::where('user_id', $user->id)->count());
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void
