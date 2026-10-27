@@ -44,8 +44,11 @@ jobs:
       - name: Install JS packages
         run: npm ci
 
+      # Vitest boots a Vite dev server, which laravel-vite-plugin refuses to start when CI is set.
       - name: JS tests
         run: npm test
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: 1
 
       # Catches build errors; the deployed files are still the ones committed in public/build.
       - name: Build
