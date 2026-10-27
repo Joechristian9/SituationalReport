@@ -139,7 +139,8 @@ class User extends Authenticatable
     {
         // Admin can access all users' data
         if ($this->isAdmin()) {
-            return User::pluck('id')->toArray();
+            // withTrashed: reports by deleted accounts are kept, so admins must still see them.
+            return User::withTrashed()->pluck('id')->toArray();
         }
 
         $query = \DB::table('user_data_sharing')

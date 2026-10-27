@@ -3,6 +3,7 @@
 use App\Models\Typhoon;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Spatie\Permission\Models\Role;
 
 // Deleting an account or a disaster can't be undone, so the admin must re-enter their password.
 
@@ -37,6 +38,34 @@ it('keeps what a deleted user filed, still under their name', function () {
     $this->assertGuest();
     // A real delete must fail rather than take the disaster and its reports with it.
     expect(fn () => $account->forceDelete())->toThrow(QueryException::class);
+    // Admins still see what the deleted account filed.
+    expect($admin->getAccessibleUserIds())->toContain($account->id);
+});
+
+it('restores a deleted account when an admin creates one with its email again', function () {
+    $admin = userWithRole('admin');
+    $account = userWithRole('admin');
+    Role::findOrCreate('user');
+    $disaster = Typhoon::create(['name' => 'Kristine', 'status' => 'active', 'created_by' => $account->id]);
+    $account->setRememberToken('old-phone-token');
+    $account->save();
+    $this->actingAs($admin)->delete(route('admin.users.destroy', $account), ['password' => 'password']);
+
+    $this->actingAs($admin)->post(route('admin.users.store'), [
+        'name' => 'Brgy. Alibagu', 'email' => $account->email, 'password' => 'new-password-123', 'role' => 'user',
+    ])->assertSessionHasNoErrors()->assertRedirect(route('admin.users.index'));
+
+    $restored = User::where('email', $account->email)->sole();
+    expect($restored->id)->toBe($account->id)
+        ->and($restored->name)->toBe('Brgy. Alibagu')
+        ->and($restored->getRoleNames()->all())->toBe(['user'])
+        ->and($disaster->fresh()->created_by)->toBe($account->id)
+        // The old device's "remember me" cookie no longer matches.
+        ->and($restored->getRememberToken())->not->toBe('old-phone-token');
+    // A live account's email is still taken.
+    $this->actingAs($admin)->post(route('admin.users.store'), [
+        'name' => 'Copy', 'email' => $admin->email, 'password' => 'new-password-123', 'role' => 'user',
+    ])->assertSessionHasErrors('email');
 });
 
 it('deletes a disaster only with the admin password', function () {

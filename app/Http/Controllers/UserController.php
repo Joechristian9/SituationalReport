@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -49,26 +50,24 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->withoutTrashed()],
             'password' => ['required', Password::defaults()],
             'role' => ['required', 'string', Rule::in(Role::pluck('name')->toArray())],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', Rule::in(Permission::pluck('name')->toArray())],
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+        // A deleted account still holds its email, so bring it back (with its old reports) instead of colliding with it.
+        $user = User::onlyTrashed()->firstWhere('email', $validated['email']) ?? new User(['email' => $validated['email']]);
+        $user->fill(['name' => $validated['name'], 'password' => Hash::make($validated['password'])]);
+        $user->deleted_at = null;
+        // New token: a "remember me" cookie left on the deleted account's old devices must not log in again.
+        $user->setRememberToken(Str::random(60));
+        $user->save();
 
-        // Assign role
-        $user->assignRole($validated['role']);
-
-        // Assign permissions if provided
-        if (! empty($validated['permissions'])) {
-            $user->givePermissionTo($validated['permissions']);
-        }
+        // sync, not assign: a restored account must not keep its old role or permissions.
+        $user->syncRoles([$validated['role']]);
+        $user->syncPermissions($validated['permissions'] ?? []);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully.');
     }
