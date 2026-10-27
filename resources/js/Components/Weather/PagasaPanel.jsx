@@ -234,7 +234,11 @@ export default function PagasaPanel() {
         <>
             <Card className="overflow-hidden">
                 {/* Alerts as a one-line notice; the list opens in a drawer so the map stays in view. */}
-                <div role="status" className={cn("flex flex-col gap-3 border-b py-3 sm:flex-row sm:items-center", GUTTER, TONE[status.tone])}>
+                {/* Phones stack only when "View alerts" needs the room; Refresh alone fits beside the text. */}
+                <div
+                    role="status"
+                    className={cn("flex gap-3 border-b py-3", alerts.length > 0 ? "flex-col sm:flex-row sm:items-center" : "items-center", GUTTER, TONE[status.tone])}
+                >
                     <div className="flex min-w-0 flex-1 items-start gap-3">
                         <StatusIcon className={cn("mt-0.5 h-5 w-5 shrink-0", isLoading && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
                         <p className="min-w-0 text-sm">
@@ -256,12 +260,13 @@ export default function PagasaPanel() {
                         )}
                         <Button
                             variant="outline"
-                            className="min-h-11 min-w-11 gap-2 bg-card px-3 md:min-h-9"
+                            className="min-h-11 shrink-0 gap-2 bg-card px-3 md:min-h-9"
                             onClick={() => refetch()}
                             disabled={isFetching}
-                            aria-label={isFetching ? "Checking PAGASA alerts" : "Refresh PAGASA alerts"}
                         >
                             <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
+                            Refresh
+                            <span className="sr-only"> PAGASA alerts</span>
                         </Button>
                     </div>
                 </div>
