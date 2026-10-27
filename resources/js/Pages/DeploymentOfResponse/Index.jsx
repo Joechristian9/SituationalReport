@@ -5,7 +5,7 @@ import { Toaster, toast } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import AppLayout from "@/Layouts/AppLayout";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import Breadcrumbs from "@/Components/Breadcrumbs";
 import { Loader2 } from "lucide-react";
 
 // Lazy load form for better performance

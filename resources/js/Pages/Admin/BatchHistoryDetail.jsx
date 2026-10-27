@@ -2,10 +2,10 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import PageTitle from '@/Components/PageTitle';
-import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Separator } from '@/Components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
 import { Calendar, Download, Eye, ArrowLeft, FileText, Clock } from 'lucide-react';
 import { m as motion } from 'framer-motion';
 

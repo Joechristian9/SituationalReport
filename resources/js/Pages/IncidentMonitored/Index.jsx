@@ -3,10 +3,10 @@ import { usePage, useForm } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import AppLayout from "@/Layouts/AppLayout";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import Breadcrumbs from "@/Components/Breadcrumbs";
 import FormPanel from "@/Components/forms/FormPanel";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { m as motion, AnimatePresence } from "framer-motion";
 import {
     ChevronLeft,
@@ -26,7 +26,7 @@ import {
     TabsList,
     TabsTrigger,
     TabsContent,
-} from "@/components/ui/tabs";
+} from "@/Components/ui/tabs";
 
 // Lazy load heavy form components to improve performance
 const IncidentMonitoredForm = lazy(() => import("@/Components/Effects/IncidentMonitoredForm"));

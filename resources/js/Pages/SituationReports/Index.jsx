@@ -6,9 +6,9 @@ import { Toaster, toast } from "react-hot-toast";
 
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import AppLayout from "@/Layouts/AppLayout";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import Breadcrumbs from "@/Components/Breadcrumbs";
 import FormPanel from "@/Components/forms/FormPanel";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
     Cloud,
     Zap,

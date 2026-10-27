@@ -6,7 +6,7 @@ import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@/Components/ui/collapsible";
 import {
     Dialog,
     DialogContent,
@@ -14,10 +14,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/Components/ui/dialog";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 import {
     SidebarGroup,
     SidebarGroupContent,
@@ -30,7 +30,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
     useSidebar,
-} from "@/components/ui/sidebar";
+} from "@/Components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const pathOf = (url) => new URL(url, window.location.origin).pathname;

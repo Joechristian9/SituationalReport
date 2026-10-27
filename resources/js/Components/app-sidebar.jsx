@@ -2,17 +2,17 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
+import { NavMain } from "@/Components/nav-main";
+import { NavUser } from "@/Components/nav-user";
 import InstallAppSidebarButton from "@/Components/InstallAppSidebarButton";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { TeamSwitcher } from "@/Components/team-switcher";
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
     SidebarRail,
-} from "@/components/ui/sidebar";
+} from "@/Components/ui/sidebar";
 import { route } from "ziggy-js";
 import { HISTORY_TYPES, historyMenuItems } from "@/Components/history/historyTypes";
 import {

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import PageTitle from '@/Components/PageTitle';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
 import { Calendar, FileText, AlertCircle, Download, Search, Plus } from 'lucide-react';
 import { SkeletonTable } from '@/Components/ui/skeleton';
 import { m as motion } from 'framer-motion';
 import axios from 'axios';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
+import { Input } from '@/Components/ui/input';
+import { Button } from '@/Components/ui/button';
 import TablePagination from '@/Components/ui/TablePagination';
 import {
     Dialog,
@@ -19,8 +19,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+} from '@/Components/ui/dialog';
+import { Label } from '@/Components/ui/label';
 import { toast, Toaster } from 'sonner';
 
 export default function BatchHistory({ batches, availableYears }) {

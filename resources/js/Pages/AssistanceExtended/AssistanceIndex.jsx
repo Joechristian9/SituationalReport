@@ -3,14 +3,14 @@ import { usePage } from "@inertiajs/react";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import AppLayout from "@/Layouts/AppLayout";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import { Card, CardContent } from "@/components/ui/card";
+import Breadcrumbs from "@/Components/Breadcrumbs";
+import { Card, CardContent } from "@/Components/ui/card";
 import {
     Tabs as UITabs,
     TabsContent,
     TabsList,
     TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@/Components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 // Lazy load form components for better performance

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import AppLayout from "@/Layouts/AppLayout";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import { Button } from "@/components/ui/button";
+import Breadcrumbs from "@/Components/Breadcrumbs";
+import { Button } from "@/Components/ui/button";
 import { CheckCircle2, Clock, AlertCircle, BellRing, ChevronDown, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { SkeletonTable } from "@/Components/ui/skeleton";
 import TablePagination from '@/Components/ui/TablePagination';
@@ -17,7 +17,7 @@ import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/Components/ui/popover";
 import {
     SortableHead,
     Table,
@@ -33,7 +33,7 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-} from "@/components/ui/sheet";
+} from "@/Components/ui/sheet";
 import axios from 'axios';
 import { router } from '@inertiajs/react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
