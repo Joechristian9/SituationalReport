@@ -109,6 +109,8 @@ class PreEmptiveReportController extends Controller
         if (! $user->hasRole('admin') && ! $user->hasPermissionTo('access-pre-emptive-form')) {
             abort(403, 'Unauthorized access to pre-emptive evacuation form');
         }
+        // A barangay edits only its own rows; city offices (CDRRMO, CSWDO) may correct any barangay's.
+        $isBarangay = Barangays::accounts()->has($user->id);
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -135,9 +137,9 @@ class PreEmptiveReportController extends Controller
         $savedReports = [];
 
         foreach ($validated['reports'] as $reportData) {
-            // Skip empty rows
+            // Skip empty rows. The barangay alone doesn't count: new rows start with it filled in.
             $isEmpty = empty(array_filter($reportData, function ($value, $key) {
-                return $key !== 'id' && ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
+                return ! in_array($key, ['id', 'barangay'], true) && ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
             }, ARRAY_FILTER_USE_BOTH));
 
             if ($isEmpty) {
@@ -148,15 +150,14 @@ class PreEmptiveReportController extends Controller
             $reportData['total_families'] = (int) ($reportData['families'] ?? 0) + (int) ($reportData['outside_families'] ?? 0);
             $reportData['total_persons'] = (int) ($reportData['persons'] ?? 0) + (int) ($reportData['outside_persons'] ?? 0);
 
-            $reportData['barangay'] = Barangays::forRow($reportData['barangay'] ?? null, Auth::user());
+            $reportData['barangay'] = Barangays::forRow($reportData['barangay'] ?? null, $user);
             $reportId = $reportData['id'] ?? null;
 
             if ($reportId && is_numeric($reportId)) {
                 // Update existing report
-                $reportQuery = PreEmptiveReport::where('id', $reportId);
+                $reportQuery = PreEmptiveReport::where('id', $reportId)->where('disaster_id', $activeTyphoon->id);
 
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
+                if ($isBarangay) {
                     $reportQuery->where('user_id', $user->id);
                 }
 
@@ -227,9 +228,9 @@ class PreEmptiveReportController extends Controller
         // Return the fresh data (after save) so the frontend can reflect the changes
         $reloadedQuery = PreEmptiveReport::where('disaster_id', $activeTyphoon->id);
 
-        $user = Auth::user();
-        if ($user && ! $user->isAdmin()) {
-            $reloadedQuery->where('user_id', $user->id);
+        // Same rows the page shows, so saving doesn't hide the other barangays from an office account.
+        if ($isBarangay) {
+            $reloadedQuery->whereIn('user_id', $user->getAccessibleUserIds('read'));
         }
 
         $reloaded = $reloadedQuery->latest()->limit(200)->get();
@@ -247,7 +248,10 @@ class PreEmptiveReportController extends Controller
     {
         try {
             // Fetch modifications for pre-emptive reports
+            $user = Auth::user();
             $modifications = Modification::forActiveDisaster(PreEmptiveReport::class)
+                // A barangay gets the edit history of its own rows only, as on the form.
+                ->when(Barangays::accounts()->has($user->id), fn ($query) => $query->whereIn('model_id', PreEmptiveReport::whereIn('user_id', $user->getAccessibleUserIds('read'))->select('id')))
                 ->with('user:id,name')
                 ->latest()
                 ->get();
@@ -303,7 +307,7 @@ class PreEmptiveReportController extends Controller
      */
     public function getPreEmptiveHistory(): JsonResponse
     {
-        // One shared evacuation list per disaster (the form loads every row too).
-        return response()->json(ReportHistory::forUser(PreEmptiveReport::class, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons'], Auth::user(), ownAccountsOnly: false));
+        // Barangays see their own rows; city offices see every barangay's (as on the form).
+        return response()->json(ReportHistory::forUser(PreEmptiveReport::class, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons'], Auth::user(), ownAccountsOnly: Barangays::accounts()->has(Auth::id())));
     }
 }

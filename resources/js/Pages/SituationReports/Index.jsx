@@ -33,6 +33,7 @@ import {
 import { format } from "date-fns";
 import { SkeletonForm } from "@/Components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import useBarangays from "@/hooks/useBarangays";
 
 // Sections of the form list. Each has its own icon colour so a form is easy to find again.
 const FORM_GROUPS = [
@@ -302,6 +303,7 @@ export default function Index() {
         steps.length === 1 ? steps[0].label : null
     );
 
+    const { own } = useBarangays();
     const { data, setData, errors } = useForm({
         reports:
             weatherReports && weatherReports.length > 0
@@ -322,7 +324,7 @@ export default function Index() {
                 : [
                       {
                           id: "new-0",
-                          barangay: "",
+                          barangay: own,
                           evacuation_center: "",
                           families: "",
                           persons: "",

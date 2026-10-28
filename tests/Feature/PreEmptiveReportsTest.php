@@ -55,3 +55,62 @@ it('does not let an account without the pre-emptive permission save', function (
 
     expect(PreEmptiveReport::count())->toBe(0);
 });
+
+function preEmptiveBarangay(string $name): User
+{
+    $user = preEmptiveAccount();
+    $user->update(['name' => $name, 'email' => strtolower($name).'@barangay.local']);
+
+    return $user;
+}
+
+it('shows a barangay only its own pre-emptive rows, and an office every barangay', function () {
+    $rugao = preEmptiveBarangay('Rugao');
+    $alibagu = preEmptiveBarangay('Alibagu');
+    $cdrrmo = preEmptiveAccount();
+    $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $cdrrmo->id]);
+    $this->actingAs($cdrrmo);
+    $rows = [];
+    foreach ([$rugao, $alibagu] as $account) {
+        $rows[] = $row = PreEmptiveReport::create(['disaster_id' => $disaster->id, 'user_id' => $account->id, 'barangay' => $account->name, 'families' => 1]);
+        $row->update(['families' => 2]); // leaves an edit in the field history
+    }
+    $editedFields = fn () => array_keys($this->getJson(route('modifications.pre-emptive'))->json('history'));
+
+    $this->actingAs($rugao)->get(route('situation-reports.index'))
+        ->assertInertia(fn ($page) => $page->has('preEmptiveReports', 1)->where('preEmptiveReports.0.barangay', 'Rugao'));
+    expect($this->getJson(route('api.pre-emptive-history'))->json('data.0.reports'))->toHaveCount(1)
+        ->and($editedFields())->toContain("{$rows[0]->id}_families")->not->toContain("{$rows[1]->id}_families");
+
+    $this->actingAs($cdrrmo)->get(route('situation-reports.index'))
+        ->assertInertia(fn ($page) => $page->has('preEmptiveReports', 2));
+    expect($this->getJson(route('api.pre-emptive-history'))->json('data.0.reports'))->toHaveCount(2)
+        ->and($editedFields())->toContain("{$rows[0]->id}_families", "{$rows[1]->id}_families");
+});
+
+it('lets a barangay edit only its own rows, and an office correct any barangay', function () {
+    $rugao = preEmptiveBarangay('Rugao');
+    preEmptiveBarangay('Alibagu');
+    $cdrrmo = preEmptiveAccount();
+    $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $cdrrmo->id]);
+    $cdrrmoRow = PreEmptiveReport::create(['disaster_id' => $disaster->id, 'user_id' => $cdrrmo->id, 'barangay' => 'Alibagu', 'families' => 1]);
+
+    // A row left without a barangay is Rugao's own; a row with only its barangay is not saved;
+    // a row that isn't Rugao's is not changed.
+    $response = $this->actingAs($rugao)->postJson(route('pre-emptive-reports.store'), ['reports' => [
+        ['id' => null, 'barangay' => null, 'families' => 2],
+        ['id' => null, 'barangay' => 'Rugao'],
+        ['id' => $cdrrmoRow->id, 'barangay' => 'Alibagu', 'families' => 9],
+    ]])->assertOk();
+    $rugaoRow = PreEmptiveReport::where('user_id', $rugao->id)->sole();
+    expect($rugaoRow->barangay)->toBe('Rugao')
+        ->and($cdrrmoRow->fresh()->families)->toEqual(1)
+        ->and($response->json('reports'))->toHaveCount(1);
+
+    $response = $this->actingAs($cdrrmo)->postJson(route('pre-emptive-reports.store'), [
+        'reports' => [['id' => $rugaoRow->id, 'barangay' => 'Rugao', 'families' => 5]],
+    ])->assertOk();
+    expect($rugaoRow->fresh()->families)->toEqual(5)
+        // After saving, the office still sees every barangay's rows.
+        ->and($response->json('reports'))->toHaveCount(2);
+});

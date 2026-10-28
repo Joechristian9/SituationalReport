@@ -18,6 +18,7 @@ use App\Models\Typhoon;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\WeatherReport;
+use App\Services\Barangays;
 use App\Services\ReportHistory;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
@@ -66,8 +67,10 @@ class SituationOverviewController extends Controller
             $communicationQuery->whereIn('user_id', $accessibleUserIds);
             $roadQuery->whereIn('user_id', $accessibleUserIds);
             $bridgeQuery->whereIn('user_id', $accessibleUserIds);
-            // Pre-emptive reports: load ALL records (centralized disaster response data)
-            // $preEmptiveQuery->whereIn('user_id', $accessibleUserIds); // Removed filtering
+            // A barangay sees only its own pre-emptive rows; city offices (CDRRMO, CSWDO) see every barangay's.
+            if (Barangays::accounts()->has($user->id)) {
+                $preEmptiveQuery->whereIn('user_id', $accessibleUserIds);
+            }
             $casualtyQuery->whereIn('user_id', $accessibleUserIds);
             $injuredQuery->whereIn('user_id', $accessibleUserIds);
             $missingQuery->whereIn('user_id', $accessibleUserIds);

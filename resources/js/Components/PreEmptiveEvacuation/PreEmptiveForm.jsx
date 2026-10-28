@@ -30,13 +30,14 @@ const columnsFor = (barangays) => [
     { name: "total_persons", label: "Total persons", type: "computed", compute: totalPersons, align: "right", className: "w-28" },
 ];
 
-const blankRow = () => ({ barangay: "", evacuation_center: "", families: "", persons: "", outside_center: "", outside_families: "", outside_persons: "" });
+const BLANK = { barangay: "", evacuation_center: "", families: "", persons: "", outside_center: "", outside_families: "", outside_persons: "" };
 
 export default function PreEmptiveForm({ data, setData, errors, disabled = false }) {
     const reports = data?.reports ?? [];
     const setRows = useCallback((rows) => setData("reports", rows), [setData]);
-    const { barangays } = useBarangays();
+    const { barangays, own } = useBarangays();
     const columns = useMemo(() => columnsFor(barangays), [barangays]);
+    const blankRow = useCallback(() => ({ ...BLANK, barangay: own }), [own]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.pre-emptive");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({
         rows: reports,
