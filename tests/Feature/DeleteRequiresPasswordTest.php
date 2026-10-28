@@ -3,6 +3,7 @@
 use App\Models\Typhoon;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 // Deleting an account or a disaster can't be undone, so the admin must re-enter their password.
@@ -49,7 +50,9 @@ it('restores a deleted account when an admin creates one with its email again', 
     $disaster = Typhoon::create(['name' => 'Kristine', 'status' => 'active', 'created_by' => $account->id]);
     $account->setRememberToken('old-phone-token');
     $account->save();
+    DB::table('sessions')->insert(['id' => 'old-phone', 'user_id' => $account->id, 'payload' => '', 'last_activity' => time()]);
     $this->actingAs($admin)->delete(route('admin.users.destroy', $account), ['password' => 'password']);
+    expect(DB::table('sessions')->where('user_id', $account->id)->exists())->toBeFalse();
 
     $this->actingAs($admin)->post(route('admin.users.store'), [
         'name' => 'Brgy. Alibagu', 'email' => $account->email, 'password' => 'new-password-123', 'role' => 'user',

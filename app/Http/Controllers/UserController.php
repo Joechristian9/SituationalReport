@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -148,6 +149,8 @@ class UserController extends Controller
         }
 
         $user->delete();
+        // A deleted account can be restored later; its old phones must not come back logged in.
+        DB::table('sessions')->where('user_id', $user->id)->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
