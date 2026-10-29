@@ -26,11 +26,14 @@ class ReportHistory
      * @param  array<int, string>  $with  extra relations the $extra closure needs
      * @param  bool  $ownAccountsOnly  false for lists every account shares (one per disaster)
      * @param  Closure|null  $extra  (report) => extra values for a report, e.g. related rows
+     * @param  Closure|null  $rows  (query) => limit it to the reports the user sees, when not simply
+     *                              its accounts' own (see PreEmptiveReport::scopeOfBarangay)
      */
-    public static function forUser(string $model, array $fields, User $user, array $with = [], bool $ownAccountsOnly = true, ?Closure $extra = null): array
+    public static function forUser(string $model, array $fields, User $user, array $with = [], bool $ownAccountsOnly = true, ?Closure $extra = null, ?Closure $rows = null): array
     {
         $limitToAccounts = $ownAccountsOnly && ! $user->isAdmin();
         $accountIds = $limitToAccounts ? $user->getAccessibleUserIds('read') : [];
+        $visible = $rows ?? fn ($query) => $query->whereIn('user_id', $accountIds);
         $request = request();
         $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : self::PER_PAGE[0];
         $search = trim((string) $request->query('search', ''));
@@ -38,7 +41,7 @@ class ReportHistory
         $disasters = Typhoon::query()
             ->select('id', 'name', 'disaster_type', 'status', 'started_at', 'ended_at')
             // A report whose disaster was deleted has nothing to be listed under.
-            ->whereIn('id', $model::query()->select('disaster_id')->when($limitToAccounts, fn ($query) => $query->whereIn('user_id', $accountIds)))
+            ->whereIn('id', $model::query()->select('disaster_id')->when($limitToAccounts, $visible))
             ->when($search !== '', function ($query) use ($search) {
                 $like = '%'.addcslashes($search, '%_\\').'%';
                 $query->where(fn ($match) => $match->where('name', 'like', $like)->orWhere('disaster_type', 'like', $like));
@@ -50,7 +53,7 @@ class ReportHistory
         $reports = $disasters->isEmpty() ? collect() : $model::query()
             ->select(array_values(array_unique(['id', 'disaster_id', 'user_id', 'created_at', 'updated_at', ...$fields])))
             ->whereIn('disaster_id', $disasters->pluck('id'))
-            ->when($limitToAccounts, fn ($query) => $query->whereIn('user_id', $accountIds))
+            ->when($limitToAccounts, $visible)
             ->with(['user:id,name', ...$with])
             ->latest()
             ->get()

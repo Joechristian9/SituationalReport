@@ -125,6 +125,9 @@ it('lets a barangay see and correct the rows an office entered for it, and files
 
     $this->actingAs($rugao)->get(route('situation-reports.index'))
         ->assertInertia(fn ($page) => $page->has('preEmptiveReports', 1)->where('preEmptiveReports.0.id', $officeRow->id));
+    // The history page shows the same rows as the form.
+    $this->actingAs($rugao)->getJson(route('api.pre-emptive-history'))
+        ->assertJsonCount(1, 'data.0.reports')->assertJsonPath('data.0.reports.0.id', $officeRow->id);
 
     // Clearing a saved row still saves it (there is no delete); a new row naming another barangay is Rugao's.
     $this->actingAs($rugao)->postJson(route('pre-emptive-reports.store'), ['reports' => [
