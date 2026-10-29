@@ -90,8 +90,16 @@ class SuspensionOfWorkController extends Controller
             }
         }
 
-        // Return back with success message
-        return back()->with('success', 'Suspension of work saved successfully!');
+        $message = 'Suspension of work saved successfully!';
+        // The form replaces its rows with these, so saved rows get their ids and change times
+        // (without them a second save created the new rows again).
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'suspension_of_work' => SuspensionOfWork::where('disaster_id', $activeTyphoon->id)
+                ->when(! Auth::user()->isAdmin(), fn ($query) => $query->whereIn('user_id', Auth::user()->getAccessibleUserIds('read')))
+                ->orderByDesc('updated_at')->limit(100)->get()]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**

@@ -148,6 +148,15 @@ it('saves suspension rows under the active disaster and lets the owner edit them
     expect($record->fresh())->disaster_id->toBe($disaster->id)->province_city_municipality->toBe('Ilagan City');
 });
 
+it('answers a suspension save with the saved rows, so a second save does not add them again', function () {
+    stormWithStatus();
+    $owner = userWithPermissions('access-suspension-classes-form');
+
+    $this->actingAs($owner)->postJson(route('suspension-classes-reports.store'), [
+        'suspension_of_classes' => [['id' => null, 'province_city_municipality' => 'Ilagan']],
+    ])->assertOk()->assertJsonPath('suspension_of_classes.0.id', SuspensionOfClass::sole()->id);
+});
+
 it('stops an account editing another account\'s weather row', function () {
     $disaster = stormWithStatus();
     $record = WeatherReport::create(['municipality' => 'Ilagan', 'sky_condition' => 'Cloudy', 'user_id' => userWithRole('user')->id, 'disaster_id' => $disaster->id]);
