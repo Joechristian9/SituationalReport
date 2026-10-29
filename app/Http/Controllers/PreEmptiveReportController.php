@@ -17,90 +17,6 @@ class PreEmptiveReportController extends Controller
     use ValidatesDisasterStatus;
 
     /**
-     * Store Pre-Emptive Reports
-     */
-    public function store(Request $request)
-    {
-        // Validate typhoon status
-        if ($error = $this->validateActiveTyphoon()) {
-            return $error;
-        }
-
-        // Get active typhoon
-        $activeTyphoon = Typhoon::getActiveTyphoon();
-
-        $validated = $request->validate([
-            'reports' => 'required|array',
-
-            'reports.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule()],
-            'reports.*.evacuation_center' => 'nullable|string|max:255',
-            'reports.*.families' => 'nullable|integer|min:0',
-            'reports.*.persons' => 'nullable|integer|min:0',
-            'reports.*.outside_center' => 'nullable|string|max:255',
-            'reports.*.outside_families' => 'nullable|integer|min:0',
-            'reports.*.outside_persons' => 'nullable|integer|min:0',
-            'reports.*.total_families' => 'nullable|integer|min:0',
-            'reports.*.total_persons' => 'nullable|integer|min:0',
-        ]);
-
-        foreach ($validated['reports'] as $report) {
-            // ✅ Skip rows where all values are null, empty, or 0
-            $isEmpty = empty(array_filter($report, function ($value) {
-                return ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
-            }));
-
-            if ($isEmpty) {
-                continue;
-            }
-
-            PreEmptiveReport::create([
-                'barangay' => Barangays::forRow($report['barangay'] ?? null, Auth::user()),
-                'evacuation_center' => $report['evacuation_center'] ?? null,
-                'families' => $report['families'] ?? null,
-                'persons' => $report['persons'] ?? null,
-                'outside_center' => $report['outside_center'] ?? null,
-                'outside_families' => $report['outside_families'] ?? null,
-                'outside_persons' => $report['outside_persons'] ?? null,
-                'total_families' => $report['total_families'] ?? null,
-                'total_persons' => $report['total_persons'] ?? null,
-                'user_id' => Auth::id(),
-                'updated_by' => Auth::id(),
-                'disaster_id' => $activeTyphoon->id,
-            ]);
-        }
-
-        return back()->with('success', 'Pre-Emptive Reports saved successfully.');
-    }
-
-    /**
-     * Update specific Pre-Emptive Report
-     */
-    public function update(Request $request, PreEmptiveReport $preEmptiveReport)
-    {
-        $validated = $request->validate([
-            'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$preEmptiveReport->barangay])],
-            'evacuation_center' => 'nullable|string|max:255',
-            'families' => 'nullable|integer|min:0',
-            'persons' => 'nullable|integer|min:0',
-            'outside_center' => 'nullable|string|max:255',
-            'outside_families' => 'nullable|integer|min:0',
-            'outside_persons' => 'nullable|integer|min:0',
-            'total_families' => 'nullable|integer|min:0',
-            'total_persons' => 'nullable|integer|min:0',
-        ]);
-
-        if (array_key_exists('barangay', $validated)) {
-            $validated['barangay'] = Barangays::forRow($validated['barangay'], null);
-        }
-
-        $preEmptiveReport->update(array_merge($validated, [
-            'updated_by' => Auth::id(),
-        ]));
-
-        return back()->with('success', 'Pre-Emptive Report updated successfully.');
-    }
-
-    /**
      * Save Pre-Emptive Reports (Modern Form API)
      */
     public function saveReports(Request $request)
@@ -304,7 +220,16 @@ class PreEmptiveReportController extends Controller
      */
     public function getPreEmptiveHistory(): JsonResponse
     {
-        // Barangays see their own rows; city offices see every barangay's (as on the form).
-        return response()->json(ReportHistory::forUser(PreEmptiveReport::class, ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons'], Auth::user(), ownAccountsOnly: Barangays::accounts()->has(Auth::id())));
+        // As on the form: a barangay sees its own rows and those an office filed under its name;
+        // city offices see every barangay's.
+        $user = Auth::user();
+
+        return response()->json(ReportHistory::forUser(
+            PreEmptiveReport::class,
+            ['barangay', 'evacuation_center', 'families', 'persons', 'outside_center', 'outside_families', 'outside_persons', 'total_families', 'total_persons'],
+            $user,
+            ownAccountsOnly: Barangays::accounts()->has($user->id),
+            rows: fn ($query) => $query->ofBarangay($user),
+        ));
     }
 }
