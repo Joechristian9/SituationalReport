@@ -9,14 +9,17 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
 import useOnline from '@/hooks/useOnline';
+import { useQueryClient } from '@tanstack/react-query';
 import { rememberPassword } from '@/lib/offline/lock';
+import { startOfflineSession } from '@/lib/offline/offlineSession';
+import { checkPrepared, preparedAccount, preparedPhone, preparedTriesLeft } from '@/lib/offline/prepared';
 import { cn } from '@/lib/utils';
 
 const fieldIcon = 'pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary';
 const fieldInput = 'h-12 rounded-lg bg-background pl-11 text-lg md:text-lg focus-visible:ring-2';
 
 export default function Login({ status, canResetPassword }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, setError, clearErrors } = useForm({
         email: '',
         password: '',
         // On by default: field phones lose signal for days, and staying signed in lets
@@ -28,9 +31,43 @@ export default function Login({ status, canResetPassword }) {
     const [capsLock, setCapsLock] = useState(false);
     const emailRef = useRef(null);
     const passwordRef = useRef(null);
+    const queryClient = useQueryClient();
+    const [signingInOffline, setSigningInOffline] = useState(false);
+    const hasPrepared = Boolean(preparedPhone());
+
+    const signInOffline = async () => {
+        setSigningInOffline(true);
+        const result = await checkPrepared(data.email, data.password);
+        setSigningInOffline(false);
+        if (result === 'ok') {
+            startOfflineSession(preparedAccount(data.email), data.password, queryClient);
+            return;
+        }
+        reset('password');
+        if (result === 'unknown') {
+            setError('email', "This account isn't prepared on this phone, so signing in needs internet.");
+            emailRef.current?.focus();
+            return;
+        }
+        const left = preparedTriesLeft(data.email);
+        setError(
+            'password',
+            result === 'blocked'
+                ? 'Too many wrong passwords on this phone. Sign in with internet to continue.'
+                : `Wrong password. ${left} ${left === 1 ? 'try' : 'tries'} left on this phone without internet.`,
+        );
+        passwordRef.current?.focus();
+    };
 
     const submit = (e) => {
         e.preventDefault();
+        clearErrors();
+
+        // No connection: an account an admin prepared on this phone is checked here instead.
+        if (!navigator.onLine && hasPrepared) {
+            signInOffline();
+            return;
+        }
 
         post(route('login'), {
             // The server accepted the password: keep a check of it so the app can be unlocked offline.
@@ -59,7 +96,9 @@ export default function Login({ status, canResetPassword }) {
                 {!online && (
                     <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-base text-warning">
                         <CloudOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                        You're offline. Signing in needs an internet connection.
+                        {hasPrepared
+                            ? "You're offline. Accounts prepared on this phone can still sign in; their reports are sent when the connection returns."
+                            : "You're offline. Signing in needs an internet connection."}
                     </p>
                 )}
             </div>
@@ -157,10 +196,10 @@ export default function Login({ status, canResetPassword }) {
 
                 <Button
                     type="submit"
-                    disabled={processing}
+                    disabled={processing || signingInOffline}
                     className="group h-12 w-full rounded-lg text-lg font-semibold shadow-lg shadow-primary/30 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 >
-                    {processing ? (
+                    {processing || signingInOffline ? (
                         <>
                             <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
                             Signing in…

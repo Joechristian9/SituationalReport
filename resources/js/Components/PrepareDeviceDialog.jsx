@@ -67,7 +67,8 @@ export default function PrepareDeviceDialog({ open, onOpenChange, users }) {
                     <DialogTitle>Prepare this phone</DialogTitle>
                     <DialogDescription>
                         Do this on the phone that goes to the field. The accounts you choose can then sign in on it without internet for 30 days,
-                        with blank forms. Their reports are sent when the phone is back online.
+                        with blank forms. Their reports are sent when the phone is back online. Log out when you're done, so the phone opens on
+                        the sign-in page.
                     </DialogDescription>
                 </DialogHeader>
 

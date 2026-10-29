@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearPrepared, preparedAccount, preparedPhone, removePrepared, savePrepared } from "./prepared";
+import { checkPrepared, clearPrepared, preparedAccount, preparedPhone, preparedTriesLeft, removePrepared, savePrepared } from "./prepared";
 
 // Tests run without a browser: a plain in-memory localStorage.
 const storage = new Map();
@@ -51,5 +51,41 @@ describe("prepared accounts", () => {
         removePrepared("rugao@barangay.local");
         expect(preparedPhone()).toBeNull();
         expect(storage.has("offline-prepared")).toBe(false);
+    });
+});
+
+/** A check made the way the server makes it (User::rememberOfflinePassword), with fewer rounds for speed. */
+async function serverCheck(password, iterations = 1000) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
+    const base64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+    return { salt: base64(salt), hash: base64(bits), iterations };
+}
+
+describe("signing in with no internet", () => {
+    beforeEach(async () => {
+        clearPrepared();
+        const { salt, hash, iterations } = await serverCheck("correct-horse-battery");
+        savePrepared({
+            expiresAt: new Date(Date.now() + 30 * DAY).toISOString(),
+            iterations,
+            accounts: [{ user: { id: 7, name: "Fugu", email: "fugu@barangay.local" }, salt, hash }],
+            template: {},
+        });
+    });
+
+    it("lets a prepared account in with its password only", async () => {
+        expect(await checkPrepared("Fugu@barangay.local", "correct-horse-battery")).toBe("ok");
+        expect(await checkPrepared("fugu@barangay.local", "wrong-horse-battery")).toBe("wrong");
+        expect(preparedTriesLeft("fugu@barangay.local")).toBe(4);
+        expect(await checkPrepared("rugao@barangay.local", "correct-horse-battery")).toBe("unknown");
+    });
+
+    it("refuses even the right password after five wrong ones", async () => {
+        for (let i = 1; i < 5; i++) expect(await checkPrepared("fugu@barangay.local", "wrong")).toBe("wrong");
+        expect(await checkPrepared("fugu@barangay.local", "wrong")).toBe("blocked");
+
+        expect(await checkPrepared("fugu@barangay.local", "correct-horse-battery")).toBe("blocked");
     });
 });

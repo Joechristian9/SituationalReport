@@ -25,6 +25,15 @@ const MAX_DATA = 120;
 const NETWORK_TIMEOUT = 8000;
 const BASE = new URL(self.registration.scope).pathname;
 const OFFLINE_URL = `${BASE}offline.html`;
+// The sign-in page as a visitor sees it (never anyone's data), kept with the assets because
+// logout clears the page caches: on a prepared phone it is how the app opens with no internet
+// after a logout, so a prepared account can sign in (lib/offline/offlineSession.js).
+const SIGN_IN = `${BASE}login`;
+const SIGN_IN_COPY = `${BASE}__offline-sign-in`;
+
+async function saveSignInPage(response) {
+    if (response.ok && !response.redirected) await (await caches.open(ASSETS)).put(SIGN_IN_COPY, response);
+}
 
 async function precacheBuild() {
     try {
@@ -51,6 +60,9 @@ async function precacheBuild() {
             const { pathname } = new URL(request.url);
             if (pathname.startsWith(`${BASE}build/`) && !current.has(pathname)) await cache.delete(request);
         }
+
+        // With these assets, so it never points at deleted files. No cookies: a visitor's page.
+        await saveSignInPage(await fetch(SIGN_IN, { credentials: 'omit', cache: 'no-store' }));
     } catch {
         // Offline during install: assets are cached as they are used instead.
     }
@@ -147,6 +159,8 @@ async function networkFirst(event, request, isPage) {
     const network = fetch(request).then((response) => {
         // waitUntil keeps the worker alive until the copy is saved, even after the page has its response.
         if (cacheable(response)) event.waitUntil(remember(cache, request, response.clone(), isPage ? MAX_PAGES : MAX_DATA).catch(() => {}));
+        // Signed-in users are redirected away from it, so a plain answer is the visitor's page.
+        if (isPage && new URL(request.url).pathname === SIGN_IN && cacheable(response)) event.waitUntil(saveSignInPage(response.clone()).catch(() => {}));
         return response;
     });
 
@@ -161,6 +175,11 @@ async function networkFirst(event, request, isPage) {
         if (isPage) {
             const rebuilt = await rebuildPage(request).catch(() => null);
             if (rebuilt) return rebuilt;
+            // Nothing of a signed-in user saved (e.g. after a logout): open on the sign-in page.
+            if (ENTRY_PATHS.includes(new URL(request.url).pathname)) {
+                const signIn = await caches.match(SIGN_IN_COPY);
+                if (signIn) return signIn;
+            }
             const offline = await caches.match(OFFLINE_URL);
             if (offline) return offline;
         }

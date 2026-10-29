@@ -3,6 +3,8 @@
 // them; each one lasts until it expires (30 days) or an admin removes it. Holds password checks,
 // never passwords, and no report rows: an offline sign-in starts with blank forms.
 
+import { MAX_TRIES, matchesCheck } from './lock';
+
 const KEY = 'offline-prepared';
 const listeners = new Set();
 
@@ -48,6 +50,24 @@ export function savePrepared(download) {
 export function preparedAccount(email) {
     return preparedPhone()?.accounts[normalEmail(email)] ?? null;
 }
+
+/**
+ * Check a password typed with no internet: 'ok', 'wrong', 'blocked' (too many wrong ones: only
+ * an online sign-in now), or 'unknown' (this account isn't prepared on this phone).
+ */
+export async function checkPrepared(email, password) {
+    const account = preparedAccount(email);
+    if (!account) return 'unknown';
+    if (account.tries >= MAX_TRIES) return 'blocked';
+    const ok = await matchesCheck(password, account);
+    const phone = read();
+    phone.accounts[normalEmail(email)] = { ...account, tries: ok ? 0 : account.tries + 1 };
+    write(phone);
+    if (ok) return 'ok';
+    return account.tries + 1 >= MAX_TRIES ? 'blocked' : 'wrong';
+}
+
+export const preparedTriesLeft = (email) => Math.max(0, MAX_TRIES - (preparedAccount(email)?.tries ?? MAX_TRIES));
 
 export function removePrepared(email) {
     const phone = read();
