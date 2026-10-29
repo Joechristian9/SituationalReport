@@ -55,7 +55,9 @@ class AuthenticatedSessionController extends Controller
             AuditLogger::logLogout("User {$user->name} logged out");
         }
 
-        Auth::guard('web')->logout();
+        // This device only. logout() would replace the account's "Remember me" token, which
+        // silently stops the account's other phones from signing back in by themselves.
+        Auth::guard('web')->logoutCurrentDevice();
 
         $request->session()->invalidate();
 

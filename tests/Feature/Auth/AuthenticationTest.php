@@ -50,3 +50,15 @@ test('users can logout', function () {
     $this->assertGuest();
     $response->assertRedirect('/');
 });
+
+test('logging out on one device keeps the account remembered on its other devices', function () {
+    $user = User::factory()->create();
+    $this->post('/login', ['email' => $user->email, 'password' => 'password', 'remember' => true]);
+    $token = $user->fresh()->remember_token;
+
+    $this->post('/logout');
+
+    $this->assertGuest();
+    expect($token)->not->toBeEmpty()
+        ->and($user->fresh()->remember_token)->toBe($token);
+});
