@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { toast } from 'react-hot-toast';
 import { rememberPassword } from './lock';
 import { preparedPhone, removePrepared } from './prepared';
-import { syncNow } from './sync';
+import { SEND_TIMEOUT_MS, holdSync, syncNow } from './sync';
 
 // A prepared account signed in on this phone with no internet (Login.jsx). In memory only: the
 // password waits here, never stored, to sign in to the server once the connection returns; closing
@@ -26,14 +26,17 @@ export async function signInToServer() {
     session.signingIn = true;
     const { user, password } = session;
     try {
-        await axios.get(route('sanctum.csrf-cookie'));
-        await axios.post(route('login'), { email: user.email, password, remember: true }, { headers: { Accept: 'application/json' } });
+        // Time-limited like sending: a request hanging on a weak signal would keep `signingIn`
+        // set and stop every retry. A timeout has no response, so it is simply tried again.
+        await axios.get(route('sanctum.csrf-cookie'), { timeout: SEND_TIMEOUT_MS });
+        await axios.post(route('login'), { email: user.email, password, remember: true }, { headers: { Accept: 'application/json' }, timeout: SEND_TIMEOUT_MS });
     } catch (error) {
         session.signingIn = false;
         if (error.response?.status !== 422) return; // unreachable, busy or limited: later
         // Refused: the password was changed or the account removed since this phone was prepared.
         session.refused = true;
         removePrepared(user.email);
+        holdSync(false);
         toast.error("Couldn't sign in to send your reports: this account's password was changed or the account was removed. The reports stay on this phone; sign in again to send them.", { duration: 10000 });
         syncNow(); // shows "Log in to send…" with its sign-in button
         return;
@@ -43,6 +46,7 @@ export async function signInToServer() {
     session = null;
     await rememberPassword(user.email, password);
     toast.success(`Back online and signed in as ${user.name}. Sending your reports…`);
+    holdSync(false);
     syncNow();
 }
 
@@ -50,6 +54,7 @@ export async function signInToServer() {
 export function startOfflineSession(account, password, queryClient) {
     const template = preparedPhone()?.template ?? {};
     session = { user: account.user, password };
+    holdSync(true);
 
     if (!installed) {
         installed = true;

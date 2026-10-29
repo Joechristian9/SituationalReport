@@ -12,7 +12,7 @@ vi.mock("./context", () => ({ currentUser: () => ({ id: 1 }), currentSession: ()
 
 const axios = (await import("axios")).default;
 const { allItems, putItem, removeItem } = await import("./store");
-const { syncNow, syncState } = await import("./sync");
+const { holdSync, syncNow, syncState } = await import("./sync");
 
 const report = { id: "key-1", userId: 1, status: "pending", url: "/roads", payload: { roads: [] }, session: "old-page", savedAt: 1 };
 
@@ -33,6 +33,18 @@ describe("syncNow", () => {
         expect(removeItem).not.toHaveBeenCalled();
         expect(putItem).not.toHaveBeenCalled();
         expect(syncState().running).toBe(false);
+    });
+
+    it("sends nothing while an offline session holds it, then sends once released", async () => {
+        axios.post.mockResolvedValue({ status: 200, data: {} });
+
+        holdSync(true);
+        await syncNow();
+        expect(axios.post).not.toHaveBeenCalled();
+
+        holdSync(false);
+        await syncNow();
+        expect(removeItem).toHaveBeenCalledWith("key-1");
     });
 
     it("removes the report once the server has it", async () => {
