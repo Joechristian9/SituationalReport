@@ -137,12 +137,15 @@ class PreEmptiveReportController extends Controller
         $savedReports = [];
 
         foreach ($validated['reports'] as $reportData) {
-            // Skip empty rows. The barangay alone doesn't count: new rows start with it filled in.
+            $reportId = $reportData['id'] ?? null;
+
+            // Skip empty new rows. The barangay alone doesn't count: new rows start with it filled in.
+            // Saved rows always go through, since clearing one is the only way to correct it (no delete).
             $isEmpty = empty(array_filter($reportData, function ($value, $key) {
                 return ! in_array($key, ['id', 'barangay'], true) && ! is_null($value) && $value !== '' && $value !== 0 && $value !== '0';
             }, ARRAY_FILTER_USE_BOTH));
 
-            if ($isEmpty) {
+            if ($isEmpty && ! is_numeric($reportId)) {
                 continue;
             }
 
@@ -150,16 +153,13 @@ class PreEmptiveReportController extends Controller
             $reportData['total_families'] = (int) ($reportData['families'] ?? 0) + (int) ($reportData['outside_families'] ?? 0);
             $reportData['total_persons'] = (int) ($reportData['persons'] ?? 0) + (int) ($reportData['outside_persons'] ?? 0);
 
-            $reportData['barangay'] = Barangays::forRow($reportData['barangay'] ?? null, $user);
-            $reportId = $reportData['id'] ?? null;
+            // A barangay reports for itself only, whatever name the row carries.
+            $reportData['barangay'] = $isBarangay ? $user->name : Barangays::forRow($reportData['barangay'] ?? null, $user);
 
             if ($reportId && is_numeric($reportId)) {
                 // Update existing report
-                $reportQuery = PreEmptiveReport::where('id', $reportId)->where('disaster_id', $activeTyphoon->id);
-
-                if ($isBarangay) {
-                    $reportQuery->where('user_id', $user->id);
-                }
+                $reportQuery = PreEmptiveReport::where('id', $reportId)->where('disaster_id', $activeTyphoon->id)
+                    ->when($isBarangay, fn ($query) => $query->ofBarangay($user, 'write'));
 
                 $report = $reportQuery->first();
 
@@ -226,12 +226,9 @@ class PreEmptiveReportController extends Controller
         }
 
         // Return the fresh data (after save) so the frontend can reflect the changes
-        $reloadedQuery = PreEmptiveReport::where('disaster_id', $activeTyphoon->id);
-
         // Same rows the page shows, so saving doesn't hide the other barangays from an office account.
-        if ($isBarangay) {
-            $reloadedQuery->whereIn('user_id', $user->getAccessibleUserIds('read'));
-        }
+        $reloadedQuery = PreEmptiveReport::where('disaster_id', $activeTyphoon->id)
+            ->when($isBarangay, fn ($query) => $query->ofBarangay($user));
 
         $reloaded = $reloadedQuery->latest()->limit(200)->get();
 
@@ -251,7 +248,7 @@ class PreEmptiveReportController extends Controller
             $user = Auth::user();
             $modifications = Modification::forActiveDisaster(PreEmptiveReport::class)
                 // A barangay gets the edit history of its own rows only, as on the form.
-                ->when(Barangays::accounts()->has($user->id), fn ($query) => $query->whereIn('model_id', PreEmptiveReport::whereIn('user_id', $user->getAccessibleUserIds('read'))->select('id')))
+                ->when(Barangays::accounts()->has($user->id), fn ($query) => $query->whereIn('model_id', PreEmptiveReport::ofBarangay($user)->select('id')))
                 ->with('user:id,name')
                 ->latest()
                 ->get();

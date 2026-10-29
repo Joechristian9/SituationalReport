@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\LogsModification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -61,6 +62,15 @@ class PreEmptiveReport extends Model
     public function typhoon()
     {
         return $this->belongsTo(Typhoon::class, 'disaster_id');
+    }
+
+    /**
+     * A barangay's rows: the ones its accounts entered, and the ones a city office entered under
+     * its name (so it doesn't enter them again and double the totals).
+     */
+    public function scopeOfBarangay(Builder $query, User $user, string $access = 'read'): void
+    {
+        $query->where(fn (Builder $rows) => $rows->whereIn('user_id', $user->getAccessibleUserIds($access))->orWhere('barangay', $user->name));
     }
 
     /**

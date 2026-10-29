@@ -36,7 +36,8 @@ export default function PreEmptiveForm({ data, setData, errors, disabled = false
     const reports = data?.reports ?? [];
     const setRows = useCallback((rows) => setData("reports", rows), [setData]);
     const { barangays, own } = useBarangays();
-    const columns = useMemo(() => columnsFor(barangays), [barangays]);
+    // A barangay reports for itself only (the server files its rows under its own name).
+    const columns = useMemo(() => columnsFor(own ? [own] : barangays), [own, barangays]);
     const blankRow = useCallback(() => ({ ...BLANK, barangay: own }), [own]);
     const { getFieldHistory, historyKey } = useFieldHistory("modifications.pre-emptive");
     const { updateRow, addRow, removeRow, save, saving, hasChanges } = useRowEditor({

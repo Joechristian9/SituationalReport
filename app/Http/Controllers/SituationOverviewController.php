@@ -69,7 +69,7 @@ class SituationOverviewController extends Controller
             $bridgeQuery->whereIn('user_id', $accessibleUserIds);
             // A barangay sees only its own pre-emptive rows; city offices (CDRRMO, CSWDO) see every barangay's.
             if (Barangays::accounts()->has($user->id)) {
-                $preEmptiveQuery->whereIn('user_id', $accessibleUserIds);
+                $preEmptiveQuery->ofBarangay($user);
             }
             $casualtyQuery->whereIn('user_id', $accessibleUserIds);
             $injuredQuery->whereIn('user_id', $accessibleUserIds);

@@ -114,3 +114,24 @@ it('lets a barangay edit only its own rows, and an office correct any barangay',
         // After saving, the office still sees every barangay's rows.
         ->and($response->json('reports'))->toHaveCount(2);
 });
+
+it('lets a barangay see and correct the rows an office entered for it, and files its own rows under its name', function () {
+    $rugao = preEmptiveBarangay('Rugao');
+    preEmptiveBarangay('Alibagu');
+    $cdrrmo = preEmptiveAccount();
+    $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $cdrrmo->id]);
+    $officeRow = PreEmptiveReport::create(['disaster_id' => $disaster->id, 'user_id' => $cdrrmo->id, 'barangay' => 'Rugao', 'evacuation_center' => 'Rugao Gym']);
+    PreEmptiveReport::create(['disaster_id' => $disaster->id, 'user_id' => $cdrrmo->id, 'barangay' => 'Alibagu', 'families' => 1]);
+
+    $this->actingAs($rugao)->get(route('situation-reports.index'))
+        ->assertInertia(fn ($page) => $page->has('preEmptiveReports', 1)->where('preEmptiveReports.0.id', $officeRow->id));
+
+    // Clearing a saved row still saves it (there is no delete); a new row naming another barangay is Rugao's.
+    $this->actingAs($rugao)->postJson(route('pre-emptive-reports.store'), ['reports' => [
+        ['id' => $officeRow->id, 'barangay' => 'Rugao', 'evacuation_center' => null],
+        ['id' => null, 'barangay' => 'Alibagu', 'families' => 3],
+    ]])->assertOk()->assertJsonCount(2, 'reports');
+
+    expect($officeRow->fresh()->evacuation_center)->toBeNull()
+        ->and(PreEmptiveReport::where('user_id', $rugao->id)->sole()->barangay)->toBe('Rugao');
+});
