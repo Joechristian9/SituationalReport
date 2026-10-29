@@ -40,6 +40,7 @@ test('password can be reset with valid token', function () {
     Notification::fake();
 
     $user = User::factory()->create();
+    signedInElsewhere($user);
 
     $this->post('/forgot-password', ['email' => $user->email]);
 
@@ -54,6 +55,8 @@ test('password can be reset with valid token', function () {
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('login'));
+        // Every device must sign in again with the new password.
+        $this->assertDatabaseMissing('sessions', ['id' => 'other-phone']);
 
         return true;
     });

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -108,6 +107,10 @@ class UserController extends Controller
                 userId: $user->id,
                 description: "Password changed for user: {$user->name} ({$user->email})"
             );
+
+            // The admin's way to shut out a lost phone: every device of the account must sign in
+            // again with the new password (but not the admin's own session, if editing themselves).
+            $user->endSessions($user->is($request->user()) ? $request->session()->getId() : null);
         }
 
         // Sync role (remove old roles and assign new one)
@@ -150,7 +153,7 @@ class UserController extends Controller
 
         $user->delete();
         // A deleted account can be restored later; its old phones must not come back logged in.
-        DB::table('sessions')->where('user_id', $user->id)->delete();
+        $user->endSessions();
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }

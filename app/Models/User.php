@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -58,6 +59,16 @@ class User extends Authenticatable
     public function homeRoute(): string
     {
         return $this->isAdmin() ? 'dashboard' : 'situation-reports.index';
+    }
+
+    /**
+     * Sign this account out on its devices, except the session $keep (the device making the
+     * change). Their "Remember me" cookies stop working once the password changes, since each
+     * cookie carries the password hash; this ends the sessions that are still open.
+     */
+    public function endSessions(?string $keep = null): void
+    {
+        DB::table('sessions')->where('user_id', $this->id)->when($keep, fn ($query) => $query->where('id', '!=', $keep))->delete();
     }
 
     public function isUser()

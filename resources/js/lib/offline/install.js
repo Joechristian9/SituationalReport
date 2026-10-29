@@ -198,8 +198,20 @@ export function logOut(options = {}) {
     });
 }
 
+/**
+ * The server says this phone is no longer signed in (password changed or account removed from
+ * another device, or a logout). It must not keep opening the account's saved pages or unlocking
+ * offline with the old password. Unsent reports stay and go up after the next sign-in.
+ */
+function forgetSignedOutAccount() {
+    forgetPassword();
+    clearOfflinePages();
+}
+
 function forgetPagesOnUserChange() {
     const id = String(currentUser()?.id ?? '');
+    // Saved pages always carry a user, so a page without one came from the server: signed out.
+    if (!id) forgetSignedOutAccount();
     try {
         const last = localStorage.getItem('offline-user');
         if (id && last && last !== id) clearOfflinePages();
@@ -253,6 +265,7 @@ export function installOffline(initialPage) {
     registerServiceWorker();
     if (runningInstalled()) keepOfflineData();
     window.addEventListener('offline:queued', keepOfflineData);
+    window.addEventListener('offline:signed-out', forgetSignedOutAccount);
 
     window.addEventListener('online', () => syncNow());
     setInterval(() => syncNow(), 30000);

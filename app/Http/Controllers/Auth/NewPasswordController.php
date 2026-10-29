@@ -30,7 +30,7 @@ class NewPasswordController extends Controller
     /**
      * Handle an incoming new password request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
@@ -50,6 +50,8 @@ class NewPasswordController extends Controller
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+                // Reset from a link, signed in nowhere: every device must sign in with the new password.
+                $user->endSessions();
 
                 event(new PasswordReset($user));
             }

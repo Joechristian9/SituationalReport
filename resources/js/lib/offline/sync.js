@@ -110,6 +110,9 @@ export async function syncNow() {
                 if (!response) break; // still unreachable; try again later
                 if (response.status === 401 || response.status === 419) {
                     state.loginNeeded = true;
+                    // Even "Remember me" couldn't sign back in: signed out on the server (e.g. the
+                    // password was changed on another device). install.js forgets this account.
+                    window.dispatchEvent(new CustomEvent('offline:signed-out'));
                     break;
                 }
                 // Server trouble or too many saves at once: keep it and retry later.

@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -66,4 +67,12 @@ function userWithPermissions(string ...$permissions): User
     $user->givePermissionTo($permissions);
 
     return $user;
+}
+
+/** The session row another phone signed in to this account leaves behind. */
+function signedInElsewhere(User $user, string $id = 'other-phone'): string
+{
+    DB::table('sessions')->insert(['id' => $id, 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp]);
+
+    return $id;
 }

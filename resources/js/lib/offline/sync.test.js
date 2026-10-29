@@ -20,6 +20,7 @@ describe("syncNow", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.stubGlobal("navigator", { onLine: true });
+        vi.stubGlobal("window", { dispatchEvent: vi.fn() });
         allItems.mockResolvedValue([report]);
     });
 
@@ -40,5 +41,16 @@ describe("syncNow", () => {
         await syncNow();
 
         expect(removeItem).toHaveBeenCalledWith("key-1");
+    });
+
+    it("tells the app the account is signed out, and keeps the report for the next sign-in", async () => {
+        axios.post.mockRejectedValue({ response: { status: 401, data: {} } });
+
+        await syncNow();
+
+        expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "offline:signed-out" }));
+        expect(syncState().loginNeeded).toBe(true);
+        expect(removeItem).not.toHaveBeenCalled();
+        expect(putItem).not.toHaveBeenCalled();
     });
 });
