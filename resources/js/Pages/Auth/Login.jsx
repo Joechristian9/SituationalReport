@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, ArrowRight, CheckCircle2, CloudOff, Eye, EyeOff, LifeBuoy, Loader2, Lock, Mail } from 'lucide-react';
 import EmailAutocompleteInput from '@/Components/EmailAutocompleteInput';
 import InputError from '@/Components/InputError';
@@ -69,11 +69,23 @@ export default function Login({ status, canResetPassword }) {
             return;
         }
 
+        // The phone shows a connection but nothing gets through (common in a disaster). Inertia only
+        // reports that as a global event: a prepared account then signs in here as if offline.
+        const stopListening = router.on('exception', (event) => {
+            if (event.detail.exception?.response) return undefined;
+            if (hasPrepared) signInOffline();
+            else setError('email', "Couldn't reach the server. Check the connection and try again.");
+            return false; // handled
+        });
+
         post(route('login'), {
             // The server accepted the password: keep a check of it so the app can be unlocked offline.
             onSuccess: () => rememberPassword(data.email, data.password),
             onError: (errs) => (errs.email ? emailRef : passwordRef).current?.focus(),
-            onFinish: () => reset('password'),
+            onFinish: () => {
+                stopListening();
+                reset('password');
+            },
         });
     };
 
