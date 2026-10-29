@@ -12,8 +12,11 @@ class CommunicationServiceValue extends Model
     protected $fillable = [
         'communication_id',
         'service_id',
-        'status'
+        'status',
     ];
+
+    // A status change counts as a change of its row, so another device's save over it is caught (RejectStaleEdits).
+    protected $touches = ['communication'];
 
     public function communication()
     {

@@ -139,8 +139,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
     // ============= FORM ROUTES (Requires Active Typhoon) =============
     // offline.sync only acts on saves sent later from a device's offline queue.
+    // edits.fresh stops a save from undoing a change made meanwhile on another device.
     // Each form below is gated by the same permission the UI uses to show it; admins pass.
-    Route::middleware(['typhoon.active', 'offline.sync', 'throttle:report-writes'])->group(function () {
+    Route::middleware(['typhoon.active', 'offline.sync', 'edits.fresh', 'throttle:report-writes'])->group(function () {
 
         /* ---------------- Weather Reports (new API routes) ---------------- */
         Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])

@@ -43,6 +43,16 @@ describe("syncNow", () => {
         expect(removeItem).toHaveBeenCalledWith("key-1");
     });
 
+    it("holds a report whose rows were changed on another device until the person chooses", async () => {
+        const conflicts = [{ id: 5, changedAt: "2026-10-29T02:00:00+08:00", byYou: true }];
+        axios.post.mockRejectedValue({ response: { status: 409, data: { message: "Changed elsewhere", conflicts } } });
+
+        await syncNow();
+
+        expect(putItem).toHaveBeenCalledWith(expect.objectContaining({ id: "key-1", status: "conflict", conflicts }));
+        expect(removeItem).not.toHaveBeenCalled();
+    });
+
     it("tells the app the account is signed out, and keeps the report for the next sign-in", async () => {
         axios.post.mockRejectedValue({ response: { status: 401, data: {} } });
 

@@ -11,6 +11,7 @@ import { LazyMotion } from "framer-motion";
 import { installOffline } from "./lib/offline/install";
 import OfflineStatus from "./Components/OfflineStatus";
 import LockScreen from "./Components/LockScreen";
+import EditConflictDialog from "./Components/EditConflictDialog";
 
 // Tab titles read "Dashboard - SitRep". Set here, not from APP_NAME, so every server shows it
 // without editing its .env.
@@ -42,6 +43,7 @@ createInertiaApp({
                     <App {...props} />
                     <OfflineStatus />
                     <LockScreen />
+                    <EditConflictDialog />
                 </LazyMotion>
             </QueryClientProvider>
         );

@@ -121,6 +121,11 @@ export async function syncNow() {
                     await putItem({ ...item, status: 'waiting', message: response.data.message });
                     continue;
                 }
+                // Rows changed on another device meanwhile: held until the person chooses (OfflineStatus).
+                if (response.status === 409 && response.data?.conflicts?.length) {
+                    await putItem({ ...item, status: 'conflict', conflicts: response.data.conflicts, message: response.data.message });
+                    continue;
+                }
                 // Disaster ended or changed, or the data was rejected: keep it, never drop silently.
                 await putItem({ ...item, status: 'failed', message: response.data?.message || `The server refused this report (${response.status}).` });
             }

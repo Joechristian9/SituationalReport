@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import axios from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { savedMessage } from '@/lib/offline/queue';
+import { endpointFor, labelFor, savedMessage } from '@/lib/offline/queue';
+import { applyChoices, askAboutConflicts } from '@/lib/offline/conflicts';
 
 let sequence = 0;
 
@@ -66,7 +67,8 @@ export default function useRowEditor({ rows, setRows, blankRow, url, key, respon
 
     const updateRow = useCallback(
         (id, name, value) => {
-            setRows(rows.map((row) => (row.id === id ? { ...row, [name]: value } : row)));
+            // _changed: edited on this device, so a change made meanwhile on another device is a conflict.
+            setRows(rows.map((row) => (row.id === id ? { ...row, [name]: value, _changed: true } : row)));
             setHasChanges(true);
         },
         [rows, setRows, setHasChanges],
@@ -95,15 +97,32 @@ export default function useRowEditor({ rows, setRows, blankRow, url, key, respon
         }
 
         setSaving(true);
+        let sending = toSend;
         try {
-            const response = await axios.post(url, { [key]: withServerIds(toSend) }, { headers: { Accept: 'application/json' } });
-            const fresh = response.data?.[responseKey];
-            // A queued (offline) save or an empty reply keeps what is on screen.
-            if (Array.isArray(fresh) && fresh.length > 0) setRows(fresh);
-            setHasChanges(false);
-            if (historyKey) queryClient.invalidateQueries({ queryKey: historyKey });
-            onSaved?.(response);
-            toast.success(savedMessage(response, response.data?.message || successMessage));
+            // Again after each answer about rows changed on another device, until it saves or is cancelled.
+            for (;;) {
+                try {
+                    // _editCheck: the server compares each row with its saved version (RejectStaleEdits.php).
+                    const response = await axios.post(url, { [key]: withServerIds(sending), _editCheck: key }, { headers: { Accept: 'application/json' } });
+                    const fresh = response.data?.[responseKey];
+                    // A queued (offline) save or an empty reply keeps what is on screen.
+                    if (Array.isArray(fresh) && fresh.length > 0) setRows(fresh);
+                    setHasChanges(false);
+                    if (historyKey) queryClient.invalidateQueries({ queryKey: historyKey });
+                    onSaved?.(response);
+                    toast.success(savedMessage(response, response.data?.message || successMessage));
+                    return;
+                } catch (error) {
+                    const conflicts = error.response?.status === 409 ? error.response.data?.conflicts : null;
+                    if (!conflicts?.length) throw error;
+                    const choices = await askAboutConflicts({ label: labelFor(endpointFor(url)), rows: sending, conflicts });
+                    if (!choices) {
+                        toast.error('Not saved. Your changes are still on screen.');
+                        return;
+                    }
+                    sending = applyChoices(sending, conflicts, choices);
+                }
+            }
         } catch (error) {
             toast.error(saveErrorMessage(error));
         } finally {

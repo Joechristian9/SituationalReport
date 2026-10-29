@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, Loader2, RefreshCw, Trash2, UploadCloud, Wifi } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, GitCompare, Loader2, RefreshCw, Trash2, UploadCloud, Wifi } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { applyChoices, askAboutConflicts } from '@/lib/offline/conflicts';
 import { allItems, putItem, removeItem, subscribe } from '@/lib/offline/store';
 import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
@@ -14,6 +15,7 @@ const STATUS = {
     pending: { label: 'Waiting to send', tone: 'border-warning/30 bg-warning/10 text-warning' },
     waiting: { label: 'Waiting: disaster paused', tone: 'border-warning/30 bg-warning/10 text-warning' },
     failed: { label: 'Not sent', tone: 'border-destructive/30 bg-destructive/10 text-destructive' },
+    conflict: { label: 'Changed on another device', tone: 'border-warning/30 bg-warning/10 text-warning' },
 };
 
 // The pill floats over the page, so its background stays opaque (bg-card); the status
@@ -154,6 +156,16 @@ function QueuedItem({ item }) {
         syncNow();
     };
 
+    // Rows also changed on another device: ask which version to keep, then send it again.
+    const review = async () => {
+        const key = item.payload?._editCheck;
+        const rows = Array.isArray(item.payload?.[key]) ? item.payload[key] : [];
+        const choices = await askAboutConflicts({ label: item.label, rows, conflicts: item.conflicts ?? [] });
+        if (!choices) return;
+        await putItem({ ...item, status: 'pending', message: null, conflicts: null, payload: { ...item.payload, [key]: applyChoices(rows, item.conflicts ?? [], choices) } });
+        syncNow();
+    };
+
     return (
         <li className="space-y-1.5 py-3">
             <div className="flex items-start justify-between gap-2">
@@ -166,6 +178,12 @@ function QueuedItem({ item }) {
                 <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium', status.tone)}>{status.label}</span>
             </div>
             {item.message && <p className="text-xs text-muted-foreground">{item.message}</p>}
+            {item.status === 'conflict' && (
+                <Button type="button" size="sm" className="mt-1 min-h-11 gap-1.5 md:min-h-8" onClick={review}>
+                    <GitCompare className="h-4 w-4" aria-hidden="true" />
+                    Choose which to keep
+                </Button>
+            )}
             {item.status === 'failed' && (
                 <div className="flex flex-wrap gap-2 pt-1">
                     <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={retry}>
@@ -286,8 +304,9 @@ export default function OfflineStatus() {
 
     if (!userId) return null;
 
-    const waiting = items.filter((item) => item.status !== 'failed').length;
+    const waiting = items.filter((item) => item.status !== 'failed' && item.status !== 'conflict').length;
     const failed = items.filter((item) => item.status === 'failed').length;
+    const conflicts = items.filter((item) => item.status === 'conflict').length;
 
     // One message at a time, most important first.
     let pill = null;
@@ -295,6 +314,8 @@ export default function OfflineStatus() {
         pill = { tone: 'warning', icon: AlertTriangle, text: `Session expired. Log in to send ${plural(waiting, 'saved report')}.`, action: 'login' };
     } else if (askRefresh) {
         pill = { tone: 'neutral', icon: CheckCircle2, text: 'Offline reports sent. Refresh before saving again; changes typed since then are cleared.', action: 'refresh' };
+    } else if (conflicts) {
+        pill = { tone: 'warning', icon: GitCompare, text: `${plural(conflicts, 'report')} changed on another device · Review` };
     } else if (failed) {
         pill = { tone: 'destructive', icon: AlertTriangle, text: `${failed} not sent · Review` };
     } else if (!online) {

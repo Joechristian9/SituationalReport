@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckDisasterStatus;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\HandleOfflineSubmission;
+use App\Http\Middleware\RejectStaleEdits;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'typhoon.active' => CheckDisasterStatus::class,
             'offline.sync' => HandleOfflineSubmission::class,
+            'edits.fresh' => RejectStaleEdits::class,
         ]);
         //
     })
