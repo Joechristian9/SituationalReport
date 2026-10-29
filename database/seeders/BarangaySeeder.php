@@ -130,7 +130,7 @@ class BarangaySeeder extends Seeder
 
             $user->forceFill([
                 'name' => $barangay,
-                'password' => Hash::make('wardead123'),
+                'password' => Hash::make('wardead12345'),
                 'email_verified_at' => now(),
             ])->save();
             $user->assignRole($role);
