@@ -45,8 +45,6 @@ class PasswordUpdateTest extends TestCase
         $this->assertDatabaseMissing('sessions', ['id' => 'other-phone']);
         // The device that made the change stays signed in.
         $this->assertAuthenticatedAs($user);
-        // Prepared phones get a check of the new password, not the old one.
-        $this->assertTrue(offlineCheckOf($user, 'new-password'));
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void

@@ -144,7 +144,7 @@ class Typhoon extends Model
     }
 
     /**
-     * The disaster as every page receives it (the `typhoon` prop), also saved on prepared phones.
+     * The disaster as every page receives it (the `typhoon` prop).
      *
      * @return array{active: ?self, hasActive: bool}
      */

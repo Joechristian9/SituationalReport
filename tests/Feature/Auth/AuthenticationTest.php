@@ -42,17 +42,6 @@ test('users can not authenticate with invalid password', function () {
     $this->assertGuest();
 });
 
-test('a phone signing in by itself after an offline session can tell a refused password apart', function () {
-    $user = User::factory()->create(['password' => 'correct-horse-battery']);
-
-    // lib/offline/offlineSession.js treats 422 as "password changed or account removed".
-    $this->postJson('/login', ['email' => $user->email, 'password' => 'old-horse-battery', 'remember' => true])->assertStatus(422);
-    $this->assertGuest();
-
-    $this->postJson('/login', ['email' => $user->email, 'password' => 'correct-horse-battery', 'remember' => true])->assertRedirect();
-    $this->assertAuthenticatedAs($user);
-});
-
 test('users can logout', function () {
     $user = User::factory()->create();
 

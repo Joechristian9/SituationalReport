@@ -23,7 +23,7 @@ class UserController extends Controller
         // Only the columns the page shows; roles and permissions by name only.
         $users = User::with(['roles:id,name', 'permissions:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'name', 'email', 'created_at', 'offline_hash'])
+            ->get(['id', 'name', 'email', 'created_at'])
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
@@ -32,8 +32,6 @@ class UserController extends Controller
                     'roles' => $user->roles->pluck('name'),
                     'permissions' => $user->permissions->pluck('name'),
                     'created_at' => $user->created_at->format('M d, Y'),
-                    // Whether a phone can be prepared for it yet (never the check itself).
-                    'offlineReady' => $user->offline_hash !== null,
                 ];
             });
 
@@ -66,7 +64,6 @@ class UserController extends Controller
         // New token: a "remember me" cookie left on the deleted account's old devices must not log in again.
         $user->setRememberToken(Str::random(60));
         $user->save();
-        $user->rememberOfflinePassword($validated['password']);
 
         // sync, not assign: a restored account must not keep its old role or permissions.
         $user->syncRoles([$validated['role']]);
@@ -104,7 +101,6 @@ class UserController extends Controller
             $user->update([
                 'password' => Hash::make($validated['password']),
             ]);
-            $user->rememberOfflinePassword($validated['password']);
 
             // Log password change
             AuditLogger::logPasswordChange(

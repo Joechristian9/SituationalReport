@@ -4,7 +4,6 @@ import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { logOut } from '@/lib/offline/install';
 import { canLock, lock } from '@/lib/offline/lock';
-import { endOfflineSession, offlineSession } from '@/lib/offline/offlineSession';
 import { allItems } from '@/lib/offline/store';
 import { currentUser } from '@/lib/offline/context';
 
@@ -26,10 +25,8 @@ export default function LogoutDialog({ open, onOpenChange }) {
             .catch(() => setUnsent(0));
     }, [open]);
 
-    // Signed in without internet: the server never knew, so leaving only ends it on this phone.
-    const signedInOffline = Boolean(offlineSession());
-    const logout = signedInOffline ? endOfflineSession : () => logOut({ onStart: () => setProcessing(true), onFinish: () => setProcessing(false) });
-    const lockable = !signedInOffline && canLock(currentUser()?.email);
+    const logout = () => logOut({ onStart: () => setProcessing(true), onFinish: () => setProcessing(false) });
+    const lockable = canLock(currentUser()?.email);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,9 +34,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>Log out of this device?</DialogTitle>
                     <DialogDescription>
-                        {signedInOffline
-                            ? 'You signed in on this phone without internet. Logging out goes back to the sign-in page.'
-                            : "You'll need an internet connection to log in again. Until then, the app won't open offline on this device."}
+                        You'll need an internet connection to log in again. Until then, the app won't open offline on this device.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -52,7 +47,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
                     </p>
                 )}
 
-                {!online && !signedInOffline && (
+                {!online && (
                     <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm text-foreground">
                         <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                         <span>
@@ -80,7 +75,7 @@ export default function LogoutDialog({ open, onOpenChange }) {
                             Lock app
                         </Button>
                     )}
-                    <Button type="button" variant="destructive" className="min-h-11 gap-1.5 md:min-h-9" disabled={(!online && !signedInOffline) || processing} onClick={logout}>
+                    <Button type="button" variant="destructive" className="min-h-11 gap-1.5 md:min-h-9" disabled={!online || processing} onClick={logout}>
                         {processing ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <LogOut className="h-4 w-4" aria-hidden="true" />}
                         Log out
                     </Button>

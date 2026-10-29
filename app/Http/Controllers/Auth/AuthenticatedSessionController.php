@@ -37,8 +37,6 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user()->load('roles:id,name');
 
         $request->session()->regenerate();
-        // The password was just checked: refresh the check prepared phones use to sign in offline.
-        $user->rememberOfflinePassword((string) $request->input('password'));
 
         // Log successful login
         AuditLogger::logLogin("User {$user->name} logged in successfully");

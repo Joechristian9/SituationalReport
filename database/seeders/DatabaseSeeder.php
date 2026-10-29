@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
-    /** Every seeded account's password (dev and demo data only; 12+ characters, see User::OFFLINE_MIN_LENGTH). */
+    /** Every seeded account's password (dev and demo data only; 12+ characters, see User::PASSWORD_MIN_LENGTH). */
     public const PASSWORD = 'wardead12345';
 
     public function run(): void
@@ -152,12 +152,6 @@ class DatabaseSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-
-        // Ready to be prepared on a phone for offline sign-in, as if each had signed in once.
-        // Not the admin: admin accounts are never prepared.
-        foreach ([$iwd, $iselco2, $ceo, $pnp, $cswdo, $cdrrmo, $cao, $bdrrmc] as $office) {
-            $office->rememberOfflinePassword(self::PASSWORD);
-        }
 
         $this->call([
             BarangaySeeder::class,

@@ -10,14 +10,11 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import useOnline from '@/hooks/useOnline';
 import { currentUser } from '@/lib/offline/context';
 import { logOut } from '@/lib/offline/install';
-import { offlineSession } from '@/lib/offline/offlineSession';
 import { isLocked, lock, noteActivity, subscribeLock, triesLeft, unlock } from '@/lib/offline/lock';
 
 // Report accounts lock after 15 idle minutes. Admin screens lock only by hand: they are
 // often left open on an operations-room display.
 function lockedNow() {
-    // Signed in without internet moments ago, with a password checked on this phone.
-    if (offlineSession()) return false;
     const user = currentUser();
     const isAdmin = user?.roles?.some((role) => role.name === 'admin');
     return isLocked(user?.email, { idleLock: !isAdmin });

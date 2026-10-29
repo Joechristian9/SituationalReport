@@ -37,12 +37,6 @@ async function derive(password, salt, iterations) {
     return toBase64(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256));
 }
 
-/** Whether a typed password matches a saved check ({ salt, hash, iterations }), made here or by the server. */
-export async function matchesCheck(password, check) {
-    if (!globalThis.crypto?.subtle || !password || !check) return false;
-    return (await derive(password, fromBase64(check.salt), check.iterations)) === check.hash;
-}
-
 /** Called after an online login. Needs https (or localhost); without it there is no offline sign-in. */
 export async function rememberPassword(email, password) {
     if (!globalThis.crypto?.subtle || !email || !password) return;
@@ -98,7 +92,8 @@ export const triesLeft = () => Math.max(0, MAX_TRIES - (read()?.tries ?? 0));
 export async function unlock(password) {
     const record = read();
     if (!record || record.tries >= MAX_TRIES) return 'blocked';
-    if (await matchesCheck(password, record)) {
+    const matches = (await derive(password, fromBase64(record.salt), record.iterations)) === record.hash;
+    if (matches) {
         write({ ...record, locked: false, tries: 0, lastActive: Date.now() });
         return 'ok';
     }

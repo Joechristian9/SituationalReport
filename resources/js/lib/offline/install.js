@@ -256,6 +256,13 @@ async function registerServiceWorker() {
 }
 
 export function installOffline(initialPage) {
+    // Phones prepared for offline sign-in (since removed) still hold other accounts' password checks.
+    // shortcut: runs on every start, delete once every field phone has opened the app since this release.
+    try {
+        localStorage.removeItem('offline-prepared');
+    } catch {
+        // Storage blocked: nothing was saved there either.
+    }
     trackPages(initialPage);
     forgetPagesOnUserChange();
     router.on('navigate', forgetPagesOnUserChange);

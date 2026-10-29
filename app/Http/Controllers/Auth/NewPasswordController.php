@@ -52,7 +52,6 @@ class NewPasswordController extends Controller
                 ])->save();
                 // Reset from a link, signed in nowhere: every device must sign in with the new password.
                 $user->endSessions();
-                $user->rememberOfflinePassword($request->password);
 
                 event(new PasswordReset($user));
             }

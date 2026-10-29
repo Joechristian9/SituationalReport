@@ -29,7 +29,6 @@ class PasswordController extends Controller
         // logoutOtherDevices() also renews this device's "Remember me" cookie for the new password.
         $request->user()->endSessions($request->session()->getId());
         Auth::logoutOtherDevices($validated['password']);
-        $request->user()->rememberOfflinePassword($validated['password']);
 
         return back();
     }

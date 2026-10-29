@@ -6,15 +6,9 @@ import { currentSession, currentUser } from './context';
 // Sends queued saves, oldest first, once the server is reachable again.
 
 const state = { running: false, loginNeeded: false, reloadNeeded: false };
-// An offline session (offlineSession.js) holds sending until it has signed in to the server:
-// before that, every report would only meet "not signed in" and show "Session expired".
-let held = false;
-export const holdSync = (hold) => {
-    held = hold;
-};
 // A weak signal can leave a request hanging for minutes, blocking every later send. A send
 // that times out stays queued; if it did reach the server, the resend is recognised by its key.
-export const SEND_TIMEOUT_MS = 30000;
+const SEND_TIMEOUT_MS = 30000;
 const listeners = new Set();
 // Forms whose queued save from this very page was just sent: their rows now have
 // server ids the page doesn't know, so saving again before a reload would duplicate them.
@@ -90,7 +84,7 @@ async function send(item, freshToken) {
 
 export async function syncNow() {
     const user = currentUser();
-    if (held || state.running || !user || !navigator.onLine) return;
+    if (state.running || !user || !navigator.onLine) return;
     state.running = true;
     emit();
 

@@ -135,8 +135,6 @@ class BarangaySeeder extends Seeder
             ])->save();
             $user->assignRole($role);
             $user->givePermissionTo(self::PERMISSIONS);
-            // Ready to be prepared on a phone for offline sign-in, as if it had signed in once.
-            $user->rememberOfflinePassword(DatabaseSeeder::PASSWORD);
             $created++;
         }
 

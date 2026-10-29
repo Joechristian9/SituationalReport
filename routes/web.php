@@ -15,7 +15,6 @@ use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\InjuredController;
 use App\Http\Controllers\MissingController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OfflineAccountController;
 use App\Http\Controllers\PagasaAlertController;
 use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
@@ -359,9 +358,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.user-form-data');
     Route::post('form-submission-status/remind', [FormReminderController::class, 'store'])
         ->name('admin.form-reminders.store');
-
-    // Preparing a phone so report accounts can sign in on it with no internet
-    Route::get('offline-accounts', [OfflineAccountController::class, 'index'])->name('admin.offline-accounts');
 
     // Audit Logs (Admin only)
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');

@@ -57,9 +57,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Prepared phones keep an offline check of the password, which a thief could guess at
-        // without limits, so every new password is at least this long.
-        Password::defaults(fn () => Password::min(User::OFFLINE_MIN_LENGTH));
+        Password::defaults(fn () => Password::min(User::PASSWORD_MIN_LENGTH));
 
         Vite::prefetch(concurrency: 3);
         Inertia::share([
