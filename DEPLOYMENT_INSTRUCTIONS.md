@@ -143,15 +143,18 @@ php artisan optimize:clear
 
 | Name | Email | Password | Role |
 |------|-------|----------|------|
-| Admin | admin@gmail.com | admin123 | Admin |
-| CDRRMO | cdrrmo@gmail.com | wardead123 | User (All Permissions) |
-| Ilagan Water District | iwd@gmail.com | wardead123 | User (Water Service) |
-| ISELCO II | iselco2@gmail.com | wardead123 | User (Electricity) |
-| CEO | ceo@gmail.com | wardead123 | User (Roads/Bridges) |
-| PNP | pnp@gmail.com | wardead123 | User (Roads/Bridges/Incidents) |
-| CSWDO | cswdo@gmail.com | wardead123 | User (Evacuations/Damaged Houses) |
-| CAO | cao@gmail.com | wardead123 | User (Agriculture) |
-| BDRRMC | bdrrmc@gmail.com | wardead123 | User (Multiple Forms) |
+| Admin | admin@gmail.com | wardead12345 | Admin |
+| CDRRMO | cdrrmo@gmail.com | wardead12345 | User (All Permissions) |
+| Ilagan Water District | iwd@gmail.com | wardead12345 | User (Water Service) |
+| ISELCO II | iselco2@gmail.com | wardead12345 | User (Electricity) |
+| CEO | ceo@gmail.com | wardead12345 | User (Roads/Bridges) |
+| PNP | pnp@gmail.com | wardead12345 | User (Roads/Bridges/Incidents) |
+| CSWDO | cswdo@gmail.com | wardead12345 | User (Evacuations/Damaged Houses) |
+| CAO | cao@gmail.com | wardead12345 | User (Agriculture) |
+| BDRRMC | bdrrmc@gmail.com | wardead12345 | User (Multiple Forms) |
+
+Barangay accounts (`<barangay>@barangay.local`) get the same password. These apply only to a fresh
+install: seeding never changes the passwords of accounts that already exist, so a running server keeps its own.
 
 ---
 
