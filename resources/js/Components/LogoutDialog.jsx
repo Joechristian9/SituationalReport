@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { router } from '@inertiajs/react';
-import { AlertTriangle, CloudOff, Loader2, LogOut } from 'lucide-react';
+import { AlertTriangle, CloudOff, Loader2, Lock, LogOut } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import { clearOfflinePages } from '@/lib/offline/install';
+import { logOut } from '@/lib/offline/install';
+import { canLock, lock } from '@/lib/offline/lock';
 import { allItems } from '@/lib/offline/store';
 import { currentUser } from '@/lib/offline/context';
 
@@ -25,23 +25,8 @@ export default function LogoutDialog({ open, onOpenChange }) {
             .catch(() => setUnsent(0));
     }, [open]);
 
-    const logout = () => {
-        router.post(
-            route('logout'),
-            {},
-            {
-                onStart: () => setProcessing(true),
-                // Only once the server has logged the user out: if the request fails, they
-                // are still signed in and keep their offline pages.
-                onSuccess: async () => {
-                    await clearOfflinePages();
-                    // Full page load so the next login starts with a fresh CSRF token.
-                    window.location.href = '/';
-                },
-                onFinish: () => setProcessing(false),
-            },
-        );
-    };
+    const logout = () => logOut({ onStart: () => setProcessing(true), onFinish: () => setProcessing(false) });
+    const lockable = canLock(currentUser()?.email);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,7 +50,10 @@ export default function LogoutDialog({ open, onOpenChange }) {
                 {!online && (
                     <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm text-foreground">
                         <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                        <span>You're offline. Logging out needs internet, so you can keep working for now.</span>
+                        <span>
+                            You're offline. Logging out needs internet, so you can keep working for now.
+                            {lockable && ' To leave the phone safely, lock the app: your password opens it again, even without internet.'}
+                        </span>
                     </p>
                 )}
 
@@ -73,6 +61,20 @@ export default function LogoutDialog({ open, onOpenChange }) {
                     <Button type="button" variant="outline" className="min-h-11 md:min-h-9" onClick={() => onOpenChange(false)}>
                         Stay logged in
                     </Button>
+                    {!online && lockable && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="min-h-11 gap-1.5 md:min-h-9"
+                            onClick={() => {
+                                onOpenChange(false);
+                                lock();
+                            }}
+                        >
+                            <Lock className="h-4 w-4" aria-hidden="true" />
+                            Lock app
+                        </Button>
+                    )}
                     <Button type="button" variant="destructive" className="min-h-11 gap-1.5 md:min-h-9" disabled={!online || processing} onClick={logout}>
                         {processing ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <LogOut className="h-4 w-4" aria-hidden="true" />}
                         Log out

@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { trackPages, currentPage, currentDisaster, currentSession, currentUser } from './context';
 import { QUEUED_MESSAGE, endpointFor, enqueue, mergePayloads, openItemFor } from './queue';
 import { removeItem } from './store';
+import { forgetPassword } from './lock';
 import { canRefreshWithoutLosingEdits, needsReloadBeforeSaving, refreshPage, subscribeSync, syncNow } from './sync';
 
 const PAGE_CACHE_PREFIX = 'sitrep-pages';
@@ -178,6 +179,23 @@ export async function clearOfflinePages() {
     if (!('caches' in window)) return;
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key.startsWith(PAGE_CACHE_PREFIX)).map((key) => caches.delete(key)));
+}
+
+/**
+ * Log out of this device (needs internet). Only once the server has logged the user out are the
+ * saved pages and the offline password check removed: if the request fails, the user is still
+ * signed in and keeps both. Unsent reports stay and are sent after the next login.
+ */
+export function logOut(options = {}) {
+    router.post(route('logout'), {}, {
+        ...options,
+        onSuccess: async () => {
+            await clearOfflinePages();
+            forgetPassword();
+            // Full page load so the next login starts with a fresh CSRF token.
+            window.location.href = '/';
+        },
+    });
 }
 
 function forgetPagesOnUserChange() {

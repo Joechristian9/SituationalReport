@@ -9,6 +9,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
 import useOnline from '@/hooks/useOnline';
+import { rememberPassword } from '@/lib/offline/lock';
 import { cn } from '@/lib/utils';
 
 const fieldIcon = 'pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary';
@@ -32,6 +33,8 @@ export default function Login({ status, canResetPassword }) {
         e.preventDefault();
 
         post(route('login'), {
+            // The server accepted the password: keep a check of it so the app can be unlocked offline.
+            onSuccess: () => rememberPassword(data.email, data.password),
             onError: (errs) => (errs.email ? emailRef : passwordRef).current?.focus(),
             onFinish: () => reset('password'),
         });

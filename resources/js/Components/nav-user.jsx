@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, CircleUserRound, LogOut } from "lucide-react";
+import { ChevronsUpDown, CircleUserRound, Lock, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
 import {
@@ -17,12 +17,16 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/Components/ui/sidebar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LogoutDialog from "@/Components/LogoutDialog";
+import { canLock, lock, subscribeLock } from "@/lib/offline/lock";
 
 export function NavUser({ user }) {
     const { isMobile } = useSidebar();
     const [logoutOpen, setLogoutOpen] = useState(false);
+    // The password check is saved just after login, so this can turn true a moment later.
+    const [lockable, setLockable] = useState(() => canLock(user.email));
+    useEffect(() => subscribeLock(() => setLockable(canLock(user.email))), [user.email]);
 
     return (
         <SidebarMenu>
@@ -82,7 +86,12 @@ export function NavUser({ user }) {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuSeparator />
+                        {lockable && (
+                            <DropdownMenuItem onSelect={() => lock()}>
+                                <Lock className="mr-2 h-4 w-4" />
+                                Lock app
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onSelect={() => setLogoutOpen(true)}>
                             <LogOut className="mr-2 h-4 w-4" />
                             Log out

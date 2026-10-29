@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion } from "framer-motion";
 import { installOffline } from "./lib/offline/install";
 import OfflineStatus from "./Components/OfflineStatus";
+import LockScreen from "./Components/LockScreen";
 
 // Tab titles read "Dashboard - SitRep". Set here, not from APP_NAME, so every server shows it
 // without editing its .env.
@@ -40,6 +41,7 @@ createInertiaApp({
                 <LazyMotion features={loadMotionFeatures}>
                     <App {...props} />
                     <OfflineStatus />
+                    <LockScreen />
                 </LazyMotion>
             </QueryClientProvider>
         );

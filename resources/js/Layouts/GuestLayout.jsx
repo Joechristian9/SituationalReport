@@ -15,7 +15,8 @@ function Seals() {
     );
 }
 
-export default function GuestLayout({ children }) {
+/** `homeLinks={false}`: the lock screen, where leaving for the home page makes no sense. */
+export default function GuestLayout({ children, homeLinks = true }) {
     const year = new Date().getFullYear();
 
     return (
@@ -34,23 +35,25 @@ export default function GuestLayout({ children }) {
             </div>
 
             <header className="relative">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:h-20 sm:px-8">
-                    <Link
-                        href={route('welcome')}
-                        className="flex min-w-0 items-center gap-2 rounded-md text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:text-base"
-                    >
-                        SitReps
-                        <span className="text-white/40" aria-hidden="true">|</span>
-                        <span className="truncate font-medium text-white/75">CDRRMO Ilagan</span>
-                    </Link>
-                    <Link
-                        href={route('welcome')}
-                        className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md border border-white/25 px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:min-h-9"
-                    >
-                        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                        <span>Back<span className="hidden sm:inline"> to home</span></span>
-                    </Link>
-                </div>
+                {homeLinks && (
+                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:h-20 sm:px-8">
+                        <Link
+                            href={route('welcome')}
+                            className="flex min-w-0 items-center gap-2 rounded-md text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:text-base"
+                        >
+                            SitReps
+                            <span className="text-white/40" aria-hidden="true">|</span>
+                            <span className="truncate font-medium text-white/75">CDRRMO Ilagan</span>
+                        </Link>
+                        <Link
+                            href={route('welcome')}
+                            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md border border-white/25 px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:min-h-9"
+                        >
+                            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                            <span>Back<span className="hidden sm:inline"> to home</span></span>
+                        </Link>
+                    </div>
+                )}
             </header>
 
             {/* Phones: brand stacked above the card. Desktop: brand on the left, card on the right. */}
