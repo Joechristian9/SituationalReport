@@ -10,33 +10,10 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class DamagedHouseReportController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
-
-    /**
-     * Display a listing of the resource.
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $damagedQuery = DamagedHouseReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && ! $user->isAdmin()) {
-            $damagedQuery->where('user_id', $user->id);
-        }
-
-        $damagedHouses = $damagedQuery->latest()->limit(200)->get();
-
-        return Inertia::render('IncidentMonitored/Index', [
-            'damagedHouses' => $damagedHouses,
-        ]);
-    }
 
     /**
      * Store newly created resources in storage.

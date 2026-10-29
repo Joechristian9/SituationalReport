@@ -25,6 +25,10 @@ import {
     UserX,
     UserRound,
     UserSearch,
+    Plane,
+    Home,
+    School,
+    Briefcase,
     CheckCircle2,
     Circle,
     Pause,
@@ -54,6 +58,10 @@ const FORM_DESCRIPTIONS = {
     "Pre-positioning": "Report deployment of response assets",
     "Incident Monitored": "Record details of incidents being monitored",
     Agriculture: "Report agricultural damage and crop losses",
+    "Affected Tourists": "Report local and foreign tourists affected",
+    "Damaged Houses": "Report partially and totally damaged houses per barangay",
+    "Suspension of Classes": "Record class suspensions by level and date",
+    "Suspension of Work": "Record work suspensions and their dates",
     "Casualties - Dead": "Record the details for each deceased individual",
     "Casualties - Injured": "Record the details for each injured person",
     "Casualties - Missing": "Record the details for each missing individual",
@@ -105,6 +113,10 @@ const InjuredForm = lazy(() =>
 const MissingForm = lazy(() =>
     import("@/Components/Effects/MissingForm")
 );
+const AffectedTouristsForm = lazy(() => import("@/Components/Effects/AffectedTouristsForm"));
+const DamagedHousesForm = lazy(() => import("@/Components/Effects/DamagedHousesForm"));
+const SuspensionOfClassesForm = lazy(() => import("@/Components/Effects/SuspensionOfClassesForm"));
+const SuspensionOfWorkForm = lazy(() => import("@/Components/Effects/SuspensionOfWorkForm"));
 
 const FormLoader = () => <SkeletonForm className="py-2" />;
 
@@ -123,6 +135,11 @@ export default function Index() {
         casualties,
         injured,
         missing,
+        incidents,
+        affectedTourists,
+        damagedHouses,
+        suspensionOfClasses,
+        suspensionOfWork,
         typhoon,
         auth,
     } = usePage().props;
@@ -282,8 +299,12 @@ export default function Index() {
         { label: "Pre-Emptive Reports", icon: <ClipboardList size={18} />, permission: "access-pre-emptive-form", group: "response", records: preEmptiveReports },
         // Has its own page with the saved records; this page does not load them.
         { label: "Pre-positioning", icon: <MapPin size={18} />, permission: "access-pre-positioning-form", group: "response", href: "pre-positioning.index" },
-        { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form", group: "effects" },
+        { label: "Incident Monitored", icon: <Flame size={18} />, permission: "access-incident-form", group: "effects", records: incidents },
         { label: "Agriculture", icon: <Sprout size={18} />, permission: "access-agriculture-form", group: "effects", records: agriculture },
+        { label: "Affected Tourists", icon: <Plane size={18} />, permission: "access-tourist-form", group: "effects", records: affectedTourists },
+        { label: "Damaged Houses", icon: <Home size={18} />, permission: "access-damaged-houses-form", group: "effects", records: damagedHouses },
+        { label: "Suspension of Classes", icon: <School size={18} />, permission: "access-suspension-classes-form", group: "effects", records: suspensionOfClasses },
+        { label: "Suspension of Work", icon: <Briefcase size={18} />, permission: "access-suspension-work-form", group: "effects", records: suspensionOfWork },
         { label: "Casualties - Dead", icon: <UserX size={18} />, permission: "access-casualty-form", group: "casualties", records: casualties },
         { label: "Casualties - Injured", icon: <UserRound size={18} />, permission: "access-injured-form", group: "casualties", records: injured },
         { label: "Casualties - Missing", icon: <UserSearch size={18} />, permission: "access-missing-form", group: "casualties", records: missing },
@@ -335,16 +356,59 @@ export default function Index() {
                           total_persons: 0,
                       },
                   ],
-        incidents: [
-            {
-                id: "new-0",
-                kinds_of_incident: "",
-                date_time: "",
-                location: "",
-                description: "",
-                remarks: "",
-            },
-        ],
+        incidents:
+            incidents && incidents.length > 0
+                ? incidents
+                : [
+                      {
+                          id: "new-0",
+                          kinds_of_incident: "",
+                          date_time: "",
+                          location: "",
+                          description: "",
+                          remarks: "",
+                      },
+                  ],
+        affected_tourists:
+            affectedTourists && affectedTourists.length > 0
+                ? affectedTourists
+                : [
+                      {
+                          id: "new-0",
+                          province_city_municipality: "",
+                          location: "",
+                          local_tourists: "",
+                          foreign_tourists: "",
+                          remarks: "",
+                      },
+                  ],
+        damaged_houses:
+            damagedHouses && damagedHouses.length > 0
+                ? damagedHouses
+                : [{ id: "new-0", barangay: own, partially: "", totally: "" }],
+        suspension_of_classes:
+            suspensionOfClasses && suspensionOfClasses.length > 0
+                ? suspensionOfClasses
+                : [
+                      {
+                          id: "new-0",
+                          province_city_municipality: "",
+                          level: "",
+                          date_of_suspension: "",
+                          remarks: "",
+                      },
+                  ],
+        suspension_of_work:
+            suspensionOfWork && suspensionOfWork.length > 0
+                ? suspensionOfWork
+                : [
+                      {
+                          id: "new-0",
+                          province_city_municipality: "",
+                          date_of_suspension: "",
+                          remarks: "",
+                      },
+                  ],
         agriculture:
             agriculture && agriculture.length > 0
                 ? agriculture
@@ -643,6 +707,42 @@ export default function Index() {
             case "Agriculture":
                 return (
                     <AgricultureForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Affected Tourists":
+                return (
+                    <AffectedTouristsForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Damaged Houses":
+                return (
+                    <DamagedHousesForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Suspension of Classes":
+                return (
+                    <SuspensionOfClassesForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        disabled={formsDisabled}
+                    />
+                );
+            case "Suspension of Work":
+                return (
+                    <SuspensionOfWorkForm
                         data={data}
                         setData={setData}
                         errors={errors}

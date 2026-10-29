@@ -9,26 +9,10 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class SuspensionOfClassController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
-
-    /**
-     * Display a listing of the suspension of class records.
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $suspensionList = SuspensionOfClass::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId))
-            ->latest()->limit(200)->get();
-
-        return Inertia::render('IncidentMonitored/Index', [
-            'suspensionList' => $suspensionList,
-        ]);
-    }
 
     /**
      * Store newly created suspension of class records in storage.

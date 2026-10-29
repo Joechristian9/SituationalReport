@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Casualty;
+use App\Models\IncidentMonitored;
 use App\Models\Injured;
 use App\Models\SuspensionOfClass;
+use App\Models\SuspensionOfWork;
 use App\Models\Typhoon;
 use App\Models\User;
 use App\Models\WaterService;
@@ -71,7 +73,7 @@ it('does not save casualties for an account without the permission', function ()
     expect(Casualty::count())->toBe(0);
 });
 
-it('saves casualties for the casualty, incident and admin accounts', function (User $account) {
+it('saves casualties for the casualty and admin accounts', function (User $account) {
     stormWithStatus();
 
     $this->actingAs($account)->postJson(route('casualties.store'), casualtyPayload())->assertOk();
@@ -79,9 +81,34 @@ it('saves casualties for the casualty, incident and admin accounts', function (U
     expect(Casualty::count())->toBe(1);
 })->with([
     'casualty form' => fn () => userWithPermissions('access-casualty-form'),
-    'incidents page' => fn () => userWithPermissions('access-incident-form'),
     'admin' => fn () => userWithRole('admin'),
 ]);
+
+it('opens only the incidents form with the incidents permission', function (string $route) {
+    stormWithStatus();
+
+    $this->actingAs(userWithPermissions('access-incident-form'))->postJson(route($route), [])->assertForbidden();
+})->with([
+    'casualties.store', 'injured.store', 'missing.store', 'affected-tourists-reports.store',
+    'damaged-houses-reports.store', 'suspension-classes-reports.store', 'suspension-work-reports.store',
+]);
+
+it('shows each effects form on the overview only with its own permission', function () {
+    $disaster = stormWithStatus();
+    $account = userWithPermissions('access-suspension-classes-form');
+    SuspensionOfClass::create(['province_city_municipality' => 'Ilagan', 'user_id' => $account->id, 'disaster_id' => $disaster->id]);
+    SuspensionOfWork::create(['province_city_municipality' => 'Ilagan', 'user_id' => $account->id, 'disaster_id' => $disaster->id]);
+    $reporter = userWithPermissions('access-incident-form');
+    IncidentMonitored::create(['kinds_of_incident' => 'Flooding', 'user_id' => $reporter->id, 'disaster_id' => $disaster->id]);
+
+    $this->actingAs($account)->get(route('situation-reports.index'))->assertInertia(fn ($page) => $page
+        ->has('suspensionOfClasses', 1)->where('suspensionOfWork', [])->where('incidents', []));
+    // The incidents card opens with the saved incidents, not an empty list.
+    $this->actingAs($reporter)->get(route('situation-reports.index'))->assertInertia(fn ($page) => $page
+        ->has('incidents', 1)->where('incidents.0.kinds_of_incident', 'Flooding'));
+    // The old Effects page address now leads to the overview.
+    $this->actingAs($account)->get('/incident-monitored')->assertRedirect(route('situation-reports.index'));
+});
 
 it('refuses casualties when no disaster is active', function () {
     $this->actingAs(userWithPermissions('access-casualty-form'))
@@ -95,10 +122,10 @@ it('refuses casualties when no disaster is active', function () {
 
 it('stops an account overwriting another account\'s suspension row', function () {
     $disaster = stormWithStatus();
-    $owner = userWithPermissions('access-incident-form');
+    $owner = userWithPermissions('access-suspension-classes-form');
     $record = SuspensionOfClass::create(['province_city_municipality' => 'Owner', 'user_id' => $owner->id, 'disaster_id' => $disaster->id]);
 
-    $this->actingAs(userWithPermissions('access-incident-form'))->postJson(route('suspension-classes-reports.store'), [
+    $this->actingAs(userWithPermissions('access-suspension-classes-form'))->postJson(route('suspension-classes-reports.store'), [
         'suspension_of_classes' => [['id' => $record->id, 'province_city_municipality' => 'Tampered']],
     ]);
 
@@ -107,7 +134,7 @@ it('stops an account overwriting another account\'s suspension row', function ()
 
 it('saves suspension rows under the active disaster and lets the owner edit them', function () {
     $disaster = stormWithStatus();
-    $owner = userWithPermissions('access-incident-form');
+    $owner = userWithPermissions('access-suspension-classes-form');
 
     $this->actingAs($owner)->postJson(route('suspension-classes-reports.store'), [
         'suspension_of_classes' => [['id' => null, 'province_city_municipality' => 'Ilagan']],

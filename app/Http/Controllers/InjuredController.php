@@ -11,35 +11,11 @@ use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 use Inertia\Response;
 
 class InjuredController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
-
-    /**
-     * Display a listing of the injured records.
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && ! $user->isAdmin()) {
-            $accessibleUserIds = $user->getAccessibleUserIds('read');
-            $injuredQuery->whereIn('user_id', $accessibleUserIds);
-        }
-
-        $injuredList = $injuredQuery->latest()->limit(200)->get();
-
-        return Inertia::render('IncidentMonitored/Index', [
-            'injuredList' => $injuredList,
-        ]);
-    }
 
     /**
      * Store a newly created resource in storage.

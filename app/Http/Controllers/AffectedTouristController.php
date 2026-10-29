@@ -10,34 +10,10 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class AffectedTouristController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
-
-    /**
-     * Display a listing of the affected tourist records.
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $touristsQuery = AffectedTourist::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && ! $user->isAdmin()) {
-            $touristsQuery->where('user_id', $user->id);
-        }
-
-        $touristsList = $touristsQuery->latest()->limit(200)->get();
-
-        // Assuming a dedicated view or part of a larger report
-        return Inertia::render('IncidentMonitored/Index', [
-            'touristsList' => $touristsList,
-        ]);
-    }
 
     /**
      * Store newly created affected tourist records in storage.

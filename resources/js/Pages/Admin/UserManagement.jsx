@@ -77,6 +77,8 @@ const PERMISSION_GROUPS = [
             'access-agriculture-form': 'Agriculture',
             'access-damaged-houses-form': 'Damaged houses',
             'access-tourist-form': 'Affected tourists',
+            'access-suspension-classes-form': 'Suspension of classes',
+            'access-suspension-work-form': 'Suspension of work',
             'access-casualty-form': 'Casualties (dead)',
             'access-injured-form': 'Casualties (injured)',
             'access-missing-form': 'Casualties (missing)',

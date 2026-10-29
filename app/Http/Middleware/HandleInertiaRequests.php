@@ -17,13 +17,10 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
-     * Routes rendering SituationReports/Index or IncidentMonitored/Index, the pages with barangay
-     * dropdowns. A new route rendering either page must be added here (ReportBarangayTest checks two).
+     * Routes rendering SituationReports/Index, the page with barangay dropdowns. A new route
+     * rendering it must be added here (ReportBarangayTest checks it).
      */
-    private const FORM_PAGES = [
-        'situation-reports.index', 'incident-monitored.index', 'casualties.index', 'injured.index',
-        'missing.index', 'damaged-houses.index', 'affected-tourists.index',
-    ];
+    private const FORM_PAGES = ['situation-reports.index'];
 
     /**
      * Determine the current asset version.

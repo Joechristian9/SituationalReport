@@ -12,36 +12,11 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 use Inertia\Response;
 
 class MissingController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
-
-    /**
-     * Display a listing of the missing person records.
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && ! $user->isAdmin()) {
-            $accessibleUserIds = $user->getAccessibleUserIds('read');
-            $missingQuery->whereIn('user_id', $accessibleUserIds);
-        }
-
-        $missingList = $missingQuery->latest()->limit(200)->get();
-
-        // Assuming a dedicated view for missing persons, or part of a larger report
-        return Inertia::render('IncidentMonitored/Index', [
-            'missingList' => $missingList,
-        ]);
-    }
 
     /**
      * Store newly created missing person records in storage.

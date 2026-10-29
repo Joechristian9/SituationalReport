@@ -3,17 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Events\UserTyping;
+use App\Models\AffectedTourist;
 use App\Models\AgricultureReport;
 use App\Models\Bridge;
 use App\Models\Casualty;
 use App\Models\Communication;
 use App\Models\CommunicationServiceValue;
+use App\Models\DamagedHouseReport;
 use App\Models\ElectricityService;
+use App\Models\IncidentMonitored;
 use App\Models\Injured;
 use App\Models\Missing;
 use App\Models\Modification;
 use App\Models\PreEmptiveReport;
 use App\Models\Road;
+use App\Models\SuspensionOfClass;
+use App\Models\SuspensionOfWork;
 use App\Models\Typhoon;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
@@ -52,6 +57,11 @@ class SituationOverviewController extends Controller
         $casualtyQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
         $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
         $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $incidentQuery = IncidentMonitored::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $touristQuery = AffectedTourist::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $damagedHouseQuery = DamagedHouseReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $suspensionOfClassQuery = SuspensionOfClass::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
+        $suspensionOfWorkQuery = SuspensionOfWork::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
         // Pausing/resuming a disaster only blocks submissions; it never hides records.
         // Forms always show everything for the active disaster, matching the admin views.
@@ -74,6 +84,11 @@ class SituationOverviewController extends Controller
             $casualtyQuery->whereIn('user_id', $accessibleUserIds);
             $injuredQuery->whereIn('user_id', $accessibleUserIds);
             $missingQuery->whereIn('user_id', $accessibleUserIds);
+            $incidentQuery->whereIn('user_id', $accessibleUserIds);
+            $touristQuery->whereIn('user_id', $accessibleUserIds);
+            $damagedHouseQuery->whereIn('user_id', $accessibleUserIds);
+            $suspensionOfClassQuery->whereIn('user_id', $accessibleUserIds);
+            $suspensionOfWorkQuery->whereIn('user_id', $accessibleUserIds);
         }
 
         // Phones on mobile data: only the forms this account can open are read and sent
@@ -129,6 +144,16 @@ class SituationOverviewController extends Controller
             'injured' => $forForm('access-injured-form', fn () => $injuredQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get()),
             'missing' => $forForm('access-missing-form', fn () => $missingQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'incidents' => $forForm('access-incident-form', fn () => $incidentQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'affectedTourists' => $forForm('access-tourist-form', fn () => $touristQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'damagedHouses' => $forForm('access-damaged-houses-form', fn () => $damagedHouseQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'suspensionOfClasses' => $forForm('access-suspension-classes-form', fn () => $suspensionOfClassQuery
+                ->orderBy('updated_at', 'desc')->limit(100)->get()),
+            'suspensionOfWork' => $forForm('access-suspension-work-form', fn () => $suspensionOfWorkQuery
                 ->orderBy('updated_at', 'desc')->limit(100)->get()),
             // One shared list per disaster, and saving removes crops left out of it, so the
             // form must get every row of the active disaster: no limit, no other disasters.

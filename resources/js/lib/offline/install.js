@@ -10,17 +10,11 @@ const WARM_EVERY_MS = 30 * 60 * 1000;
 // Pages to keep ready for offline use; ones the user can't open are simply skipped.
 const OFFLINE_PAGES = [
     'situation-reports.index',
-    'incident-monitored.index',
     'declaration-usc.index',
     'pre-positioning.index',
     'response-operations.index',
     'assistance.index',
     'assistance-extendeds.index',
-    'casualties.index',
-    'injured.index',
-    'missing.index',
-    'affected-tourists.index',
-    'damaged-houses.index',
 ];
 // JSON the forms load when they open (field suggestions and the like), so they work offline too.
 const OFFLINE_JSON = [

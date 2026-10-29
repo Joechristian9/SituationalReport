@@ -19,14 +19,12 @@ import {
     BarChart3,
     FileWarning,
     MapPin,
-    Flame,
     Users,
     HeartHandshake,
     Calendar,
     Cloud,
     LayoutDashboard,
     UserCircle,
-    Sprout,
     ClipboardCheck,
     Shield,
 } from "lucide-react";
@@ -107,88 +105,6 @@ export function AppSidebar({ ...props }) {
         return isAdmin || userPermissions.includes(permission);
     };
 
-    // Check if user has access to Situation Overview (any of the 7 forms)
-    const hasSituationOverviewAccess = hasPermission('access-weather-form') ||
-        hasPermission('access-water-level-form') ||
-        hasPermission('access-electricity-form') ||
-        hasPermission('access-water-service-form') ||
-        hasPermission('access-communication-form') ||
-        hasPermission('access-road-form') ||
-        hasPermission('access-bridge-form');
-    
-    // Check if user only has electricity access (Iselco II)
-    const isElectricityOnly = hasPermission('access-electricity-form') && 
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-communication-form') &&
-        !hasPermission('access-road-form') &&
-        !hasPermission('access-bridge-form');
-    
-    // Check if user only has water service access (IWD)
-    const isWaterServiceOnly = hasPermission('access-water-service-form') && 
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-communication-form') &&
-        !hasPermission('access-road-form') &&
-        !hasPermission('access-bridge-form');
-    
-    // Check if user is CDRRMO by email (since CDRRMO has all permissions)
-    const isCDRRMO = auth.user.email === 'cdrrmo@gmail.com' || 
-        auth.user.roles?.some(role => role.name?.toLowerCase() === 'cdrrmo') ||
-        auth.user.name?.toLowerCase().includes('cdrrmo');
-    
-    // Check if user is BDRRMC (electricity, communication, road, bridge, pre-emptive)
-    const isBDRRMC = hasPermission('access-electricity-form') && 
-        hasPermission('access-communication-form') &&
-        hasPermission('access-road-form') &&
-        hasPermission('access-bridge-form') &&
-        hasPermission('access-pre-emptive-form') &&
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-incident-form') &&
-        !hasPermission('access-pre-positioning-form');
-    
-    // Check if user is CEO (road and bridge only)
-    const isCEO = hasPermission('access-road-form') && 
-        hasPermission('access-bridge-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-communication-form') &&
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-pre-emptive-form') &&
-        !hasPermission('access-incident-form') &&
-        !hasPermission('access-pre-positioning-form');
-    
-    // Check if user is PNP (road, bridge, and incident monitored)
-    const isPNP = hasPermission('access-road-form') && 
-        hasPermission('access-bridge-form') &&
-        hasPermission('access-incident-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-communication-form') &&
-        !hasPermission('access-weather-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-pre-emptive-form') &&
-        !hasPermission('access-pre-positioning-form');
-    
-    // Check if user is a Barangay user (has 6 specific permissions but not electricity/water service/water level/pre-positioning)
-    // Barangay users should only see "Situation Overview" menu
-    const isBarangay = hasPermission('access-weather-form') &&
-        hasPermission('access-communication-form') &&
-        hasPermission('access-road-form') &&
-        hasPermission('access-bridge-form') &&
-        hasPermission('access-pre-emptive-form') &&
-        hasPermission('access-incident-form') &&
-        !hasPermission('access-electricity-form') &&
-        !hasPermission('access-water-service-form') &&
-        !hasPermission('access-water-level-form') &&
-        !hasPermission('access-pre-positioning-form') &&
-        !hasPermission('access-declaration-form');
-
     // A history for every form the account may file, whatever its office (see
     // Components/history/historyTypes.js). Admins read everything from the dashboard instead.
     const historyKeys = isAdmin
@@ -246,55 +162,42 @@ export function AppSidebar({ ...props }) {
         {
             label: "Reports",
             items: [
-                ...(!isAdmin ? [{
-                    title: isElectricityOnly ? "Electricity Reports" : isWaterServiceOnly ? "Water Services" : (isCDRRMO || isBDRRMC || isCEO || isPNP || isBarangay) ? "Reports" : "Situation Overview",
+                // Shown by the permissions an admin ticks in User Management, nothing else.
+                // The Situation Overview is every account's home, so it is always listed.
+                {
+                    title: "Situation Overview",
                     url: route("situation-reports.index"),
                     roles: ["user"],
                     icon: BarChart3,
-                    requiresAnyPermission: true,
-                }] : []),
-                ...(!isBarangay && !isCDRRMO && !isAdmin ? [{
+                },
+                {
                     title: "Declaration USC",
                     url: route("declaration-usc.index"),
                     roles: ["user"],
                     icon: FileWarning,
                     permission: "access-declaration-form",
-                }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isBarangay && !isAdmin ? [{
+                },
+                {
                     title: "Deployment of Response Assets",
                     url: route("pre-positioning.index"),
                     roles: ["user"],
                     icon: MapPin,
                     permission: "access-pre-positioning-form",
-                }] : []),
-                ...(!isCDRRMO && !isBDRRMC && !isPNP && !isBarangay && !isAdmin ? [{
-                    title: "Incidents Monitored",
-                    url: route("incident-monitored.index"),
-                    roles: ["user"],
-                    icon: Flame,
-                    permission: "access-incident-form",
-                }] : []),
-                ...(!isCDRRMO && !isBarangay && !isAdmin ? [{
+                },
+                {
                     title: "Response Operations",
                     url: route("response-operations.index"),
                     roles: ["user"],
                     icon: Users,
                     permission: "access-response-operations",
-                }] : []),
-                ...(!isCDRRMO && !isBarangay && !isAdmin ? [{
+                },
+                {
                     title: "Assistance Extended",
                     url: route("assistance.index"),
                     roles: ["user"],
                     icon: HeartHandshake,
                     permission: "access-assistance-extended",
-                }] : []),
-                ...(!isCDRRMO && !isAdmin ? [{
-                    title: "Agriculture",
-                    url: route("situation-reports.index"),
-                    roles: ["user"],
-                    icon: Sprout,
-                    permission: "access-agriculture-form",
-                }] : []),
+                },
             ],
         },
         // Report History: the forms the user may file, in the Reports page's sections.
@@ -312,8 +215,6 @@ export function AppSidebar({ ...props }) {
     const canSee = (item) => {
         if (!item.roles?.some((r) => userRoles.includes(r))) return false;
         if (isAdmin) return true;
-        // Situation Overview shows for any of the situation forms.
-        if (item.requiresAnyPermission) return hasSituationOverviewAccess;
         return !item.permission || hasPermission(item.permission);
     };
 

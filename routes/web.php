@@ -224,25 +224,29 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
                 ->name('modifications.pre-positioning');
         });
 
-        // Effects of Incident Monitored. The Incidents page holds every tab below, so
-        // access-incident-form opens all of them; the narrower permissions open one each.
+        // Effects forms. Each needs its own permission (set in User Management) and is filled in
+        // on the Situation Overview; the old Effects page addresses send people there.
+        foreach (['incident-monitored', 'casualties', 'injured', 'missing', 'affected-tourists', 'damaged-houses'] as $oldPage) {
+            Route::get("/{$oldPage}", fn () => redirect()->route('situation-reports.index'));
+        }
+
         Route::middleware('role_or_permission:admin|access-incident-form')->group(function () {
             Route::resource('incident-monitored', IncidentMonitoredController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/incident-monitored', [IncidentMonitoredController::class, 'store'])
                 ->name('incident-monitored.store');
-            Route::get('/incident-monitored', [IncidentMonitoredController::class, 'index'])
-                ->name('incident-monitored.index');
             Route::get('/modifications/incident-monitored', [IncidentMonitoredController::class, 'getModifications'])
                 ->name('modifications.incident-monitored');
+        });
 
-            /* ---------------- Suspension of Classes (API routes) ---------------- */
+        Route::middleware('role_or_permission:admin|access-suspension-classes-form')->group(function () {
             Route::post('/suspension-classes-reports', [SuspensionOfClassController::class, 'store'])
                 ->name('suspension-classes-reports.store');
             Route::get('/modifications/suspension-classes', [SuspensionOfClassController::class, 'getModifications'])
                 ->name('modifications.suspension-classes');
+        });
 
-            /* ---------------- Suspension of Work (API routes) ---------------- */
+        Route::middleware('role_or_permission:admin|access-suspension-work-form')->group(function () {
             Route::post('/suspension-work-reports', [SuspensionOfWorkController::class, 'store'])
                 ->name('suspension-work-reports.store');
             Route::get('/modifications/suspension-work', [SuspensionOfWorkController::class, 'getModifications'])
@@ -258,49 +262,41 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         });
 
         // Casualties Dead
-        Route::middleware('role_or_permission:admin|access-incident-form|access-casualty-form')->group(function () {
+        Route::middleware('role_or_permission:admin|access-casualty-form')->group(function () {
             Route::resource('casualties', CasualtyController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/casualties', [CasualtyController::class, 'store'])
                 ->name('casualties.store');
-            Route::get('/casualties', [CasualtyController::class, 'index'])
-                ->name('casualties.index');
             Route::get('/modifications/casualties', [CasualtyController::class, 'getModifications'])
                 ->name('modifications.casualties');
         });
 
         // Injured
-        Route::middleware('role_or_permission:admin|access-incident-form|access-injured-form')->group(function () {
+        Route::middleware('role_or_permission:admin|access-injured-form')->group(function () {
             Route::resource('injured', InjuredController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/injured', [InjuredController::class, 'store'])
                 ->name('injured.store');
-            Route::get('/injured', [InjuredController::class, 'index'])
-                ->name('injured.index');
             Route::get('/modifications/injured', [InjuredController::class, 'getModifications'])
                 ->name('modifications.injured');
         });
 
         // Missing Persons
-        Route::middleware('role_or_permission:admin|access-incident-form|access-missing-form')->group(function () {
+        Route::middleware('role_or_permission:admin|access-missing-form')->group(function () {
             Route::resource('missing', MissingController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/missing', [MissingController::class, 'store'])
                 ->name('missing.store');
-            Route::get('/missing', [MissingController::class, 'index'])
-                ->name('missing.index');
             Route::get('/modifications/missing', [MissingController::class, 'getModifications'])
                 ->name('modifications.missing');
         });
 
         // Affected Tourists
-        Route::middleware('role_or_permission:admin|access-incident-form|access-tourist-form')->group(function () {
+        Route::middleware('role_or_permission:admin|access-tourist-form')->group(function () {
             Route::resource('affected-tourists', AffectedTouristController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/affected-tourists', [AffectedTouristController::class, 'store'])
                 ->name('affected-tourists.store');
-            Route::get('/affected-tourists', [AffectedTouristController::class, 'index'])
-                ->name('affected-tourists.index');
 
             /* ---------------- Affected Tourists Reports (new API routes) ---------------- */
             Route::post('/affected-tourists-reports', [AffectedTouristController::class, 'store'])
@@ -310,13 +306,11 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
         });
 
         // Damaged Houses
-        Route::middleware('role_or_permission:admin|access-incident-form|access-damaged-houses-form')->group(function () {
+        Route::middleware('role_or_permission:admin|access-damaged-houses-form')->group(function () {
             Route::resource('damaged-houses', DamagedHouseReportController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['store', 'update']);
             Route::post('/damaged-houses', [DamagedHouseReportController::class, 'store'])
                 ->name('damaged-houses.store');
-            Route::get('/damaged-houses', [DamagedHouseReportController::class, 'index'])
-                ->name('damaged-houses.index');
 
             /* ---------------- Damaged Houses Reports (new API routes) ---------------- */
             Route::post('/damaged-houses-reports', [DamagedHouseReportController::class, 'store'])

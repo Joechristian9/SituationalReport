@@ -11,35 +11,11 @@ use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 use Inertia\Response;
 
 class CasualtyController extends Controller
 {
     use AuthorizesRecordWrites, BuildsSubmissionList, ValidatesDisasterStatus;
-
-    /**
-     * Show list of casualties
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $casualtiesQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-
-        if ($user && ! $user->isAdmin()) {
-            $accessibleUserIds = $user->getAccessibleUserIds('read');
-            $casualtiesQuery->whereIn('user_id', $accessibleUserIds);
-        }
-
-        $casualties = $casualtiesQuery->latest()->limit(200)->get();
-
-        return Inertia::render('IncidentMonitored/Index', [
-            'casualties' => $casualties,
-        ]);
-    }
 
     /**
      * Store casualties

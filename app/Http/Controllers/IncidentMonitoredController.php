@@ -2,15 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AffectedTourist;
-use App\Models\Casualty;
-use App\Models\DamagedHouseReport;
 use App\Models\IncidentMonitored;
-use App\Models\Injured;
-use App\Models\Missing;
 use App\Models\Modification;
-use App\Models\SuspensionOfClass;
-use App\Models\SuspensionOfWork;
 use App\Models\Typhoon;
 use App\Services\ReportHistory;
 use App\Traits\AuthorizesRecordWrites;
@@ -18,80 +11,10 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class IncidentMonitoredController extends Controller
 {
     use AuthorizesRecordWrites, ValidatesDisasterStatus;
-
-    /**
-     * Show list of monitored incidents
-     * Optimized: Limit records for better performance
-     */
-    public function index()
-    {
-        $typhoonId = $this->getActiveTyphoonId();
-        $user = Auth::user();
-
-        $incidentsQuery = IncidentMonitored::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $incidentsQuery->where('user_id', $user->id);
-        }
-        $incidents = $incidentsQuery->latest()->limit(200)->get();
-
-        $casualtiesQuery = Casualty::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $casualtiesQuery->where('user_id', $user->id);
-        }
-        $casualties = $casualtiesQuery->latest()->limit(200)->get();
-
-        $injuredQuery = Injured::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $injuredQuery->where('user_id', $user->id);
-        }
-        $injured = $injuredQuery->latest()->limit(200)->get();
-
-        $missingQuery = Missing::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $missingQuery->where('user_id', $user->id);
-        }
-        $missing = $missingQuery->latest()->limit(200)->get();
-
-        $affectedTouristsQuery = AffectedTourist::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $affectedTouristsQuery->where('user_id', $user->id);
-        }
-        $affectedTourists = $affectedTouristsQuery->latest()->limit(200)->get();
-
-        $damagedHousesQuery = DamagedHouseReport::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $damagedHousesQuery->where('user_id', $user->id);
-        }
-        $damagedHouses = $damagedHousesQuery->latest()->limit(200)->get();
-
-        $suspensionOfClassesQuery = SuspensionOfClass::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $suspensionOfClassesQuery->where('user_id', $user->id);
-        }
-        $suspensionOfClasses = $suspensionOfClassesQuery->latest()->limit(200)->get();
-
-        $suspensionOfWorkQuery = SuspensionOfWork::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
-        if ($user && ! $user->isAdmin()) {
-            $suspensionOfWorkQuery->where('user_id', $user->id);
-        }
-        $suspensionOfWork = $suspensionOfWorkQuery->latest()->limit(200)->get();
-
-        return Inertia::render('IncidentMonitored/Index', [
-            'incidents' => $incidents,
-            'casualties' => $casualties,
-            'injured' => $injured,
-            'missing' => $missing,
-            'affectedTourists' => $affectedTourists,
-            'damagedHouses' => $damagedHouses,
-            'suspensionOfClasses' => $suspensionOfClasses,
-            'suspensionOfWork' => $suspensionOfWork,
-        ]);
-    }
 
     /**
      * Store monitored incidents

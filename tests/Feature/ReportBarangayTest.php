@@ -139,8 +139,6 @@ it('sends the barangay list to the pages with report forms only', function () {
     barangayWithPermissions('Alibagu');
     $admin = userWithRole('admin');
 
-    foreach (['situation-reports.index', 'incident-monitored.index'] as $page) {
-        $this->actingAs($admin)->get(route($page))->assertInertia(fn ($inertia) => $inertia->where('barangays', ['Alibagu']));
-    }
+    $this->actingAs($admin)->get(route('situation-reports.index'))->assertInertia(fn ($inertia) => $inertia->where('barangays', ['Alibagu']));
     $this->actingAs($admin)->get(route('dashboard'))->assertInertia(fn ($inertia) => $inertia->where('barangays', []));
 });
