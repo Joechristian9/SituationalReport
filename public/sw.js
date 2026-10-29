@@ -157,8 +157,11 @@ async function networkFirst(event, request, isPage) {
     const cache = await caches.open(isPage ? PAGES : DATA);
     const cached = await cache.match(request, { ignoreVary: true });
     const network = fetch(request).then((response) => {
+        // Page data is JSON (Inertia and the app's data). A background request that ends on a full
+        // page (e.g. the redirect after signing in) must not stand in for that page's data offline.
+        const keep = cacheable(response) && (isPage || (response.headers.get('Content-Type') || '').includes('application/json'));
         // waitUntil keeps the worker alive until the copy is saved, even after the page has its response.
-        if (cacheable(response)) event.waitUntil(remember(cache, request, response.clone(), isPage ? MAX_PAGES : MAX_DATA).catch(() => {}));
+        if (keep) event.waitUntil(remember(cache, request, response.clone(), isPage ? MAX_PAGES : MAX_DATA).catch(() => {}));
         // Signed-in users are redirected away from it, so a plain answer is the visitor's page.
         if (isPage && new URL(request.url).pathname === SIGN_IN && cacheable(response)) event.waitUntil(saveSignInPage(response.clone()).catch(() => {}));
         return response;
