@@ -130,11 +130,13 @@ class BarangaySeeder extends Seeder
 
             $user->forceFill([
                 'name' => $barangay,
-                'password' => Hash::make('wardead12345'),
+                'password' => Hash::make(DatabaseSeeder::PASSWORD),
                 'email_verified_at' => now(),
             ])->save();
             $user->assignRole($role);
             $user->givePermissionTo(self::PERMISSIONS);
+            // Ready to be prepared on a phone for offline sign-in, as if it had signed in once.
+            $user->rememberOfflinePassword(DatabaseSeeder::PASSWORD);
             $created++;
         }
 

@@ -10,6 +10,9 @@ use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
+    /** Every seeded account's password (dev and demo data only; 12+ characters, see User::OFFLINE_MIN_LENGTH). */
+    public const PASSWORD = 'wardead12345';
+
     public function run(): void
     {
         $role = Role::create(['name' => 'user']);
@@ -44,7 +47,7 @@ class DatabaseSeeder extends Seeder
         $iwd = User::factory()->create([
             'name' => 'Ilagan Water District',
             'email' => 'iwd@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $iwd->assignRole($role);
         $iwd->givePermissionTo('access-water-service-form');
@@ -52,7 +55,7 @@ class DatabaseSeeder extends Seeder
         $iselco2 = User::factory()->create([
             'name' => 'Iselco II',
             'email' => 'iselco2@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $iselco2->assignRole($role);
         $iselco2->givePermissionTo('access-electricity-form');
@@ -60,7 +63,7 @@ class DatabaseSeeder extends Seeder
         $ceo = User::factory()->create([
             'name' => 'Ceo',
             'email' => 'ceo@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $ceo->assignRole($role);
         $ceo->givePermissionTo([
@@ -71,7 +74,7 @@ class DatabaseSeeder extends Seeder
         $pnp = User::factory()->create([
             'name' => 'Philippine National Police',
             'email' => 'pnp@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $pnp->assignRole($role);
         $pnp->givePermissionTo([
@@ -83,7 +86,7 @@ class DatabaseSeeder extends Seeder
         $cswdo = User::factory()->create([
             'name' => 'Cswdo',
             'email' => 'cswdo@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $cswdo->assignRole($role);
         $cswdo->givePermissionTo([
@@ -96,7 +99,7 @@ class DatabaseSeeder extends Seeder
         $cdrrmo = User::factory()->create([
             'name' => 'Cdrrmo',
             'email' => 'cdrrmo@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $cdrrmo->assignRole($role);
         $cdrrmo->givePermissionTo(Permission::all()); // CDRRMO has access to all forms
@@ -104,7 +107,7 @@ class DatabaseSeeder extends Seeder
         $cao = User::factory()->create([
             'name' => 'Chief Administrative Officer',
             'email' => 'cao@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $cao->assignRole($role);
         $cao->givePermissionTo('access-agriculture-form');
@@ -112,7 +115,7 @@ class DatabaseSeeder extends Seeder
         $bdrrmc = User::factory()->create([
             'name' => 'BDRRMC',
             'email' => 'bdrrmc@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $bdrrmc->assignRole($role);
         $bdrrmc->givePermissionTo([
@@ -127,7 +130,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
-            'password' => bcrypt('wardead12345'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $admin->assignRole($adminRole);
         $admin->givePermissionTo(Permission::all());
@@ -149,6 +152,12 @@ class DatabaseSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Ready to be prepared on a phone for offline sign-in, as if each had signed in once.
+        // Not the admin: admin accounts are never prepared.
+        foreach ([$iwd, $iselco2, $ceo, $pnp, $cswdo, $cdrrmo, $cao, $bdrrmc] as $office) {
+            $office->rememberOfflinePassword(self::PASSWORD);
+        }
 
         $this->call([
             BarangaySeeder::class,
