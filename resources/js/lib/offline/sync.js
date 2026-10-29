@@ -6,6 +6,9 @@ import { currentSession, currentUser } from './context';
 // Sends queued saves, oldest first, once the server is reachable again.
 
 const state = { running: false, loginNeeded: false, reloadNeeded: false };
+// A weak signal can leave a request hanging for minutes, blocking every later send. A send
+// that times out stays queued; if it did reach the server, the resend is recognised by its key.
+const SEND_TIMEOUT_MS = 30000;
 const listeners = new Set();
 // Forms whose queued save from this very page was just sent: their rows now have
 // server ids the page doesn't know, so saving again before a reload would duplicate them.
@@ -61,6 +64,7 @@ async function send(item, freshToken) {
     const post = () =>
         axios.post(item.url, item.payload, {
             offlineSync: true,
+            timeout: SEND_TIMEOUT_MS,
             headers: {
                 Accept: 'application/json',
                 'X-Offline-Key': item.id,
@@ -72,7 +76,7 @@ async function send(item, freshToken) {
         return await post();
     } catch (error) {
         if (error.response?.status !== 419 || freshToken.used) throw error;
-        await axios.get(route('sanctum.csrf-cookie'), { offlineSync: true });
+        await axios.get(route('sanctum.csrf-cookie'), { offlineSync: true, timeout: SEND_TIMEOUT_MS });
         freshToken.used = true;
         return post();
     }
