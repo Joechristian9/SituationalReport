@@ -686,6 +686,13 @@
       "_utils-9gjXS1e5.js"
     ]
   },
+  "_smartphone-ZIp6nLTH.js": {
+    "file": "assets/smartphone-ZIp6nLTH.js",
+    "name": "smartphone",
+    "imports": [
+      "_utils-9gjXS1e5.js"
+    ]
+  },
   "_subDays-C78k16oH.js": {
     "file": "assets/subDays-C78k16oH.js",
     "name": "subDays",
@@ -949,7 +956,7 @@
     ]
   },
   "resources/js/Components/Effects/AffectedTouristsForm.jsx": {
-    "file": "assets/AffectedTouristsForm-BVRxzsYC.js",
+    "file": "assets/AffectedTouristsForm-v8sRhzAA.js",
     "name": "AffectedTouristsForm",
     "src": "resources/js/Components/Effects/AffectedTouristsForm.jsx",
     "isDynamicEntry": true,
@@ -1006,7 +1013,7 @@
     ]
   },
   "resources/js/Components/Effects/CasualtyForm.jsx": {
-    "file": "assets/CasualtyForm-D7qUUfSs.js",
+    "file": "assets/CasualtyForm-DmbpgG3w.js",
     "name": "CasualtyForm",
     "src": "resources/js/Components/Effects/CasualtyForm.jsx",
     "isDynamicEntry": true,
@@ -1063,7 +1070,7 @@
     ]
   },
   "resources/js/Components/Effects/DamagedHousesForm.jsx": {
-    "file": "assets/DamagedHousesForm-BOQyi3Is.js",
+    "file": "assets/DamagedHousesForm-C0sTl2NX.js",
     "name": "DamagedHousesForm",
     "src": "resources/js/Components/Effects/DamagedHousesForm.jsx",
     "isDynamicEntry": true,
@@ -1157,7 +1164,7 @@
     ]
   },
   "resources/js/Components/Effects/InjuredForm.jsx": {
-    "file": "assets/InjuredForm-D4_tWyhW.js",
+    "file": "assets/InjuredForm-XxXy3-dn.js",
     "name": "InjuredForm",
     "src": "resources/js/Components/Effects/InjuredForm.jsx",
     "isDynamicEntry": true,
@@ -1215,7 +1222,7 @@
     ]
   },
   "resources/js/Components/Effects/MissingForm.jsx": {
-    "file": "assets/MissingForm-Cxj0nSDz.js",
+    "file": "assets/MissingForm-CNIMEjhu.js",
     "name": "MissingForm",
     "src": "resources/js/Components/Effects/MissingForm.jsx",
     "isDynamicEntry": true,
@@ -1272,7 +1279,7 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfClassesForm.jsx": {
-    "file": "assets/SuspensionOfClassesForm-BYReinKw.js",
+    "file": "assets/SuspensionOfClassesForm-Do1_jRv5.js",
     "name": "SuspensionOfClassesForm",
     "src": "resources/js/Components/Effects/SuspensionOfClassesForm.jsx",
     "isDynamicEntry": true,
@@ -1329,7 +1336,7 @@
     ]
   },
   "resources/js/Components/Effects/SuspensionOfWorkForm.jsx": {
-    "file": "assets/SuspensionOfWorkForm-D_Rkbq7P.js",
+    "file": "assets/SuspensionOfWorkForm-Bq6cjBmG.js",
     "name": "SuspensionOfWorkForm",
     "src": "resources/js/Components/Effects/SuspensionOfWorkForm.jsx",
     "isDynamicEntry": true,
@@ -1857,7 +1864,7 @@
     ]
   },
   "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx": {
-    "file": "assets/PreEmptiveForm-NRKDduFG.js",
+    "file": "assets/PreEmptiveForm-SzcCvwGy.js",
     "name": "PreEmptiveForm",
     "src": "resources/js/Components/PreEmptiveEvacuation/PreEmptiveForm.jsx",
     "isDynamicEntry": true,
@@ -1959,7 +1966,7 @@
     ]
   },
   "resources/js/Components/SituationOverview/CommunicationForm.jsx": {
-    "file": "assets/CommunicationForm-Bs0o7HN3.js",
+    "file": "assets/CommunicationForm-DAD6mm5v.js",
     "name": "CommunicationForm",
     "src": "resources/js/Components/SituationOverview/CommunicationForm.jsx",
     "isDynamicEntry": true,
@@ -1978,6 +1985,7 @@
       "_plus-qu41zQcv.js",
       "_index-COvDcQqP.js",
       "_wifi-CnCbONFL.js",
+      "_smartphone-ZIp6nLTH.js",
       "_index-CZKgIBd-.js",
       "_index-CF4fmuBm.js",
       "_history-C2KDDN0G.js",
@@ -2637,7 +2645,7 @@
     ]
   },
   "resources/js/Pages/Admin/UserManagement.jsx": {
-    "file": "assets/UserManagement-DA7ZwDar.js",
+    "file": "assets/UserManagement-BEjFud_I.js",
     "name": "UserManagement",
     "src": "resources/js/Pages/Admin/UserManagement.jsx",
     "isEntry": true,
@@ -2650,20 +2658,23 @@
       "_dialog-Ci-62QU6.js",
       "_label-DVn4t3Pd.js",
       "_InputError-CQ74AGVT.js",
+      "_index-BcOGXUEB.js",
+      "_useOnline-D_ODHyKC.js",
+      "_utils-9gjXS1e5.js",
+      "_format-4kcK1W-l.js",
+      "_trash-2-DzDCdEex.js",
+      "_lock-B8yBTRQ_.js",
+      "_smartphone-ZIp6nLTH.js",
       "_searchSuggestions-Btk4bMnp.js",
       "_tabs-CW_LIRkj.js",
       "_TablePagination-qExLkio4.js",
       "_table-C8CICnN5.js",
       "_DataView-CUPdDaye.js",
-      "_utils-9gjXS1e5.js",
-      "_index-BcOGXUEB.js",
       "_building-2-BVynRGmb.js",
       "_popover-D2imO2Ry.js",
-      "_lock-B8yBTRQ_.js",
       "_user-plus-DD6PHACw.js",
       "_shield-check-Bm8lQz8S.js",
       "_ellipsis-vertical-Djypa_o5.js",
-      "_trash-2-DzDCdEex.js",
       "_eye-off-I_9hteZ0.js",
       "_eye-efZJI_d2.js",
       "_index-COvDcQqP.js",
@@ -3445,7 +3456,7 @@
     ]
   },
   "resources/js/Pages/SituationReports/Index.jsx": {
-    "file": "assets/Index-BzK41r5s.js",
+    "file": "assets/Index-DXQn9PMX.js",
     "name": "Index",
     "src": "resources/js/Pages/SituationReports/Index.jsx",
     "isEntry": true,
@@ -3608,7 +3619,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-DvHJ_WWH.js",
+    "file": "assets/app-D27wnVbn.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
