@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -132,7 +133,7 @@ class DatabaseSeeder extends Seeder
         $admin->givePermissionTo(Permission::all());
 
         // Set up data sharing: CDRRMO can read and write ISELCO2's electricity data
-        \DB::table('user_data_sharing')->insert([
+        DB::table('user_data_sharing')->insert([
             'user_id' => $iselco2->id,  // ISELCO2 owns the data
             'shared_with_user_id' => $cdrrmo->id,  // Shared with CDRRMO
             'permission_type' => 'write',  // CDRRMO can both read and write
@@ -141,7 +142,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Optionally: ISELCO2 can also see CDRRMO's data (bidirectional sharing)
-        \DB::table('user_data_sharing')->insert([
+        DB::table('user_data_sharing')->insert([
             'user_id' => $cdrrmo->id,  // CDRRMO owns the data
             'shared_with_user_id' => $iselco2->id,  // Shared with ISELCO2
             'permission_type' => 'read',  // ISELCO2 can read CDRRMO's data
