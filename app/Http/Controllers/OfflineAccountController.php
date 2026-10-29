@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CommunicationService;
+use App\Models\Typhoon;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\Barangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,6 +47,13 @@ class OfflineAccountController extends Controller
             ])->values(),
             // No check yet: the server hasn't seen a long enough password since this was added.
             'notReady' => $notReady->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])->values(),
+            // What the forms page shows besides an account's own rows, for opening it offline.
+            // No rows of any account: an offline sign-in starts with blank forms.
+            'template' => [
+                'typhoon' => Typhoon::forPage(),
+                'barangays' => Barangays::names(),
+                'communicationServices' => CommunicationService::active()->ordered()->get()->groupBy('category'),
+            ],
         ]);
     }
 }

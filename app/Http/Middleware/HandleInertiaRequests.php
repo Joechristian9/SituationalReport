@@ -55,10 +55,7 @@ class HandleInertiaRequests extends Middleware
             ],
             // The report forms' barangay lists, only on the pages that host those forms.
             'barangays' => fn () => $request->user() && $request->routeIs(self::FORM_PAGES) ? Barangays::names() : [],
-            'typhoon' => [
-                'active' => fn () => Typhoon::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
-                'hasActive' => fn () => Typhoon::hasActiveTyphoon(),
-            ],
+            'typhoon' => fn () => Typhoon::forPage(),
         ];
     }
 }

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import InputError from '@/Components/InputError';
+import PrepareDeviceDialog from '@/Components/PrepareDeviceDialog';
 import { buildSuggestions } from '@/lib/searchSuggestions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import {
@@ -39,6 +40,7 @@ import {
     Pencil,
     Shield,
     ShieldCheck,
+    Smartphone,
     Trash2,
     User as UserIcon,
     UserPlus,
@@ -397,6 +399,7 @@ export default function UserManagement({ users, roles, permissions }) {
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [prepareOpen, setPrepareOpen] = useState(false);
     const initialForm = useRef(EMPTY_FORM);
 
     const tabCounts = useMemo(
@@ -604,6 +607,7 @@ export default function UserManagement({ users, roles, permissions }) {
             header={<PageTitle icon={Users}>User Management</PageTitle>}
         >
             <Toaster position="top-right" richColors />
+            <PrepareDeviceDialog open={prepareOpen} onOpenChange={setPrepareOpen} users={users} />
 
             <div className="flex-1 overflow-auto p-4 sm:p-6">
                 <div className="mx-auto max-w-7xl space-y-5">
@@ -663,10 +667,16 @@ export default function UserManagement({ users, roles, permissions }) {
                         count={filteredUsers.length}
                         description="Create accounts for offices and barangays and choose which report forms each one can fill in."
                         actions={
-                            <Button onClick={openCreate} className="h-11 gap-2 shadow-sm md:h-9">
-                                <UserPlus className="h-4 w-4" aria-hidden="true" />
-                                Add user
-                            </Button>
+                            <>
+                                <Button variant="outline" onClick={() => setPrepareOpen(true)} className="h-11 gap-2 md:h-9">
+                                    <Smartphone className="h-4 w-4" aria-hidden="true" />
+                                    Prepare this phone
+                                </Button>
+                                <Button onClick={openCreate} className="h-11 gap-2 shadow-sm md:h-9">
+                                    <UserPlus className="h-4 w-4" aria-hidden="true" />
+                                    Add user
+                                </Button>
+                            </>
                         }
                     >
                         <DataToolbar

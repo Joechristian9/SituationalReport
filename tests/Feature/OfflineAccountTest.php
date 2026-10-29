@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\CommunicationService;
+use App\Models\Typhoon;
 use App\Models\User;
 
 /** What a prepared phone computes from a typed password (lib/offline/lock.js), to compare. */
@@ -51,6 +53,32 @@ it('gives an admin the checks of the report accounts chosen for a phone, never a
 
     expect($response->json('accounts.0.hash'))->toBe($fugu->fresh()->offline_hash)
         ->and(AuditLog::where('action', 'device_prepared')->count())->toBe(1);
+});
+
+it('sends what a prepared phone needs to open the forms offline, without any report rows', function () {
+    $admin = userWithRole('admin');
+    $fugu = userWithPermissions('access-road-form');
+    $fugu->rememberOfflinePassword('correct-horse-battery');
+    Typhoon::create(['name' => 'Tropical Storm Aghon', 'status' => 'active', 'created_by' => $admin->id]);
+    CommunicationService::create(['name' => 'Globe', 'category' => 'cellphone', 'order' => 1, 'is_active' => true]);
+
+    $this->actingAs($admin)->getJson(route('admin.offline-accounts', ['ids' => [$fugu->id]]))
+        ->assertOk()
+        ->assertJsonPath('template.typhoon.active.name', 'Tropical Storm Aghon')
+        ->assertJsonPath('template.typhoon.hasActive', true)
+        ->assertJsonPath('template.communicationServices.cellphone.0.name', 'Globe')
+        ->assertJsonStructure(['template' => ['barangays']]);
+});
+
+it('tells the admin which accounts a phone can be prepared for', function () {
+    $ready = userWithPermissions('access-road-form');
+    $ready->rememberOfflinePassword('correct-horse-battery');
+    $notYet = userWithPermissions('access-road-form');
+
+    $this->actingAs(userWithRole('admin'))->get(route('admin.users.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('users', fn ($users) => collect($users)->firstWhere('id', $ready->id)['offlineReady'] === true
+                && collect($users)->firstWhere('id', $notYet->id)['offlineReady'] === false));
 });
 
 it('gives the offline checks to admins only', function () {

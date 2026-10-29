@@ -143,6 +143,19 @@ class Typhoon extends Model
         return self::whereIn('status', ['active', 'paused'])->exists();
     }
 
+    /**
+     * The disaster as every page receives it (the `typhoon` prop), also saved on prepared phones.
+     *
+     * @return array{active: ?self, hasActive: bool}
+     */
+    public static function forPage(): array
+    {
+        return [
+            'active' => self::with('creator:id,name')->whereIn('status', ['active', 'paused'])->latest()->first(),
+            'hasActive' => self::hasActiveTyphoon(),
+        ];
+    }
+
     /** The type printed before the name in reports; null when the name already says it or it is just "Other". */
     public function reportType(): ?string
     {

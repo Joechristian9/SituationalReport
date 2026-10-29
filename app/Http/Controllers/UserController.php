@@ -23,7 +23,7 @@ class UserController extends Controller
         // Only the columns the page shows; roles and permissions by name only.
         $users = User::with(['roles:id,name', 'permissions:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'name', 'email', 'created_at'])
+            ->get(['id', 'name', 'email', 'created_at', 'offline_hash'])
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
@@ -32,6 +32,8 @@ class UserController extends Controller
                     'roles' => $user->roles->pluck('name'),
                     'permissions' => $user->permissions->pluck('name'),
                     'created_at' => $user->created_at->format('M d, Y'),
+                    // Whether a phone can be prepared for it yet (never the check itself).
+                    'offlineReady' => $user->offline_hash !== null,
                 ];
             });
 
