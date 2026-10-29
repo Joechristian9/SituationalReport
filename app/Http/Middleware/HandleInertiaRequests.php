@@ -30,31 +30,10 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
-    /**
-     * The signed-in user as the browser sees it. Inertia prints shared props into every page's
-     * HTML, so send only what the UI reads, never the whole model with its pivot rows.
-     *
-     * @return array<string, mixed>|null
-     */
+    /** The signed-in user as the browser sees it (see User::forPage()). */
     private function sharedUser(Request $request): ?array
     {
-        $user = $request->user();
-
-        if (! $user) {
-            return null;
-        }
-
-        $user->loadMissing('roles:id,name', 'permissions:id,name');
-
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            // The profile form checks this to decide whether to show the verify-email notice.
-            'email_verified_at' => $user->email_verified_at,
-            'roles' => $user->roles->map(fn ($role) => ['name' => $role->name])->values(),
-            'permissions' => $user->permissions->map(fn ($permission) => ['name' => $permission->name])->values(),
-        ];
+        return $request->user()?->forPage();
     }
 
     /**

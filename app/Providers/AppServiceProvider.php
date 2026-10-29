@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
@@ -56,6 +57,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Prepared phones keep an offline check of the password, which a thief could guess at
+        // without limits, so every new password is at least this long.
+        Password::defaults(fn () => Password::min(User::OFFLINE_MIN_LENGTH));
+
         Vite::prefetch(concurrency: 3);
         Inertia::share([
             'flash' => function () {

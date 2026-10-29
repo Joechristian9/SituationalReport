@@ -64,6 +64,7 @@ class UserController extends Controller
         // New token: a "remember me" cookie left on the deleted account's old devices must not log in again.
         $user->setRememberToken(Str::random(60));
         $user->save();
+        $user->rememberOfflinePassword($validated['password']);
 
         // sync, not assign: a restored account must not keep its old role or permissions.
         $user->syncRoles([$validated['role']]);
@@ -101,6 +102,7 @@ class UserController extends Controller
             $user->update([
                 'password' => Hash::make($validated['password']),
             ]);
+            $user->rememberOfflinePassword($validated['password']);
 
             // Log password change
             AuditLogger::logPasswordChange(

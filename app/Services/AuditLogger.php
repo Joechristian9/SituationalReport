@@ -129,6 +129,14 @@ class AuditLogger
     }
 
     /**
+     * Log an admin preparing a phone so accounts can sign in on it with no internet
+     */
+    public static function logDevicePrepared(string $description): void
+    {
+        self::log(action: 'device_prepared', description: $description);
+    }
+
+    /**
      * Log password change
      */
     public static function logPasswordChange(?int $userId = null, ?string $description = null): void
@@ -190,7 +198,7 @@ class AuditLogger
      */
     private static function sanitizeValues(array $values): array
     {
-        $sensitiveFields = ['password', 'password_confirmation', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
+        $sensitiveFields = ['password', 'password_confirmation', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'offline_salt', 'offline_hash'];
 
         foreach ($sensitiveFields as $field) {
             if (isset($values[$field])) {

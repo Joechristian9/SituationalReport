@@ -35,7 +35,15 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'offline_salt',
+        'offline_hash',
     ];
+
+    /** Iterations of the offline password check; prepared phones repeat them (lib/offline/lock.js). */
+    public const OFFLINE_ITERATIONS = 310000;
+
+    /** Shorter passwords get no offline check: a thief with the phone could guess without limits. */
+    public const OFFLINE_MIN_LENGTH = 12;
 
     /**
      * Get the attributes that should be cast.
@@ -59,6 +67,43 @@ class User extends Authenticatable
     public function homeRoute(): string
     {
         return $this->isAdmin() ? 'dashboard' : 'situation-reports.index';
+    }
+
+    /**
+     * The account as the browser sees it. Inertia prints this into every page's HTML, so only
+     * what the UI reads, never the whole model with its pivot rows.
+     *
+     * @return array<string, mixed>
+     */
+    public function forPage(): array
+    {
+        $this->loadMissing('roles:id,name', 'permissions:id,name');
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            // The profile form checks this to decide whether to show the verify-email notice.
+            'email_verified_at' => $this->email_verified_at,
+            'roles' => $this->roles->map(fn ($role) => ['name' => $role->name])->values(),
+            'permissions' => $this->permissions->map(fn ($permission) => ['name' => $permission->name])->values(),
+        ];
+    }
+
+    /**
+     * Keep the check a prepared phone uses to sign this account in with no internet: a salted
+     * PBKDF2 hash, apart from the login password hash. Made whenever the server sees the password.
+     */
+    public function rememberOfflinePassword(string $password): void
+    {
+        $salt = random_bytes(16);
+        $long = mb_strlen($password) >= self::OFFLINE_MIN_LENGTH;
+
+        // Quietly: refreshed at every sign-in, it isn't an account change for the audit log.
+        $this->forceFill([
+            'offline_salt' => $long ? base64_encode($salt) : null,
+            'offline_hash' => $long ? base64_encode(hash_pbkdf2('sha256', $password, $salt, self::OFFLINE_ITERATIONS, 32, true)) : null,
+        ])->saveQuietly();
     }
 
     /**
