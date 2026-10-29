@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
 use App\Models\WeatherReport;
 use App\Notifications\FormReminder;
@@ -47,6 +48,32 @@ it('does not ask for weather or water levels during an earthquake', function () 
 
     expect($both->notifications->first()->data['tables'])->toBe(['roads'])
         ->and($weatherOnly->notifications)->toHaveCount(0);
+});
+
+it('asks for affected tourists but not for water levels, which no page shows', function () {
+    remindableDisaster();
+    $account = userWithPermissions('access-tourist-form', 'access-water-level-form');
+
+    remind()->assertOk()->assertJson(['notified' => 1]);
+
+    expect($account->notifications->first()->data['tables'])->toBe(['affected_tourists']);
+});
+
+it('counts a pre-emptive row an office filed for a barangay as that barangay\'s', function () {
+    $disaster = remindableDisaster();
+    $alibagu = userWithPermissions('access-pre-emptive-form');
+    $alibagu->update(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local']);
+    $rugao = userWithPermissions('access-pre-emptive-form');
+    $rugao->update(['name' => 'Rugao', 'email' => 'rugao@barangay.local']);
+    remind();
+
+    PreEmptiveReport::create(['disaster_id' => $disaster->id, 'user_id' => userWithPermissions('access-pre-emptive-form')->id, 'barangay' => 'Alibagu', 'families' => 3]);
+
+    // The bell drops Alibagu's reminder, and the admin's next reminder skips Alibagu.
+    $this->actingAs($alibagu)->getJson(route('notifications.index'))->assertJsonPath('unread', 0);
+    $this->travel(2)->hours();
+    remind()->assertOk()->assertJson(['notified' => 1]);
+    expect($alibagu->notifications)->toHaveCount(1)->and($rugao->notifications)->toHaveCount(2);
 });
 
 it('reminds only the accounts the admin picked', function () {

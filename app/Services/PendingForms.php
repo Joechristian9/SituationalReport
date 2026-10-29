@@ -51,7 +51,8 @@ class PendingForms
         'access-pre-emptive-form' => 'pre_emptive_reports',
         'access-incident-form' => 'incident_monitored',
         'access-agriculture-form' => self::AGRICULTURE_TABLE,
-        'access-water-level-form' => 'water_levels',
+        // No water levels: no page shows that form now (it is commented out on the Situation
+        // Overview), so it could never be filed. Map 'access-water-level-form' again when it returns.
         'access-road-form' => 'roads',
         'access-bridge-form' => 'bridges',
         'access-pre-positioning-form' => 'pre_positionings',
@@ -62,8 +63,7 @@ class PendingForms
         'access-injured-form' => 'injureds',
         'access-missing-form' => 'missing',
         'access-damaged-houses-form' => 'damaged_house_reports',
-        'access-affected-tourists-form' => 'affected_tourists',
-        'access-assistance-provided-lgus-form' => 'assistance_provided_lgus',
+        'access-tourist-form' => 'affected_tourists',
         'access-suspension-classes-form' => 'suspension_of_classes',
         'access-suspension-work-form' => 'suspension_of_works',
     ];
@@ -147,32 +147,18 @@ class PendingForms
     /** @return array<int, object{table_name: string, user_id: int, aggregate: int, last_updated: string|null}> */
     private static function groupedSubmissions(Typhoon $disaster): array
     {
-        $grammar = DB::getQueryGrammar();
-        $selects = [];
-        $bindings = [];
-        // Table names come from the constant above, never from the request.
-        foreach (array_keys(self::FORM_TABLES) as $table) {
-            $selects[] = 'select ? as table_name, user_id, COUNT(*) as aggregate, MAX(updated_at) as last_updated from '
-                .$grammar->wrapTable($table).' where disaster_id = ? and user_id is not null group by user_id';
-            array_push($bindings, $table, $disaster->id);
-        }
+        $tables = array_keys(self::FORM_TABLES);
+        $bindings = array_merge(...array_map(fn (string $table) => [$table, $disaster->id], $tables));
 
         try {
-            return DB::select(implode(' union all ', $selects), $bindings);
+            return DB::select(implode(' union all ', array_map([self::class, 'countsSql'], $tables)), $bindings);
         } catch (QueryException $e) {
             // A form table missing on this install: fall back to reading the tables one by one.
             Log::warning('Form submission union failed; reading tables one by one', ['error' => $e->getMessage()]);
             $rows = [];
-            foreach (array_keys(self::FORM_TABLES) as $table) {
+            foreach ($tables as $table) {
                 try {
-                    foreach (DB::table($table)
-                        ->where('disaster_id', $disaster->id)
-                        ->whereNotNull('user_id')
-                        ->groupBy('user_id')
-                        ->get(['user_id', DB::raw('COUNT(*) as aggregate'), DB::raw('MAX(updated_at) as last_updated')]) as $row) {
-                        $row->table_name = $table;
-                        $rows[] = $row;
-                    }
+                    array_push($rows, ...DB::select(self::countsSql($table), [$table, $disaster->id]));
                 } catch (QueryException) {
                     // Skip the missing table.
                 }
@@ -180,6 +166,28 @@ class PendingForms
 
             return $rows;
         }
+    }
+
+    /**
+     * One table's row count per account (bindings: table name, disaster id). Pre-emptive rows
+     * also count for the barangay they name, since it sees and edits them on its form.
+     */
+    private static function countsSql(string $table): string
+    {
+        // Table names come from the constant above, never from the request.
+        $grammar = DB::getQueryGrammar();
+        $rows = $grammar->wrapTable($table);
+
+        if ($table === 'pre_emptive_reports') {
+            $users = $grammar->wrapTable('users');
+
+            return "select ? as table_name, {$users}.id as user_id, COUNT(*) as aggregate, MAX({$rows}.updated_at) as last_updated from {$rows}"
+                ." join {$users} on {$users}.id = {$rows}.user_id or {$users}.name = {$rows}.barangay"
+                ." where {$rows}.disaster_id = ? group by {$users}.id";
+        }
+
+        return "select ? as table_name, user_id, COUNT(*) as aggregate, MAX(updated_at) as last_updated from {$rows}"
+            .' where disaster_id = ? and user_id is not null group by user_id';
     }
 
     /**
@@ -227,9 +235,14 @@ class PendingForms
         $selects = [];
         $bindings = [];
         foreach ($tables as $table) {
-            $isShared = $table === self::AGRICULTURE_TABLE;
-            $selects[] = 'select ? as table_name from (select 1) as probe where exists (select 1 from '.$grammar->wrapTable($table).' where disaster_id = ?'.($isShared ? '' : ' and user_id = ?').')';
-            array_push($bindings, $table, $disaster->id, ...($isShared ? [] : [$user->id]));
+            [$owner, $ownerBindings] = match ($table) {
+                self::AGRICULTURE_TABLE => ['', []],
+                // As in countsSql(): an office's row naming this barangay counts as filed.
+                'pre_emptive_reports' => [' and (user_id = ? or barangay = ?)', [$user->id, $user->name]],
+                default => [' and user_id = ?', [$user->id]],
+            };
+            $selects[] = 'select ? as table_name from (select 1) as probe where exists (select 1 from '.$grammar->wrapTable($table).' where disaster_id = ?'.$owner.')';
+            array_push($bindings, $table, $disaster->id, ...$ownerBindings);
         }
 
         return array_column(DB::select(implode(' union all ', $selects), $bindings), 'table_name');
