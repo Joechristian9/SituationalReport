@@ -14,7 +14,7 @@
 
 ## 3. Authorization and data access
 - Routes are grouped by `auth` + `role:user|admin` or `role:admin`; feature forms use `permission:<name>`. Put new routes in the correct group, never outside `auth`.
-- Non-admin list queries must be limited with `$user->getAccessibleUserIds('read')` (or `'write'` for mutations), as in `InjuredController::index`.
+- Non-admin list queries must be limited with `$user->getAccessibleUserIds('read')` (or `'write'` for mutations), as in `ResponseOperationController`. Bulk saves look up row ids with `findWritableRecord` from `AuthorizesRecordWrites`.
 - Enforce access on the server. Hiding a button in React is not security.
 - Validate with `$request->validate()` or a FormRequest in `app/Http/Requests`. Never use `$request->all()` for mass assignment; set `$fillable` explicitly.
 
@@ -27,17 +27,22 @@
 - Schema changes only through new migrations. Never edit a migration that has already run in production; add a new one.
 - Name migrations by action (`add_x_to_y_table`, `change_...`). Make them reversible (`down()`).
 - Be careful with MySQL: check column types before `change()`; set defaults/nullable explicitly.
+- `deploy-production.sh` runs `migrate --force` on live rows, and MySQL can't roll back a schema change. Keep each migration to one change.
+- Tests and CI run on SQLite, so passing tests don't prove a migration or raw query works on MySQL. Read the SQL with `php artisan migrate --pretend`, and say when MySQL was not checked.
+- Wrap new multi-row writes in a transaction (see `InjuredController::store`), so a failure can't leave half a save for an offline retry to repeat. Pass values to raw SQL as bindings, never in the string.
 - Seeders are for dev/demo data only. Never run seeders, `migrate:fresh`, or `db:wipe` against production data.
+- Keep one fact in one place: use foreign keys instead of copied names, and compute totals instead of storing them. Audit and modification snapshots are the deliberate exception.
+- Measure before optimizing, and read query plans on MySQL, not SQLite.
 - Avoid N+1: eager load (`with()`), cap list queries (`limit`/paginate, as existing controllers do), select only needed columns for big tables.
 
 ## 6. Frontend (React/Inertia)
 - **Always invoke the `ui-ux-pro-max` skill before designing, building, restyling, or reviewing any page or component in `resources/js`.** Apply its guidance (layout, typography, color, accessibility, interaction, responsive behavior) while still reusing the existing components and Tailwind setup below. Do not skip it for "small" UI changes.
 - The design system lives in `design-system/situational-report/MASTER.md` (page overrides in `design-system/situational-report/pages/<page>.md`, which win over MASTER). Read it before UI work. Use semantic tokens (`bg-primary`, `text-muted-foreground`, `border-border`), never raw `blue-*`/`gray-*`/`slate-*` palette classes in new code.
-- Reuse `Components/ui` (Button, Dialog, Table, Select, Tabs…) and shared pieces (`SearchBar`, `Pagination`, `RowsPerPage`, `AddRowButton`, `DownloadExcelButton`, `useTableFilter`) before building new ones.
+- Reuse `Components/ui` (Button, Dialog, Table, Select, Tabs…) and shared pieces (`SearchBar`, `TablePagination`, `RowsPerPage`, `AddRowButton`, `DownloadExcelButton`, `useTableFilter`) before building new ones.
 - Style with Tailwind utilities and the `cn()` helper from `lib/utils.js`. No inline style blocks or new CSS frameworks.
 - Forms use Inertia `useForm`/`router`; show server errors with `InputError`; use `sonner`/`react-hot-toast` already in use (do not add a third toast library).
-- Respect the disaster state in the UI (`DisasterStatusBanner`, `NoActiveDisasterNotification`, `useActiveForms`) — disable forms when there is no active disaster.
-- Pages are PascalCase `.jsx`; hooks start with `use`. Do not leave copies like `AuthenticatedLayout copy.jsx`.
+- Respect the disaster state in the UI (`DisasterStatusAlert` and its `formsDisabled` prop) — disable forms when there is no active disaster.
+- Pages are PascalCase `.jsx`; hooks start with `use`. Do not leave copies of files behind.
 - After adding routes, regenerate Ziggy if needed (`php artisan ziggy:generate`). Restart Vite when env/config changes.
 - UI is used on phones in the field: new screens must work at mobile widths.
 
@@ -52,20 +57,22 @@
 - Don't hard-code user-facing strings that already exist as messages (e.g. disaster status errors); reuse them.
 
 ## 9. Testing and verification
-- Pest is the test framework. New features and bug fixes get a Feature test covering: allowed role, forbidden role, no active disaster, and the happy path.
+- Pest tests PHP and Vitest tests JS logic (`*.test.js`). New features and bug fixes get a Feature test covering: allowed role, forbidden role, no active disaster, and the happy path.
 - **Tests must never touch MySQL.** They use `RefreshDatabase`, which drops every table. A cached config (`bootstrap/cache/config.php`) makes Laravel ignore `phpunit.xml` and run them on the real database. Run `php artisan config:clear` before testing; `tests/TestCase.php` aborts unless the connection is in-memory SQLite — never remove that guard. Never run `config:cache` locally.
-- Run `php artisan test` (or `--filter`) before saying work is done; run `npm run build` for frontend changes. Report real results.
+- Run `php artisan test` (or `--filter`) before saying work is done; run `npm test` and `npm run build` for frontend changes. Report real results.
 - Fix the root cause. Do not paper over with temporary routes or data-patching scripts.
 
 ## 10. Hygiene and safety
 - No new files in the project root (no more `*_SUMMARY.md`, `check_*.php`, `fix_*.php`). Docs go in a `docs/` folder only when asked.
-- Never commit `.env`, deploy zips, `node_modules`, or `vendor`. Do not print or log secrets.
-- Temporary debugging routes (like `/fix-casualties-disaster-id` in `routes/web.php`) must not be added; existing ones should be removed once the data fix is done.
+- Never edit `.env` without being asked. Never commit `.env`, deploy zips, `node_modules`, or `vendor`. Do not print or log secrets.
+- **This repo is public.** No real or new passwords, tokens, or keys in code, seeders, docs, or commit messages, even after a later delete (git history keeps them). Demo accounts use `DatabaseSeeder::PASSWORD` and nothing else; real passwords are set on the server.
+- Temporary debugging routes must not be added to `routes/web.php`.
 - Git: small commits, message style `type: short description` (e.g. `fix: audit logs`, `redesign: user management`). Commit/push only when asked.
 - Deploy scripts (`deploy-*.ps1`, `deploy-production.sh`) are read-only references unless the user asks to change them.
 
 ## 11. Working method
-1. Look at the closest existing feature first and mirror it.
+1. Trace the code you will change (route, middleware, controller, service, model, page, tests, callers), then mirror the closest existing feature.
 2. Make the smallest change that solves the problem; no drive-by refactors.
 3. Ask before destructive actions (data deletion, migrations on live data, dependency upgrades).
 4. State what you ran to verify and what you did not.
+5. Never state as fact something you did not read or run. A value you skipped or masked is "not checked", not a guess to fill in.

@@ -4,7 +4,7 @@ Laravel 12 + Inertia React disaster situational-reporting app (MySQL, XAMPP, Vit
 
 Development rules: @.claude/rules/development.md
 
-Use the `sitrep-developer` agent (`.claude/agents/sitrep-developer.md`) for feature work and fixes.
+Use the `sitrep-developer` agent (`.claude/agents/sitrep-developer.md`) for feature work and fixes that touch the frontend, and `sitrep-backend` (`.claude/agents/sitrep-backend.md`) for backend-only work.
 
 ## Commands
 - Backend dev: `php artisan serve` (or XAMPP), frontend: `npm run dev`
