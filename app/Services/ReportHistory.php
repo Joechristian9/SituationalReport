@@ -32,7 +32,7 @@ class ReportHistory
     public static function forUser(string $model, array $fields, User $user, array $with = [], bool $ownAccountsOnly = true, ?Closure $extra = null, ?Closure $rows = null): array
     {
         $limitToAccounts = $ownAccountsOnly && ! $user->isAdmin();
-        $accountIds = $limitToAccounts ? $user->getAccessibleUserIds('read') : [];
+        $accountIds = $limitToAccounts && ! $rows ? $user->getAccessibleUserIds('read') : [];
         $visible = $rows ?? fn ($query) => $query->whereIn('user_id', $accountIds);
         $request = request();
         $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : self::PER_PAGE[0];
