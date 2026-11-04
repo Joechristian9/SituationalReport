@@ -327,7 +327,7 @@ export const HISTORY_TYPES = {
 /** Columns every history table ends with. */
 export const TRAILING_COLUMNS = [
     { name: 'updated_at', label: 'Last updated', value: (report) => formatDateTime(report.updated_at) },
-    { name: 'user', label: 'Updated by', value: (report) => report.user?.name ?? '—' },
+    { name: 'user', label: 'Entered by', value: (report) => report.user?.name ?? '—' },
 ];
 
 export function formatDateTime(value) {

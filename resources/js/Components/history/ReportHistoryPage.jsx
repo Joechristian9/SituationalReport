@@ -295,7 +295,7 @@ const ReportCard = memo(function ReportCard({ report, columns }) {
         .filter((column) => !TRAILING_NAMES.includes(column.name))
         .map((column) => ({ column, text: cellText(column, report) }))
         .filter(({ text }) => text !== '');
-    const updatedBy = report.user?.name;
+    const enteredBy = report.user?.name;
     const updatedAt = cellText(TRAILING_COLUMNS[0], report);
 
     return (
@@ -323,10 +323,9 @@ const ReportCard = memo(function ReportCard({ report, columns }) {
                 </dl>
             )}
 
-            {(updatedBy || updatedAt) && (
+            {(enteredBy || updatedAt) && (
                 <p className="mt-3 border-t border-border pt-2.5 text-xs text-muted-foreground">
-                    {updatedBy ? `Updated by ${updatedBy}` : 'Updated'}
-                    {updatedAt ? ` · ${updatedAt}` : ''}
+                    {[enteredBy && `Entered by ${enteredBy}`, updatedAt && `Last updated ${updatedAt}`].filter(Boolean).join(' · ')}
                 </p>
             )}
         </article>
