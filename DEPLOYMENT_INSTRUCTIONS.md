@@ -103,7 +103,7 @@ php artisan route:cache
 1. **Login to the system:**
    - URL: `https://pitonmain.com`
    - Email: `admin@gmail.com`
-   - Password: `admin123`
+   - Password: the admin password set on this server
 
 2. **Check these pages:**
    - `/dashboard` - Should show charts with data
@@ -141,19 +141,20 @@ php artisan optimize:clear
 
 ## 📝 Default Users After Fresh Installation
 
-| Name | Email | Password | Role |
-|------|-------|----------|------|
-| Admin | admin@gmail.com | wardead12345 | Admin |
-| CDRRMO | cdrrmo@gmail.com | wardead12345 | User (All Permissions) |
-| Ilagan Water District | iwd@gmail.com | wardead12345 | User (Water Service) |
-| ISELCO II | iselco2@gmail.com | wardead12345 | User (Electricity) |
-| CEO | ceo@gmail.com | wardead12345 | User (Roads/Bridges) |
-| PNP | pnp@gmail.com | wardead12345 | User (Roads/Bridges/Incidents) |
-| CSWDO | cswdo@gmail.com | wardead12345 | User (Evacuations/Damaged Houses) |
-| CAO | cao@gmail.com | wardead12345 | User (Agriculture) |
-| BDRRMC | bdrrmc@gmail.com | wardead12345 | User (Multiple Forms) |
+| Name | Email | Role |
+|------|-------|------|
+| Admin | admin@gmail.com | Admin |
+| CDRRMO | cdrrmo@gmail.com | User (All Permissions) |
+| Ilagan Water District | iwd@gmail.com | User (Water Service) |
+| ISELCO II | iselco2@gmail.com | User (Electricity) |
+| CEO | ceo@gmail.com | User (Roads/Bridges) |
+| PNP | pnp@gmail.com | User (Roads/Bridges/Incidents) |
+| CSWDO | cswdo@gmail.com | User (Evacuations/Damaged Houses) |
+| CAO | cao@gmail.com | User (Agriculture) |
+| BDRRMC | bdrrmc@gmail.com | User (Multiple Forms) |
 
-Barangay accounts (`<barangay>@barangay.local`) get the same password. These apply only to a fresh
+These accounts and the barangay accounts (`<barangay>@barangay.local`) all use `DatabaseSeeder::PASSWORD`, which is
+public in this repo, so change them on any server reachable from the internet. These apply only to a fresh
 install: seeding never changes the passwords of accounts that already exist, so a running server keeps its own.
 
 ---
