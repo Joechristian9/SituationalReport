@@ -16,7 +16,7 @@ it('refuses report data to an account without a role', function (string $route) 
 
 it('serves report history to barangay users', function (string $route) {
     $this->actingAs(userWithRole('user'))->getJson(route($route))->assertOk();
-})->with($historyRoutes);
+})->with(array_diff($historyRoutes, ['api.pre-emptive-history'])); // needs its form's permission, see PreEmptiveReportsTest
 
 it('exposes only the reporter\'s id and name in incident history', function () {
     $reporter = userWithRole('user');

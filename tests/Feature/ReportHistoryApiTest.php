@@ -12,7 +12,7 @@ function historyDisaster(string $name, string $startedAt): Typhoon
 }
 
 it('returns every history as a list grouped by disaster, newest disaster first', function (string $route, string $model, array $fields) {
-    $user = userWithRole('user');
+    $user = userWithPermissions('access-pre-emptive-form');
     $older = historyDisaster('Older Storm', '2026-01-01');
     $newer = historyDisaster('Newer Storm', '2026-06-01');
     $model::create(['disaster_id' => $older->id, 'user_id' => $user->id] + $fields);

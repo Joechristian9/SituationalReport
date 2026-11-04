@@ -100,7 +100,7 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     // Pre-Emptive History Page - accessible even without active typhoon
     Route::get('/pre-emptive/history', function () {
         return inertia('PreEmptiveHistory/Index');
-    })->name('pre-emptive.history');
+    })->middleware('role_or_permission:admin|access-pre-emptive-form')->name('pre-emptive.history');
 
     // Agriculture History Page - accessible even without active typhoon
     Route::get('/agriculture/history', [AgricultureReportController::class, 'history'])
@@ -405,7 +405,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     Route::get('/api/water-service-history/{typhoon}/pdf', [SituationOverviewController::class, 'viewWaterServicePdf'])->middleware('throttle:pdf')->name('api.water-service-history.pdf');
     Route::get('/api/weather-history', [SituationOverviewController::class, 'getWeatherHistory'])->name('api.weather-history');
     Route::get('/api/communication-history', [SituationOverviewController::class, 'getCommunicationHistory'])->name('api.communication-history');
-    Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])->name('api.pre-emptive-history');
+    Route::get('/api/pre-emptive-history', [PreEmptiveReportController::class, 'getPreEmptiveHistory'])
+        ->middleware('role_or_permission:admin|access-pre-emptive-form')
+        ->name('api.pre-emptive-history');
     Route::get('/api/agriculture-history', [AgricultureReportController::class, 'apiHistory'])
         ->middleware('permission:access-agriculture-form')
         ->name('api.agriculture-history');

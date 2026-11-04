@@ -56,6 +56,14 @@ it('does not let an account without the pre-emptive permission save', function (
     expect(PreEmptiveReport::count())->toBe(0);
 });
 
+it('keeps the pre-emptive history from accounts without the form permission', function (string $route) {
+    Permission::findOrCreate('access-pre-emptive-form');
+
+    $this->actingAs(userWithRole('user'))->get(route($route))->assertForbidden();
+    $this->actingAs(preEmptiveAccount())->get(route($route))->assertOk();
+    $this->actingAs(userWithRole('admin'))->get(route($route))->assertOk();
+})->with(['api.pre-emptive-history', 'pre-emptive.history']);
+
 function preEmptiveBarangay(string $name): User
 {
     $user = preEmptiveAccount();
