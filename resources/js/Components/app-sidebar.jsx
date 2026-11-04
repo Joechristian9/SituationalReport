@@ -22,7 +22,7 @@ import {
     Users,
     HeartHandshake,
     Calendar,
-    Cloud,
+    Siren,
     LayoutDashboard,
     UserCircle,
     ClipboardCheck,
@@ -137,7 +137,7 @@ export function AppSidebar({ ...props }) {
                     title: "Disaster Management",
                     url: route("disasters.index"),
                     roles: ["admin"],
-                    icon: Cloud,
+                    icon: Siren,
                 },
                 {
                     title: "Form Submission Status",

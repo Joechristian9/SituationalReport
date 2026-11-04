@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
-import { AlertTriangle, Cloud, CheckCircle, Calendar, User } from 'lucide-react';
+import { AlertTriangle, Siren, CheckCircle, Calendar, User } from 'lucide-react';
 import { m as motion } from 'framer-motion';
 import { format } from 'date-fns';
 
@@ -54,7 +54,7 @@ export default function DisasterStatusAlert({ typhoon, hasActive, formsDisabled 
                         <div className="flex items-center justify-between flex-wrap gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-slate-600 rounded-full">
-                                    <Cloud className="w-5 h-5 text-white" />
+                                    <CheckCircle className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
                                     <CardTitle className="text-slate-900 text-lg">Disaster Report Ended</CardTitle>
@@ -103,7 +103,7 @@ export default function DisasterStatusAlert({ typhoon, hasActive, formsDisabled 
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-600 rounded-full">
-                                <Cloud className="w-5 h-5 text-white" />
+                                <Siren className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <CardTitle className="text-blue-900 text-lg">Active Disaster: {typhoon.name}</CardTitle>

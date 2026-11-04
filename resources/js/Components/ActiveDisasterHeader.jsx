@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/Components/ui/badge';
-import { Cloud, CheckCircle } from 'lucide-react';
+import { Siren, CheckCircle } from 'lucide-react';
 import { m as motion } from 'framer-motion';
 
 /**
@@ -40,7 +40,7 @@ export default function ActiveTyphoonHeader({ typhoon, hasActive }) {
                 }`}
                 title={`${typhoon.name} · ${isPaused ? 'Paused' : 'Active'}`}
             >
-                <Cloud className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <Siren className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span className="truncate text-xs font-semibold sm:text-sm">{typhoon.name}</span>
                 {isActive && (
                     <Badge className="shrink-0 bg-white px-1.5 py-0.5 text-xs text-blue-600 hover:bg-white/90 sm:px-2">

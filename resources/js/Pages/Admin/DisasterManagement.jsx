@@ -13,7 +13,7 @@ import InputError from '@/Components/InputError';
 import { buildSuggestions } from '@/lib/searchSuggestions';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { Clock, Download, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
+import { Clock, Download, FileClock, Plus, StopCircle, Trash2, Loader2, Cloud, Siren, Calendar, AlertTriangle, MoreVertical, Eye, Search, ChevronLeft, ChevronRight, Pause, Play, FileDown, Wind, Waves, CloudRain, Mountain, Flame, CloudLightning, CloudSnow, Droplets, Zap } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -578,7 +578,7 @@ export default function DisasterManagement({ typhoons }) {
     return (
         <AppLayout
             title="Disaster Management"
-            header={<PageTitle icon={Cloud}>Disaster Management</PageTitle>}
+            header={<PageTitle icon={Siren}>Disaster Management</PageTitle>}
             actions={
                 <Button
                     onClick={() => setIsCreateModalOpen(true)}
@@ -758,7 +758,7 @@ export default function DisasterManagement({ typhoons }) {
                     >
                         {typhoons.length === 0 ? (
                             <EmptyState
-                                icon={Cloud}
+                                icon={Siren}
                                 title="No disaster reports yet"
                                 description="Create your first disaster report to get started with data collection."
                                 action={
@@ -945,7 +945,7 @@ export default function DisasterManagement({ typhoons }) {
                     <DialogHeader>
                         <div className="mb-1 flex items-center gap-3 pr-8">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <Cloud className="h-5 w-5" aria-hidden="true" />
+                                <Siren className="h-5 w-5" aria-hidden="true" />
                             </span>
                             <DialogTitle className="text-lg sm:text-xl">Create New Disaster Report</DialogTitle>
                         </div>
@@ -1152,7 +1152,7 @@ export default function DisasterManagement({ typhoons }) {
                                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
                                 aria-hidden="true"
                             >
-                                <Cloud className="h-5 w-5" />
+                                <Siren className="h-5 w-5" />
                             </span>
                             <div className="min-w-0">
                                 <SheetTitle className="break-words text-lg font-semibold leading-snug text-foreground">
