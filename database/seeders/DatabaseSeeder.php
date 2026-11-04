@@ -130,7 +130,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
-            'password' => bcrypt('</walalang_()>'),
+            'password' => bcrypt(self::PASSWORD),
         ]);
         $admin->assignRole($adminRole);
         $admin->givePermissionTo(Permission::all());
