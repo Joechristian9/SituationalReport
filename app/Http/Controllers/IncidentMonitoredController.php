@@ -11,6 +11,7 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class IncidentMonitoredController extends Controller
 {
@@ -41,76 +42,71 @@ class IncidentMonitoredController extends Controller
 
         $savedIncidents = [];
 
-        foreach ($validated['incidents'] as $incident) {
-            // ✅ Skip rows where all values are null or empty
-            $isEmpty = empty(array_filter([
-                $incident['kinds_of_incident'] ?? null,
-                $incident['date_time'] ?? null,
-                $incident['location'] ?? null,
-                $incident['description'] ?? null,
-                $incident['remarks'] ?? null,
-            ]));
+        DB::transaction(function () use ($validated, $activeTyphoon, &$savedIncidents) {
+            foreach ($validated['incidents'] as $incident) {
+                // ✅ Skip rows where all values are null or empty
+                $isEmpty = empty(array_filter([
+                    $incident['kinds_of_incident'] ?? null,
+                    $incident['date_time'] ?? null,
+                    $incident['location'] ?? null,
+                    $incident['description'] ?? null,
+                    $incident['remarks'] ?? null,
+                ]));
 
-            if ($isEmpty) {
-                continue;
-            }
-
-            $data = [
-                'kinds_of_incident' => $incident['kinds_of_incident'] ?? null,
-                'date_time' => $incident['date_time'] ?? null,
-                'location' => $incident['location'] ?? null,
-                'description' => $incident['description'] ?? null,
-                'remarks' => $incident['remarks'] ?? null,
-                'updated_by' => Auth::id(),
-            ];
-
-            // Check if this is an update or create
-            if (! empty($incident['id']) && is_numeric($incident['id'])) {
-                // Update existing record (only own records for non-admin users)
-                $incidentQuery = IncidentMonitored::where('id', $incident['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $incidentQuery->where('user_id', $user->id);
+                if ($isEmpty) {
+                    continue;
                 }
 
-                $incidentMonitored = $incidentQuery->first();
-                if ($incidentMonitored) {
-                    // Only update fields that have changed
-                    $fieldsToUpdate = [];
+                $data = [
+                    'kinds_of_incident' => $incident['kinds_of_incident'] ?? null,
+                    'date_time' => $incident['date_time'] ?? null,
+                    'location' => $incident['location'] ?? null,
+                    'description' => $incident['description'] ?? null,
+                    'remarks' => $incident['remarks'] ?? null,
+                    'updated_by' => Auth::id(),
+                ];
 
-                    if ($incidentMonitored->kinds_of_incident !== ($incident['kinds_of_incident'] ?? null)) {
-                        $fieldsToUpdate['kinds_of_incident'] = $incident['kinds_of_incident'] ?? null;
-                    }
-                    if ($incidentMonitored->date_time !== ($incident['date_time'] ?? null)) {
-                        $fieldsToUpdate['date_time'] = $incident['date_time'] ?? null;
-                    }
-                    if ($incidentMonitored->location !== ($incident['location'] ?? null)) {
-                        $fieldsToUpdate['location'] = $incident['location'] ?? null;
-                    }
-                    if ($incidentMonitored->description !== ($incident['description'] ?? null)) {
-                        $fieldsToUpdate['description'] = $incident['description'] ?? null;
-                    }
-                    if ($incidentMonitored->remarks !== ($incident['remarks'] ?? null)) {
-                        $fieldsToUpdate['remarks'] = $incident['remarks'] ?? null;
-                    }
+                // Check if this is an update or create
+                if (! empty($incident['id']) && is_numeric($incident['id'])) {
+                    // Update existing record
+                    $incidentMonitored = $this->findWritableRecord(IncidentMonitored::class, $incident['id']);
+                    if ($incidentMonitored) {
+                        // Only update fields that have changed
+                        $fieldsToUpdate = [];
 
-                    // Always update updated_by
-                    $fieldsToUpdate['updated_by'] = Auth::id();
+                        if ($incidentMonitored->kinds_of_incident !== ($incident['kinds_of_incident'] ?? null)) {
+                            $fieldsToUpdate['kinds_of_incident'] = $incident['kinds_of_incident'] ?? null;
+                        }
+                        if ($incidentMonitored->date_time !== ($incident['date_time'] ?? null)) {
+                            $fieldsToUpdate['date_time'] = $incident['date_time'] ?? null;
+                        }
+                        if ($incidentMonitored->location !== ($incident['location'] ?? null)) {
+                            $fieldsToUpdate['location'] = $incident['location'] ?? null;
+                        }
+                        if ($incidentMonitored->description !== ($incident['description'] ?? null)) {
+                            $fieldsToUpdate['description'] = $incident['description'] ?? null;
+                        }
+                        if ($incidentMonitored->remarks !== ($incident['remarks'] ?? null)) {
+                            $fieldsToUpdate['remarks'] = $incident['remarks'] ?? null;
+                        }
 
-                    // Only call update if there are changes
-                    if (count($fieldsToUpdate) > 1) { // More than just updated_by
-                        $incidentMonitored->update($fieldsToUpdate);
+                        // Always update updated_by
+                        $fieldsToUpdate['updated_by'] = Auth::id();
+
+                        // Only call update if there are changes
+                        if (count($fieldsToUpdate) > 1) { // More than just updated_by
+                            $incidentMonitored->update($fieldsToUpdate);
+                        }
+                        $savedIncidents[] = $incidentMonitored->fresh();
                     }
-                    $savedIncidents[] = $incidentMonitored->fresh();
+                } else {
+                    // Create new record
+                    $data['user_id'] = Auth::id();
+                    $data['disaster_id'] = $activeTyphoon->id;
+                    $savedIncidents[] = IncidentMonitored::create($data);
                 }
-            } else {
-                // Create new record
-                $data['user_id'] = Auth::id();
-                $data['disaster_id'] = $activeTyphoon->id;
-                $savedIncidents[] = IncidentMonitored::create($data);
             }
-        }
+        });
 
         // Return JSON response with saved records
         if ($request->expectsJson()) {
@@ -152,6 +148,7 @@ class IncidentMonitoredController extends Controller
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(IncidentMonitored::class)
+            ->readableBy(Auth::user(), IncidentMonitored::class)
             ->with('user')
             ->latest()
             ->get();

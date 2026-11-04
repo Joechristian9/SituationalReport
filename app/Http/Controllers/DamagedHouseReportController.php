@@ -10,6 +10,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DamagedHouseReportController extends Controller
 {
@@ -34,36 +35,33 @@ class DamagedHouseReportController extends Controller
             'damaged_houses' => 'required|array',
             'damaged_houses.*.id' => 'nullable|integer',
             'damaged_houses.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(DamagedHouseReport::class, $request->input('damaged_houses')))],
-            'damaged_houses.*.partially' => 'nullable|integer|min:0',
-            'damaged_houses.*.totally' => 'nullable|integer|min:0',
+            'damaged_houses.*.partially' => 'nullable|integer|min:0|max:1000000',
+            'damaged_houses.*.totally' => 'nullable|integer|min:0|max:1000000',
         ]);
 
-        foreach ($validated['damaged_houses'] as $reportData) {
-            // Empty-row checks below use what was typed; an empty barangay is saved as the reporter's own.
-            $barangay = Barangays::forRow($reportData['barangay'] ?? null, Auth::user());
-            // If an ID exists and is numeric, try to find and update that specific record
-            if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
-                $reportQuery = DamagedHouseReport::where('id', $reportData['id']);
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['damaged_houses'] as $reportData) {
+                // Empty-row checks below use what was typed; an empty barangay is saved as the reporter's own.
+                $barangay = Barangays::forRow($reportData['barangay'] ?? null, Auth::user());
+                // If an ID exists and is numeric, try to find and update that specific record
+                if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
+                    // An id this account can't change is skipped. New rows always arrive with a null id.
+                    $report = $this->findWritableRecord(DamagedHouseReport::class, $reportData['id']);
 
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $reportQuery->where('user_id', $user->id);
+                    if ($report) {
+                        // Update existing record
+                        $report->update([
+                            'barangay' => $barangay,
+                            'partially' => $reportData['partially'] ?? 0,
+                            'totally' => $reportData['totally'] ?? 0,
+                            'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
+                            'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
                 }
-
-                $report = $reportQuery->first();
-
-                if ($report) {
-                    // Update existing record
-                    $report->update([
-                        'barangay' => $barangay,
-                        'partially' => $reportData['partially'] ?? 0,
-                        'totally' => $reportData['totally'] ?? 0,
-                        'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
-                        'disaster_id' => $activeTyphoon->id,
-                        'updated_by' => Auth::id(),
-                    ]);
-                } else {
-                    // ID provided but doesn't exist in DB - treat as new record
+                // If no ID or null, it's a new record. We create it.
+                else {
                     // Skip empty rows
                     if (is_null($reportData['barangay']) && ($reportData['partially'] ?? 0) == 0 && ($reportData['totally'] ?? 0) == 0) {
                         continue;
@@ -80,24 +78,7 @@ class DamagedHouseReportController extends Controller
                     ]);
                 }
             }
-            // If no ID or null, it's a new record. We create it.
-            else {
-                // Skip empty rows
-                if (is_null($reportData['barangay']) && ($reportData['partially'] ?? 0) == 0 && ($reportData['totally'] ?? 0) == 0) {
-                    continue;
-                }
-
-                DamagedHouseReport::create([
-                    'barangay' => $barangay,
-                    'partially' => $reportData['partially'] ?? 0,
-                    'totally' => $reportData['totally'] ?? 0,
-                    'total' => ($reportData['partially'] ?? 0) + ($reportData['totally'] ?? 0),
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
-            }
-        }
+        });
 
         // Return the fresh data after save
         $user = Auth::user();
@@ -128,8 +109,8 @@ class DamagedHouseReportController extends Controller
 
         $validated = $request->validate([
             'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$damagedHouseReport->barangay])],
-            'partially' => 'nullable|integer|min:0',
-            'totally' => 'nullable|integer|min:0',
+            'partially' => 'nullable|integer|min:0|max:1000000',
+            'totally' => 'nullable|integer|min:0|max:1000000',
         ]);
 
         if (array_key_exists('barangay', $validated)) {
@@ -146,23 +127,12 @@ class DamagedHouseReportController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     */
-    /*
-    public function destroy(DamagedHouseReport $damagedHouseReport)
-    {
-        $damagedHouseReport->delete();
-
-        return back()->with('success', 'Damaged house record deleted successfully.');
-    }
-    */
-
-    /**
      * Get modification history for damaged houses
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(DamagedHouseReport::class)
+            ->readableBy(Auth::user(), DamagedHouseReport::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

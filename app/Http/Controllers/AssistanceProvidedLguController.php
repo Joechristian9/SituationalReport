@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssistanceProvidedLgu;
+use App\Models\Typhoon;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class AssistanceProvidedLguController extends Controller
 {
@@ -18,9 +19,9 @@ class AssistanceProvidedLguController extends Controller
         $typhoonId = $this->getActiveTyphoonId();
         $user = Auth::user();
 
-        $assistancesQuery = AssistanceProvidedLgu::when($typhoonId, fn($q) => $q->where('disaster_id', $typhoonId));
+        $assistancesQuery = AssistanceProvidedLgu::when($typhoonId, fn ($q) => $q->where('disaster_id', $typhoonId));
 
-        if ($user && !$user->isAdmin()) {
+        if ($user && ! $user->isAdmin()) {
             $assistancesQuery->where('user_id', $user->id);
         }
 
@@ -39,36 +40,40 @@ class AssistanceProvidedLguController extends Controller
         }
 
         // Get active typhoon
-        $activeTyphoon = \App\Models\Typhoon::getActiveTyphoon();
+        $activeTyphoon = Typhoon::getActiveTyphoon();
 
         $validated = $request->validate([
             'assistances' => 'required|array',
 
-            'assistances.*.province'          => 'nullable|string|max:255',
-            'assistances.*.city'              => 'nullable|string|max:255',
-            'assistances.*.barangay'          => 'nullable|string|max:255',
+            'assistances.*.province' => 'nullable|string|max:255',
+            'assistances.*.city' => 'nullable|string|max:255',
+            'assistances.*.barangay' => 'nullable|string|max:255',
             'assistances.*.families_affected' => 'nullable|string|max:255',
             'assistances.*.families_assisted' => 'nullable|string|max:255',
-            'assistances.*.cluster_type'      => 'nullable|string|max:255',
-            'assistances.*.quantity'          => 'nullable|string|max:255',
-            'assistances.*.unit'              => 'nullable|string|max:255',
-            'assistances.*.cost_per_unit'     => 'nullable|numeric|min:0',
-            'assistances.*.amount'            => 'nullable|numeric|min:0',
-            'assistances.*.source'            => 'nullable|string|max:255',
-            'assistances.*.remarks'           => 'nullable|string',
+            'assistances.*.cluster_type' => 'nullable|string|max:255',
+            'assistances.*.quantity' => 'nullable|string|max:255',
+            'assistances.*.unit' => 'nullable|string|max:255',
+            'assistances.*.cost_per_unit' => 'nullable|numeric|min:0|max:9999999999.99',
+            'assistances.*.amount' => 'nullable|numeric|min:0|max:9999999999.99',
+            'assistances.*.source' => 'nullable|string|max:255',
+            'assistances.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['assistances'] as $assistance) {
-            $isEmpty = empty(array_filter($assistance, fn($value) => !is_null($value) && $value !== ''));
-            if ($isEmpty) continue;
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['assistances'] as $assistance) {
+                $isEmpty = empty(array_filter($assistance, fn ($value) => ! is_null($value) && $value !== ''));
+                if ($isEmpty) {
+                    continue;
+                }
 
-            AssistanceProvidedLgu::create([
-                ...$assistance,
-                'user_id'    => Auth::id(),
-                'updated_by' => Auth::id(),
-                'disaster_id' => $activeTyphoon->id,
-            ]);
-        }
+                AssistanceProvidedLgu::create([
+                    ...$assistance,
+                    'user_id' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'disaster_id' => $activeTyphoon->id,
+                ]);
+            }
+        });
 
         return back()->with('success', 'LGU Assistance saved successfully.');
     }
@@ -78,18 +83,18 @@ class AssistanceProvidedLguController extends Controller
         $this->authorizeRecordWrite($assistanceProvidedLgu);
 
         $validated = $request->validate([
-            'province'          => 'nullable|string|max:255',
-            'city'              => 'nullable|string|max:255',
-            'barangay'          => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'barangay' => 'nullable|string|max:255',
             'families_affected' => 'nullable|string|max:255',
             'families_assisted' => 'nullable|string|max:255',
-            'cluster_type'      => 'nullable|string|max:255',
-            'quantity'          => 'nullable|string|max:255',
-            'unit'              => 'nullable|string|max:255',
-            'cost_per_unit'     => 'nullable|numeric|min:0',
-            'amount'            => 'nullable|numeric|min:0',
-            'source'            => 'nullable|string|max:255',
-            'remarks'           => 'nullable|string',
+            'cluster_type' => 'nullable|string|max:255',
+            'quantity' => 'nullable|string|max:255',
+            'unit' => 'nullable|string|max:255',
+            'cost_per_unit' => 'nullable|numeric|min:0|max:9999999999.99',
+            'amount' => 'nullable|numeric|min:0|max:9999999999.99',
+            'source' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string',
         ]);
 
         $assistanceProvidedLgu->update([
@@ -98,12 +103,5 @@ class AssistanceProvidedLguController extends Controller
         ]);
 
         return back()->with('success', 'LGU Assistance updated successfully.');
-    }
-
-    public function destroy(AssistanceProvidedLgu $assistanceProvidedLgu)
-    {
-        $assistanceProvidedLgu->delete();
-
-        return back()->with('success', 'LGU Assistance deleted successfully.');
     }
 }

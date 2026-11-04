@@ -289,6 +289,15 @@
         </p>
     </div>
 
+    @if(!empty($cutOffNotes))
+        <p style="font-size: 12px; font-style: italic; margin-bottom: 20px;">
+            Long sections list only their newest rows; totals count every row.
+            @foreach($cutOffNotes as $section => $note)
+                <br>{{ $section }}: {{ $note }}
+            @endforeach
+        </p>
+    @endif
+
     <div class="main-title">
         I. SITUATION OVERVIEW
     </div>

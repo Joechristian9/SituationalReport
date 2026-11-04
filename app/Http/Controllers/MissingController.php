@@ -12,6 +12,7 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 
 class MissingController extends Controller
@@ -36,7 +37,7 @@ class MissingController extends Controller
             'missing' => 'required|array',
             'missing.*.id' => 'nullable',
             'missing.*.name' => 'nullable|string|max:255',
-            'missing.*.age' => 'nullable|integer',
+            'missing.*.age' => 'nullable|integer|max:150',
             'missing.*.sex' => 'nullable|string|max:255',
             'missing.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(Missing::class, $request->input('missing')))],
             'missing.*.address' => 'nullable|string',
@@ -46,61 +47,55 @@ class MissingController extends Controller
 
         $savedMissing = [];
 
-        foreach ($validated['missing'] as $missingData) {
-            // Copy missing data but exclude sex and id for empty check
-            $dataToCheck = $missingData;
-            unset($dataToCheck['sex']);
-            unset($dataToCheck['id']);
-            // Pre-filled on new rows, so on its own it does not make a row worth saving.
-            unset($dataToCheck['barangay']);
+        DB::transaction(function () use ($validated, $activeTyphoon, &$savedMissing) {
+            foreach ($validated['missing'] as $missingData) {
+                // Copy missing data but exclude sex and id for empty check
+                $dataToCheck = $missingData;
+                unset($dataToCheck['sex']);
+                unset($dataToCheck['id']);
+                // Pre-filled on new rows, so on its own it does not make a row worth saving.
+                unset($dataToCheck['barangay']);
 
-            // Remove empty values (null, '', whitespace, 0, '0')
-            $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return ! is_null($value)
-                    && trim((string) $value) !== ''
-                    && $value !== 0
-                    && $value !== '0';
-            });
+                // Remove empty values (null, '', whitespace, 0, '0')
+                $dataToCheck = array_filter($dataToCheck, function ($value) {
+                    return ! is_null($value)
+                        && trim((string) $value) !== ''
+                        && $value !== 0
+                        && $value !== '0';
+                });
 
-            // If nothing left → means only sex was filled OR everything else empty/zero → skip
-            if (empty($dataToCheck)) {
-                continue;
-            }
-
-            $data = [
-                'name' => $missingData['name'] ?? null,
-                'age' => $missingData['age'] ?? null,
-                'sex' => $missingData['sex'] ?? null,
-                'barangay' => Barangays::forRow($missingData['barangay'] ?? null, Auth::user()),
-                'address' => $missingData['address'] ?? null,
-                'cause' => $missingData['cause'] ?? null,
-                'remarks' => $missingData['remarks'] ?? null,
-                'updated_by' => Auth::id(),
-            ];
-
-            // Check if this is an update or create
-            if (! empty($missingData['id']) && is_numeric($missingData['id'])) {
-                // Update existing record (only own records for non-admin users)
-                $missingQuery = Missing::where('id', $missingData['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $accessibleUserIds = $user->getAccessibleUserIds('write');
-                    $missingQuery->whereIn('user_id', $accessibleUserIds);
+                // If nothing left → means only sex was filled OR everything else empty/zero → skip
+                if (empty($dataToCheck)) {
+                    continue;
                 }
 
-                $missingRecord = $missingQuery->first();
-                if ($missingRecord) {
-                    $missingRecord->update($data);
-                    $savedMissing[] = $missingRecord->fresh();
+                $data = [
+                    'name' => $missingData['name'] ?? null,
+                    'age' => $missingData['age'] ?? null,
+                    'sex' => $missingData['sex'] ?? null,
+                    'barangay' => Barangays::forRow($missingData['barangay'] ?? null, Auth::user()),
+                    'address' => $missingData['address'] ?? null,
+                    'cause' => $missingData['cause'] ?? null,
+                    'remarks' => $missingData['remarks'] ?? null,
+                    'updated_by' => Auth::id(),
+                ];
+
+                // Check if this is an update or create
+                if (! empty($missingData['id']) && is_numeric($missingData['id'])) {
+                    // Update existing record
+                    $missingRecord = $this->findWritableRecord(Missing::class, $missingData['id']);
+                    if ($missingRecord) {
+                        $missingRecord->update($data);
+                        $savedMissing[] = $missingRecord->fresh();
+                    }
+                } else {
+                    // Create new record
+                    $data['user_id'] = Auth::id();
+                    $data['disaster_id'] = $activeTyphoon->id;
+                    $savedMissing[] = Missing::create($data);
                 }
-            } else {
-                // Create new record
-                $data['user_id'] = Auth::id();
-                $data['disaster_id'] = $activeTyphoon->id;
-                $savedMissing[] = Missing::create($data);
             }
-        }
+        });
 
         // Return JSON response with saved records
         if ($request->expectsJson()) {
@@ -127,7 +122,7 @@ class MissingController extends Controller
         // 5. Validate the fields for a single missing record
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'age' => 'nullable|integer',
+            'age' => 'nullable|integer|max:150',
             'sex' => 'nullable|string|max:255',
             'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$missing->barangay])],
             'address' => 'nullable|string',
@@ -147,23 +142,12 @@ class MissingController extends Controller
     }
 
     /**
-     * Remove the specified missing person record from storage.
-     *
-     * @return RedirectResponse
-     */
-    public function destroy(Missing $missing)
-    {
-        $missing->delete();
-
-        return back()->with('success', 'Missing person record deleted successfully.');
-    }
-
-    /**
      * Get modification history for Missing records
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(Missing::class)
+            ->readableBy(Auth::user(), Missing::class)
             ->with('user')
             ->latest()
             ->get();

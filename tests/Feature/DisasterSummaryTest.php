@@ -4,6 +4,8 @@ use App\Models\Casualty;
 use App\Models\Injured;
 use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
+use App\Services\DisasterSummary;
+use Illuminate\Support\Facades\DB;
 
 function summaryDisaster(string $name = 'Typhoon Kristine'): Typhoon
 {
@@ -59,4 +61,33 @@ it('returns 404 for an unknown disaster', function () {
     $this->actingAs(userWithRole('admin'))
         ->getJson(route('disasters.summary', 999999))
         ->assertNotFound();
+});
+
+it('adds up every report table in a few queries, counting rows without an account but not as accounts', function () {
+    $disaster = summaryDisaster();
+    $first = userWithRole('user');
+    $second = userWithRole('user');
+    $row = fn (string $table, ?int $userId, array $values = []) => DB::table($table)->insert($values + ['disaster_id' => $disaster->id, 'user_id' => $userId, 'created_at' => now(), 'updated_at' => now()]);
+
+    $row('casualties', $first->id);
+    $row('casualties', $second->id);
+    $row('injureds', $first->id);
+    $row('injureds', $first->id);
+    $row('missing', $second->id);
+    $row('suspension_of_works', null);
+    $row('damaged_house_reports', $first->id, ['total' => 7]);
+    $row('pre_emptive_reports', $first->id, ['total_families' => 2, 'total_persons' => 9]);
+    DB::table('agriculture_reports')->insert(['disaster_id' => $disaster->id, 'crops_affected' => 'Rice', 'created_at' => now(), 'updated_at' => now()]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $summary = DisasterSummary::for($disaster);
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($summary)->toBe([
+        'impact' => ['dead' => 2, 'injured' => 2, 'missing' => 1, 'housesDamaged' => 7],
+        'evacuation' => ['families' => 2, 'persons' => 9],
+        'reports' => ['total' => 9, 'accounts' => 2],
+    ])->and($queries)->toBeLessThanOrEqual(3);
 });

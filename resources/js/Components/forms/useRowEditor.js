@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import axios from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { endpointFor, labelFor, savedMessage } from '@/lib/offline/queue';
+import { endpointFor, labelFor, savedMessage, savedToastOptions } from '@/lib/offline/queue';
 import { applyChoices, askAboutConflicts } from '@/lib/offline/conflicts';
 
 let sequence = 0;
@@ -110,7 +110,7 @@ export default function useRowEditor({ rows, setRows, blankRow, url, key, respon
                     setHasChanges(false);
                     if (historyKey) queryClient.invalidateQueries({ queryKey: historyKey });
                     onSaved?.(response);
-                    toast.success(savedMessage(response, response.data?.message || successMessage));
+                    toast.success(savedMessage(response, response.data?.message || successMessage), savedToastOptions(response));
                     return;
                 } catch (error) {
                     const conflicts = error.response?.status === 409 ? error.response.data?.conflicts : null;

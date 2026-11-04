@@ -140,16 +140,15 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
     // ============= FORM ROUTES (Requires Active Typhoon) =============
     // offline.sync only acts on saves sent later from a device's offline queue.
     // edits.fresh stops a save from undoing a change made meanwhile on another device.
+    // rows.skipped tells the person about rows a save left out because they can't edit them.
     // Each form below is gated by the same permission the UI uses to show it; admins pass.
-    Route::middleware(['typhoon.active', 'offline.sync', 'edits.fresh', 'throttle:report-writes'])->group(function () {
+    Route::middleware(['typhoon.active', 'offline.sync', 'edits.fresh', 'rows.skipped', 'throttle:report-writes'])->group(function () {
 
         /* ---------------- Weather Reports (new API routes) ---------------- */
         Route::post('/weather-reports', [SituationOverviewController::class, 'storeWeather'])
             ->name('weather-reports.store');
         Route::get('/api/weather-reports', [SituationOverviewController::class, 'getReports'])
             ->name('api.weather-reports');
-        Route::get('/api/weather-timeline', [SituationOverviewController::class, 'getWeatherTimeline'])
-            ->name('api.weather-timeline');
 
         /* ---------------- Real-time Typing Indicator ---------------- */
         Route::post('/broadcast-typing', [SituationOverviewController::class, 'broadcastTyping'])
@@ -189,7 +188,9 @@ Route::middleware(['auth', 'role:user|admin'])->group(function () {
 
         // Pre-Emptive Reports - API routes for modernized form
         Route::post('/pre-emptive-reports', [PreEmptiveReportController::class, 'saveReports'])->name('pre-emptive-reports.store');
-        Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications'])->name('modifications.pre-emptive');
+        Route::get('/modifications/pre-emptive', [PreEmptiveReportController::class, 'getModifications'])
+            ->middleware('role_or_permission:admin|access-pre-emptive-form')
+            ->name('modifications.pre-emptive');
 
         // Declaration under State of Calamity
         Route::middleware('role_or_permission:admin|access-declaration-form')->group(function () {

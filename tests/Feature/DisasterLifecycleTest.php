@@ -151,3 +151,19 @@ it('pauses and resumes a disaster', function () {
     $this->actingAs($admin)->postJson(route('disasters.resume', $disaster))->assertOk();
     expect($disaster->fresh())->status->toBe('active')->resumed_by->toBe($admin->id);
 });
+
+it('refuses to delete a disaster that is still running, and deletes it once ended', function (string $status, int $expected, bool $kept) {
+    $disaster = runningDisaster($status);
+    $casualty = Casualty::factory()->create(['disaster_id' => $disaster->id, 'user_id' => userWithRole('user')->id]);
+
+    $this->actingAs(userWithRole('admin'))
+        ->deleteJson(route('disasters.destroy', $disaster), ['password' => 'password'])
+        ->assertStatus($expected);
+
+    expect(Typhoon::whereKey($disaster->id)->exists())->toBe($kept)
+        ->and(Casualty::whereKey($casualty->id)->exists())->toBe($kept);
+})->with([
+    'active' => ['active', 422, true],
+    'paused' => ['paused', 422, true],
+    'ended' => ['ended', 200, false],
+]);

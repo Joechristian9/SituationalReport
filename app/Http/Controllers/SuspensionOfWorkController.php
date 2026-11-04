@@ -9,6 +9,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SuspensionOfWorkController extends Controller
 {
@@ -37,58 +38,44 @@ class SuspensionOfWorkController extends Controller
             'suspension_of_work.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['suspension_of_work'] as $suspensionData) {
-            // If an ID exists and is numeric, try to find and update that specific record
-            if (! empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
-                $suspension = $this->findWritableRecord(SuspensionOfWork::class, $suspensionData['id']);
-                if ($suspension) {
-                    // Update existing record
-                    $suspension->update([
-                        'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                        'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
-                        'remarks' => $suspensionData['remarks'] ?? null,
-                        'updated_by' => Auth::id(),
-                    ]);
-                } else {
-                    // ID provided but doesn't exist in DB - treat as new record
-                    // Skip empty rows
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['suspension_of_work'] as $suspensionData) {
+                // If an ID exists and is numeric, try to find and update that specific record
+                if (! empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
+                    // An id this account can't change is skipped. New rows always arrive with a null id.
+                    $suspension = $this->findWritableRecord(SuspensionOfWork::class, $suspensionData['id']);
+                    if ($suspension) {
+                        // Update existing record
+                        $suspension->update([
+                            'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
+                            'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                            'remarks' => $suspensionData['remarks'] ?? null,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
+                }
+                // If no ID or null, it's a new record. We create it.
+                else {
+                    // Skip rows where all values are null or empty
                     $isEmpty = empty(array_filter($suspensionData, function ($value) {
                         return ! is_null($value) && $value !== '';
                     }));
 
-                    if (! $isEmpty) {
-                        SuspensionOfWork::create([
-                            'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                            'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
-                            'remarks' => $suspensionData['remarks'] ?? null,
-                            'user_id' => Auth::id(),
-                            'updated_by' => Auth::id(),
-                            'disaster_id' => $activeTyphoon->id,
-                        ]);
+                    if ($isEmpty) {
+                        continue;
                     }
+
+                    SuspensionOfWork::create([
+                        'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
+                        'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                        'remarks' => $suspensionData['remarks'] ?? null,
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
                 }
             }
-            // If no ID or null, it's a new record. We create it.
-            else {
-                // Skip rows where all values are null or empty
-                $isEmpty = empty(array_filter($suspensionData, function ($value) {
-                    return ! is_null($value) && $value !== '';
-                }));
-
-                if ($isEmpty) {
-                    continue;
-                }
-
-                SuspensionOfWork::create([
-                    'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                    'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
-                    'remarks' => $suspensionData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
-            }
-        }
+        });
 
         $message = 'Suspension of work saved successfully!';
         // The form replaces its rows with these, so saved rows get their ids and change times
@@ -103,39 +90,12 @@ class SuspensionOfWorkController extends Controller
     }
 
     /**
-     * Update the specified suspension of work record in storage.
-     */
-    public function update(Request $request, SuspensionOfWork $suspensionOfWork)
-    {
-        $validated = $request->validate([
-            'province_city_municipality' => 'nullable|string|max:255',
-            'date_of_suspension' => 'nullable|date',
-            'remarks' => 'nullable|string',
-        ]);
-
-        $suspensionOfWork->update($validated);
-
-        // `updated_by` handled automatically by model boot() if included there
-
-        return back()->with('success', 'Suspension of Work record updated successfully.');
-    }
-
-    /**
-     * Remove the specified suspension of work record from storage.
-     */
-    /* public function destroy(SuspensionOfWork $suspensionOfWork)
-    {
-        $suspensionOfWork->delete();
-
-        return back()->with('success', 'Suspension of Work record deleted successfully.');
-    } */
-
-    /**
      * Get modification history for suspension of work
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(SuspensionOfWork::class)
+            ->readableBy(Auth::user(), SuspensionOfWork::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

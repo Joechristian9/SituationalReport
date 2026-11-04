@@ -56,50 +56,66 @@ class ReportController extends Controller
             return $query;
         };
 
-        // Helper to apply limit conditionally
-        $applyLimit = function ($query) use ($useLimit, $limit) {
-            return $useLimit ? $query->limit($limit) : $query;
+        // Sections cut off by the limit => how much of them is shown.
+        $cutOffNotes = [];
+        $latest = function (string $model, ?string $section = null, array $with = []) use ($queryCondition, $useLimit, $limit, &$cutOffNotes) {
+            $query = $queryCondition($model::query());
+            if (! $useLimit) {
+                return (clone $query)->with($with)->latest()->get();
+            }
+
+            $rows = (clone $query)->with($with)->latest()->limit($limit)->get();
+            if ($section && $rows->count() === $limit && ($total = $query->count()) > $limit) {
+                $cutOffNotes[$section] = "latest {$limit} of {$total}";
+            }
+
+            return $rows;
         };
 
-        // Optimize with select and limit for performance
-        $preEmptiveReports = $applyLimit($queryCondition(PreEmptiveReport::query())
-            ->latest())
-            ->get();
-        $damagedHouses = $applyLimit($queryCondition(DamagedHouseReport::query())
-            ->latest())
-            ->get();
+        // Totals come from SQL over every row, never from the capped lists: page and PDF both print these.
+        $preEmptiveTotals = $queryCondition(PreEmptiveReport::query())->toBase()
+            ->selectRaw('COALESCE(SUM(families), 0) as families, COALESCE(SUM(persons), 0) as persons, COALESCE(SUM(outside_families), 0) as outside_families, COALESCE(SUM(outside_persons), 0) as outside_persons, COALESCE(SUM(total_families), 0) as total_families, COALESCE(SUM(total_persons), 0) as total_persons')
+            ->first();
+        $houseTotals = $queryCondition(DamagedHouseReport::query())->toBase()
+            ->selectRaw('COALESCE(SUM(partially), 0) as partially, COALESCE(SUM(totally), 0) as totally, COALESCE(SUM(total), 0) as total')
+            ->first();
+
+        $preEmptiveReports = $latest(PreEmptiveReport::class, 'Pre-emptive evacuation');
+        $damagedHouses = $latest(DamagedHouseReport::class, 'Damaged houses');
+        $communications = $latest(Communication::class, 'Communications', ['serviceValues.service:id,name,order']);
 
         return [
-            'weatherReports' => $applyLimit($queryCondition(WeatherReport::query())->latest())->get(),
-            'waterLevelReports' => $applyLimit($queryCondition(WaterLevel::query())->latest())->get(),
-            'electricityReports' => $applyLimit($queryCondition(ElectricityService::query())->latest())->get(),
-            'waterServiceReports' => $applyLimit($queryCondition(WaterService::query())->latest())->get(),
-            'communicationReports' => $applyLimit($queryCondition(Communication::query())->latest())->get(),
-            'roadReports' => $applyLimit($queryCondition(Road::query())->latest())->get(),
-            'bridgeReports' => $applyLimit($queryCondition(Bridge::query())->latest())->get(),
-            'agricultureReports' => $applyLimit($queryCondition(AgricultureReport::query())->latest())->get(),
+            'weatherReports' => $latest(WeatherReport::class, 'Weather'),
+            'waterLevelReports' => $latest(WaterLevel::class),
+            'electricityReports' => $latest(ElectricityService::class, 'Electricity'),
+            'waterServiceReports' => $latest(WaterService::class, 'Water services'),
+            'communicationReports' => $communications,
+            // The services added to the form that these rows have a status for, as extra columns.
+            'communicationServices' => $communications->flatMap->serviceValues
+                ->filter(fn ($value) => $value->service && filled($value->status))
+                ->pluck('service')
+                ->unique('id')
+                ->sortBy('order')
+                ->values(),
+            'roadReports' => $latest(Road::class, 'Roads'),
+            'bridgeReports' => $latest(Bridge::class, 'Bridges'),
+            'agricultureReports' => $latest(AgricultureReport::class, 'Agriculture'),
             'preEmptiveReports' => $preEmptiveReports,
-            'uscDeclarations' => $applyLimit($queryCondition(UscDeclaration::query())->latest())->get(),
-            'incidentReports' => $applyLimit($queryCondition(IncidentMonitored::query())->latest())->get(),
-            'prePositioningReports' => $applyLimit($queryCondition(PrePositioning::query())->latest())->get(),
-            'deadCasualties' => $applyLimit($queryCondition(Casualty::query())->latest())->get(),
-            'injuredCasualties' => $applyLimit($queryCondition(Injured::query())->latest())->get(),
-            'missingCasualties' => $applyLimit($queryCondition(Missing::query())->latest())->get(),
-            'affectedTourists' => $applyLimit($queryCondition(AffectedTourist::query())->latest())->get(),
+            'uscDeclarations' => $latest(UscDeclaration::class, 'Declarations'),
+            'incidentReports' => $latest(IncidentMonitored::class, 'Incidents'),
+            'prePositioningReports' => $latest(PrePositioning::class, 'Pre-positioning'),
+            'deadCasualties' => $latest(Casualty::class, 'Dead'),
+            'injuredCasualties' => $latest(Injured::class, 'Injured'),
+            'missingCasualties' => $latest(Missing::class, 'Missing'),
+            'affectedTourists' => $latest(AffectedTourist::class, 'Affected tourists'),
             'damagedHouses' => $damagedHouses,
-            'suspensionOfClasses' => $applyLimit($queryCondition(SuspensionOfClass::query())->latest())->get(),
-            'suspensionOfWork' => $applyLimit($queryCondition(SuspensionOfWork::query())->latest())->get(),
-            'preEmptiveTotals' => [
-                'families' => $preEmptiveReports->sum('families'),
-                'persons' => $preEmptiveReports->sum('persons'),
-                'outside_families' => $preEmptiveReports->sum('outside_families'),
-                'outside_persons' => $preEmptiveReports->sum('outside_persons'),
-                'total_families' => $preEmptiveReports->sum('total_families'),
-                'total_persons' => $preEmptiveReports->sum('total_persons'),
-            ],
-            'grandTotalPartially' => $damagedHouses->sum('partially'),
-            'grandTotalTotally' => $damagedHouses->sum('totally'),
-            'grandTotal' => $damagedHouses->sum('total'),
+            'suspensionOfClasses' => $latest(SuspensionOfClass::class, 'Suspension of classes'),
+            'suspensionOfWork' => $latest(SuspensionOfWork::class, 'Suspension of work'),
+            'preEmptiveTotals' => array_map('intval', (array) $preEmptiveTotals),
+            'grandTotalPartially' => (int) $houseTotals->partially,
+            'grandTotalTotally' => (int) $houseTotals->totally,
+            'grandTotal' => (int) $houseTotals->total,
+            'cutOffNotes' => $cutOffNotes, // last: filled in by the $latest() calls above
         ];
     }
 

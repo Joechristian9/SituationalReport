@@ -11,6 +11,7 @@ use App\Traits\BuildsSubmissionList;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 
 class CasualtyController extends Controller
@@ -34,7 +35,7 @@ class CasualtyController extends Controller
             'casualties' => 'required|array',
             'casualties.*.id' => 'nullable',
             'casualties.*.name' => 'nullable|string|max:255',
-            'casualties.*.age' => 'nullable|integer',
+            'casualties.*.age' => 'nullable|integer|max:150',
             'casualties.*.sex' => 'nullable|string|max:255',
             'casualties.*.barangay' => ['nullable', 'string', 'max:255', Barangays::rule(Barangays::storedOn(Casualty::class, $request->input('casualties')))],
             'casualties.*.address' => 'nullable|string|max:255',
@@ -45,60 +46,54 @@ class CasualtyController extends Controller
 
         $savedCasualties = [];
 
-        foreach ($validated['casualties'] as $casualty) {
-            // Copy casualty except "sex"
-            $dataToCheck = $casualty;
-            unset($dataToCheck['sex']);
-            unset($dataToCheck['id']);
-            // Pre-filled on new rows, so on its own it does not make a row worth saving.
-            unset($dataToCheck['barangay']);
+        DB::transaction(function () use ($validated, $activeTyphoon, &$savedCasualties) {
+            foreach ($validated['casualties'] as $casualty) {
+                // Copy casualty except "sex"
+                $dataToCheck = $casualty;
+                unset($dataToCheck['sex']);
+                unset($dataToCheck['id']);
+                // Pre-filled on new rows, so on its own it does not make a row worth saving.
+                unset($dataToCheck['barangay']);
 
-            // Remove empty values (null, '', whitespace, 0)
-            $dataToCheck = array_filter($dataToCheck, function ($value) {
-                return ! is_null($value) && trim((string) $value) !== '' && $value !== 0 && $value !== '0';
-            });
+                // Remove empty values (null, '', whitespace, 0)
+                $dataToCheck = array_filter($dataToCheck, function ($value) {
+                    return ! is_null($value) && trim((string) $value) !== '' && $value !== 0 && $value !== '0';
+                });
 
-            // If nothing left → means only sex was filled OR everything else empty/zero → skip
-            if (empty($dataToCheck)) {
-                continue;
-            }
-
-            $data = [
-                'name' => $casualty['name'] ?? null,
-                'age' => $casualty['age'] ?? null,
-                'sex' => $casualty['sex'] ?? null,
-                'barangay' => Barangays::forRow($casualty['barangay'] ?? null, Auth::user()),
-                'address' => $casualty['address'] ?? null,
-                'cause_of_death' => $casualty['cause_of_death'] ?? null,
-                'date_died' => $casualty['date_died'] ?? null,
-                'place_of_incident' => $casualty['place_of_incident'] ?? null,
-                'updated_by' => Auth::id(),
-            ];
-
-            // Check if this is an update or create
-            if (! empty($casualty['id']) && is_numeric($casualty['id'])) {
-                // Update existing record (only own records for non-admin users)
-                $casualtyQuery = Casualty::where('id', $casualty['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $accessibleUserIds = $user->getAccessibleUserIds('write');
-                    $casualtyQuery->whereIn('user_id', $accessibleUserIds);
+                // If nothing left → means only sex was filled OR everything else empty/zero → skip
+                if (empty($dataToCheck)) {
+                    continue;
                 }
 
-                $casualtyRecord = $casualtyQuery->first();
-                if ($casualtyRecord) {
-                    $casualtyRecord->update($data);
-                    $savedCasualties[] = $casualtyRecord->fresh();
-                }
-            } else {
-                // Create new record
-                $data['user_id'] = Auth::id();
-                $data['disaster_id'] = $activeTyphoon->id;
+                $data = [
+                    'name' => $casualty['name'] ?? null,
+                    'age' => $casualty['age'] ?? null,
+                    'sex' => $casualty['sex'] ?? null,
+                    'barangay' => Barangays::forRow($casualty['barangay'] ?? null, Auth::user()),
+                    'address' => $casualty['address'] ?? null,
+                    'cause_of_death' => $casualty['cause_of_death'] ?? null,
+                    'date_died' => $casualty['date_died'] ?? null,
+                    'place_of_incident' => $casualty['place_of_incident'] ?? null,
+                    'updated_by' => Auth::id(),
+                ];
 
-                $savedCasualties[] = Casualty::create($data);
+                // Check if this is an update or create
+                if (! empty($casualty['id']) && is_numeric($casualty['id'])) {
+                    // Update existing record
+                    $casualtyRecord = $this->findWritableRecord(Casualty::class, $casualty['id']);
+                    if ($casualtyRecord) {
+                        $casualtyRecord->update($data);
+                        $savedCasualties[] = $casualtyRecord->fresh();
+                    }
+                } else {
+                    // Create new record
+                    $data['user_id'] = Auth::id();
+                    $data['disaster_id'] = $activeTyphoon->id;
+
+                    $savedCasualties[] = Casualty::create($data);
+                }
             }
-        }
+        });
 
         // Return JSON response with saved records
         if ($request->expectsJson()) {
@@ -121,7 +116,7 @@ class CasualtyController extends Controller
 
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'age' => 'nullable|integer',
+            'age' => 'nullable|integer|max:150',
             'sex' => 'nullable|string|max:255',
             'barangay' => ['nullable', 'string', 'max:255', Barangays::rule([$casualty->barangay])],
             'address' => 'nullable|string|max:255',
@@ -147,6 +142,7 @@ class CasualtyController extends Controller
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(Casualty::class)
+            ->readableBy(Auth::user(), Casualty::class)
             ->with('user')
             ->latest()
             ->get();

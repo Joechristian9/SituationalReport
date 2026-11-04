@@ -8,6 +8,7 @@ use App\Models\AgricultureReport;
 use App\Models\Bridge;
 use App\Models\Casualty;
 use App\Models\Communication;
+use App\Models\CommunicationService;
 use App\Models\CommunicationServiceValue;
 use App\Models\DamagedHouseReport;
 use App\Models\ElectricityService;
@@ -27,13 +28,15 @@ use App\Services\Barangays;
 use App\Services\ReportHistory;
 use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class SituationOverviewController extends Controller
 {
@@ -166,10 +169,7 @@ class SituationOverviewController extends Controller
     /* ------------------- STORE METHODS ------------------- */
     public function storeWeather(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-weather-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to weather form');
-        }
+        $this->authorizeForm('access-weather-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -194,51 +194,53 @@ class SituationOverviewController extends Controller
             'reports.*.sea_condition' => 'nullable|string|max:255',
         ]);
 
-        foreach ($validated['reports'] as $reportData) {
-            // 2. More Robust Saving Logic
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['reports'] as $reportData) {
+                // 2. More Robust Saving Logic
 
-            // If an ID exists, we find and update that specific record.
-            if (! empty($reportData['id'])) {
-                $weatherReport = $this->findWritableRecord(WeatherReport::class, $reportData['id']);
-                if ($weatherReport) {
-                    // Only update fields that have actually changed
-                    $fieldsToUpdate = [];
+                // If an ID exists, we find and update that specific record.
+                if (! empty($reportData['id'])) {
+                    $weatherReport = $this->findWritableRecord(WeatherReport::class, $reportData['id']);
+                    if ($weatherReport) {
+                        // Only update fields that have actually changed
+                        $fieldsToUpdate = [];
 
-                    if ($weatherReport->sky_condition !== ($reportData['sky_condition'] ?? null)) {
-                        $fieldsToUpdate['sky_condition'] = $reportData['sky_condition'] ?? null;
-                    }
-                    if ($weatherReport->wind !== ($reportData['wind'] ?? null)) {
-                        $fieldsToUpdate['wind'] = $reportData['wind'] ?? null;
-                    }
-                    if ($weatherReport->precipitation !== ($reportData['precipitation'] ?? null)) {
-                        $fieldsToUpdate['precipitation'] = $reportData['precipitation'] ?? null;
-                    }
-                    if ($weatherReport->sea_condition !== ($reportData['sea_condition'] ?? null)) {
-                        $fieldsToUpdate['sea_condition'] = $reportData['sea_condition'] ?? null;
-                    }
+                        if ($weatherReport->sky_condition !== ($reportData['sky_condition'] ?? null)) {
+                            $fieldsToUpdate['sky_condition'] = $reportData['sky_condition'] ?? null;
+                        }
+                        if ($weatherReport->wind !== ($reportData['wind'] ?? null)) {
+                            $fieldsToUpdate['wind'] = $reportData['wind'] ?? null;
+                        }
+                        if ($weatherReport->precipitation !== ($reportData['precipitation'] ?? null)) {
+                            $fieldsToUpdate['precipitation'] = $reportData['precipitation'] ?? null;
+                        }
+                        if ($weatherReport->sea_condition !== ($reportData['sea_condition'] ?? null)) {
+                            $fieldsToUpdate['sea_condition'] = $reportData['sea_condition'] ?? null;
+                        }
 
-                    // Only save if there are actual changes
-                    if (! empty($fieldsToUpdate)) {
-                        $fieldsToUpdate['updated_by'] = Auth::id();
-                        $weatherReport->update($fieldsToUpdate);
+                        // Only save if there are actual changes
+                        if (! empty($fieldsToUpdate)) {
+                            $fieldsToUpdate['updated_by'] = Auth::id();
+                            $weatherReport->update($fieldsToUpdate);
+                        }
                     }
                 }
+                // If no ID, it's a new record. We create it.
+                else {
+                    // Weather is PAGASA's forecast for Ilagan only, whatever location is sent.
+                    WeatherReport::create([
+                        'municipality' => 'City of Ilagan',
+                        'sky_condition' => $reportData['sky_condition'],
+                        'wind' => $reportData['wind'],
+                        'precipitation' => $reportData['precipitation'],
+                        'sea_condition' => $reportData['sea_condition'],
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
+                }
             }
-            // If no ID, it's a new record. We create it.
-            else {
-                // Weather is PAGASA's forecast for Ilagan only, whatever location is sent.
-                WeatherReport::create([
-                    'municipality' => 'City of Ilagan',
-                    'sky_condition' => $reportData['sky_condition'],
-                    'wind' => $reportData['wind'],
-                    'precipitation' => $reportData['precipitation'],
-                    'sea_condition' => $reportData['sea_condition'],
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
-            }
-        }
+        });
 
         // Return the fresh data after save (limit to recent 100 records)
         $user = Auth::user();
@@ -264,10 +266,7 @@ class SituationOverviewController extends Controller
 
     public function storeWaterLevel(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-water-level-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to water level form');
-        }
+        $this->authorizeForm('access-water-level-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -281,45 +280,47 @@ class SituationOverviewController extends Controller
             'reports' => ['required', 'array'],
             'reports.*.id' => ['nullable'],
             'reports.*.gauging_station' => ['required', 'string'],
-            'reports.*.current_level' => ['nullable', 'numeric'],
-            'reports.*.alarm_level' => ['nullable', 'numeric'],
-            'reports.*.critical_level' => ['nullable', 'numeric'],
+            'reports.*.current_level' => ['nullable', 'numeric', 'min:-999999.99', 'max:999999.99'],
+            'reports.*.alarm_level' => ['nullable', 'numeric', 'min:-999999.99', 'max:999999.99'],
+            'reports.*.critical_level' => ['nullable', 'numeric', 'min:-999999.99', 'max:999999.99'],
             'reports.*.affected_areas' => ['nullable', 'string'],
         ]);
 
-        foreach ($validated['reports'] as $reportData) {
-            // If ID is numeric, update existing record
-            if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
-                $waterLevel = $this->findWritableRecord(WaterLevel::class, $reportData['id']);
-                if ($waterLevel) {
-                    $waterLevel->update([
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['reports'] as $reportData) {
+                // If ID is numeric, update existing record
+                if (! empty($reportData['id']) && is_numeric($reportData['id'])) {
+                    $waterLevel = $this->findWritableRecord(WaterLevel::class, $reportData['id']);
+                    if ($waterLevel) {
+                        $waterLevel->update([
+                            'gauging_station' => $reportData['gauging_station'],
+                            'current_level' => $reportData['current_level'],
+                            'alarm_level' => $reportData['alarm_level'],
+                            'critical_level' => $reportData['critical_level'],
+                            'affected_areas' => $reportData['affected_areas'],
+                            'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
+                } else {
+                    // Create new record
+                    if (empty($reportData['gauging_station'])) {
+                        continue;
+                    }
+
+                    WaterLevel::create([
                         'gauging_station' => $reportData['gauging_station'],
                         'current_level' => $reportData['current_level'],
                         'alarm_level' => $reportData['alarm_level'],
                         'critical_level' => $reportData['critical_level'],
                         'affected_areas' => $reportData['affected_areas'],
-                        'disaster_id' => $activeTyphoon->id,
+                        'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
                 }
-            } else {
-                // Create new record
-                if (empty($reportData['gauging_station'])) {
-                    continue;
-                }
-
-                WaterLevel::create([
-                    'gauging_station' => $reportData['gauging_station'],
-                    'current_level' => $reportData['current_level'],
-                    'alarm_level' => $reportData['alarm_level'],
-                    'critical_level' => $reportData['critical_level'],
-                    'affected_areas' => $reportData['affected_areas'],
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         // Return the fresh data after save (limit to recent 100 records)
         $user = Auth::user();
@@ -345,10 +346,7 @@ class SituationOverviewController extends Controller
 
     public function storeElectricity(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-electricity-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to electricity form');
-        }
+        $this->authorizeForm('access-electricity-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -377,50 +375,58 @@ class SituationOverviewController extends Controller
         $savedServices = [];
 
         // Update existing or create new reports
-        foreach ($validated['electricityServices'] as $serviceData) {
-            // Skip empty rows
-            if (empty($serviceData['status']) &&
-                empty($serviceData['barangays_affected']) &&
-                empty($serviceData['remarks'])) {
-                continue;
-            }
+        DB::transaction(function () use ($validated, $existingIds, $activeTyphoon, $user, &$processedIds, &$savedServices) {
+            foreach ($validated['electricityServices'] as $serviceData) {
+                // Skip empty rows
+                if (empty($serviceData['status']) &&
+                    empty($serviceData['barangays_affected']) &&
+                    empty($serviceData['remarks'])) {
+                    continue;
+                }
 
-            if (! empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
-                // Update the record when this account may change it
-                $service = $this->findWritableRecord(ElectricityService::class, $serviceData['id']);
-                if ($service) {
-                    $service->update([
+                if (! empty($serviceData['id']) && in_array($serviceData['id'], $existingIds)) {
+                    // Update the record when this account may change it
+                    $service = $this->findWritableRecord(ElectricityService::class, $serviceData['id']);
+                    if ($service) {
+                        $service->update([
+                            'status' => $serviceData['status'] ?? null,
+                            'barangays_affected' => $serviceData['barangays_affected'] ?? null,
+                            'remarks' => $serviceData['remarks'] ?? null,
+                            'updated_by' => Auth::id(), // Track who made the update
+                        ]);
+                        $processedIds[] = $service->id;
+                        $savedServices[] = $service;
+                    }
+                } elseif (! empty($serviceData['id']) && ElectricityService::whereKey($serviceData['id'])->exists()) {
+                    // A row of another disaster is never copied in. An id that is gone falls through to
+                    // a new row: this list deletes rows, so another device may have removed the one edited here.
+                    $this->noteSkippedRow($serviceData['id']);
+
+                    continue;
+                } else {
+                    // The creator is always the signed-in account, never a value from the request.
+                    $service = ElectricityService::create([
+                        'disaster_id' => $activeTyphoon->id,
+                        'user_id' => $user->id,
                         'status' => $serviceData['status'] ?? null,
                         'barangays_affected' => $serviceData['barangays_affected'] ?? null,
                         'remarks' => $serviceData['remarks'] ?? null,
-                        'updated_by' => Auth::id(), // Track who made the update
+                        'updated_by' => Auth::id(),
                     ]);
                     $processedIds[] = $service->id;
                     $savedServices[] = $service;
                 }
-            } else {
-                // The creator is always the signed-in account, never a value from the request.
-                $service = ElectricityService::create([
-                    'disaster_id' => $activeTyphoon->id,
-                    'user_id' => $user->id,
-                    'status' => $serviceData['status'] ?? null,
-                    'barangays_affected' => $serviceData['barangays_affected'] ?? null,
-                    'remarks' => $serviceData['remarks'] ?? null,
-                    'updated_by' => Auth::id(),
-                ]);
-                $processedIds[] = $service->id;
-                $savedServices[] = $service;
             }
-        }
 
-        // Rows left out of the submission were removed, but only among records this
-        // account can write: the form never shows the others, so their absence means nothing.
-        // Deleted one by one through Eloquent so the audit observer records it.
-        $deletable = ElectricityService::whereIn('id', array_diff($existingIds, $processedIds));
-        if (! $user->isAdmin()) {
-            $deletable->whereIn('user_id', $user->getAccessibleUserIds('write'));
-        }
-        $deletable->get()->each->delete();
+            // Rows left out of the submission were removed, but only among records this
+            // account can write: the form never shows the others, so their absence means nothing.
+            // Deleted one by one through Eloquent so the audit observer records it.
+            $deletable = ElectricityService::whereIn('id', array_diff($existingIds, $processedIds));
+            if (! $user->isAdmin()) {
+                $deletable->whereIn('user_id', $user->getAccessibleUserIds('write'));
+            }
+            $deletable->get()->each->delete();
+        });
 
         // Return all reports for this typhoon
         $updatedQuery = ElectricityService::with('user:id,name')
@@ -443,10 +449,7 @@ class SituationOverviewController extends Controller
 
     public function storeWaterService(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-water-service-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to water service form');
-        }
+        $this->authorizeForm('access-water-service-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -467,50 +470,54 @@ class SituationOverviewController extends Controller
 
         $user = Auth::user();
 
-        foreach ($validated['waterServices'] as $waterData) {
-            // Skip empty rows
-            if (empty(array_filter($waterData))) {
-                continue;
-            }
+        DB::transaction(function () use ($validated, $activeTyphoon, $user) {
+            foreach ($validated['waterServices'] as $waterData) {
+                // Skip empty rows
+                if (empty(array_filter($waterData))) {
+                    continue;
+                }
 
-            // Update the existing record when it has one; otherwise create a new record
-            $shouldCreateNew = false;
+                // Update the existing record when it has one; otherwise create a new record
+                $shouldCreateNew = false;
 
-            if (! empty($waterData['id']) && is_numeric($waterData['id'])) {
-                // Water services is one shared list: any account with the form may edit any
-                // row, but only rows of the current disaster, never an ended one's.
-                $existingService = WaterService::where('disaster_id', $activeTyphoon->id)->find($waterData['id']);
+                if (! empty($waterData['id']) && is_numeric($waterData['id'])) {
+                    // Water services is one shared list: any account with the form may edit any
+                    // row, but only rows of the current disaster, never an ended one's.
+                    $existingService = WaterService::where('disaster_id', $activeTyphoon->id)->find($waterData['id']);
 
-                if ($existingService) {
-                    $existingService->update([
+                    if ($existingService) {
+                        $existingService->update([
+                            'source_of_water' => $waterData['source_of_water'] ?? null,
+                            'barangays_served' => $waterData['barangays_served'] ?? null,
+                            'status' => $waterData['status'] ?? null,
+                            'remarks' => $waterData['remarks'] ?? null,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    } else {
+                        // A row of another disaster, or no such row: never copied into this one.
+                        $this->noteSkippedRow($waterData['id']);
+
+                        continue;
+                    }
+                } else {
+                    // No ID, create new record
+                    $shouldCreateNew = true;
+                }
+
+                if ($shouldCreateNew) {
+                    // Create new record
+                    WaterService::create([
                         'source_of_water' => $waterData['source_of_water'] ?? null,
                         'barangays_served' => $waterData['barangays_served'] ?? null,
                         'status' => $waterData['status'] ?? null,
                         'remarks' => $waterData['remarks'] ?? null,
+                        'user_id' => $user->id, // The creator is always the signed-in account
                         'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
-                } else {
-                    // No existing record with that ID: create it
-                    $shouldCreateNew = true;
                 }
-            } else {
-                // No ID, create new record
-                $shouldCreateNew = true;
             }
-
-            if ($shouldCreateNew) {
-                // Create new record
-                WaterService::create([
-                    'source_of_water' => $waterData['source_of_water'] ?? null,
-                    'barangays_served' => $waterData['barangays_served'] ?? null,
-                    'status' => $waterData['status'] ?? null,
-                    'remarks' => $waterData['remarks'] ?? null,
-                    'user_id' => $user->id, // The creator is always the signed-in account
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
-            }
-        }
+        });
 
         // Return fresh data after save - LOAD ALL RECORDS (not filtered by user)
         $updatedServices = WaterService::with('user:id,name')
@@ -527,10 +534,7 @@ class SituationOverviewController extends Controller
 
     public function storeCommunication(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-communication-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to communication form');
-        }
+        $this->authorizeForm('access-communication-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -550,92 +554,98 @@ class SituationOverviewController extends Controller
             'communications.*.vhf' => 'nullable|string|max:255',
             'communications.*.remarks' => 'nullable|string|max:500',
             'communications.*.service_values' => 'nullable|array',
-            'communications.*.service_values.*.service_id' => 'required|integer|exists:communication_services,id',
+            'communications.*.service_values.*.service_id' => ['required', 'integer', Rule::in(CommunicationService::pluck('id')->all())],
             'communications.*.service_values.*.status' => 'nullable|string|max:255',
         ]);
 
-        foreach ($validated['communications'] as $commData) {
-            // Skip empty rows
-            if (empty(array_filter($commData))) {
-                continue;
-            }
+        // All at once: a lookup per service per row is what made long saves slow.
+        $savedServiceValues = CommunicationServiceValue::whereIn('communication_id', array_filter(array_column($validated['communications'], 'id')))
+            ->get()
+            ->keyBy(fn (CommunicationServiceValue $value) => "{$value->communication_id}:{$value->service_id}");
 
-            // If ID exists and is numeric, update existing record
-            if (! empty($commData['id']) && is_numeric($commData['id'])) {
-                $communication = $this->findWritableRecord(Communication::class, $commData['id']);
-                if ($communication) {
-                    // Only update fields that have changed
-                    $fieldsToUpdate = [];
+        DB::transaction(function () use ($validated, $activeTyphoon, $savedServiceValues) {
+            foreach ($validated['communications'] as $commData) {
+                // Skip empty rows
+                if (empty(array_filter($commData))) {
+                    continue;
+                }
 
-                    if ($communication->globe !== ($commData['globe'] ?? null)) {
-                        $fieldsToUpdate['globe'] = $commData['globe'] ?? null;
-                    }
-                    if ($communication->smart !== ($commData['smart'] ?? null)) {
-                        $fieldsToUpdate['smart'] = $commData['smart'] ?? null;
-                    }
-                    if ($communication->pldt_landline !== ($commData['pldt_landline'] ?? null)) {
-                        $fieldsToUpdate['pldt_landline'] = $commData['pldt_landline'] ?? null;
-                    }
-                    if ($communication->pldt_internet !== ($commData['pldt_internet'] ?? null)) {
-                        $fieldsToUpdate['pldt_internet'] = $commData['pldt_internet'] ?? null;
-                    }
-                    if ($communication->vhf !== ($commData['vhf'] ?? null)) {
-                        $fieldsToUpdate['vhf'] = $commData['vhf'] ?? null;
-                    }
-                    if ($communication->remarks !== ($commData['remarks'] ?? null)) {
-                        $fieldsToUpdate['remarks'] = $commData['remarks'] ?? null;
-                    }
+                // If ID exists and is numeric, update existing record
+                if (! empty($commData['id']) && is_numeric($commData['id'])) {
+                    $communication = $this->findWritableRecord(Communication::class, $commData['id']);
+                    if ($communication) {
+                        // Only update fields that have changed
+                        $fieldsToUpdate = [];
 
-                    // Always update disaster_id and updated_by
-                    $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
-                    $fieldsToUpdate['updated_by'] = Auth::id();
+                        if ($communication->globe !== ($commData['globe'] ?? null)) {
+                            $fieldsToUpdate['globe'] = $commData['globe'] ?? null;
+                        }
+                        if ($communication->smart !== ($commData['smart'] ?? null)) {
+                            $fieldsToUpdate['smart'] = $commData['smart'] ?? null;
+                        }
+                        if ($communication->pldt_landline !== ($commData['pldt_landline'] ?? null)) {
+                            $fieldsToUpdate['pldt_landline'] = $commData['pldt_landline'] ?? null;
+                        }
+                        if ($communication->pldt_internet !== ($commData['pldt_internet'] ?? null)) {
+                            $fieldsToUpdate['pldt_internet'] = $commData['pldt_internet'] ?? null;
+                        }
+                        if ($communication->vhf !== ($commData['vhf'] ?? null)) {
+                            $fieldsToUpdate['vhf'] = $commData['vhf'] ?? null;
+                        }
+                        if ($communication->remarks !== ($commData['remarks'] ?? null)) {
+                            $fieldsToUpdate['remarks'] = $commData['remarks'] ?? null;
+                        }
 
-                    // Only call update if there are changes
-                    if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
-                        $communication->update($fieldsToUpdate);
+                        // Always update disaster_id and updated_by
+                        $fieldsToUpdate['disaster_id'] = $activeTyphoon->id;
+                        $fieldsToUpdate['updated_by'] = Auth::id();
+
+                        // Only call update if there are changes
+                        if (count($fieldsToUpdate) > 2) { // More than just disaster_id and updated_by
+                            $communication->update($fieldsToUpdate);
+                        }
+
+                        // Handle dynamic service values
+                        if (isset($commData['service_values']) && is_array($commData['service_values'])) {
+                            foreach ($commData['service_values'] as $serviceValue) {
+                                $key = "{$communication->id}:{$serviceValue['service_id']}";
+                                $value = $savedServiceValues[$key] ?? new CommunicationServiceValue([
+                                    'communication_id' => $communication->id,
+                                    'service_id' => $serviceValue['service_id'],
+                                ]);
+                                $value->status = $serviceValue['status'] ?? null;
+                                $value->save();
+                                $savedServiceValues[$key] = $value;
+                            }
+                        }
                     }
+                } else {
+                    // Create new record
+                    $communication = Communication::create([
+                        'globe' => $commData['globe'] ?? null,
+                        'smart' => $commData['smart'] ?? null,
+                        'pldt_landline' => $commData['pldt_landline'] ?? null,
+                        'pldt_internet' => $commData['pldt_internet'] ?? null,
+                        'vhf' => $commData['vhf'] ?? null,
+                        'remarks' => $commData['remarks'] ?? null,
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
 
                     // Handle dynamic service values
                     if (isset($commData['service_values']) && is_array($commData['service_values'])) {
                         foreach ($commData['service_values'] as $serviceValue) {
-                            CommunicationServiceValue::updateOrCreate(
-                                [
-                                    'communication_id' => $communication->id,
-                                    'service_id' => $serviceValue['service_id'],
-                                ],
-                                [
-                                    'status' => $serviceValue['status'] ?? null,
-                                ]
-                            );
+                            CommunicationServiceValue::create([
+                                'communication_id' => $communication->id,
+                                'service_id' => $serviceValue['service_id'],
+                                'status' => $serviceValue['status'] ?? null,
+                            ]);
                         }
                     }
                 }
-            } else {
-                // Create new record
-                $communication = Communication::create([
-                    'globe' => $commData['globe'] ?? null,
-                    'smart' => $commData['smart'] ?? null,
-                    'pldt_landline' => $commData['pldt_landline'] ?? null,
-                    'pldt_internet' => $commData['pldt_internet'] ?? null,
-                    'vhf' => $commData['vhf'] ?? null,
-                    'remarks' => $commData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
-
-                // Handle dynamic service values
-                if (isset($commData['service_values']) && is_array($commData['service_values'])) {
-                    foreach ($commData['service_values'] as $serviceValue) {
-                        CommunicationServiceValue::create([
-                            'communication_id' => $communication->id,
-                            'service_id' => $serviceValue['service_id'],
-                            'status' => $serviceValue['status'] ?? null,
-                        ]);
-                    }
-                }
             }
-        }
+        });
 
         // Return fresh data after save (limit to recent 100 records)
         $user = Auth::user();
@@ -661,10 +671,7 @@ class SituationOverviewController extends Controller
 
     public function storeRoad(Request $request)
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-road-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to road form');
-        }
+        $this->authorizeForm('access-road-form');
 
         // Validate typhoon status
         if ($error = $this->validateActiveTyphoon()) {
@@ -685,42 +692,44 @@ class SituationOverviewController extends Controller
             'roads.*.remarks' => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['roads'] as $roadData) {
-            // Skip empty rows
-            if (empty(array_filter($roadData))) {
-                continue;
-            }
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['roads'] as $roadData) {
+                // Skip empty rows
+                if (empty(array_filter($roadData))) {
+                    continue;
+                }
 
-            // If ID exists and is numeric, update existing record
-            if (! empty($roadData['id']) && is_numeric($roadData['id'])) {
-                $road = $this->findWritableRecord(Road::class, $roadData['id']);
-                if ($road) {
-                    $road->update([
+                // If ID exists and is numeric, update existing record
+                if (! empty($roadData['id']) && is_numeric($roadData['id'])) {
+                    $road = $this->findWritableRecord(Road::class, $roadData['id']);
+                    if ($road) {
+                        $road->update([
+                            'road_classification' => $roadData['road_classification'] ?? null,
+                            'name_of_road' => $roadData['name_of_road'] ?? null,
+                            'status' => $roadData['status'] ?? null,
+                            'areas_affected' => $roadData['areas_affected'] ?? null,
+                            're_routing' => $roadData['re_routing'] ?? null,
+                            'remarks' => $roadData['remarks'] ?? null,
+                            'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
+                } else {
+                    // Create new record
+                    Road::create([
                         'road_classification' => $roadData['road_classification'] ?? null,
                         'name_of_road' => $roadData['name_of_road'] ?? null,
                         'status' => $roadData['status'] ?? null,
                         'areas_affected' => $roadData['areas_affected'] ?? null,
                         're_routing' => $roadData['re_routing'] ?? null,
                         'remarks' => $roadData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
+                        'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
                 }
-            } else {
-                // Create new record
-                Road::create([
-                    'road_classification' => $roadData['road_classification'] ?? null,
-                    'name_of_road' => $roadData['name_of_road'] ?? null,
-                    'status' => $roadData['status'] ?? null,
-                    'areas_affected' => $roadData['areas_affected'] ?? null,
-                    're_routing' => $roadData['re_routing'] ?? null,
-                    'remarks' => $roadData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         // Return fresh data after save (limit to recent 100 records)
         $user = Auth::user();
@@ -747,10 +756,7 @@ class SituationOverviewController extends Controller
     public function storeBridge(Request $request)
     {
         try {
-            // Check permission
-            if (! Auth::user()->hasPermissionTo('access-bridge-form') && ! Auth::user()->hasRole('admin')) {
-                abort(403, 'Unauthorized access to bridge form');
-            }
+            $this->authorizeForm('access-bridge-form');
 
             // Validate typhoon status
             if ($error = $this->validateActiveTyphoon()) {
@@ -771,47 +777,49 @@ class SituationOverviewController extends Controller
                 'bridges.*.remarks' => 'nullable|string|max:500',
             ]);
 
-            foreach ($validated['bridges'] as $bridgeData) {
-                // Skip empty rows - check all fields except 'id'
-                $fieldsToCheck = array_diff_key($bridgeData, ['id' => '']);
-                $hasData = ! empty(array_filter($fieldsToCheck, function ($value) {
-                    return $value !== null && $value !== '';
-                }));
+            DB::transaction(function () use ($validated, $activeTyphoon) {
+                foreach ($validated['bridges'] as $bridgeData) {
+                    // Skip empty rows - check all fields except 'id'
+                    $fieldsToCheck = array_diff_key($bridgeData, ['id' => '']);
+                    $hasData = ! empty(array_filter($fieldsToCheck, function ($value) {
+                        return $value !== null && $value !== '';
+                    }));
 
-                if (! $hasData) {
-                    continue;
-                }
+                    if (! $hasData) {
+                        continue;
+                    }
 
-                // If ID exists and is numeric, update existing record
-                if (! empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
-                    $bridge = $this->findWritableRecord(Bridge::class, $bridgeData['id']);
-                    if ($bridge) {
-                        $bridge->update([
+                    // If ID exists and is numeric, update existing record
+                    if (! empty($bridgeData['id']) && is_numeric($bridgeData['id'])) {
+                        $bridge = $this->findWritableRecord(Bridge::class, $bridgeData['id']);
+                        if ($bridge) {
+                            $bridge->update([
+                                'road_classification' => $bridgeData['road_classification'] ?? null,
+                                'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
+                                'status' => $bridgeData['status'] ?? null,
+                                'areas_affected' => $bridgeData['areas_affected'] ?? null,
+                                're_routing' => $bridgeData['re_routing'] ?? null,
+                                'remarks' => $bridgeData['remarks'] ?? null,
+                                'disaster_id' => $activeTyphoon->id,
+                                'updated_by' => Auth::id(),
+                            ]);
+                        }
+                    } else {
+                        // Create new record
+                        Bridge::create([
                             'road_classification' => $bridgeData['road_classification'] ?? null,
                             'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
                             'status' => $bridgeData['status'] ?? null,
                             'areas_affected' => $bridgeData['areas_affected'] ?? null,
                             're_routing' => $bridgeData['re_routing'] ?? null,
                             'remarks' => $bridgeData['remarks'] ?? null,
-                            'disaster_id' => $activeTyphoon->id,
+                            'user_id' => Auth::id(),
                             'updated_by' => Auth::id(),
+                            'disaster_id' => $activeTyphoon->id,
                         ]);
                     }
-                } else {
-                    // Create new record
-                    Bridge::create([
-                        'road_classification' => $bridgeData['road_classification'] ?? null,
-                        'name_of_bridge' => $bridgeData['name_of_bridge'] ?? null,
-                        'status' => $bridgeData['status'] ?? null,
-                        'areas_affected' => $bridgeData['areas_affected'] ?? null,
-                        're_routing' => $bridgeData['re_routing'] ?? null,
-                        'remarks' => $bridgeData['remarks'] ?? null,
-                        'user_id' => Auth::id(),
-                        'updated_by' => Auth::id(),
-                        'disaster_id' => $activeTyphoon->id,
-                    ]);
                 }
-            }
+            });
 
             // Return fresh data after save (limit to recent 100 records)
             $user = Auth::user();
@@ -854,6 +862,8 @@ class SituationOverviewController extends Controller
                 'message' => 'Bridge reports saved successfully',
                 'bridges' => $updatedBridges,
             ]);
+        } catch (HttpExceptionInterface|ValidationException $e) {
+            throw $e; // Refusals, not failures: a 500 would make a queued save retry forever.
         } catch (\Exception $e) {
             \Log::error('Bridge form submission error: '.$e->getMessage(), [
                 'exception' => $e,
@@ -870,9 +880,10 @@ class SituationOverviewController extends Controller
 
     /* ------------------- MODIFICATIONS ------------------- */
     /** @param  class-string<Model>  $modelClass */
-    private function buildModificationResponse(string $modelClass): JsonResponse
+    private function buildModificationResponse(string $modelClass, bool $sharedList = false): JsonResponse
     {
         $modifications = Modification::forActiveDisaster($modelClass)
+            ->when(! $sharedList, fn ($query) => $query->readableBy(Auth::user(), $modelClass))
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -915,81 +926,50 @@ class SituationOverviewController extends Controller
 
     public function weatherModification()
     {
-        // Temporarily disabled permission check for debugging
-        // TODO: Re-enable after fixing permission cache issue
-        return $this->buildModificationResponse(WeatherReport::class);
-
-        // Check permission
-        $user = Auth::user();
-        if (! $user->hasPermissionTo('access-weather-form') && ! $user->hasRole('admin')) {
-            \Log::error('Weather modification 403', [
-                'user_email' => $user->email,
-                'user_permissions' => $user->permissions->pluck('name')->toArray(),
-                'has_weather_permission' => $user->hasPermissionTo('access-weather-form'),
-                'is_admin' => $user->hasRole('admin'),
-            ]);
-            abort(403, 'Unauthorized access to weather modifications. User: '.$user->email);
-        }
+        $this->authorizeForm('access-weather-form');
 
         return $this->buildModificationResponse(WeatherReport::class);
     }
 
     public function waterLevelModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-water-level-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to water level modifications');
-        }
+        $this->authorizeForm('access-water-level-form');
 
         return $this->buildModificationResponse(WaterLevel::class);
     }
 
     public function electricityModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-electricity-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to electricity modifications');
-        }
+        $this->authorizeForm('access-electricity-form');
 
         return $this->buildModificationResponse(ElectricityService::class);
     }
 
     public function waterServiceModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-water-service-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to water service modifications');
-        }
+        $this->authorizeForm('access-water-service-form');
 
-        return $this->buildModificationResponse(WaterService::class);
+        // One list every holder of the form edits, so its history is shared too.
+        return $this->buildModificationResponse(WaterService::class, sharedList: true);
     }
 
     public function communicationModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-communication-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to communication modifications');
-        }
+        $this->authorizeForm('access-communication-form');
 
         return $this->buildModificationResponse(Communication::class);
     }
 
     public function roadModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-road-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to road modifications');
-        }
+        $this->authorizeForm('access-road-form');
 
         return $this->buildModificationResponse(Road::class);
     }
 
     public function bridgeModification()
     {
-        // Check permission
-        if (! Auth::user()->hasPermissionTo('access-bridge-form') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized access to bridge modifications');
-        }
+        $this->authorizeForm('access-bridge-form');
 
         return $this->buildModificationResponse(Bridge::class);
     }
@@ -997,6 +977,8 @@ class SituationOverviewController extends Controller
     /* ------------------- API: GET WEATHER REPORTS ------------------- */
     public function getReports()
     {
+        $this->authorizeForm('access-weather-form');
+
         // Optimized: Limit to recent 200 records
         $weatherReports = WeatherReport::with('user:id,name')
             ->orderBy('updated_at', 'desc')
@@ -1008,102 +990,20 @@ class SituationOverviewController extends Controller
         ]);
     }
 
-    /* ------------------- API: GET WEATHER TIMELINE (Historical) ------------------- */
-    public function getWeatherTimeline()
-    {
-        // Get all modifications for WeatherReport ordered chronologically
-        $modifications = Modification::where('model_type', 'WeatherReport')
-            ->with('user:id,name')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // Track state per model_id
-        $stateByModel = [];
-        $allStates = [];
-
-        // Reconstruct timeline from modifications
-        $index = 0;
-        foreach ($modifications as $mod) {
-            $modelId = $mod->model_id;
-
-            // Initialize state for this model if not exists
-            if (! isset($stateByModel[$modelId])) {
-                $stateByModel[$modelId] = [
-                    'municipality' => null,
-                    'sky_condition' => null,
-                    'wind' => null,
-                    'precipitation' => null,
-                    'sea_condition' => null,
-                ];
-            }
-
-            // Apply changes from this modification to build current state
-            foreach ($mod->changed_fields as $field => $change) {
-                $stateByModel[$modelId][$field] = $change['new'] ?? null;
-            }
-
-            // Snapshot this state at this point in time
-            // Add microseconds to ensure unique timestamps for same-second modifications
-            $timestamp = $mod->created_at;
-            $carbonTime = Carbon::parse($timestamp);
-            $carbonTime->addMicroseconds($index * 1000); // Add milliseconds based on index
-
-            $allStates[] = [
-                'municipality' => $stateByModel[$modelId]['municipality'],
-                'sky_condition' => $stateByModel[$modelId]['sky_condition'],
-                'wind' => $stateByModel[$modelId]['wind'],
-                'precipitation' => $stateByModel[$modelId]['precipitation'],
-                'sea_condition' => $stateByModel[$modelId]['sea_condition'],
-                'updated_at' => $carbonTime->toIso8601String(),
-                'user' => $mod->user,
-                'modification_id' => $mod->id, // Add unique identifier
-            ];
-
-            $index++;
-        }
-
-        // Add current state from database for records without modifications
-        $currentReports = WeatherReport::with('user:id,name')->get();
-        foreach ($currentReports as $report) {
-            // Only add if this report hasn't been tracked in modifications
-            if (! isset($stateByModel[$report->id])) {
-                $allStates[] = [
-                    'municipality' => $report->municipality,
-                    'sky_condition' => $report->sky_condition,
-                    'wind' => $report->wind,
-                    'precipitation' => $report->precipitation,
-                    'sea_condition' => $report->sea_condition,
-                    'updated_at' => $report->updated_at,
-                    'user' => $report->user,
-                ];
-            }
-        }
-
-        // Sort by timestamp
-        usort($allStates, function ($a, $b) {
-            return strtotime($a['updated_at']) - strtotime($b['updated_at']);
-        });
-
-        return response()->json([
-            'timeline' => $allStates,
-        ]);
-    }
-
     /* ------------------- REAL-TIME TYPING BROADCAST ------------------- */
     public function broadcastTyping(Request $request)
     {
+        // Old clients still send userId and userName; they are ignored, the account is the signed-in one.
         $validated = $request->validate([
-            'userId' => 'required|integer',
-            'userName' => 'required|string',
-            'fieldKey' => 'required|string',
+            'fieldKey' => 'required|string|max:255',
             'isTyping' => 'required|boolean',
-            'channel' => 'required|string',
+            'channel' => ['required', Rule::in(UserTyping::CHANNELS)],
         ]);
 
         // Broadcast the typing event
         broadcast(new UserTyping(
-            $validated['userId'],
-            $validated['userName'],
+            Auth::id(),
+            Auth::user()->name,
             $validated['fieldKey'],
             $validated['isTyping'],
             $validated['channel']

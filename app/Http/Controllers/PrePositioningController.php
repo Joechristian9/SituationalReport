@@ -9,6 +9,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PrePositioningController extends Controller
@@ -55,7 +56,7 @@ class PrePositioningController extends Controller
             'pre_positionings.*.id' => 'nullable',
             'pre_positionings.*.team_units' => 'nullable|string|max:255',
             'pre_positionings.*.team_leader' => 'nullable|string|max:255',
-            'pre_positionings.*.personnel_deployed' => 'nullable|integer|min:0',
+            'pre_positionings.*.personnel_deployed' => 'nullable|integer|min:0|max:1000000',
             'pre_positionings.*.response_assets' => 'nullable|string|max:255',
             'pre_positionings.*.capability' => 'nullable|string|max:255',
             'pre_positionings.*.area_of_deployment' => 'nullable|string|max:255',
@@ -63,53 +64,48 @@ class PrePositioningController extends Controller
 
         $savedRecords = [];
 
-        foreach ($validated['pre_positionings'] as $row) {
-            // ✅ Skip rows if all values are null/empty
-            $isEmpty = empty(array_filter([
-                $row['team_units'] ?? null,
-                $row['team_leader'] ?? null,
-                $row['personnel_deployed'] ?? null,
-                $row['response_assets'] ?? null,
-                $row['capability'] ?? null,
-                $row['area_of_deployment'] ?? null,
-            ]));
+        DB::transaction(function () use ($validated, $activeTyphoon, &$savedRecords) {
+            foreach ($validated['pre_positionings'] as $row) {
+                // ✅ Skip rows if all values are null/empty
+                $isEmpty = empty(array_filter([
+                    $row['team_units'] ?? null,
+                    $row['team_leader'] ?? null,
+                    $row['personnel_deployed'] ?? null,
+                    $row['response_assets'] ?? null,
+                    $row['capability'] ?? null,
+                    $row['area_of_deployment'] ?? null,
+                ]));
 
-            if ($isEmpty) {
-                continue;
-            }
-
-            $data = [
-                'team_units' => $row['team_units'] ?? null,
-                'team_leader' => $row['team_leader'] ?? null,
-                'personnel_deployed' => $row['personnel_deployed'] ?? null,
-                'response_assets' => $row['response_assets'] ?? null,
-                'capability' => $row['capability'] ?? null,
-                'area_of_deployment' => $row['area_of_deployment'] ?? null,
-                'updated_by' => Auth::id(),
-            ];
-
-            // Check if this is an update or create
-            if (! empty($row['id']) && is_numeric($row['id'])) {
-                // Update existing record (only own records for non-admin users)
-                $prePositioningQuery = PrePositioning::where('id', $row['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $prePositioningQuery->where('user_id', $user->id);
+                if ($isEmpty) {
+                    continue;
                 }
 
-                $prePositioning = $prePositioningQuery->first();
-                if ($prePositioning) {
-                    $prePositioning->update($data);
-                    $savedRecords[] = $prePositioning->fresh();
+                $data = [
+                    'team_units' => $row['team_units'] ?? null,
+                    'team_leader' => $row['team_leader'] ?? null,
+                    'personnel_deployed' => $row['personnel_deployed'] ?? null,
+                    'response_assets' => $row['response_assets'] ?? null,
+                    'capability' => $row['capability'] ?? null,
+                    'area_of_deployment' => $row['area_of_deployment'] ?? null,
+                    'updated_by' => Auth::id(),
+                ];
+
+                // Check if this is an update or create
+                if (! empty($row['id']) && is_numeric($row['id'])) {
+                    // Update existing record
+                    $prePositioning = $this->findWritableRecord(PrePositioning::class, $row['id']);
+                    if ($prePositioning) {
+                        $prePositioning->update($data);
+                        $savedRecords[] = $prePositioning->fresh();
+                    }
+                } else {
+                    // Create new record
+                    $data['user_id'] = Auth::id();
+                    $data['disaster_id'] = $activeTyphoon->id;
+                    $savedRecords[] = PrePositioning::create($data);
                 }
-            } else {
-                // Create new record
-                $data['user_id'] = Auth::id();
-                $data['disaster_id'] = $activeTyphoon->id;
-                $savedRecords[] = PrePositioning::create($data);
             }
-        }
+        });
 
         // Return JSON response with saved records
         if ($request->expectsJson()) {
@@ -133,7 +129,7 @@ class PrePositioningController extends Controller
         $validated = $request->validate([
             'team_units' => 'nullable|string|max:255',
             'team_leader' => 'nullable|string|max:255',
-            'personnel_deployed' => 'nullable|integer|min:0',
+            'personnel_deployed' => 'nullable|integer|min:0|max:1000000',
             'response_assets' => 'nullable|string|max:255',
             'capability' => 'nullable|string|max:255',
             'area_of_deployment' => 'nullable|string|max:255',
@@ -152,6 +148,8 @@ class PrePositioningController extends Controller
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(PrePositioning::class)
+            // Its page lists an account's own rows only, not rows shared with it.
+            ->when(! Auth::user()->isAdmin(), fn ($query) => $query->whereIn('model_id', PrePositioning::where('user_id', Auth::id())->select('id')))
             ->with('user')
             ->latest()
             ->get();

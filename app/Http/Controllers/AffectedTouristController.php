@@ -10,6 +10,7 @@ use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AffectedTouristController extends Controller
 {
@@ -35,77 +36,54 @@ class AffectedTouristController extends Controller
             'affected_tourists.*.id' => 'nullable|integer',
             'affected_tourists.*.province_city_municipality' => 'nullable|string|max:255',
             'affected_tourists.*.location' => 'nullable|string|max:255',
-            'affected_tourists.*.local_tourists' => 'nullable|integer|min:0',
-            'affected_tourists.*.foreign_tourists' => 'nullable|integer|min:0',
+            'affected_tourists.*.local_tourists' => 'nullable|integer|min:0|max:1000000',
+            'affected_tourists.*.foreign_tourists' => 'nullable|integer|min:0|max:1000000',
             'affected_tourists.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['affected_tourists'] as $touristData) {
-            // If an ID exists and is numeric, try to find and update that specific record
-            if (! empty($touristData['id']) && is_numeric($touristData['id'])) {
-                $touristQuery = AffectedTourist::where('id', $touristData['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $touristQuery->where('user_id', $user->id);
-                }
-
-                $tourist = $touristQuery->first();
-                if ($tourist) {
-                    // Update existing record
-                    $tourist->update([
-                        'province_city_municipality' => $touristData['province_city_municipality'] ?? null,
-                        'location' => $touristData['location'] ?? null,
-                        'local_tourists' => $touristData['local_tourists'] ?? null,
-                        'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
-                        'remarks' => $touristData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
-                        'updated_by' => Auth::id(),
-                    ]);
-                } else {
-                    // ID provided but doesn't exist in DB - treat as new record
-                    // Skip empty rows
-                    $isEmpty = empty(array_filter($touristData, function ($value) {
-                        return ! is_null($value) && $value !== '';
-                    }));
-
-                    if (! $isEmpty) {
-                        AffectedTourist::create([
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['affected_tourists'] as $touristData) {
+                // If an ID exists and is numeric, try to find and update that specific record
+                if (! empty($touristData['id']) && is_numeric($touristData['id'])) {
+                    // An id this account can't change is skipped. New rows always arrive with a null id.
+                    $tourist = $this->findWritableRecord(AffectedTourist::class, $touristData['id']);
+                    if ($tourist) {
+                        // Update existing record
+                        $tourist->update([
                             'province_city_municipality' => $touristData['province_city_municipality'] ?? null,
                             'location' => $touristData['location'] ?? null,
                             'local_tourists' => $touristData['local_tourists'] ?? null,
                             'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
                             'remarks' => $touristData['remarks'] ?? null,
-                            'user_id' => Auth::id(),
-                            'updated_by' => Auth::id(),
                             'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
                         ]);
                     }
                 }
-            }
-            // If no ID or null, it's a new record. We create it.
-            else {
-                // Skip rows where all values are null or empty
-                $isEmpty = empty(array_filter($touristData, function ($value) {
-                    return ! is_null($value) && $value !== '';
-                }));
+                // If no ID or null, it's a new record. We create it.
+                else {
+                    // Skip rows where all values are null or empty
+                    $isEmpty = empty(array_filter($touristData, function ($value) {
+                        return ! is_null($value) && $value !== '';
+                    }));
 
-                if ($isEmpty) {
-                    continue;
+                    if ($isEmpty) {
+                        continue;
+                    }
+
+                    AffectedTourist::create([
+                        'province_city_municipality' => $touristData['province_city_municipality'] ?? null,
+                        'location' => $touristData['location'] ?? null,
+                        'local_tourists' => $touristData['local_tourists'] ?? null,
+                        'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
+                        'remarks' => $touristData['remarks'] ?? null,
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
                 }
-
-                AffectedTourist::create([
-                    'province_city_municipality' => $touristData['province_city_municipality'] ?? null,
-                    'location' => $touristData['location'] ?? null,
-                    'local_tourists' => $touristData['local_tourists'] ?? null,
-                    'foreign_tourists' => $touristData['foreign_tourists'] ?? null,
-                    'remarks' => $touristData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         // Return the fresh data after save
         $user = Auth::user();
@@ -141,8 +119,8 @@ class AffectedTouristController extends Controller
         $validated = $request->validate([
             'province_city_municipality' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
-            'local_tourists' => 'nullable|integer|min:0',
-            'foreign_tourists' => 'nullable|integer|min:0',
+            'local_tourists' => 'nullable|integer|min:0|max:1000000',
+            'foreign_tourists' => 'nullable|integer|min:0|max:1000000',
             'remarks' => 'nullable|string',
         ]);
 
@@ -154,24 +132,12 @@ class AffectedTouristController extends Controller
     }
 
     /**
-     * Remove the specified affected tourist record from storage.
-     *
-     * @param  AffectedTourist  $affectedTourist
-     * @return RedirectResponse
-     */
-    /* public function destroy(AffectedTourist $affectedTourist)
-    {
-        $affectedTourist->delete();
-
-        return back()->with('success', 'Affected tourist record deleted successfully.');
-    } */
-
-    /**
      * Get modification history for affected tourists
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(AffectedTourist::class)
+            ->readableBy(Auth::user(), AffectedTourist::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

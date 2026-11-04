@@ -2,9 +2,7 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -14,10 +12,24 @@ class UserTyping implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /** The only channels that exist; routes/channels.php registers these. */
+    public const CHANNELS = [
+        'weather-form-typing',
+        'water-level-form-typing',
+        'electricity-form-typing',
+        'water-service-form-typing',
+        'road-form-typing',
+        'bridge-form-typing',
+    ];
+
     public $userId;
+
     public $userName;
+
     public $fieldKey;
+
     public $isTyping;
+
     public $channelName;
 
     public function __construct($userId, $userName, $fieldKey, $isTyping, $channelName)

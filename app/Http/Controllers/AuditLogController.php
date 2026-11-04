@@ -284,21 +284,24 @@ class AuditLogController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
             fputcsv($out, ['Date and time', 'User', 'Email', 'Action', 'Module', 'Record ID', 'Disaster', 'IP address', 'Description']);
 
-            $query->chunk(500, function ($logs) use ($out) {
-                foreach ($logs as $log) {
-                    fputcsv($out, [
-                        $log->created_at->format('Y-m-d H:i:s'),
-                        $log->user?->name ?? 'System',
-                        $log->user?->email ?? '',
-                        $log->action_name,
-                        $log->model_name,
-                        $log->auditable_id,
-                        $log->disaster?->name,
-                        $log->ip_address,
-                        $log->description,
-                    ]);
-                }
-            });
+            // By id, not created_at: paging on a timestamp many rows share can repeat or skip them.
+            $query->reorder()
+                ->select(['id', 'user_id', 'disaster_id', 'action', 'auditable_type', 'auditable_id', 'ip_address', 'description', 'created_at'])
+                ->chunkByIdDesc(500, function ($logs) use ($out) {
+                    foreach ($logs as $log) {
+                        fputcsv($out, [
+                            $log->created_at->format('Y-m-d H:i:s'),
+                            $log->user?->name ?? 'System',
+                            $log->user?->email ?? '',
+                            $log->action_name,
+                            $log->model_name,
+                            $log->auditable_id,
+                            $log->disaster?->name,
+                            $log->ip_address,
+                            $log->description,
+                        ]);
+                    }
+                });
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);

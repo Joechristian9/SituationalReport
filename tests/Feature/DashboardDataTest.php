@@ -3,6 +3,9 @@
 use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
 use App\Models\WeatherReport;
+use App\Services\DisasterSummary;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('sends the environment graphs only when their tab asks, with only the columns they use', function () {
@@ -53,4 +56,59 @@ it('sums evacuees per barangay for the active disaster only', function () {
                     ->and($rows['Poblacion'])->toMatchArray(['inside_persons' => 15, 'inside_families' => 2, 'total_persons' => 15])
                     ->and($rows['Tambo']['total_persons'])->toBe(7);
             }));
+});
+
+it('skips the casualty, injured and missing lists on a reload that does not ask for them', function () {
+    $admin = userWithRole('admin');
+    Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $admin->id]);
+
+    $this->actingAs($admin)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->has('casualties')->has('injured')->has('missing')->has('impactSummary')->has('recentImpact')->has('newReportCounts'));
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $this->actingAs($admin)->withHeaders([
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) Inertia::getVersion(),
+        'X-Inertia-Partial-Component' => 'Admin/Dashboard',
+        'X-Inertia-Partial-Data' => 'typhoon',
+    ])->get(route('dashboard'))->assertOk();
+    $queries = collect(DB::getQueryLog())->pluck('query');
+    DB::disableQueryLog();
+
+    foreach (['"casualties"', '"injureds"', '"missing"'] as $table) {
+        expect($queries->filter(fn (string $query) => str_contains($query, $table)))->toBeEmpty();
+    }
+});
+
+it('keeps evacuees with no barangay in the graph and merges spellings, so its total matches the summary', function () {
+    $admin = userWithRole('admin');
+    $user = userWithRole('user');
+    userWithRole('user')->update(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local']);
+    $disaster = Typhoon::create(['name' => 'Test Storm', 'status' => 'active', 'created_by' => $admin->id]);
+    $row = fn (?string $barangay, int $persons) => PreEmptiveReport::create([
+        'disaster_id' => $disaster->id, 'user_id' => $user->id, 'barangay' => $barangay,
+        'families' => 1, 'persons' => $persons, 'outside_families' => 0, 'outside_persons' => 0, 'total_families' => 1, 'total_persons' => $persons,
+    ]);
+    $row('Alibagu', 3);
+    $row('ALIBAGU', 5);
+    $row('  alibagu ', 7);
+    $row(null, 11);
+    $row('', 13);
+    $row('  ', 17);
+    $row('Old Sitio', 19);
+    $row('old  sitio', 23);
+
+    $this->actingAs($admin)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->reloadOnly('preEmptiveReports', function (Assert $reload) use ($disaster) {
+            $rows = collect($reload->toArray()['props']['preEmptiveReports']);
+            $persons = $rows->pluck('total_persons', 'barangay');
+
+            expect($rows)->toHaveCount(3)
+                ->and($persons['Alibagu'])->toBe(15)
+                ->and($persons['No barangay given'])->toBe(41)
+                ->and($persons['Old Sitio'])->toBe(42)
+                ->and($rows->sum('total_persons'))->toBe(DisasterSummary::for($disaster)['evacuation']['persons'])
+                ->and($rows->sum('total_families'))->toBe(DisasterSummary::for($disaster)['evacuation']['families']);
+        }));
 });

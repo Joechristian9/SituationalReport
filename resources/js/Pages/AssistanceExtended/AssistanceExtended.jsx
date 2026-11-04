@@ -15,7 +15,7 @@ import { usePage } from "@inertiajs/react";
 import useTableFilter from "@/hooks/useTableFilter";
 
 import { ArrowUpFromLine, HandCoins, Loader2, PlusCircle } from "lucide-react";
-import { savedMessage } from "@/lib/offline/queue";
+import { savedMessage, savedToastOptions } from "@/lib/offline/queue";
 
 const formatFieldName = (field) => {
     return field
@@ -197,7 +197,7 @@ export default function AssistanceExtended({ assistances: initialAssistances, di
             // Invalidate modification history once
             queryClient.invalidateQueries(['assistance-modifications']);
             
-            toast.success(savedMessage(response, "Assistance records saved successfully!"));
+            toast.success(savedMessage(response, "Assistance records saved successfully!"), savedToastOptions(response));
         } catch (err) {
             console.error(err);
             

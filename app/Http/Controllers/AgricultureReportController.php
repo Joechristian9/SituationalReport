@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgricultureReport;
 use App\Models\Modification;
 use App\Services\ReportHistory;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class AgricultureReportController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
 
     /**
      * Display agriculture report history page
@@ -47,10 +48,10 @@ class AgricultureReportController extends Controller
             'crops' => 'required|array',
             'crops.*.id' => 'nullable|integer',
             'crops.*.crops_affected' => 'nullable|string|max:255',
-            'crops.*.standing_crop_ha' => 'nullable|numeric|min:0',
+            'crops.*.standing_crop_ha' => 'nullable|numeric|min:0|max:99999999.99',
             'crops.*.stage_of_crop' => 'nullable|string|max:255',
-            'crops.*.total_area_affected_ha' => 'nullable|numeric|min:0',
-            'crops.*.total_production_loss' => 'nullable|numeric|min:0',
+            'crops.*.total_area_affected_ha' => 'nullable|numeric|min:0|max:99999999.99',
+            'crops.*.total_production_loss' => 'nullable|numeric|min:0|max:9999999999999.99',
             'crops.*.remarks' => 'nullable|string',
         ]);
 
@@ -71,6 +72,14 @@ class AgricultureReportController extends Controller
                 $crop = empty($cropData['id'])
                     ? null
                     : AgricultureReport::where('disaster_id', $typhoonId)->find($cropData['id']);
+
+                // A row of another disaster is never copied in. An id that is gone is kept as a new row:
+                // this list deletes rows, so another device may have removed the one edited here.
+                if (! $crop && ! empty($cropData['id']) && AgricultureReport::whereKey($cropData['id'])->exists()) {
+                    $this->noteSkippedRow($cropData['id']);
+
+                    continue;
+                }
 
                 if ($crop) {
                     $crop->update($values);

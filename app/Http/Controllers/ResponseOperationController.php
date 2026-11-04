@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Modification;
 use App\Models\ResponseOperation;
 use App\Models\Typhoon;
+use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ResponseOperationController extends Controller
 {
-    use ValidatesDisasterStatus;
+    use AuthorizesRecordWrites, ValidatesDisasterStatus;
 
     /**
      * Display a listing of the resource.
@@ -61,75 +63,51 @@ class ResponseOperationController extends Controller
             'responses.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['responses'] as $responseData) {
-            // If an ID exists and is numeric, try to find and update that specific record
-            if (! empty($responseData['id']) && is_numeric($responseData['id'])) {
-                $operationQuery = ResponseOperation::where('id', $responseData['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $accessibleUserIds = $user->getAccessibleUserIds('write');
-                    $operationQuery->whereIn('user_id', $accessibleUserIds);
-                }
-
-                $operation = $operationQuery->first();
-                if ($operation) {
-                    // Update existing record
-                    $operation->update([
-                        'team_unit' => $responseData['team_unit'] ?? null,
-                        'incident' => $responseData['incident'] ?? null,
-                        'datetime' => $responseData['datetime'] ?? null,
-                        'location' => $responseData['location'] ?? null,
-                        'actions' => $responseData['actions'] ?? null,
-                        'remarks' => $responseData['remarks'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
-                        'updated_by' => Auth::id(),
-                    ]);
-                } else {
-                    // ID provided but doesn't exist in DB - treat as new record
-                    $isEmpty = empty(array_filter($responseData, function ($value) {
-                        return ! is_null($value) && $value !== '';
-                    }));
-
-                    if (! $isEmpty) {
-                        ResponseOperation::create([
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['responses'] as $responseData) {
+                // If an ID exists and is numeric, try to find and update that specific record
+                if (! empty($responseData['id']) && is_numeric($responseData['id'])) {
+                    // An id this account can't change is skipped. New rows always arrive with a null id.
+                    $operation = $this->findWritableRecord(ResponseOperation::class, $responseData['id']);
+                    if ($operation) {
+                        // Update existing record
+                        $operation->update([
                             'team_unit' => $responseData['team_unit'] ?? null,
                             'incident' => $responseData['incident'] ?? null,
                             'datetime' => $responseData['datetime'] ?? null,
                             'location' => $responseData['location'] ?? null,
                             'actions' => $responseData['actions'] ?? null,
                             'remarks' => $responseData['remarks'] ?? null,
-                            'user_id' => Auth::id(),
-                            'updated_by' => Auth::id(),
                             'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
                         ]);
                     }
                 }
-            }
-            // If no ID or null, it's a new record. We create it.
-            else {
-                // Skip rows if all values are null/empty
-                $isEmpty = empty(array_filter($responseData, function ($value) {
-                    return ! is_null($value) && $value !== '';
-                }));
+                // If no ID or null, it's a new record. We create it.
+                else {
+                    // Skip rows if all values are null/empty
+                    $isEmpty = empty(array_filter($responseData, function ($value) {
+                        return ! is_null($value) && $value !== '';
+                    }));
 
-                if ($isEmpty) {
-                    continue;
+                    if ($isEmpty) {
+                        continue;
+                    }
+
+                    ResponseOperation::create([
+                        'team_unit' => $responseData['team_unit'] ?? null,
+                        'incident' => $responseData['incident'] ?? null,
+                        'datetime' => $responseData['datetime'] ?? null,
+                        'location' => $responseData['location'] ?? null,
+                        'actions' => $responseData['actions'] ?? null,
+                        'remarks' => $responseData['remarks'] ?? null,
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
                 }
-
-                ResponseOperation::create([
-                    'team_unit' => $responseData['team_unit'] ?? null,
-                    'incident' => $responseData['incident'] ?? null,
-                    'datetime' => $responseData['datetime'] ?? null,
-                    'location' => $responseData['location'] ?? null,
-                    'actions' => $responseData['actions'] ?? null,
-                    'remarks' => $responseData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         // Return the fresh data after save
         $user = Auth::user();
@@ -153,43 +131,12 @@ class ResponseOperationController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ResponseOperation $responseOperation)
-    {
-        $validated = $request->validate([
-            'team_unit' => 'required|string|max:255',
-            'incident' => 'required|string|max:255',
-            'datetime' => 'required|date',
-            'location' => 'nullable|string|max:255',
-            'actions' => 'nullable|string',
-            'remarks' => 'nullable|string',
-        ]);
-
-        $responseOperation->update([
-            ...$validated,
-            'updated_by' => Auth::id(),
-        ]);
-
-        return redirect()->back()->with('success', 'Response operation updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ResponseOperation $responseOperation)
-    {
-        $responseOperation->delete();
-
-        return redirect()->back()->with('success', 'Response operation deleted successfully.');
-    }
-
-    /**
      * Get modification history for response operations
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(ResponseOperation::class)
+            ->readableBy(Auth::user(), ResponseOperation::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

@@ -64,6 +64,20 @@ class Modification extends Model
     }
 
     /**
+     * Only the history of rows this account may read. It holds the values as they were, so
+     * holding a form is not enough: a row's history stays with the accounts that can see the row.
+     *
+     * @param  class-string<Model>  $modelClass
+     */
+    public function scopeReadableBy(Builder $query, User $user, string $modelClass): Builder
+    {
+        return $query->when(! $user->isAdmin(), fn (Builder $query) => $query->whereIn(
+            'model_id',
+            $modelClass::query()->select('id')->whereIn('user_id', $user->getAccessibleUserIds('read')),
+        ));
+    }
+
+    /**
      * Get the modified model (polymorphic relationship).
      */
     public function model()

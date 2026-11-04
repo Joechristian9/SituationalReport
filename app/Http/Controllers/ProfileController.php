@@ -51,6 +51,13 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        if ($user->isLastAdmin()) {
+            $message = 'You are the last admin, so this account cannot be deleted. Make another account an admin first.';
+
+            // The flash is what the users page shows; this page shows only the field error, in the dialog.
+            return back()->with('error', $message)->withErrors(['password' => $message]);
+        }
+
         Auth::logout();
 
         $user->delete();

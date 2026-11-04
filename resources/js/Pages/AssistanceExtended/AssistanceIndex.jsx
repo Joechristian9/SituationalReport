@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { usePage } from "@inertiajs/react";
+import { Toaster } from "react-hot-toast";
 import TyphoonStatusAlert from "@/Components/DisasterStatusAlert";
 import ActiveTyphoonHeader from "@/Components/ActiveDisasterHeader";
 import AppLayout from "@/Layouts/AppLayout";
@@ -54,6 +55,7 @@ export default function AssistanceIndex() {
                 />
             }
         >
+            <Toaster position="top-right" />
 
                 {/* Main Content */}
                 <main className="w-full p-4 sm:p-6 h-full bg-gray-50">

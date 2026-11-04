@@ -86,6 +86,10 @@ class UserController extends Controller
             'permissions.*' => ['string', Rule::in(Permission::pluck('name')->toArray())],
         ]);
 
+        if ($user->isLastAdmin() && $validated['role'] !== 'admin') {
+            return redirect()->route('admin.users.index')->with('error', 'This is the last admin account, so it must stay an admin.');
+        }
+
         // Track old permissions for audit log
         $oldPermissions = $user->permissions->pluck('name')->toArray();
         $oldRoles = $user->roles->pluck('name')->toArray();

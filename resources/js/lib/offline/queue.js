@@ -32,8 +32,17 @@ const ENDPOINTS = [
 
 export const QUEUED_MESSAGE = 'No internet: saved on this device. It will be sent automatically when you are back online.';
 
-/** A form's success message, or the offline one if the save was only queued on the device. */
-export const savedMessage = (response, onlineMessage) => (response?.data?.queued ? QUEUED_MESSAGE : onlineMessage);
+/**
+ * A form's success message: the offline one if the save was only queued on the device, the
+ * server's if it left rows out (see NoteSkippedRows.php), otherwise the form's own.
+ */
+export const savedMessage = (response, onlineMessage) => {
+    if (response?.data?.queued) return QUEUED_MESSAGE;
+    return response?.data?.skipped_rows ? response.data.message : onlineMessage;
+};
+
+/** Toast options for that message: a sentence about skipped rows needs longer than the 2s default. */
+export const savedToastOptions = (response) => (response?.data?.skipped_rows ? { duration: 5000 } : undefined);
 
 /** The endpoint path for a URL if it is a queueable report save, else null. */
 export function endpointFor(url) {

@@ -9,6 +9,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AssistanceExtendedController extends Controller
 {
@@ -56,49 +57,44 @@ class AssistanceExtendedController extends Controller
             'assistances.*.id' => ['nullable', 'integer'],
             'assistances.*.agency_officials_groups' => 'nullable|string|max:255',
             'assistances.*.type_kind_of_assistance' => 'nullable|string|max:255',
-            'assistances.*.amount' => 'nullable|numeric|min:0',
+            'assistances.*.amount' => 'nullable|numeric|min:0|max:9999999999.99',
             'assistances.*.beneficiaries' => 'nullable|string|max:255',
         ]);
 
-        foreach ($validated['assistances'] as $assistanceData) {
-            // Skip empty rows
-            if (empty(array_filter($assistanceData))) {
-                continue;
-            }
-
-            // If ID exists and is numeric, update existing record
-            if (! empty($assistanceData['id']) && is_numeric($assistanceData['id'])) {
-                $assistanceQuery = AssistanceExtended::where('id', $assistanceData['id']);
-
-                $user = Auth::user();
-                if ($user && ! $user->isAdmin()) {
-                    $assistanceQuery->where('user_id', $user->id);
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['assistances'] as $assistanceData) {
+                // Skip empty rows
+                if (empty(array_filter($assistanceData))) {
+                    continue;
                 }
 
-                $assistance = $assistanceQuery->first();
-                if ($assistance) {
-                    $assistance->update([
+                // If ID exists and is numeric, update existing record
+                if (! empty($assistanceData['id']) && is_numeric($assistanceData['id'])) {
+                    $assistance = $this->findWritableRecord(AssistanceExtended::class, $assistanceData['id']);
+                    if ($assistance) {
+                        $assistance->update([
+                            'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
+                            'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
+                            'amount' => $assistanceData['amount'] ?? null,
+                            'beneficiaries' => $assistanceData['beneficiaries'] ?? null,
+                            'disaster_id' => $activeTyphoon->id,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    }
+                } else {
+                    // Create new record
+                    AssistanceExtended::create([
                         'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
                         'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
                         'amount' => $assistanceData['amount'] ?? null,
                         'beneficiaries' => $assistanceData['beneficiaries'] ?? null,
-                        'disaster_id' => $activeTyphoon->id,
+                        'user_id' => Auth::id(),
                         'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
                     ]);
                 }
-            } else {
-                // Create new record
-                AssistanceExtended::create([
-                    'agency_officials_groups' => $assistanceData['agency_officials_groups'] ?? null,
-                    'type_kind_of_assistance' => $assistanceData['type_kind_of_assistance'] ?? null,
-                    'amount' => $assistanceData['amount'] ?? null,
-                    'beneficiaries' => $assistanceData['beneficiaries'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         // Return fresh data after save (limit to recent 100 records)
         $user = Auth::user();
@@ -131,7 +127,7 @@ class AssistanceExtendedController extends Controller
         $validated = $request->validate([
             'agency_officials_groups' => 'nullable|string|max:255',
             'type_kind_of_assistance' => 'nullable|string|max:255',
-            'amount' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0|max:9999999999.99',
             'beneficiaries' => 'nullable|string|max:255', // ✅ FIXED (string)
         ]);
 
@@ -144,21 +140,12 @@ class AssistanceExtendedController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AssistanceExtended $assistanceExtended)
-    {
-        $assistanceExtended->delete();
-
-        return redirect()->back()->with('success', 'Assistance deleted successfully.');
-    }
-
-    /**
      * Get modification history for assistance extended records
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(AssistanceExtended::class)
+            ->readableBy(Auth::user(), AssistanceExtended::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

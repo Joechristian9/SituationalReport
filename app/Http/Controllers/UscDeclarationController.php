@@ -9,6 +9,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class UscDeclarationController extends Controller
@@ -51,40 +52,42 @@ class UscDeclarationController extends Controller
 
         $savedDeclarations = [];
 
-        foreach ($validated['usc_declarations'] as $declaration) {
-            // ✅ Skip rows if all values are null/empty
-            $isEmpty = empty(array_filter([
-                $declaration['declared_by'] ?? null,
-                $declaration['resolution_number'] ?? null,
-                $declaration['date_approved'] ?? null,
-            ]));
+        DB::transaction(function () use ($validated, $activeTyphoon, &$savedDeclarations) {
+            foreach ($validated['usc_declarations'] as $declaration) {
+                // ✅ Skip rows if all values are null/empty
+                $isEmpty = empty(array_filter([
+                    $declaration['declared_by'] ?? null,
+                    $declaration['resolution_number'] ?? null,
+                    $declaration['date_approved'] ?? null,
+                ]));
 
-            if ($isEmpty) {
-                continue;
-            }
-
-            $data = [
-                'declared_by' => $declaration['declared_by'] ?? null,
-                'resolution_number' => $declaration['resolution_number'] ?? null,
-                'date_approved' => $declaration['date_approved'] ?? null,
-                'updated_by' => Auth::id(),
-            ];
-
-            // Check if this is an update or create
-            if (! empty($declaration['id']) && is_numeric($declaration['id'])) {
-                // Update existing record
-                $uscDeclaration = $this->findWritableRecord(UscDeclaration::class, $declaration['id']);
-                if ($uscDeclaration) {
-                    $uscDeclaration->update($data);
-                    $savedDeclarations[] = $uscDeclaration->fresh();
+                if ($isEmpty) {
+                    continue;
                 }
-            } else {
-                // Create new record
-                $data['user_id'] = Auth::id();
-                $data['disaster_id'] = $activeTyphoon->id;
-                $savedDeclarations[] = UscDeclaration::create($data);
+
+                $data = [
+                    'declared_by' => $declaration['declared_by'] ?? null,
+                    'resolution_number' => $declaration['resolution_number'] ?? null,
+                    'date_approved' => $declaration['date_approved'] ?? null,
+                    'updated_by' => Auth::id(),
+                ];
+
+                // Check if this is an update or create
+                if (! empty($declaration['id']) && is_numeric($declaration['id'])) {
+                    // Update existing record
+                    $uscDeclaration = $this->findWritableRecord(UscDeclaration::class, $declaration['id']);
+                    if ($uscDeclaration) {
+                        $uscDeclaration->update($data);
+                        $savedDeclarations[] = $uscDeclaration->fresh();
+                    }
+                } else {
+                    // Create new record
+                    $data['user_id'] = Auth::id();
+                    $data['disaster_id'] = $activeTyphoon->id;
+                    $savedDeclarations[] = UscDeclaration::create($data);
+                }
             }
-        }
+        });
 
         // Return JSON response with saved declarations
         if ($request->expectsJson()) {

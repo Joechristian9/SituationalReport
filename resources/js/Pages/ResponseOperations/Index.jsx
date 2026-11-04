@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Loader2, PlusCircle, ArrowUpFromLine, ActivitySquare } from "lucide-react";
 import { m as motion } from "framer-motion";
-import { savedMessage } from "@/lib/offline/queue";
+import { savedMessage, savedToastOptions } from "@/lib/offline/queue";
 
 const formatFieldName = (field) => {
     return field
@@ -147,7 +147,7 @@ export default function Index() {
                 setResponses(response.data.responses);
             }
             
-            toast.success(savedMessage(response, "Response operations saved successfully!"));
+            toast.success(savedMessage(response, "Response operations saved successfully!"), savedToastOptions(response));
         } catch (err) {
             console.error("Full error:", err);
             console.error("Error response:", err.response?.data);

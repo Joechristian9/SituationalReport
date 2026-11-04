@@ -9,6 +9,7 @@ use App\Traits\AuthorizesRecordWrites;
 use App\Traits\ValidatesDisasterStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SuspensionOfClassController extends Controller
 {
@@ -38,61 +39,46 @@ class SuspensionOfClassController extends Controller
             'suspension_of_classes.*.remarks' => 'nullable|string',
         ]);
 
-        foreach ($validated['suspension_of_classes'] as $suspensionData) {
-            // If an ID exists and is numeric, try to find and update that specific record
-            if (! empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
-                $suspension = $this->findWritableRecord(SuspensionOfClass::class, $suspensionData['id']);
-                if ($suspension) {
-                    // Update existing record
-                    $suspension->update([
-                        'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                        'level' => $suspensionData['level'] ?? null,
-                        'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
-                        'remarks' => $suspensionData['remarks'] ?? null,
-                        'updated_by' => Auth::id(),
-                    ]);
-                } else {
-                    // ID provided but doesn't exist in DB - treat as new record
-                    // Skip empty rows
-                    $isEmpty = empty(array_filter($suspensionData, function ($value) {
-                        return ! is_null($value) && trim((string) $value) !== '';
-                    }));
-
-                    if (! $isEmpty) {
-                        SuspensionOfClass::create([
+        DB::transaction(function () use ($validated, $activeTyphoon) {
+            foreach ($validated['suspension_of_classes'] as $suspensionData) {
+                // If an ID exists and is numeric, try to find and update that specific record
+                if (! empty($suspensionData['id']) && is_numeric($suspensionData['id'])) {
+                    // An id this account can't change is skipped. New rows always arrive with a null id.
+                    $suspension = $this->findWritableRecord(SuspensionOfClass::class, $suspensionData['id']);
+                    if ($suspension) {
+                        // Update existing record
+                        $suspension->update([
                             'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
                             'level' => $suspensionData['level'] ?? null,
                             'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
                             'remarks' => $suspensionData['remarks'] ?? null,
-                            'user_id' => Auth::id(),
                             'updated_by' => Auth::id(),
-                            'disaster_id' => $activeTyphoon->id,
                         ]);
                     }
                 }
-            }
-            // If no ID or null, it's a new record. We create it.
-            else {
-                // Skip rows where all values are null or empty
-                $isEmpty = empty(array_filter($suspensionData, function ($value) {
-                    return ! is_null($value) && trim((string) $value) !== '';
-                }));
+                // If no ID or null, it's a new record. We create it.
+                else {
+                    // Skip rows where all values are null or empty
+                    $isEmpty = empty(array_filter($suspensionData, function ($value) {
+                        return ! is_null($value) && trim((string) $value) !== '';
+                    }));
 
-                if ($isEmpty) {
-                    continue;
+                    if ($isEmpty) {
+                        continue;
+                    }
+
+                    SuspensionOfClass::create([
+                        'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
+                        'level' => $suspensionData['level'] ?? null,
+                        'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
+                        'remarks' => $suspensionData['remarks'] ?? null,
+                        'user_id' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'disaster_id' => $activeTyphoon->id,
+                    ]);
                 }
-
-                SuspensionOfClass::create([
-                    'province_city_municipality' => $suspensionData['province_city_municipality'] ?? null,
-                    'level' => $suspensionData['level'] ?? null,
-                    'date_of_suspension' => $suspensionData['date_of_suspension'] ?? null,
-                    'remarks' => $suspensionData['remarks'] ?? null,
-                    'user_id' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'disaster_id' => $activeTyphoon->id,
-                ]);
             }
-        }
+        });
 
         $message = 'Suspension of classes saved successfully!';
         // The form replaces its rows with these, so saved rows get their ids and change times
@@ -107,40 +93,12 @@ class SuspensionOfClassController extends Controller
     }
 
     /**
-     * Update the specified suspension of class record in storage.
-     */
-    public function update(Request $request, SuspensionOfClass $suspensionOfClass)
-    {
-        $validated = $request->validate([
-            'province_city_municipality' => 'nullable|string|max:255',
-            'level' => 'nullable|string|max:255',
-            'date_of_suspension' => 'nullable|date',
-            'remarks' => 'nullable|string',
-        ]);
-
-        $suspensionOfClass->update(array_merge($validated, [
-            'updated_by' => Auth::id(),
-        ]));
-
-        return back()->with('success', 'Incidents Report saved successfully.');
-    }
-
-    /**
-     * Remove the specified suspension of class record from storage.
-     */
-    /* public function destroy(SuspensionOfClass $suspensionOfClass)
-    {
-        $suspensionOfClass->delete();
-
-        return back()->with('success', 'Suspension of Class record deleted successfully.');
-    } */
-
-    /**
      * Get modification history for suspension of classes
      */
     public function getModifications()
     {
         $modifications = Modification::forActiveDisaster(SuspensionOfClass::class)
+            ->readableBy(Auth::user(), SuspensionOfClass::class)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->get();

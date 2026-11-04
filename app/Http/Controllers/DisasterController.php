@@ -357,10 +357,10 @@ class DisasterController extends Controller
         // Deleting can't be undone: the admin re-enters their password, so an unattended session can't do it.
         $request->validate(['password' => ['required', 'current_password']]);
 
-        // Only allow deleting if not active
-        if ($disaster->status === 'active') {
+        // A paused disaster is still running, and deleting one removes its reports.
+        if (in_array($disaster->status, ['active', 'paused'], true)) {
             return response()->json([
-                'message' => 'Cannot delete an active typhoon. Please end it first.',
+                'message' => 'Cannot delete a disaster that is still running. Please end it first.',
             ], 422);
         }
 

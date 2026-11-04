@@ -148,7 +148,7 @@ class PendingForms
     private static function groupedSubmissions(Typhoon $disaster): array
     {
         $tables = array_keys(self::FORM_TABLES);
-        $bindings = array_merge(...array_map(fn (string $table) => [$table, $disaster->id], $tables));
+        $bindings = array_merge(...array_map(fn (string $table) => self::countsBindings($table, $disaster), $tables));
 
         try {
             return DB::select(implode(' union all ', array_map([self::class, 'countsSql'], $tables)), $bindings);
@@ -158,7 +158,7 @@ class PendingForms
             $rows = [];
             foreach ($tables as $table) {
                 try {
-                    array_push($rows, ...DB::select(self::countsSql($table), [$table, $disaster->id]));
+                    array_push($rows, ...DB::select(self::countsSql($table), self::countsBindings($table, $disaster)));
                 } catch (QueryException) {
                     // Skip the missing table.
                 }
@@ -168,9 +168,15 @@ class PendingForms
         }
     }
 
+    /** @return array<int, int|string> the bindings of countsSql() */
+    private static function countsBindings(string $table, Typhoon $disaster): array
+    {
+        return $table === 'pre_emptive_reports' ? [$table, $disaster->id, $disaster->id] : [$table, $disaster->id];
+    }
+
     /**
-     * One table's row count per account (bindings: table name, disaster id). Pre-emptive rows
-     * also count for the barangay they name, since it sees and edits them on its form.
+     * One table's row count per account. Pre-emptive rows also count for the barangay they name,
+     * since it sees and edits them on its form.
      */
     private static function countsSql(string $table): string
     {
@@ -181,9 +187,14 @@ class PendingForms
         if ($table === 'pre_emptive_reports') {
             $users = $grammar->wrapTable('users');
 
-            return "select ? as table_name, {$users}.id as user_id, COUNT(*) as aggregate, MAX({$rows}.updated_at) as last_updated from {$rows}"
-                ." join {$users} on {$users}.id = {$rows}.user_id or {$users}.name = {$rows}.barangay"
-                ." where {$rows}.disaster_id = ? group by {$users}.id";
+            // Two joins instead of one with OR, which can use no index. The database still compares
+            // the names, so case and accents match exactly as its collation says.
+            return 'select ? as table_name, filed.user_id, COUNT(*) as aggregate, MAX(filed.updated_at) as last_updated from ('
+                ."select {$users}.id as user_id, {$rows}.updated_at from {$rows}"
+                ." join {$users} on {$users}.id = {$rows}.user_id where {$rows}.disaster_id = ?"
+                ." union all select {$users}.id as user_id, {$rows}.updated_at from {$rows}"
+                ." join {$users} on {$users}.name = {$rows}.barangay where {$rows}.disaster_id = ? and {$users}.id <> {$rows}.user_id"
+                .') as filed group by filed.user_id';
         }
 
         return "select ? as table_name, user_id, COUNT(*) as aggregate, MAX(updated_at) as last_updated from {$rows}"

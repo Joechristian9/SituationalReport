@@ -33,20 +33,24 @@ class DisasterSummary
             ->selectRaw('COALESCE(SUM(total_families), 0) as families, COALESCE(SUM(total_persons), 0) as persons')
             ->first();
 
-        $total = 0;
-        $accounts = collect();
+        // Each table's rows per account, in one query instead of two per table.
+        $counts = null;
         foreach (self::REPORT_TABLES as $table) {
-            $total += $rows($table)->count();
-            if (! in_array($table, self::WITHOUT_USER, true)) {
-                $accounts = $accounts->merge($rows($table)->whereNotNull('user_id')->distinct()->pluck('user_id'));
+            $account = in_array($table, self::WITHOUT_USER, true) ? 'NULL as user_id' : 'user_id';
+            $query = $rows($table)->selectRaw("? as table_name, {$account}, COUNT(*) as aggregate", [$table]);
+            if ($account === 'user_id') {
+                $query->groupBy('user_id');
             }
+            $counts = $counts ? $counts->unionAll($query) : $query;
         }
+        $counts = $counts->get();
+        $rowsIn = fn (string $table) => (int) $counts->where('table_name', $table)->sum('aggregate');
 
         return [
             'impact' => [
-                'dead' => $rows('casualties')->count(),
-                'injured' => $rows('injureds')->count(),
-                'missing' => $rows('missing')->count(),
+                'dead' => $rowsIn('casualties'),
+                'injured' => $rowsIn('injureds'),
+                'missing' => $rowsIn('missing'),
                 'housesDamaged' => (int) $rows('damaged_house_reports')->sum('total'),
             ],
             'evacuation' => [
@@ -54,8 +58,8 @@ class DisasterSummary
                 'persons' => (int) $evacuation->persons,
             ],
             'reports' => [
-                'total' => $total,
-                'accounts' => $accounts->unique()->count(),
+                'total' => (int) $counts->sum('aggregate'),
+                'accounts' => $counts->whereNotNull('user_id')->pluck('user_id')->unique()->count(),
             ],
         ];
     }

@@ -61,6 +61,12 @@ class User extends Authenticatable
         return $this->hasRole('admin');
     }
 
+    /** Whether taking this account or its admin role away would leave nobody able to administer the system. */
+    public function isLastAdmin(): bool
+    {
+        return $this->isAdmin() && ! self::role('admin')->whereKeyNot($this->id)->exists();
+    }
+
     /** Where this user lands after login: only admins have a dashboard. */
     public function homeRoute(): string
     {

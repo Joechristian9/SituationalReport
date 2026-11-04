@@ -66,6 +66,7 @@ class ProfileTest extends TestCase
     public function test_admin_can_delete_their_account(): void
     {
         $user = userWithRole('admin');
+        userWithRole('admin'); // the last admin may not leave
 
         $response = $this
             ->actingAs($user)

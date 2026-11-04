@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Typhoon;
+use App\Services\PendingForms;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -42,4 +43,40 @@ it('shows every account as not submitted when no disaster is running', function 
             ->where('users.0.has_submitted', false)
             ->where('users.0.pending_forms', [])
             ->where('users.0.forms', ['done' => 0, 'total' => 1, 'toSubmit' => ['Weather Report'], 'submitted' => []]));
+});
+
+it('credits a pre-emptive row to its filer and to the barangay it names, once each', function () {
+    $admin = userWithRole('admin');
+    $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $admin->id]);
+    $other = Typhoon::create(['name' => 'Other', 'status' => 'ended', 'created_by' => $admin->id]);
+    $office = userWithPermissions('access-pre-emptive-form');
+    $rugao = userWithPermissions('access-pre-emptive-form');
+    $rugao->update(['name' => 'Rugao', 'email' => 'rugao@barangay.local']);
+    $alibagu = userWithPermissions('access-pre-emptive-form');
+    $alibagu->update(['name' => 'Alibagu', 'email' => 'alibagu@barangay.local']);
+    // Same name as Alibagu's account: both are credited, as the name is all a row carries.
+    $twin = userWithPermissions('access-pre-emptive-form');
+    $twin->update(['name' => 'Alibagu', 'email' => 'twin@barangay.local']);
+    $row = fn (int $userId, ?string $barangay, string $at, ?int $disasterId = null) => DB::table('pre_emptive_reports')->insert(['disaster_id' => $disasterId ?? $disaster->id, 'user_id' => $userId, 'barangay' => $barangay, 'created_at' => $at, 'updated_at' => $at]);
+
+    $row($rugao->id, 'Rugao', '2026-10-01 08:00:00');      // own row naming itself: counts once
+    $row($office->id, 'Rugao', '2026-10-02 08:00:00');     // office's row for Rugao: both
+    $row($office->id, null, '2026-10-03 08:00:00');        // office only
+    $row($rugao->id, 'Alibagu', '2026-10-04 08:00:00');    // Rugao, Alibagu and its twin
+    $row($office->id, 'Alibagu', '2026-10-05 08:00:00');   // office, Alibagu and its twin
+    $row($office->id, 'Nowhere', '2026-10-06 08:00:00');   // names nobody: office only
+    $row($office->id, 'Rugao', '2026-10-07 08:00:00', $other->id); // other disaster: ignored
+
+    $byUser = PendingForms::submissionsByUser($disaster);
+    $counts = array_map(fn (array $forms) => $forms['pre_emptive_reports'], $byUser);
+    ksort($counts);
+    $expected = [
+        $office->id => ['count' => 4, 'last_updated' => '2026-10-06 08:00:00'],
+        $rugao->id => ['count' => 3, 'last_updated' => '2026-10-04 08:00:00'],
+        $alibagu->id => ['count' => 2, 'last_updated' => '2026-10-05 08:00:00'],
+        $twin->id => ['count' => 2, 'last_updated' => '2026-10-05 08:00:00'],
+    ];
+    ksort($expected);
+
+    expect($counts)->toBe($expected);
 });
