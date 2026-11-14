@@ -10,9 +10,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Report saves that were queued on a device while offline and are being sent later.
- * The client marks them with X-Offline-Key (one per queued save) and
- * X-Offline-Disaster (the disaster active when it was filed). Ordinary saves have
- * neither header and pass straight through.
+ * The client marks them with X-Offline-Key (one per queued save), X-Offline-Disaster
+ * (the disaster active when it was filed) and X-Offline-User (the account that filed it).
+ * Ordinary saves have none of these headers and pass straight through.
  */
 class HandleOfflineSubmission
 {
@@ -28,6 +28,16 @@ class HandleOfflineSubmission
 
         if (! preg_match('/^[A-Za-z0-9-]{8,64}$/', $key)) {
             return response()->json(['message' => 'Invalid offline submission key.'], 422);
+        }
+
+        // On a shared phone one account's session can still be open when another account's
+        // reports are sent. They must never be saved under whoever happens to be logged in.
+        $filedBy = (string) $request->header('X-Offline-User', '');
+        if ($filedBy !== '' && $filedBy !== (string) $request->user()->id) {
+            return response()->json([
+                'message' => 'Not saved: this report was written by another account. Log in as that account to send it.',
+                'error' => 'WRONG_ACCOUNT',
+            ], 409);
         }
 
         // Saves are stamped with whichever disaster is active when they arrive, so a
