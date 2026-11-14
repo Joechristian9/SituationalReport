@@ -28,16 +28,42 @@ vi.mock("./sync", () => ({ canRefreshWithoutLosingEdits: () => true, needsReload
 
 vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} });
 vi.stubGlobal("window", { addEventListener: vi.fn(), dispatchEvent: vi.fn(), navigator: {}, location: { origin: "http://localhost" } });
+vi.stubGlobal("route", (name) => `/${name}`);
 vi.stubGlobal("setInterval", vi.fn());
 vi.stubGlobal("setTimeout", vi.fn());
 
+const axios = (await import("axios")).default;
 const { enqueue } = await import("./queue");
+const { saveTemplate } = await import("./accounts");
 const { offlineSession, signInToServer } = await import("./offlineSession");
-const { installOffline } = await import("./install");
+const { installOffline, rememberCommunicationServices } = await import("./install");
 
 installOffline({ props: {} });
 
 const save = () => ({ method: "post", url: "/road-reports", data: { roads: [{ id: null, name: "Bridge road" }] }, headers: {} });
+
+describe("keeping the communication form's columns for blank forms", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("saves the list the server sends", async () => {
+        axios.get.mockResolvedValue({ data: { services: { cellphone: [{ id: 1 }] } } });
+
+        await rememberCommunicationServices();
+
+        expect(saveTemplate).toHaveBeenCalledWith({ communicationServices: { cellphone: [{ id: 1 }] } });
+    });
+
+    it("keeps the saved list when the answer is not the server's", async () => {
+        // Data on with no load: the telco's page answers 200 with no list in it.
+        axios.get.mockResolvedValue({ data: "<html>no load</html>" });
+        await rememberCommunicationServices();
+
+        axios.get.mockRejectedValue(new Error("Network Error"));
+        await rememberCommunicationServices();
+
+        expect(saveTemplate).not.toHaveBeenCalled();
+    });
+});
 
 describe("saving a report", () => {
     beforeEach(() => {

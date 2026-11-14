@@ -94,6 +94,20 @@ it('answers too many background logins with 429, not a redirect', function () {
         ->assertStatus(429)->assertJsonStructure(['message']);
 });
 
+it('answers a locked-out background login with 429, not as a wrong password', function () {
+    // The app forgets an account when the server refuses a password the phone still accepts
+    // (422). A lockout after wrong tries must not look like that, or a correct password
+    // typed during the lockout would wipe the phone's offline login.
+    $user = userWithRole('user');
+    foreach (range(1, 5) as $try) {
+        $this->postJson('/login', ['email' => $user->email, 'password' => 'wrong-password'])->assertStatus(422);
+    }
+
+    $this->postJson('/login', ['email' => $user->email, 'password' => 'password'])
+        ->assertStatus(429)->assertJsonStructure(['message']);
+    $this->assertGuest();
+});
+
 it('answers a background logout with no content', function () {
     $this->actingAs(userWithRole('user'))->postJson('/logout')->assertNoContent();
     $this->assertGuest();

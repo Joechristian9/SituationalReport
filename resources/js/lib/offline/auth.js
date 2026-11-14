@@ -62,6 +62,11 @@ async function logOutOfServer() {
 
 /** The server's answer to a login, or null when it couldn't be reached. */
 async function logInToServer(credentials) {
+    if (!(await freshToken())) return null;
+    // Whoever logged out here with no connection is still logged in on the server, so that
+    // their reports can send: they go now, before that session is closed.
+    const leaving = pendingLogout();
+    if (leaving) await syncNow({ userId: leaving, evenIfHeld: true });
     // Always a logout first. If a session is still open (this phone's own, or one it doesn't
     // know about), the server would answer the login as that account instead.
     const left = await logOutOfServer();
@@ -89,7 +94,10 @@ export async function signIn({ email, password, remember = true }, queryClient) 
             if (pendingLogout() === under.id) clearPendingLogout();
             return { ok: true };
         }
-        if (result !== 'unknown') return refusedByPhone(result, email);
+        if (result === 'wrong') return refusedByPhone(result, email);
+        // 'blocked' (too many wrong tries) goes on to the server: with internet its answer
+        // decides, and a yes resets the count. Stopping here would lock the account out of
+        // this phone for good.
     }
 
     const answer = await logInToServer({ email: email.trim(), password, remember });
@@ -186,5 +194,8 @@ export async function finishPendingLogout() {
     const userId = pendingLogout();
     if (!userId || offlineSession() || !navigator.onLine) return;
     await syncNow({ userId, evenIfHeld: true });
+    // Sending can take a while on a weak signal. If someone logged in meanwhile (the same
+    // account coming back, or another one), the session now open is theirs: leave it.
+    if (pendingLogout() !== userId || offlineSession()) return;
     if ((await logOutOfServer()) === 'done') clearPendingLogout();
 }

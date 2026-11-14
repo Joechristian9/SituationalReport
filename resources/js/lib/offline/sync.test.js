@@ -12,7 +12,7 @@ vi.mock("./context", () => ({ currentUser: () => ({ id: 1 }), currentSession: ()
 
 const axios = (await import("axios")).default;
 const { allItems, putItem, removeItem } = await import("./store");
-const { holdSync, syncNow, syncState } = await import("./sync");
+const { holdSync, needsReloadBeforeSaving, syncNow, syncState } = await import("./sync");
 
 const report = { id: "key-1", userId: 1, status: "pending", url: "/roads", payload: { roads: [] }, session: "old-page", savedAt: 1 };
 
@@ -80,6 +80,19 @@ describe("syncNow", () => {
         expect(syncState().loginNeeded).toBe(true);
         expect(putItem).not.toHaveBeenCalled();
         expect(removeItem).not.toHaveBeenCalled();
+    });
+
+    it("does not ask this page to reload after sending another account's report", async () => {
+        // Another account's report, queued from this same forms address before it logged out.
+        // Its rows are not on the page now showing, so that page has nothing to reload for.
+        allItems.mockResolvedValue([{ ...report, id: "key-2", userId: 2, session: "page-1", path: "/road-reports" }]);
+        axios.post.mockResolvedValue({ status: 200, data: {} });
+
+        await syncNow({ userId: 2, evenIfHeld: true });
+
+        expect(removeItem).toHaveBeenCalledWith("key-2");
+        expect(syncState().reloadNeeded).toBe(false);
+        expect(needsReloadBeforeSaving("/road-reports")).toBe(false);
     });
 
     it("sends nothing while held, except when asked for one account's reports", async () => {

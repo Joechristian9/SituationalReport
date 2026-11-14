@@ -111,7 +111,9 @@ export async function syncNow({ userId = currentUser()?.id, evenIfHeld = false }
                 await send(item, freshToken);
                 await removeItem(item.id);
                 state.loginNeeded = false;
-                if (item.session === currentSession()) {
+                // Only for this page's own account: a logged-out account's report can carry
+                // the same page session (same forms address), but its rows are not on this page.
+                if (item.session === currentSession() && item.userId === currentUser()?.id) {
                     sentFromThisPage.add(`${item.session}|${item.path}`);
                     latestSentSavedAt = Math.max(latestSentSavedAt, item.savedAt);
                     state.reloadNeeded = true;

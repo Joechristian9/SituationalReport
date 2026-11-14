@@ -155,6 +155,13 @@ function savedPagesOwner() {
 
 /** Remove the service worker's saved pages (they hold one account's rows). Queued saves are kept. */
 export async function clearSavedPages() {
+    // First, and before anything is awaited: no account may be taken to have saved pages once
+    // they are going, and a caller naming the new owner right after must not be undone.
+    try {
+        localStorage.removeItem(PAGES_OWNER_KEY);
+    } catch {
+        // Storage blocked: there was no owner to forget.
+    }
     if (typeof caches === 'undefined') return;
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key.startsWith(PAGE_CACHE_PREFIX)).map((key) => caches.delete(key)));

@@ -4,6 +4,7 @@ import {
     account,
     accountsGone,
     checkPassword,
+    clearSavedPages,
     forgetAccount,
     hasAccount,
     matchesCheck,
@@ -192,6 +193,15 @@ describe("notePage", () => {
 
         expect(caches.delete).not.toHaveBeenCalled();
         expect(savedPagesBelongTo(8)).toBe(true);
+    });
+
+    it("no longer names an owner once the saved pages are cleared", async () => {
+        // Otherwise that account's next login without internet would try to open pages that are gone.
+        setSavedPagesOwner(7);
+
+        await clearSavedPages();
+
+        expect(savedPagesBelongTo(7)).toBe(false);
     });
 
     it("changes nothing during an offline session", () => {

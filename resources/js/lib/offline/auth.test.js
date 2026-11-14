@@ -21,7 +21,7 @@ const axios = (await import("axios")).default;
 const { syncNow } = await import("./sync");
 const { offlineSession, startOfflineSession, endOfflineSession } = await import("./offlineSession");
 const { account, accountsGone, hasAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner } = await import("./accounts");
-const { coverNotice, isCovered, noteServerSession, pendingLogout, serverHasSession, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
+const { clearPendingLogout, coverNotice, isCovered, noteServerSession, pendingLogout, serverHasSession, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
 const { SERVER_WAIT_MS, finishPendingLogout, logOut, signIn } = await import("./auth");
 
 const fugu = { id: 7, name: "Fugu", email: "fugu@barangay.local", roles: [{ name: "user" }], permissions: [], offline_stamp: "s1" };
@@ -208,6 +208,36 @@ describe("signIn", () => {
         expect(startOfflineSession).toHaveBeenCalled();
     });
 
+    it("still asks the server after the phone has blocked the account, so nobody is locked out for good", async () => {
+        await rememberAccount(fugu, "correct horse");
+        page.user = fugu;
+        signOutHere();
+        unreachable();
+        for (let i = 0; i < 5; i++) await logIn(fugu.email, "wrong");
+        expect((await logIn(fugu.email, "correct horse")).message).toBe("Too many wrong passwords on this phone. Log in with internet to continue.");
+
+        // With internet, the server decides, and its yes resets the phone's count.
+        server();
+        expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: true });
+        expect(isCovered(fugu)).toBe(false);
+
+        signOutHere();
+        axios.post.mockClear();
+        expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: true });
+        expect(axios.post).not.toHaveBeenCalled(); // the phone's own check works again
+    });
+
+    it("sends a logged-out account's reports before closing its session for someone else's login", async () => {
+        page.user = rugao;
+        setPendingLogout(8); // rugao logged out with no connection; the server still has the session
+        server();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(syncNow).toHaveBeenCalledWith({ userId: 8, evenIfHeld: true });
+        expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
+    });
+
     it("lets an idle offline session back in without starting it over", async () => {
         // Fugu is working offline on blank forms while rugao is still logged in on the server.
         await rememberAccount(fugu, "correct horse");
@@ -374,6 +404,17 @@ describe("finishPendingLogout", () => {
         expect(postedTo()).toEqual(["/logout"]);
         expect(pendingLogout()).toBeNull();
         expect(serverHasSession(7)).toBe(false);
+    });
+
+    it("leaves the session alone when the account logged back in while its reports were sending", async () => {
+        setPendingLogout(7);
+        server();
+        // Sending takes a while on a weak signal; meanwhile the person logs in again on the cover.
+        syncNow.mockImplementationOnce(async () => clearPendingLogout());
+
+        await finishPendingLogout();
+
+        expect(axios.post).not.toHaveBeenCalled();
     });
 
     it("stays pending while the server cannot be reached", async () => {

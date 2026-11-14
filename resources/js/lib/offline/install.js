@@ -177,15 +177,26 @@ function lastWarmed() {
     }
 }
 
+/**
+ * The communication form's columns, for blank forms opened without internet (offlineSession.js).
+ * Only the server's own list replaces the saved one: with data on and no load, the telco's page
+ * answers 200 with no list in it.
+ */
+export function rememberCommunicationServices() {
+    return axios
+        .get(route('communication-services.index'), { offlineSync: true })
+        .then((response) => {
+            const services = response.data?.services;
+            if (services && typeof services === 'object') saveTemplate({ communicationServices: services });
+        })
+        .catch(() => {});
+}
+
 async function warmPages(registration, force = false) {
     if (!navigator.onLine || !currentUser() || (!force && Date.now() - lastWarmed() < WARM_EVERY_MS)) return;
     const worker = registration.active || (await navigator.serviceWorker.ready).active;
     worker?.postMessage({ type: 'warm', urls: offlinePageUrls(), jsonUrls: offlineJsonUrls(), inertiaVersion: currentPage()?.version ?? '' });
-    // The communication form's columns, for blank forms opened without internet (offlineSession.js).
-    axios
-        .get(route('communication-services.index'), { offlineSync: true })
-        .then((response) => saveTemplate({ communicationServices: response.data?.services ?? {} }))
-        .catch(() => {});
+    rememberCommunicationServices();
     try {
         sessionStorage.setItem('offline-warmed-at', String(Date.now()));
     } catch {
