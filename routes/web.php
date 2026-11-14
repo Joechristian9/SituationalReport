@@ -15,6 +15,7 @@ use App\Http\Controllers\IncidentMonitoredController;
 use App\Http\Controllers\InjuredController;
 use App\Http\Controllers\MissingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OfflineAccountController;
 use App\Http\Controllers\PagasaAlertController;
 use App\Http\Controllers\PreEmptiveReportController;
 use App\Http\Controllers\PrePositioningController;
@@ -37,6 +38,12 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
     ]);
 })->name('welcome');
+
+// Outside `auth` on purpose: a logged-out phone asks whether the accounts it remembers for
+// login without internet are still current (see OfflineAccountController).
+Route::post('/offline/accounts/check', [OfflineAccountController::class, 'check'])
+    ->middleware('throttle:offline-check')
+    ->name('offline.accounts.check');
 
 // Route::get('/dashboard', function () {
 //     return Inertia::render('Dashboard');

@@ -28,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             SecurityHeaders::class,
         ]);
+        // Reads nothing from the session and changes nothing, and a phone that has been
+        // offline for days has no fresh token to send with it.
+        $middleware->validateCsrfTokens(except: ['offline/accounts/check']);
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,

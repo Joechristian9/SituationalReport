@@ -112,6 +112,9 @@ class AppServiceProvider extends ServiceProvider
                 });
         });
 
+        // Open to phones with nobody logged in (OfflineAccountController): keep guessing slow.
+        RateLimiter::for('offline-check', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
         // PDF rendering is CPU-heavy on shared hosting.
         RateLimiter::for('pdf', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
     }
