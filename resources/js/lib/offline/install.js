@@ -3,10 +3,13 @@ import { router } from '@inertiajs/react';
 import { trackPages, currentPage, currentDisaster, currentSession, currentUser } from './context';
 import { QUEUED_MESSAGE, endpointFor, enqueue, mergePayloads, openItemFor } from './queue';
 import { removeItem } from './store';
-import { forgetPassword } from './lock';
+import { notePage, saveTemplate, takeOldLock } from './accounts';
+import { finishPendingLogout } from './auth';
+import { setSignedInHere, signOutHere } from './lock';
+import { blocksRequest, offlineSession } from './offlineSession';
+import { CHECK_EVERY_MS, forgetStaleAccounts } from './staleAccounts';
 import { canRefreshWithoutLosingEdits, needsReloadBeforeSaving, refreshPage, subscribeSync, syncNow } from './sync';
 
-const PAGE_CACHE_PREFIX = 'sitrep-pages';
 const WARM_EVERY_MS = 30 * 60 * 1000;
 // Pages to keep ready for offline use; ones the user can't open are simply skipped.
 const OFFLINE_PAGES = [
@@ -42,6 +45,9 @@ const reloadRequired = () => window.dispatchEvent(new CustomEvent('offline:reloa
 function installAxios() {
     // Online save while an unsent offline save for the same form exists.
     axios.interceptors.request.use(async (config) => {
+        // Blank forms opened without internet: the saved background data is another account's.
+        if (blocksRequest(config)) throw Object.assign(new Error('Not available until the connection returns.'), { offlineBlocked: true });
+
         const path = config.method === 'post' && !config.offlineSync && !isInertia(config) ? endpointFor(config.url) : null;
         if (!path) return config;
 
@@ -167,6 +173,11 @@ async function warmPages(registration, force = false) {
     if (!navigator.onLine || !currentUser() || (!force && Date.now() - lastWarmed() < WARM_EVERY_MS)) return;
     const worker = registration.active || (await navigator.serviceWorker.ready).active;
     worker?.postMessage({ type: 'warm', urls: offlinePageUrls(), jsonUrls: offlineJsonUrls(), inertiaVersion: currentPage()?.version ?? '' });
+    // The communication form's columns, for blank forms opened without internet (offlineSession.js).
+    axios
+        .get(route('communication-services.index'), { offlineSync: true })
+        .then((response) => saveTemplate({ communicationServices: response.data?.services ?? {} }))
+        .catch(() => {});
     try {
         sessionStorage.setItem('offline-warmed-at', String(Date.now()));
     } catch {
@@ -174,51 +185,21 @@ async function warmPages(registration, force = false) {
     }
 }
 
-/** Remove cached pages (they hold the signed-in user's data). Queued saves are kept. */
-export async function clearOfflinePages() {
-    if (!('caches' in window)) return;
-    const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => key.startsWith(PAGE_CACHE_PREFIX)).map((key) => caches.delete(key)));
-}
+/**
+ * Every page the app shows: keep the account's details current and, when another account's
+ * page arrives, clear the saved pages (accounts.js). A logged-out page forgets nothing, so the
+ * same phone can log in again with no internet.
+ */
+const noteCurrentPage = () => notePage(currentPage(), Boolean(offlineSession()));
 
 /**
- * Log out of this device (needs internet). Only once the server has logged the user out are the
- * saved pages and the offline password check removed: if the request fails, the user is still
- * signed in and keeps both. Unsent reports stay and are sent after the next login.
+ * The connection is back, or may be: forget accounts the server no longer accepts, finish a
+ * logout made without a connection, then send what is waiting.
  */
-export function logOut(options = {}) {
-    router.post(route('logout'), {}, {
-        ...options,
-        onSuccess: async () => {
-            await clearOfflinePages();
-            forgetPassword();
-            // Full page load so the next login starts with a fresh CSRF token.
-            window.location.href = '/';
-        },
-    });
-}
-
-/**
- * The server says this phone is no longer signed in (password changed or account removed from
- * another device, or a logout). It must not keep opening the account's saved pages or unlocking
- * offline with the old password. Unsent reports stay and go up after the next sign-in.
- */
-function forgetSignedOutAccount() {
-    forgetPassword();
-    clearOfflinePages();
-}
-
-function forgetPagesOnUserChange() {
-    const id = String(currentUser()?.id ?? '');
-    // Saved pages always carry a user, so a page without one came from the server: signed out.
-    if (!id) forgetSignedOutAccount();
-    try {
-        const last = localStorage.getItem('offline-user');
-        if (id && last && last !== id) clearOfflinePages();
-        if (id) localStorage.setItem('offline-user', id);
-    } catch {
-        // Storage blocked: pages are still cleared on logout.
-    }
+async function onConnection() {
+    await forgetStaleAccounts();
+    await finishPendingLogout();
+    syncNow();
 }
 
 /**
@@ -264,17 +245,25 @@ export function installOffline(initialPage) {
         // Storage blocked: nothing was saved there either.
     }
     trackPages(initialPage);
-    forgetPagesOnUserChange();
-    router.on('navigate', forgetPagesOnUserChange);
+    // A phone logged in before several accounts were remembered: keep its password check and
+    // leave it logged in (or locked) as it was.
+    const old = takeOldLock();
+    if (old?.locked) signOutHere();
+    else if (old) setSignedInHere(old.email, old.lastActive);
+    noteCurrentPage();
+    router.on('navigate', noteCurrentPage);
     installAxios();
     installInertia();
     refreshAfterSync();
     registerServiceWorker();
     if (runningInstalled()) keepOfflineData();
     window.addEventListener('offline:queued', keepOfflineData);
-    window.addEventListener('offline:signed-out', forgetSignedOutAccount);
+    // The server ended this phone's session: find out whether the password changed or the
+    // account was removed. Unsent reports stay and go up after the next login.
+    window.addEventListener('offline:signed-out', forgetStaleAccounts);
 
-    window.addEventListener('online', () => syncNow());
-    setInterval(() => syncNow(), 30000);
-    setTimeout(() => syncNow(), 2000);
+    window.addEventListener('online', onConnection);
+    setTimeout(onConnection, 2000);
+    setInterval(forgetStaleAccounts, CHECK_EVERY_MS);
+    setInterval(() => finishPendingLogout().then(() => syncNow()), 30000);
 }
