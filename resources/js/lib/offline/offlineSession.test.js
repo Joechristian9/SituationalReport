@@ -24,6 +24,7 @@ vi.stubGlobal("localStorage", {
 });
 vi.stubGlobal("route", (name) => `/${name}`);
 vi.stubGlobal("window", { addEventListener: vi.fn(), location: {} });
+vi.stubGlobal("document", { dispatchEvent: vi.fn() });
 vi.stubGlobal("setInterval", vi.fn());
 vi.stubGlobal("caches", { keys: vi.fn(async () => ["sitrep-pages-v2", "sitrep-assets-v2"]), delete: vi.fn() });
 
@@ -44,6 +45,8 @@ async function phone({ pagesOwner = 99, pageUser = null } = {}) {
         router: (await import("@inertiajs/react")).router,
         ...(await import("./offlineSession")),
     };
+    app.router.push.mockReset();
+    app.router.visit.mockReset();
     app.router.on.mockImplementation((event, handler) => {
         if (event === "before") app.beforeVisit = handler;
     });
@@ -98,12 +101,72 @@ describe("an offline session", () => {
         expect(app.blocksRequest({ method: "post" })).toBe(false);
     });
 
+    it("tells the app whose page it is when blank forms open at the address already showing", async () => {
+        // Another account's forms page is under the login form. Inertia announces no page
+        // change for the same address, so the app would go on treating it as that account.
+        const other = { id: 8, email: "rugao@barangay.local" };
+        const app = await phone({ pagesOwner: 8, pageUser: other });
+        app.router.push.mockImplementation((params) => params.onSuccess({ component: params.component, url: params.url, props: params.props }));
+
+        app.start();
+
+        expect(document.dispatchEvent).toHaveBeenCalledTimes(1);
+        const event = document.dispatchEvent.mock.calls[0][0];
+        expect(event.type).toBe("inertia:navigate");
+        expect(event.detail.page.props.auth.user).toEqual(user);
+    });
+
+    it("tells the app whose page it is when its saved page opens at the address already showing", async () => {
+        const other = { id: 8, email: "rugao@barangay.local" };
+        const app = await phone({ pagesOwner: 7, pageUser: other });
+        app.router.visit.mockImplementation((url, options) => options.onSuccess({ component: "SituationReports/Index", url, props: { auth: { user } } }));
+
+        app.start();
+
+        expect(document.dispatchEvent).toHaveBeenCalledTimes(1);
+        expect(document.dispatchEvent.mock.calls[0][0].type).toBe("inertia:navigate");
+        expect(document.dispatchEvent.mock.calls[0][0].detail.page.props.auth.user).toEqual(user);
+    });
+
+    it("does not announce the page twice when Inertia already did", async () => {
+        const app = await phone({ pagesOwner: 8 });
+        app.router.push.mockImplementation((params) => {
+            page.user = user; // Inertia's own navigate event reached the app
+            params.onSuccess({ component: params.component, url: params.url, props: params.props });
+        });
+
+        app.start();
+
+        expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
+
+    it("lets background refreshes fail quietly during a blank session", async () => {
+        const app = await phone({ pagesOwner: 99 });
+        const { toast } = await import("react-hot-toast");
+        app.start();
+
+        // A page keeping itself live (useLiveRefresh): not something the person asked for.
+        expect(app.beforeVisit({ detail: { visit: { method: "get", async: true, only: ["rows"] } } })).toBeUndefined();
+
+        expect(toast.error).not.toHaveBeenCalled();
+        expect(app.blocksRequest({ method: "get" })).toBe(true); // still stopped before it leaves the phone
+    });
+
+    it("tries the server as soon as the person moves to another page", async () => {
+        const app = await phone({ pagesOwner: 7 });
+        app.start();
+
+        app.beforeVisit({ detail: { visit: { method: "get" } } });
+
+        await vi.waitFor(() => expect(postedTo(app)).toEqual(["/logout", "/login"]));
+    });
+
     it("opens the saved pages for the account they belong to", async () => {
         const app = await phone({ pagesOwner: 7 });
 
         app.start();
 
-        expect(app.router.visit).toHaveBeenCalledWith("/situation-reports.index");
+        expect(app.router.visit).toHaveBeenCalledWith("/situation-reports.index", expect.anything());
         expect(app.router.push).not.toHaveBeenCalled();
         expect(app.offlineSession().blank).toBe(false);
         expect(app.blocksRequest({ method: "get" })).toBe(false);
@@ -142,7 +205,7 @@ describe("an offline session", () => {
         expect(app.sync.syncNow).toHaveBeenCalledWith();
         expect(app.accounts.account(user.email).stamp).toBe("new");
         expect(await app.accounts.checkPassword(user.email, PASSWORD)).toBe("ok");
-        expect(app.lock.serverSessionOpen()).toBe(true);
+        expect(app.lock.serverHasSession(7)).toBe(true);
     });
 
     it("sends the logged-out account's reports before logging it out", async () => {
@@ -206,7 +269,7 @@ describe("an offline session", () => {
 
         expect(app.accounts.hasAccount(user.email)).toBe(false);
         expect(app.accounts.accountsGone()).toEqual([7]);
-        expect(app.lock.serverSessionOpen()).toBe(false); // the logout before it went through
+        expect(app.lock.serverHasSession(7)).toBe(false); // the logout before it went through
         expect(app.lock.coverNotice()).toBe("changed");
         expect(app.lock.isCovered(user)).toBe(true);
         expect(app.offlineSession()).toBeNull();

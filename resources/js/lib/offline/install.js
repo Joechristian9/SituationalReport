@@ -6,7 +6,7 @@ import { removeItem } from './store';
 import { notePage, saveTemplate, takeOldLock } from './accounts';
 import { finishPendingLogout } from './auth';
 import { noteServerSession, setSignedInHere, signOutHere } from './lock';
-import { blocksRequest, offlineSession } from './offlineSession';
+import { blocksRequest, offlineSession, signInToServer } from './offlineSession';
 import { CHECK_EVERY_MS, forgetStaleAccounts } from './staleAccounts';
 import { canRefreshWithoutLosingEdits, needsReloadBeforeSaving, refreshPage, subscribeSync, syncNow } from './sync';
 
@@ -51,6 +51,11 @@ function installAxios() {
         const path = config.method === 'post' && !config.offlineSync && !isInertia(config) ? endpointFor(config.url) : null;
         if (!path) return config;
 
+        // The server doesn't know an offline session's login: whatever session is open there
+        // belongs to someone else, or to nobody. The save stays on the phone (the handler
+        // below queues it) until that login is done, even if the server can be reached.
+        if (offlineSession()) throw Object.assign(new Error('Saved on this device until the server knows this login.'), { config });
+
         if (needsReloadBeforeSaving(path)) {
             reloadRequired();
             throw Object.assign(new Error('Reload the page before saving again: your offline report for this form was just sent.'), {
@@ -84,6 +89,7 @@ function installAxios() {
             if (!payload) return Promise.reject(error);
 
             await enqueue({ url: config.url, payload, replacesPending: config.offlineSupersedes });
+            if (offlineSession()) signInToServer();
             // Forms treat this like a successful save and show the message.
             return { data: { queued: true, message: QUEUED_MESSAGE }, status: 202, statusText: 'Saved offline', headers: {}, config };
         },
@@ -100,8 +106,10 @@ function installInertia() {
             reloadRequired();
             return false;
         }
-        if (!navigator.onLine) {
+        // No connection, or a login the server doesn't know yet (see installAxios).
+        if (!navigator.onLine || offlineSession()) {
             enqueue({ url: visit.url.href, payload: visit.data });
+            if (offlineSession()) signInToServer();
             return false;
         }
         return undefined;
@@ -264,7 +272,7 @@ export function installOffline(initialPage) {
     // The server ended this phone's session: find out whether the password changed or the
     // account was removed. Unsent reports stay and go up after the next login.
     window.addEventListener('offline:signed-out', () => {
-        noteServerSession(false);
+        noteServerSession(null);
         forgetStaleAccounts();
     });
 

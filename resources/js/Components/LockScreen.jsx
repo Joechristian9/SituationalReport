@@ -6,13 +6,15 @@ import LoginForm from '@/Components/LoginForm';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { isAdmin } from '@/lib/offline/accounts';
 import { currentUser } from '@/lib/offline/context';
-import { coverNotice, holdIdleCover, noteActivity, subscribeLock } from '@/lib/offline/lock';
+import { coverNotice, holdIdleCover, isCovered, noteActivity, subscribeLock } from '@/lib/offline/lock';
 
 // Report accounts are asked to log in again after 15 idle minutes. Admin screens only when
 // locked by hand: they are often left open on an operations-room display.
-function coveredNow() {
+// `hold` saves an idle cover so activity on the login form can't lift it. Not while rendering:
+// saving tells other components, and React forbids updating them mid-render.
+function coveredNow(hold = true) {
     const user = currentUser();
-    return holdIdleCover(user, { idleLock: !isAdmin(user) });
+    return (hold ? holdIdleCover : isCovered)(user, { idleLock: !isAdmin(user) });
 }
 
 /**
@@ -22,7 +24,7 @@ function coveredNow() {
  * underneath, so a half-filled form is still there when its account logs back in.
  */
 export default function LockScreen() {
-    const [covered, setCovered] = useState(coveredNow);
+    const [covered, setCovered] = useState(() => coveredNow(false));
     const [notice, setNotice] = useState(coverNotice);
 
     useEffect(() => {

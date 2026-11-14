@@ -37,7 +37,14 @@ function install() {
     if (installed) return;
     installed = true;
     router.on('before', (event) => {
-        if (!session?.blank || event.detail.visit.method !== 'get') return undefined;
+        const { visit } = event.detail;
+        if (!session || visit.method !== 'get') return undefined;
+        // The phone may show a connection the whole time (data on, no load), so there is no
+        // "back online" moment to wait for: moving around is a good time to try the server.
+        signInToServer();
+        // A page keeping itself live is not the person's doing: no message, and the request
+        // itself is stopped before it leaves the phone (blocksRequest).
+        if (!session.blank || visit.async || visit.only?.length) return undefined;
         toast.error('Logged in without internet: only the report forms are available until the connection returns.');
         return false;
     });
@@ -54,10 +61,18 @@ export function startOfflineSession(account, password, queryClient) {
     install();
     toast.success('Logged in without internet. Reports are saved on this phone and sent when the connection returns.');
 
+    // Opened over another account's forms page, the address doesn't change, and Inertia
+    // announces a page change only when it does. Without the announcement the app would go on
+    // treating the page as that account's: the login form would stay over it and saves would
+    // be queued under the wrong account.
+    const announce = (page) => {
+        if (currentUser()?.id !== user.id) document.dispatchEvent(new CustomEvent('inertia:navigate', { detail: { page } }));
+    };
+
     if (!session.blank) {
         // Its own saved page may already be showing under the login form; otherwise the service
         // worker serves the saved copy.
-        if (currentUser()?.id !== user.id) router.visit(route('situation-reports.index'));
+        if (currentUser()?.id !== user.id) router.visit(route('situation-reports.index'), { onSuccess: announce });
         return;
     }
 
@@ -74,6 +89,7 @@ export function startOfflineSession(account, password, queryClient) {
             flash: { success: null, error: null },
             errors: {},
         },
+        onSuccess: announce,
     });
 }
 
@@ -113,7 +129,7 @@ async function logInAndSend(current) {
     // 401: nobody was logged in. Anything else (a telco "no load" page answers 200) is not the server.
     if (loggedOut?.status !== 204 && loggedOut?.status !== 401) return;
     clearPendingLogout();
-    noteServerSession(false);
+    noteServerSession(null);
 
     const answer = await ask(() => axios.post(route('login'), { email: user.email, password, remember: true }, REQUEST));
     if (session !== current) return; // logged out on the phone meanwhile
@@ -129,7 +145,7 @@ async function logInAndSend(current) {
     if (answer?.status !== 200 || !answer.data?.user?.id) return;
 
     // An ordinary login from here on.
-    noteServerSession(true);
+    noteServerSession(answer.data.user.id);
     await rememberAccount(answer.data.user, password);
     if (!savedPagesBelongTo(answer.data.user.id)) {
         await clearSavedPages();

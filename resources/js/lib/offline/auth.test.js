@@ -21,7 +21,7 @@ const axios = (await import("axios")).default;
 const { syncNow } = await import("./sync");
 const { offlineSession, startOfflineSession, endOfflineSession } = await import("./offlineSession");
 const { account, accountsGone, hasAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner } = await import("./accounts");
-const { coverNotice, isCovered, pendingLogout, serverSessionOpen, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
+const { coverNotice, isCovered, noteServerSession, pendingLogout, serverHasSession, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
 const { SERVER_WAIT_MS, finishPendingLogout, logOut, signIn } = await import("./auth");
 
 const fugu = { id: 7, name: "Fugu", email: "fugu@barangay.local", roles: [{ name: "user" }], permissions: [], offline_stamp: "s1" };
@@ -85,11 +85,13 @@ describe("signIn", () => {
     it("loads the account's home page when the server accepts the login", async () => {
         server();
 
-        expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: true });
+        expect(await logIn(" Fugu@Barangay.local ", "correct horse")).toEqual({ ok: true });
 
-        expect(postedTo()).toEqual(["/login"]);
-        const [, body, config] = axios.post.mock.calls[0];
-        expect(body).toEqual({ email: fugu.email, password: "correct horse", remember: true });
+        // Always a logout first: a session the phone doesn't know about would otherwise make
+        // the server answer the login as the account already logged in.
+        expect(postedTo()).toEqual(["/logout", "/login"]);
+        const [, body, config] = axios.post.mock.calls[1];
+        expect(body).toEqual({ email: "Fugu@Barangay.local", password: "correct horse", remember: true });
         expect(config).toMatchObject({ timeout: 10000, offlineSync: true, headers: { Accept: "application/json" } });
         expect(SERVER_WAIT_MS).toBe(10000);
         expect(window.location.assign).toHaveBeenCalledWith("/situation-reports");
@@ -206,6 +208,46 @@ describe("signIn", () => {
         expect(startOfflineSession).toHaveBeenCalled();
     });
 
+    it("lets an idle offline session back in without starting it over", async () => {
+        // Fugu is working offline on blank forms while rugao is still logged in on the server.
+        await rememberAccount(fugu, "correct horse");
+        page.user = fugu;
+        noteServerSession(8);
+        offlineSession.mockReturnValue({ user: fugu, blank: true });
+        signOutHere(); // the idle time ran out
+
+        expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: true });
+
+        // Starting over would open blank forms again and lose what is half typed.
+        expect(startOfflineSession).not.toHaveBeenCalled();
+        expect(endOfflineSession).not.toHaveBeenCalled();
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(isCovered(fugu)).toBe(false);
+    });
+
+    it("marks nobody for logout when the page underneath is not the account the server has", async () => {
+        await rememberAccount(fugu, "correct horse");
+        page.user = rugao; // rugao's page, but rugao's login never reached the server
+        noteServerSession(1);
+        unreachable();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(pendingLogout()).toBeNull();
+    });
+
+    it("marks nobody for logout when the server has no session open", async () => {
+        await rememberAccount(fugu, "correct horse");
+        page.user = rugao; // rugao's saved page, but rugao logged out with internet earlier
+        noteServerSession(null);
+        unreachable();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(pendingLogout()).toBeNull();
+        expect(startOfflineSession).toHaveBeenCalled();
+    });
+
     it("logs the same account back in after a password change without reloading the page", async () => {
         page.user = fugu;
         signOutHere({ notice: "changed" });
@@ -283,7 +325,7 @@ describe("logOut", () => {
         setSignedInHere(fugu.email);
         server();
         await logOut();
-        expect(serverSessionOpen()).toBe(false);
+        expect(serverHasSession(7)).toBe(false);
 
         // The app is opened again from its saved page, with no load.
         unreachable();
@@ -302,7 +344,7 @@ describe("logOut", () => {
 
         await logIn(fugu.email, "correct horse");
 
-        expect(serverSessionOpen()).toBe(true);
+        expect(serverHasSession(7)).toBe(true);
     });
 
     it("an offline session ends on the phone only", async () => {
@@ -331,7 +373,7 @@ describe("finishPendingLogout", () => {
         expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
         expect(postedTo()).toEqual(["/logout"]);
         expect(pendingLogout()).toBeNull();
-        expect(serverSessionOpen()).toBe(false);
+        expect(serverHasSession(7)).toBe(false);
     });
 
     it("stays pending while the server cannot be reached", async () => {

@@ -11,7 +11,7 @@ import {
     noteActivity,
     noteServerSession,
     pendingLogout,
-    serverSessionOpen,
+    serverHasSession,
     setPendingLogout,
     setSignedInHere,
     signOutHere,
@@ -138,15 +138,16 @@ describe("who is logged in on this phone", () => {
         expect(signedInHere()).toBe("fugu@barangay.local");
     });
 
-    it("remembers whether the server still has this phone logged in", () => {
-        expect(serverSessionOpen()).toBe(true); // a phone logged in before this was tracked
+    it("remembers which account the server still has logged in on this phone", () => {
+        expect(serverHasSession(7)).toBe(true); // a phone logged in before this was tracked
 
-        noteServerSession(false);
+        noteServerSession(null);
         setSignedInHere(fugu.email);
-        expect(serverSessionOpen()).toBe(false);
+        expect(serverHasSession(7)).toBe(false);
 
-        noteServerSession(true);
-        expect(serverSessionOpen()).toBe(true);
+        noteServerSession(7);
+        expect(serverHasSession(7)).toBe(true);
+        expect(serverHasSession(8)).toBe(false);
     });
 
     it("tells its listeners when the lock or the remembered accounts change", () => {

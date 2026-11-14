@@ -13,7 +13,7 @@ import {
     triesLeft,
 } from './accounts';
 import { currentUser } from './context';
-import { clearPendingLogout, coverNotice, noteServerSession, pendingLogout, serverSessionOpen, setPendingLogout, setSignedInHere, signOutHere } from './lock';
+import { clearPendingLogout, coverNotice, noteServerSession, pendingLogout, serverHasSession, setPendingLogout, setSignedInHere, signOutHere } from './lock';
 import { endOfflineSession, offlineSession, startOfflineSession } from './offlineSession';
 import { syncNow } from './sync';
 
@@ -53,7 +53,7 @@ async function logOutOfServer() {
     if (!(await freshToken())) return 'unreachable';
     const answer = await ask(() => axios.post(route('logout'), {}, REQUEST));
     if (answer?.status === 204 || answer?.status === 401) {
-        noteServerSession(false);
+        noteServerSession(null);
         return 'done';
     }
     // Any other "success" is not the server: a telco's "no load" page answers 200.
@@ -61,15 +61,12 @@ async function logOutOfServer() {
 }
 
 /** The server's answer to a login, or null when it couldn't be reached. */
-async function logInToServer(credentials, someoneIsLoggedIn) {
-    if (someoneIsLoggedIn) {
-        // Otherwise the server would answer the login as the account already logged in.
-        const left = await logOutOfServer();
-        if (left === 'unreachable') return null;
-        if (left === 'problem') return { status: 500 };
-    } else if (!(await freshToken())) {
-        return null;
-    }
+async function logInToServer(credentials) {
+    // Always a logout first. If a session is still open (this phone's own, or one it doesn't
+    // know about), the server would answer the login as that account instead.
+    const left = await logOutOfServer();
+    if (left === 'unreachable') return null;
+    if (left === 'problem') return { status: 500 };
     const answer = await ask(() => axios.post(route('login'), credentials, REQUEST));
     if (!answer || (answer.status < 400 && !answer.data?.user?.id)) return null;
     return answer;
@@ -85,7 +82,7 @@ export async function signIn({ email, password, remember = true }, queryClient) 
 
     // The account's own page is open underneath (it went idle, or logged out on this phone)
     // and its server session is still there, so the phone's check is enough.
-    if (underneath && !coverNotice() && serverSessionOpen()) {
+    if (underneath && !coverNotice() && (offlineSession()?.user.id === under.id || serverHasSession(under.id))) {
         const result = await checkPassword(email, password);
         if (result === 'ok') {
             setSignedInHere(email);
@@ -95,14 +92,14 @@ export async function signIn({ email, password, remember = true }, queryClient) 
         if (result !== 'unknown') return refusedByPhone(result, email);
     }
 
-    const answer = await logInToServer({ email: normal(email), password, remember }, Boolean(under || pendingLogout()));
+    const answer = await logInToServer({ email: email.trim(), password, remember });
 
     if (answer?.status === 200) {
         const { user, home } = answer.data;
         await rememberAccount(user, password);
         endOfflineSession();
         clearPendingLogout();
-        noteServerSession(true);
+        noteServerSession(user.id);
         setSignedInHere(user.email);
         if (under?.id === user.id) {
             // Logging in again after a password change: no reload, so a half-typed form stays.
@@ -139,7 +136,7 @@ export async function signIn({ email, password, remember = true }, queryClient) 
 
     // Whoever's page is open is still logged in on the server (unless the server never knew
     // them): their reports go first when the connection returns (offlineSession.js).
-    const serverKnowsUnder = under && under.id !== entry.user.id && !offlineSession();
+    const serverKnowsUnder = under && under.id !== entry.user.id && !offlineSession() && serverHasSession(under.id);
     endOfflineSession();
     if (serverKnowsUnder && !pendingLogout()) setPendingLogout(under.id);
     startOfflineSession(entry, password, queryClient);
