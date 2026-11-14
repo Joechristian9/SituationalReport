@@ -204,6 +204,7 @@ describe("an offline session", () => {
         await app.signInToServer();
 
         expect(app.accounts.hasAccount(user.email)).toBe(false);
+        expect(app.accounts.accountsGone()).toEqual([7]);
         expect(app.lock.coverNotice()).toBe("changed");
         expect(app.lock.isCovered(user)).toBe(true);
         expect(app.offlineSession()).toBeNull();

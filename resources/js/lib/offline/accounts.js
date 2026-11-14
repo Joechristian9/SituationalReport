@@ -20,9 +20,9 @@ const listeners = new Set();
 function read() {
     try {
         const saved = JSON.parse(localStorage.getItem(KEY));
-        return { accounts: saved?.accounts ?? {}, template: saved?.template ?? {} };
+        return { accounts: saved?.accounts ?? {}, template: saved?.template ?? {}, gone: saved?.gone ?? [] };
     } catch {
-        return { accounts: {}, template: {} };
+        return { accounts: {}, template: {}, gone: [] };
     }
 }
 
@@ -59,7 +59,10 @@ export async function rememberAccount(user, password) {
     if (!globalThis.crypto?.subtle || !user?.email || !password) return;
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const hash = await derive(password, salt, ITERATIONS);
-    setEntry(user.email, () => ({ user, stamp: user.offline_stamp, salt: toBase64(salt), hash, iterations: ITERATIONS, tries: 0 }));
+    const phone = read();
+    phone.accounts[normal(user.email)] = { user, stamp: user.offline_stamp, salt: toBase64(salt), hash, iterations: ITERATIONS, tries: 0 };
+    phone.gone = phone.gone.filter((id) => id !== user.id);
+    write(phone);
 }
 
 /**
@@ -111,7 +114,21 @@ export async function matchesCheck(email, password) {
 
 export const triesLeft = (email) => Math.max(0, MAX_TRIES - (account(email)?.tries ?? MAX_TRIES));
 
-export const forgetAccount = (email) => setEntry(email, () => null);
+/**
+ * `gone`: the server no longer accepts the account (password changed, or removed). Its unsent
+ * reports can't send until it logs in here again, which a removed account never will, so the
+ * offline status shows them to whoever uses the phone next (see accountsGone).
+ */
+export function forgetAccount(email, { gone = false } = {}) {
+    const phone = read();
+    const id = phone.accounts[normal(email)]?.user?.id;
+    delete phone.accounts[normal(email)];
+    if (gone && id != null && !phone.gone.includes(id)) phone.gone.push(id);
+    write(phone);
+}
+
+/** Ids of accounts forgotten as `gone` that have not logged in on this phone since. */
+export const accountsGone = () => read().gone;
 
 export const isAdmin = (user) => Boolean(user?.roles?.some((role) => role.name === 'admin'));
 

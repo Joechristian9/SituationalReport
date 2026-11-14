@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, GitCompare, Loader2, RefreshCw, Trash2, UploadCloud, Wifi } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { applyChoices, askAboutConflicts } from '@/lib/offline/conflicts';
+import { accountsGone, subscribeAccounts } from '@/lib/offline/accounts';
 import { allItems, putItem, removeItem, subscribe } from '@/lib/offline/store';
 import { canRefreshWithoutLosingEdits, refreshPage, subscribeSync, syncNow, syncState } from '@/lib/offline/sync';
 import { currentUser } from '@/lib/offline/context';
@@ -16,6 +17,8 @@ const STATUS = {
     waiting: { label: 'Waiting: disaster paused', tone: 'border-warning/30 bg-warning/10 text-warning' },
     failed: { label: 'Not sent', tone: 'border-destructive/30 bg-destructive/10 text-destructive' },
     conflict: { label: 'Changed on another device', tone: 'border-warning/30 bg-warning/10 text-warning' },
+    // Written by an account the server no longer accepts (accounts.js accountsGone).
+    gone: { label: 'Not sent: account not on this phone', tone: 'border-destructive/30 bg-destructive/10 text-destructive' },
 };
 
 // The pill floats over the page, so its background stays opaque (bg-card); the status
@@ -139,7 +142,7 @@ function useReservedBottomSpace(node) {
 function QueuedItem({ item }) {
     const [confirming, setConfirming] = useState(false);
     const [copied, setCopied] = useState(false);
-    const status = STATUS[item.status] ?? STATUS.pending;
+    const status = item.gone ? STATUS.gone : (STATUS[item.status] ?? STATUS.pending);
 
     const copy = async () => {
         try {
@@ -177,19 +180,26 @@ function QueuedItem({ item }) {
                 </div>
                 <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium', status.tone)}>{status.label}</span>
             </div>
-            {item.message && <p className="text-xs text-muted-foreground">{item.message}</p>}
-            {item.status === 'conflict' && (
+            {item.gone && (
+                <p className="text-xs text-muted-foreground">
+                    Written by {item.userName ?? 'another account'}, whose password was changed or whose account was removed. It is sent if that account logs in here again.
+                </p>
+            )}
+            {!item.gone && item.message && <p className="text-xs text-muted-foreground">{item.message}</p>}
+            {!item.gone && item.status === 'conflict' && (
                 <Button type="button" size="sm" className="mt-1 min-h-11 gap-1.5 md:min-h-8" onClick={review}>
                     <GitCompare className="h-4 w-4" aria-hidden="true" />
                     Choose which to keep
                 </Button>
             )}
-            {item.status === 'failed' && (
+            {(item.gone || item.status === 'failed') && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                    <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={retry}>
-                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                        Retry
-                    </Button>
+                    {!item.gone && (
+                        <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={retry}>
+                            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                            Retry
+                        </Button>
+                    )}
                     <Button type="button" variant="outline" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={copy}>
                         <Copy className="h-4 w-4" aria-hidden="true" />
                         {copied ? 'Copied' : 'Copy details'}
@@ -248,9 +258,18 @@ export default function OfflineStatus() {
     }, [online, flashOnline]);
 
     useEffect(() => {
-        const load = () => allItems().then((all) => setItems(all.filter((item) => item.userId === (currentUser()?.id ?? null)))).catch(() => setItems([]));
+        // This account's reports, plus those of accounts the server no longer accepts: nobody
+        // else would ever see them, and a removed account can't log in to send or delete them.
+        const load = () => {
+            const me = currentUser()?.id ?? null;
+            const gone = accountsGone();
+            return allItems()
+                .then((all) => setItems(all.flatMap((item) => (item.userId === me ? [item] : gone.includes(item.userId) ? [{ ...item, gone: true }] : []))))
+                .catch(() => setItems([]));
+        };
         load();
         const stopStore = subscribe(load);
+        const stopAccounts = subscribeAccounts(load);
         const stopSync = subscribeSync((next) => {
             setSync(next);
             // Sent saves came from this page and the user typed since: refreshing on our
@@ -291,6 +310,7 @@ export default function OfflineStatus() {
 
         return () => {
             stopStore();
+            stopAccounts();
             stopSync();
             stopNavigate();
             clearTimeout(timer);
@@ -304,9 +324,9 @@ export default function OfflineStatus() {
 
     if (!userId) return null;
 
-    const waiting = items.filter((item) => item.status !== 'failed' && item.status !== 'conflict').length;
-    const failed = items.filter((item) => item.status === 'failed').length;
-    const conflicts = items.filter((item) => item.status === 'conflict').length;
+    const waiting = items.filter((item) => !item.gone && item.status !== 'failed' && item.status !== 'conflict').length;
+    const failed = items.filter((item) => item.gone || item.status === 'failed').length;
+    const conflicts = items.filter((item) => !item.gone && item.status === 'conflict').length;
 
     // One message at a time, most important first.
     let pill = null;

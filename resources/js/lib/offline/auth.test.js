@@ -20,7 +20,7 @@ vi.stubGlobal("caches", { keys: vi.fn(async () => ["sitrep-pages-v2", "sitrep-as
 const axios = (await import("axios")).default;
 const { syncNow } = await import("./sync");
 const { offlineSession, startOfflineSession, endOfflineSession } = await import("./offlineSession");
-const { account, hasAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner } = await import("./accounts");
+const { account, accountsGone, hasAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner } = await import("./accounts");
 const { coverNotice, isCovered, pendingLogout, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
 const { SERVER_WAIT_MS, finishPendingLogout, logOut, signIn } = await import("./auth");
 
@@ -118,6 +118,7 @@ describe("signIn", () => {
         expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: false, field: "email", message: "These credentials do not match our records." });
 
         expect(hasAccount(fugu.email)).toBe(false);
+        expect(accountsGone()).toEqual([7]);
         expect(caches.delete).toHaveBeenCalledWith("sitrep-pages-v2");
         expect(startOfflineSession).not.toHaveBeenCalled();
     });
@@ -273,6 +274,7 @@ describe("logOut", () => {
         expect(await logOut()).toBe("done");
 
         expect(hasAccount(admin.email)).toBe(false);
+        expect(accountsGone()).toEqual([]); // an ordinary logout, not an account the server dropped
         expect(caches.delete).toHaveBeenCalledWith("sitrep-pages-v2");
     });
 

@@ -18,7 +18,7 @@ vi.stubGlobal("caches", { keys: vi.fn(async () => ["sitrep-pages-v2", "sitrep-as
 
 const axios = (await import("axios")).default;
 const { offlineSession, endOfflineSession } = await import("./offlineSession");
-const { hasAccount, rememberAccount, setSavedPagesOwner } = await import("./accounts");
+const { accountsGone, hasAccount, rememberAccount, setSavedPagesOwner } = await import("./accounts");
 const { coverNotice, isCovered, setSignedInHere } = await import("./lock");
 const { CHECK_EVERY_MS, forgetStaleAccounts } = await import("./staleAccounts");
 
@@ -49,6 +49,7 @@ describe("forgetStaleAccounts", () => {
         );
         expect(hasAccount(fugu.email)).toBe(false);
         expect(hasAccount(rugao.email)).toBe(true);
+        expect(accountsGone()).toEqual([7]); // its unsent reports show to whoever uses the phone next
         expect(CHECK_EVERY_MS).toBe(5 * 60 * 1000);
     });
 

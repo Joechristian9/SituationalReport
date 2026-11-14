@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     MAX_TRIES,
     account,
+    accountsGone,
     checkPassword,
     forgetAccount,
     hasAccount,
@@ -132,6 +133,20 @@ describe("remembered accounts", () => {
         expect(hasAccount(fugu.email)).toBe(false);
         expect(rememberedAccounts().map((entry) => entry.user.id)).toEqual([8]);
         expect(rememberedAccounts()[0]).toMatchObject({ email: "rugao@barangay.local", stamp: "r1" });
+    });
+
+    it("notes an account the server no longer accepts, until it logs in here again", async () => {
+        await rememberAccount(fugu, "correct horse");
+        await rememberAccount(rugao, "battery staple");
+
+        forgetAccount(rugao.email); // an ordinary forget (an admin logging out) notes nothing
+        expect(accountsGone()).toEqual([]);
+
+        forgetAccount(fugu.email, { gone: true });
+        expect(accountsGone()).toEqual([7]);
+
+        await rememberAccount(fugu, "new password 123");
+        expect(accountsGone()).toEqual([]);
     });
 });
 

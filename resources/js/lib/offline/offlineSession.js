@@ -119,7 +119,7 @@ async function logInAndSend(current) {
 
     if (answer?.status === 422) {
         // The password was changed or the account removed since this phone last saw the server.
-        forgetAccount(user.email);
+        forgetAccount(user.email, { gone: true });
         if (savedPagesBelongTo(user.id)) await clearSavedPages();
         endOfflineSession();
         signOutHere({ notice: 'changed' });

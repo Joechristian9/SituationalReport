@@ -73,6 +73,18 @@ export function isCovered(user, { idleLock = true } = {}) {
     return idleLock && Date.now() - (screen.lastActive ?? 0) > IDLE_MS;
 }
 
+/**
+ * For the cover itself (LockScreen.jsx): whether `user`'s page is covered. A cover that came
+ * from the idle time is saved, so activity on the login form can't lift it. Only then: when
+ * another account has just logged in over this page, that account must stay logged in.
+ */
+export function holdIdleCover(user, options) {
+    const covered = isCovered(user, options);
+    const here = signedInHere();
+    if (covered && here && here === normal(user?.email)) signOutHere();
+    return covered;
+}
+
 export const canLock = hasAccount;
 
 /** Cover the app by hand. The server session stays open, so reports keep sending. */

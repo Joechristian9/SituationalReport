@@ -38,7 +38,7 @@ export async function forgetStaleAccounts() {
 }
 
 async function forget(email, user) {
-    forgetAccount(email);
+    forgetAccount(email, { gone: true });
     if (savedPagesBelongTo(user.id)) await clearSavedPages();
     if (offlineSession()?.user.id === user.id) endOfflineSession();
     // In use right now: cover the app. The page stays underneath, so what is typed is kept.

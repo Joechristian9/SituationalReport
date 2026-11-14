@@ -5,6 +5,7 @@ import {
     canLock,
     clearPendingLogout,
     coverNotice,
+    holdIdleCover,
     isCovered,
     lock,
     noteActivity,
@@ -109,6 +110,30 @@ describe("who is logged in on this phone", () => {
 
         setPendingLogout(8);
         expect(pendingLogout()).toBe(8);
+    });
+
+    it("saves an idle cover, so later activity cannot lift it", () => {
+        vi.useFakeTimers();
+        const start = Date.now();
+        vi.setSystemTime(start + IDLE_MS + 1000);
+
+        expect(holdIdleCover(fugu)).toBe(true);
+        expect(signedInHere()).toBeNull();
+
+        vi.setSystemTime(start); // even with the clock put back, it stays covered
+        expect(isCovered(fugu)).toBe(true);
+    });
+
+    it("does not log out the account that just logged in over another account's page", () => {
+        setSignedInHere("rugao@barangay.local");
+
+        expect(holdIdleCover(fugu)).toBe(true); // fugu's page is still showing for a moment
+        expect(signedInHere()).toBe("rugao@barangay.local");
+    });
+
+    it("leaves an open app alone", () => {
+        expect(holdIdleCover(fugu)).toBe(false);
+        expect(signedInHere()).toBe("fugu@barangay.local");
     });
 
     it("tells its listeners when the lock or the remembered accounts change", () => {

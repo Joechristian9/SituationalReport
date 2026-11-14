@@ -119,7 +119,7 @@ export async function signIn({ email, password, remember = true }, queryClient) 
         // the account removed), so the phone's check must stop working too.
         if (await matchesCheck(email, password)) {
             const stale = account(email);
-            forgetAccount(email);
+            forgetAccount(email, { gone: true });
             if (savedPagesBelongTo(stale.user.id)) await clearSavedPages();
         }
         return fail('email', answer.data?.errors?.email?.[0] ?? 'These credentials do not match our records.');
