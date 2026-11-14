@@ -1,7 +1,7 @@
 # Log in and file reports with no load
 
 Date: 2026-11-14
-Status: waiting for review
+Status: implemented (not yet tried on a real phone with data on and no load)
 
 ## Goal
 
