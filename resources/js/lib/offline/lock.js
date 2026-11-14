@@ -1,108 +1,97 @@
-// Offline sign-in. After an online login the phone keeps a slow, salted hash of the password
-// (never the password itself), so the app can be unlocked with no internet. The server session
-// stays signed in underneath, which is what lets unsent reports send on their own when the
-// connection returns. It stops someone who picks up the phone, not someone reading the
-// browser's storage directly: that would need the saved data encrypted.
+// Who may use the app on this phone right now.
+//
+// The login form covers the app (LockScreen.jsx) when the account whose page is showing is not
+// the one logged in here: after a logout on this phone, after the idle time, or when the server
+// said its password changed. The password checks themselves live in accounts.js. The server
+// session stays open underneath, which is what lets unsent reports send on their own.
 
-const KEY = 'offline-lock';
-const ITERATIONS = 310000; // PBKDF2-SHA256, OWASP 2023
+import { hasAccount, subscribeAccounts } from './accounts';
+
+const KEY = 'offline-screen';
 export const IDLE_MS = 15 * 60 * 1000;
-export const MAX_TRIES = 5;
 const listeners = new Set();
+const emit = () => listeners.forEach((listener) => listener());
+
+const normal = (email) => String(email ?? '').trim().toLowerCase();
 
 function read() {
     try {
-        return JSON.parse(localStorage.getItem(KEY)) || null;
+        return JSON.parse(localStorage.getItem(KEY)) || {};
     } catch {
-        return null;
+        return {};
     }
 }
 
-function write(record) {
+function save(screen) {
     try {
-        if (record) localStorage.setItem(KEY, JSON.stringify(record));
-        else localStorage.removeItem(KEY);
+        localStorage.setItem(KEY, JSON.stringify(screen));
     } catch {
-        // Storage blocked: no offline sign-in on this browser.
+        // Storage blocked: nothing is remembered either, so nothing is ever covered.
     }
-    listeners.forEach((listener) => listener());
 }
 
-const toBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
-const fromBase64 = (text) => Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
-const sameEmail = (record, email) => Boolean(record && email && record.email === email.trim().toLowerCase());
-
-async function derive(password, salt, iterations) {
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-    return toBase64(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256));
+function write(screen) {
+    save(screen);
+    emit();
 }
 
-/** Called after an online login. Needs https (or localhost); without it there is no offline sign-in. */
-export async function rememberPassword(email, password) {
-    if (!globalThis.crypto?.subtle || !email || !password) return;
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    write({
-        email: email.trim().toLowerCase(),
-        salt: toBase64(salt),
-        hash: await derive(password, salt, ITERATIONS),
-        iterations: ITERATIONS,
-        locked: false,
-        tries: 0,
-        lastActive: Date.now(),
-    });
-}
+/** The email logged in on this phone, or null. */
+export const signedInHere = () => read().email ?? null;
 
-/** Logging out, or another account on this phone: its password check must not stay behind. */
-export const forgetPassword = () => write(null);
-
-/** Only an account whose password this phone knows can be locked, so nobody is shut out with no way back. */
-export const canLock = (email) => sameEmail(read(), email);
-
-/** Locked by hand, or idle longer than IDLE_MS (also across closing and reopening the app). */
-export function isLocked(email, { idleLock = true } = {}) {
-    const record = read();
-    if (!sameEmail(record, email)) return false;
-    return record.locked || (idleLock && Date.now() - record.lastActive > IDLE_MS);
-}
-
-export function lock() {
-    const record = read();
-    if (record && !record.locked) write({ ...record, locked: true });
+export function setSignedInHere(email, lastActive = Date.now()) {
+    write({ ...read(), email: normal(email), lastActive, notice: null });
 }
 
 /**
- * The person is using the app: push the idle lock back. Writes at most every 30 seconds, and
- * not once the idle time has run out: a tap must not lift a lock that is just about to show.
+ * Nobody is logged in on this phone any more. `notice` says why, when the person didn't choose
+ * it. `pendingLogout` is the account whose server session is still open because the logout
+ * happened with no connection (auth.js finishes it later).
  */
-export function noteActivity() {
-    const record = read();
-    const idle = record ? Date.now() - record.lastActive : 0;
-    if (record && !record.locked && idle > 30000 && idle < IDLE_MS) {
-        try {
-            localStorage.setItem(KEY, JSON.stringify({ ...record, lastActive: Date.now() }));
-        } catch {
-            // Storage blocked.
-        }
-    }
+export function signOutHere({ notice = null, pendingLogout: userId } = {}) {
+    const screen = read();
+    write({ ...screen, email: null, notice, pendingLogout: userId ?? screen.pendingLogout ?? null });
 }
 
-export const triesLeft = () => Math.max(0, MAX_TRIES - (read()?.tries ?? 0));
+/** 'changed': the server no longer accepts the account that was in use (staleAccounts.js). */
+export const coverNotice = () => read().notice ?? null;
 
-/** 'ok', 'wrong' or 'blocked' (too many wrong tries: only an online sign-in opens it now). */
-export async function unlock(password) {
-    const record = read();
-    if (!record || record.tries >= MAX_TRIES) return 'blocked';
-    const matches = (await derive(password, fromBase64(record.salt), record.iterations)) === record.hash;
-    if (matches) {
-        write({ ...record, locked: false, tries: 0, lastActive: Date.now() });
-        return 'ok';
-    }
-    const tries = record.tries + 1;
-    write({ ...record, locked: true, tries });
-    return tries >= MAX_TRIES ? 'blocked' : 'wrong';
+export const pendingLogout = () => read().pendingLogout ?? null;
+export const setPendingLogout = (userId) => write({ ...read(), pendingLogout: userId });
+export const clearPendingLogout = () => write({ ...read(), pendingLogout: null });
+
+/**
+ * Whether the login form must cover the page of `user`. Only an account whose password this
+ * phone knows is covered, so nobody is shut out with no way back; the exception is a notice,
+ * which sends the person to log in with internet.
+ */
+export function isCovered(user, { idleLock = true } = {}) {
+    if (!user) return false;
+    const screen = read();
+    if (screen.notice) return true;
+    if (!hasAccount(user.email)) return false;
+    if (screen.email !== normal(user.email)) return true;
+    return idleLock && Date.now() - (screen.lastActive ?? 0) > IDLE_MS;
+}
+
+export const canLock = hasAccount;
+
+/** Cover the app by hand. The server session stays open, so reports keep sending. */
+export const lock = () => signOutHere();
+
+/**
+ * The person is using the app: push the idle time back. Writes at most every 30 seconds, and
+ * not once the idle time has run out: a tap must not lift a cover that is just about to show.
+ */
+export function noteActivity() {
+    const screen = read();
+    const idle = Date.now() - (screen.lastActive ?? 0);
+    if (screen.email && idle > 30000 && idle < IDLE_MS) save({ ...screen, lastActive: Date.now() });
 }
 
 export function subscribeLock(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
 }
+
+// Forgetting or remembering an account changes what is covered.
+subscribeAccounts(emit);

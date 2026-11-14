@@ -1,5 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { IDLE_MS, MAX_TRIES, canLock, forgetPassword, isLocked, lock, noteActivity, rememberPassword, triesLeft, unlock } from "./lock";
+import { forgetAccount, rememberAccount } from "./accounts";
+import {
+    IDLE_MS,
+    canLock,
+    clearPendingLogout,
+    coverNotice,
+    isCovered,
+    lock,
+    noteActivity,
+    pendingLogout,
+    setPendingLogout,
+    setSignedInHere,
+    signOutHere,
+    signedInHere,
+    subscribeLock,
+} from "./lock";
 
 // Tests run without a browser: a plain in-memory localStorage.
 const storage = new Map();
@@ -9,56 +24,103 @@ vi.stubGlobal("localStorage", {
     removeItem: (key) => storage.delete(key),
 });
 
-describe("offline sign-in", () => {
+const fugu = { id: 7, name: "Fugu", email: "fugu@barangay.local", roles: [{ name: "user" }], permissions: [], offline_stamp: "s1" };
+
+describe("who is logged in on this phone", () => {
     beforeEach(async () => {
         storage.clear();
-        await rememberPassword(" Fugu@Barangay.local ", "correct horse");
+        await rememberAccount(fugu, "correct horse");
+        setSignedInHere(" Fugu@Barangay.local ");
     });
     afterEach(() => vi.useRealTimers());
 
-    it("keeps a check of the password, never the password itself", () => {
-        expect(storage.get("offline-lock")).not.toContain("correct horse");
-        expect(canLock("fugu@barangay.local")).toBe(true);
-        expect(canLock("rugao@barangay.local")).toBe(false);
+    it("covers nothing on a page with no user", () => {
+        signOutHere();
+
+        expect(isCovered(null)).toBe(false);
     });
 
-    it("unlocks with the right password and stays locked with a wrong one", async () => {
+    it("leaves the app open for the account logged in here", () => {
+        expect(signedInHere()).toBe("fugu@barangay.local");
+        expect(isCovered(fugu)).toBe(false);
+    });
+
+    it("never covers an account this phone has no check for, so nobody is shut out", () => {
+        forgetAccount(fugu.email);
+        signOutHere();
+
+        expect(isCovered(fugu)).toBe(false);
+        expect(canLock(fugu.email)).toBe(false);
+    });
+
+    it("covers the app after logging out here and uncovers it after logging in", () => {
         lock();
-        expect(isLocked("fugu@barangay.local")).toBe(true);
+        expect(isCovered(fugu)).toBe(true);
+        expect(signedInHere()).toBeNull();
 
-        expect(await unlock("wrong")).toBe("wrong");
-        expect(isLocked("fugu@barangay.local")).toBe(true);
-        expect(triesLeft()).toBe(MAX_TRIES - 1);
-
-        expect(await unlock("correct horse")).toBe("ok");
-        expect(isLocked("fugu@barangay.local")).toBe(false);
-        expect(triesLeft()).toBe(MAX_TRIES);
+        setSignedInHere(fugu.email);
+        expect(isCovered(fugu)).toBe(false);
     });
 
-    it("refuses even the right password after too many wrong ones", async () => {
-        for (let i = 1; i < MAX_TRIES; i++) expect(await unlock("wrong")).toBe("wrong");
-        expect(await unlock("wrong")).toBe("blocked");
+    it("covers an account's page while another account is the one logged in here", () => {
+        setSignedInHere("rugao@barangay.local");
 
-        expect(await unlock("correct horse")).toBe("blocked");
-        expect(isLocked("fugu@barangay.local")).toBe(true);
+        expect(isCovered(fugu)).toBe(true);
     });
 
-    it("locks after the idle time, and a tap after that does not lift it", () => {
+    it("covers after the idle time, a tap after that does not lift it, and admins are not timed out", () => {
         vi.useFakeTimers();
         vi.setSystemTime(Date.now() + IDLE_MS + 1000);
 
         noteActivity();
 
-        expect(isLocked("fugu@barangay.local")).toBe(true);
-        // Admin screens lock only by hand.
-        expect(isLocked("fugu@barangay.local", { idleLock: false })).toBe(false);
+        expect(isCovered(fugu)).toBe(true);
+        expect(isCovered(fugu, { idleLock: false })).toBe(false);
     });
 
-    it("never locks an account whose password this phone doesn't know", () => {
-        forgetPassword();
-        lock();
+    it("pushes the idle time back while the person is using the app", () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(Date.now() + IDLE_MS - 60000);
+        noteActivity();
+        vi.setSystemTime(Date.now() + 120000);
 
-        expect(canLock("fugu@barangay.local")).toBe(false);
-        expect(isLocked("fugu@barangay.local")).toBe(false);
+        expect(isCovered(fugu)).toBe(false);
+    });
+
+    it("covers with a notice even when the account was just forgotten, until someone logs in", () => {
+        forgetAccount(fugu.email);
+        signOutHere({ notice: "changed" });
+
+        expect(isCovered(fugu)).toBe(true);
+        expect(coverNotice()).toBe("changed");
+
+        setSignedInHere(fugu.email);
+        expect(coverNotice()).toBeNull();
+    });
+
+    it("keeps a pending logout until it is cleared", () => {
+        signOutHere({ pendingLogout: 7 });
+        setSignedInHere("rugao@barangay.local");
+        signOutHere();
+        expect(pendingLogout()).toBe(7);
+
+        clearPendingLogout();
+        expect(pendingLogout()).toBeNull();
+
+        setPendingLogout(8);
+        expect(pendingLogout()).toBe(8);
+    });
+
+    it("tells its listeners when the lock or the remembered accounts change", () => {
+        const listener = vi.fn();
+        const stop = subscribeLock(listener);
+
+        lock();
+        forgetAccount(fugu.email);
+        expect(listener).toHaveBeenCalledTimes(2);
+
+        stop();
+        setSignedInHere(fugu.email);
+        expect(listener).toHaveBeenCalledTimes(2);
     });
 });
