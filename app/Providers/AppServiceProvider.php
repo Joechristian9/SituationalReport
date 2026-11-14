@@ -90,10 +90,11 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerRateLimiters(): void
     {
+        // A background login (the app, with JSON) can't tell a redirect back from success: it gets 429.
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by($request->ip())
-            ->response(fn () => back()->withErrors([
-                'email' => trans('auth.throttle', ['seconds' => 60, 'minutes' => 1]),
-            ])));
+            ->response(fn (Request $request) => $request->expectsJson()
+                ? response()->json(['message' => trans('auth.throttle', ['seconds' => 60, 'minutes' => 1])], 429)
+                : back()->withErrors(['email' => trans('auth.throttle', ['seconds' => 60, 'minutes' => 1])])));
 
         // Only saves count: reading pages and history inside the form group stays unlimited.
         RateLimiter::for('report-writes', function (Request $request) {

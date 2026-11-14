@@ -91,7 +91,19 @@ class User extends Authenticatable
             'email_verified_at' => $this->email_verified_at,
             'roles' => $this->roles->map(fn ($role) => ['name' => $role->name])->values(),
             'permissions' => $this->permissions->map(fn ($permission) => ['name' => $permission->name])->values(),
+            // A phone that remembers this account for login without internet keeps this, and
+            // asks later whether it is still current (OfflineAccountController).
+            'offline_stamp' => $this->offlineStamp(),
         ];
+    }
+
+    /**
+     * Changes whenever the password changes, like the "Remember me" cookie, and cannot be turned
+     * back into the password or its hash: the key never leaves the server.
+     */
+    public function offlineStamp(): string
+    {
+        return hash_hmac('sha256', "offline-stamp|{$this->id}|{$this->password}", (string) config('app.key'));
     }
 
     /**

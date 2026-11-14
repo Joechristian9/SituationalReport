@@ -62,3 +62,50 @@ test('logging out on one device keeps the account remembered on its other device
     expect($token)->not->toBeEmpty()
         ->and($user->fresh()->remember_token)->toBe($token);
 });
+
+// The app logs in and out in the background (resources/js/lib/offline/auth.js). A redirect
+// there looks the same as success, so those requests get plain answers.
+
+it('answers a background login with the account and its home page', function () {
+    $user = userWithRole('user');
+
+    $this->postJson('/login', ['email' => $user->email, 'password' => 'password', 'remember' => true])
+        ->assertOk()
+        ->assertJsonPath('user.id', $user->id)
+        ->assertJsonPath('user.offline_stamp', $user->offlineStamp())
+        ->assertJsonPath('home', route('situation-reports.index', [], false));
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('refuses a wrong password on a background login with 422', function () {
+    $user = userWithRole('user');
+
+    $this->postJson('/login', ['email' => $user->email, 'password' => 'wrong-password'])
+        ->assertStatus(422)->assertJsonValidationErrors('email');
+});
+
+it('answers too many background logins with 429, not a redirect', function () {
+    foreach (range(1, 30) as $i) {
+        $this->postJson('/login', ['email' => "nobody{$i}@example.test", 'password' => 'x']);
+    }
+
+    $this->postJson('/login', ['email' => 'nobody31@example.test', 'password' => 'x'])
+        ->assertStatus(429)->assertJsonStructure(['message']);
+});
+
+it('answers a background logout with no content', function () {
+    $this->actingAs(userWithRole('user'))->postJson('/logout')->assertNoContent();
+    $this->assertGuest();
+});
+
+it('changes the account stamp when the password changes', function () {
+    $user = userWithRole('user');
+    $before = $user->offlineStamp();
+
+    $user->update(['password' => 'a-new-long-password']);
+
+    expect($before)->toMatch('/^[0-9a-f]{64}$/')
+        ->and($user->fresh()->offlineStamp())->not->toBe($before)
+        ->and(userWithRole('user')->offlineStamp())->not->toBe($before);
+});
