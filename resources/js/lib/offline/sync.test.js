@@ -12,7 +12,7 @@ vi.mock("./context", () => ({ currentUser: () => ({ id: 1 }), currentSession: ()
 
 const axios = (await import("axios")).default;
 const { allItems, putItem, removeItem } = await import("./store");
-const { syncNow, syncState } = await import("./sync");
+const { holdSync, syncNow, syncState } = await import("./sync");
 
 const report = { id: "key-1", userId: 1, status: "pending", url: "/roads", payload: { roads: [] }, session: "old-page", savedAt: 1 };
 
@@ -62,5 +62,38 @@ describe("syncNow", () => {
         expect(syncState().loginNeeded).toBe(true);
         expect(removeItem).not.toHaveBeenCalled();
         expect(putItem).not.toHaveBeenCalled();
+    });
+
+    it("says which account wrote each report", async () => {
+        axios.post.mockResolvedValue({ status: 200, data: {} });
+
+        await syncNow();
+
+        expect(axios.post.mock.calls[0][2].headers["X-Offline-User"]).toBe("1");
+    });
+
+    it("keeps a report the server refused because another account is logged in", async () => {
+        axios.post.mockRejectedValue({ response: { status: 409, data: { error: "WRONG_ACCOUNT", message: "x" } } });
+
+        await syncNow();
+
+        expect(syncState().loginNeeded).toBe(true);
+        expect(putItem).not.toHaveBeenCalled();
+        expect(removeItem).not.toHaveBeenCalled();
+    });
+
+    it("sends nothing while held, except when asked for one account's reports", async () => {
+        const other = { ...report, id: "key-2", userId: 2 };
+        allItems.mockResolvedValue([report, other]);
+        axios.post.mockResolvedValue({ status: 200, data: {} });
+        holdSync(true);
+
+        await syncNow();
+        expect(axios.post).not.toHaveBeenCalled();
+
+        await syncNow({ userId: 2, evenIfHeld: true });
+        expect(removeItem).toHaveBeenCalledTimes(1);
+        expect(removeItem).toHaveBeenCalledWith("key-2");
+        holdSync(false);
     });
 });

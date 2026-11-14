@@ -8,7 +8,14 @@ import { currentSession, currentUser } from './context';
 const state = { running: false, loginNeeded: false, reloadNeeded: false };
 // A weak signal can leave a request hanging for minutes, blocking every later send. A send
 // that times out stays queued; if it did reach the server, the resend is recognised by its key.
-const SEND_TIMEOUT_MS = 30000;
+export const SEND_TIMEOUT_MS = 30000;
+// During an offline session the server doesn't know the account using the app yet: whatever
+// session is open belongs to someone else, so nothing is sent until that login is done.
+let held = false;
+
+export function holdSync(hold) {
+    held = hold;
+}
 const listeners = new Set();
 // Forms whose queued save from this very page was just sent: their rows now have
 // server ids the page doesn't know, so saving again before a reload would duplicate them.
@@ -69,6 +76,8 @@ async function send(item, freshToken) {
                 Accept: 'application/json',
                 'X-Offline-Key': item.id,
                 'X-Offline-Disaster': item.disasterId ?? '',
+                // The server refuses the save if another account is the one logged in.
+                'X-Offline-User': String(item.userId ?? ''),
             },
         });
 
@@ -82,15 +91,18 @@ async function send(item, freshToken) {
     }
 }
 
-export async function syncNow() {
-    const user = currentUser();
-    if (state.running || !user || !navigator.onLine) return;
+/**
+ * Send the queued saves of one account: by default the one whose page is showing. `evenIfHeld`
+ * is for sending a logged-out account's reports through its still-open session.
+ */
+export async function syncNow({ userId = currentUser()?.id, evenIfHeld = false } = {}) {
+    if (state.running || userId == null || !navigator.onLine || (held && !evenIfHeld)) return;
     state.running = true;
     emit();
 
     try {
         const items = (await allItems()).filter(
-            (item) => item.userId === user.id && (item.status === 'pending' || item.status === 'waiting'),
+            (item) => item.userId === userId && (item.status === 'pending' || item.status === 'waiting'),
         );
 
         const freshToken = { used: false };
@@ -113,6 +125,12 @@ export async function syncNow() {
                     // Even "Remember me" couldn't sign back in: signed out on the server (e.g. the
                     // password was changed on another device). install.js forgets this account.
                     window.dispatchEvent(new CustomEvent('offline:signed-out'));
+                    break;
+                }
+                // Another account is the one logged in on the server (shared phone): the report
+                // waits, untouched, for its own account to log in.
+                if (response.status === 409 && response.data?.error === 'WRONG_ACCOUNT') {
+                    state.loginNeeded = true;
                     break;
                 }
                 // Server trouble or too many saves at once: keep it and retry later.
