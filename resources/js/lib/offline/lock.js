@@ -60,6 +60,15 @@ export const setPendingLogout = (userId) => write({ ...read(), pendingLogout: us
 export const clearPendingLogout = () => write({ ...read(), pendingLogout: null });
 
 /**
+ * Whether the server still has this phone logged in, as far as the phone knows. While it does,
+ * the account whose page is showing only needs the phone's own check to come back (auth.js).
+ * Once it doesn't, a login with no connection must keep the password to log in to the server
+ * later, or the reports saved meanwhile would never send by themselves.
+ */
+export const serverSessionOpen = () => read().serverSession !== false;
+export const noteServerSession = (open) => save({ ...read(), serverSession: open });
+
+/**
  * Whether the login form must cover the page of `user`. Only an account whose password this
  * phone knows is covered, so nobody is shut out with no way back; the exception is a notice,
  * which sends the person to log in with internet.

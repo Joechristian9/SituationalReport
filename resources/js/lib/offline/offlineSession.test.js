@@ -142,6 +142,7 @@ describe("an offline session", () => {
         expect(app.sync.syncNow).toHaveBeenCalledWith();
         expect(app.accounts.account(user.email).stamp).toBe("new");
         expect(await app.accounts.checkPassword(user.email, PASSWORD)).toBe("ok");
+        expect(app.lock.serverSessionOpen()).toBe(true);
     });
 
     it("sends the logged-out account's reports before logging it out", async () => {
@@ -205,6 +206,7 @@ describe("an offline session", () => {
 
         expect(app.accounts.hasAccount(user.email)).toBe(false);
         expect(app.accounts.accountsGone()).toEqual([7]);
+        expect(app.lock.serverSessionOpen()).toBe(false); // the logout before it went through
         expect(app.lock.coverNotice()).toBe("changed");
         expect(app.lock.isCovered(user)).toBe(true);
         expect(app.offlineSession()).toBeNull();

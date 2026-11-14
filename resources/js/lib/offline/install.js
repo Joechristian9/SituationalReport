@@ -5,7 +5,7 @@ import { QUEUED_MESSAGE, endpointFor, enqueue, mergePayloads, openItemFor } from
 import { removeItem } from './store';
 import { notePage, saveTemplate, takeOldLock } from './accounts';
 import { finishPendingLogout } from './auth';
-import { setSignedInHere, signOutHere } from './lock';
+import { noteServerSession, setSignedInHere, signOutHere } from './lock';
 import { blocksRequest, offlineSession } from './offlineSession';
 import { CHECK_EVERY_MS, forgetStaleAccounts } from './staleAccounts';
 import { canRefreshWithoutLosingEdits, needsReloadBeforeSaving, refreshPage, subscribeSync, syncNow } from './sync';
@@ -197,9 +197,12 @@ const noteCurrentPage = () => notePage(currentPage(), Boolean(offlineSession()))
  * logout made without a connection, then send what is waiting.
  */
 async function onConnection() {
-    await forgetStaleAccounts();
-    await finishPendingLogout();
-    syncNow();
+    try {
+        await forgetStaleAccounts();
+        await finishPendingLogout();
+    } finally {
+        syncNow();
+    }
 }
 
 /**
@@ -260,10 +263,13 @@ export function installOffline(initialPage) {
     window.addEventListener('offline:queued', keepOfflineData);
     // The server ended this phone's session: find out whether the password changed or the
     // account was removed. Unsent reports stay and go up after the next login.
-    window.addEventListener('offline:signed-out', forgetStaleAccounts);
+    window.addEventListener('offline:signed-out', () => {
+        noteServerSession(false);
+        forgetStaleAccounts();
+    });
 
     window.addEventListener('online', onConnection);
     setTimeout(onConnection, 2000);
     setInterval(forgetStaleAccounts, CHECK_EVERY_MS);
-    setInterval(() => finishPendingLogout().then(() => syncNow()), 30000);
+    setInterval(() => finishPendingLogout().catch(() => {}).then(() => syncNow()), 30000);
 }

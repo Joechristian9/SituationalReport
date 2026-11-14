@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { toast } from 'react-hot-toast';
 import { clearSavedPages, forgetAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner, template } from './accounts';
 import { currentUser } from './context';
-import { clearPendingLogout, pendingLogout, setSignedInHere, signOutHere } from './lock';
+import { clearPendingLogout, noteServerSession, pendingLogout, setSignedInHere, signOutHere } from './lock';
 import { SEND_TIMEOUT_MS, canRefreshWithoutLosingEdits, holdSync, refreshPage, syncNow, syncState } from './sync';
 
 // An account logged in on this phone with no internet (auth.js checked its password against
@@ -113,6 +113,7 @@ async function logInAndSend(current) {
     // 401: nobody was logged in. Anything else (a telco "no load" page answers 200) is not the server.
     if (loggedOut?.status !== 204 && loggedOut?.status !== 401) return;
     clearPendingLogout();
+    noteServerSession(false);
 
     const answer = await ask(() => axios.post(route('login'), { email: user.email, password, remember: true }, REQUEST));
     if (session !== current) return; // logged out on the phone meanwhile
@@ -128,6 +129,7 @@ async function logInAndSend(current) {
     if (answer?.status !== 200 || !answer.data?.user?.id) return;
 
     // An ordinary login from here on.
+    noteServerSession(true);
     await rememberAccount(answer.data.user, password);
     if (!savedPagesBelongTo(answer.data.user.id)) {
         await clearSavedPages();

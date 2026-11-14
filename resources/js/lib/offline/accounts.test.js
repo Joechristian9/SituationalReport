@@ -91,16 +91,25 @@ describe("remembered accounts", () => {
         expect(triesLeft(fugu.email)).toBe(MAX_TRIES);
     });
 
-    it("drops the check when the account's stamp changes, and keeps it when it does not", async () => {
+    it("keeps the account's details current from the pages it sees", async () => {
         await rememberAccount(fugu, "correct horse");
 
         rememberUser({ ...fugu, name: "Fugu II" });
+
         expect(account(fugu.email).user.name).toBe("Fugu II");
+        expect(await checkPassword(fugu.email, "correct horse")).toBe("ok");
+    });
 
-        rememberUser({ ...fugu, offline_stamp: "s2" });
-        expect(hasAccount(fugu.email)).toBe(false);
-
+    it("follows a password changed on this phone, whatever older saved pages say", async () => {
+        await rememberAccount(fugu, "correct horse");
         await rememberAccount({ ...fugu, offline_stamp: "s2" }, "new password 123");
+
+        // A page saved before the change, or before stamps existed, opens from the phone.
+        rememberUser(fugu);
+        rememberUser({ ...fugu, offline_stamp: undefined });
+
+        expect(account(fugu.email).stamp).toBe("s2");
+        expect(await checkPassword(fugu.email, "correct horse")).toBe("wrong");
         expect(await checkPassword(fugu.email, "new password 123")).toBe("ok");
     });
 

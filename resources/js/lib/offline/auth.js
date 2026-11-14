@@ -13,7 +13,7 @@ import {
     triesLeft,
 } from './accounts';
 import { currentUser } from './context';
-import { clearPendingLogout, coverNotice, pendingLogout, setPendingLogout, setSignedInHere, signOutHere } from './lock';
+import { clearPendingLogout, coverNotice, noteServerSession, pendingLogout, serverSessionOpen, setPendingLogout, setSignedInHere, signOutHere } from './lock';
 import { endOfflineSession, offlineSession, startOfflineSession } from './offlineSession';
 import { syncNow } from './sync';
 
@@ -52,7 +52,10 @@ const freshToken = () => ask(() => axios.get(route('sanctum.csrf-cookie'), REQUE
 async function logOutOfServer() {
     if (!(await freshToken())) return 'unreachable';
     const answer = await ask(() => axios.post(route('logout'), {}, REQUEST));
-    if (answer?.status === 204 || answer?.status === 401) return 'done';
+    if (answer?.status === 204 || answer?.status === 401) {
+        noteServerSession(false);
+        return 'done';
+    }
     // Any other "success" is not the server: a telco's "no load" page answers 200.
     return answer && answer.status >= 400 ? 'problem' : 'unreachable';
 }
@@ -80,9 +83,9 @@ export async function signIn({ email, password, remember = true }, queryClient) 
     const under = currentUser();
     const underneath = under && normal(under.email) === normal(email);
 
-    // The account's own page is open underneath (it went idle, or logged out on this phone):
-    // its server session is still there, so the phone's check is enough.
-    if (underneath && !coverNotice()) {
+    // The account's own page is open underneath (it went idle, or logged out on this phone)
+    // and its server session is still there, so the phone's check is enough.
+    if (underneath && !coverNotice() && serverSessionOpen()) {
         const result = await checkPassword(email, password);
         if (result === 'ok') {
             setSignedInHere(email);
@@ -99,6 +102,7 @@ export async function signIn({ email, password, remember = true }, queryClient) 
         await rememberAccount(user, password);
         endOfflineSession();
         clearPendingLogout();
+        noteServerSession(true);
         setSignedInHere(user.email);
         if (under?.id === user.id) {
             // Logging in again after a password change: no reload, so a half-typed form stays.

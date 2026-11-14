@@ -66,17 +66,14 @@ export async function rememberAccount(user, password) {
 }
 
 /**
- * A page shows this account: keep its details current. A stamp that differs from the one the
- * check was made under means the password changed since (on this phone or another), so the
- * check is for the old password and must go.
+ * A page shows this account: keep its details current. The page's stamp is taken only when the
+ * entry has none yet (a phone converted by takeOldLock). Pages also open from the phone's saved
+ * copies, which can be older than the check, so a page never replaces or removes it: only a
+ * login (rememberAccount) and the server's answer (staleAccounts.js) do.
  */
 export function rememberUser(user) {
     if (!read().accounts[normal(user?.email)]) return;
-    setEntry(user.email, (entry) => {
-        const { salt, hash, iterations, ...rest } = entry;
-        const stale = Boolean(entry.stamp) && entry.stamp !== user.offline_stamp;
-        return { ...(stale ? rest : entry), user, stamp: user.offline_stamp };
-    });
+    setEntry(user.email, (entry) => ({ ...entry, user, stamp: entry.stamp ?? user.offline_stamp }));
 }
 
 /** The account if this phone can check its password: it has both the check and the details. */

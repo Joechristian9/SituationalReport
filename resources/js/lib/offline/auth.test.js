@@ -21,7 +21,7 @@ const axios = (await import("axios")).default;
 const { syncNow } = await import("./sync");
 const { offlineSession, startOfflineSession, endOfflineSession } = await import("./offlineSession");
 const { account, accountsGone, hasAccount, rememberAccount, savedPagesBelongTo, setSavedPagesOwner } = await import("./accounts");
-const { coverNotice, isCovered, pendingLogout, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
+const { coverNotice, isCovered, pendingLogout, serverSessionOpen, setPendingLogout, setSignedInHere, signOutHere, signedInHere } = await import("./lock");
 const { SERVER_WAIT_MS, finishPendingLogout, logOut, signIn } = await import("./auth");
 
 const fugu = { id: 7, name: "Fugu", email: "fugu@barangay.local", roles: [{ name: "user" }], permissions: [], offline_stamp: "s1" };
@@ -278,6 +278,33 @@ describe("logOut", () => {
         expect(caches.delete).toHaveBeenCalledWith("sitrep-pages-v2");
     });
 
+    it("after a logout the server answered, logging in with no connection starts an offline session", async () => {
+        page.user = fugu;
+        setSignedInHere(fugu.email);
+        server();
+        await logOut();
+        expect(serverSessionOpen()).toBe(false);
+
+        // The app is opened again from its saved page, with no load.
+        unreachable();
+        expect(await logIn(fugu.email, "correct horse")).toEqual({ ok: true });
+
+        // Not just the cover lifting: the password is kept to log in to the server later,
+        // so the reports saved meanwhile send by themselves.
+        expect(startOfflineSession).toHaveBeenCalledWith(account(fugu.email), "correct horse", queryClient);
+    });
+
+    it("a login the server accepts marks its session open again", async () => {
+        page.user = fugu;
+        setSignedInHere(fugu.email);
+        server();
+        await logOut();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(serverSessionOpen()).toBe(true);
+    });
+
     it("an offline session ends on the phone only", async () => {
         page.user = fugu;
         setSignedInHere(fugu.email);
@@ -304,6 +331,7 @@ describe("finishPendingLogout", () => {
         expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
         expect(postedTo()).toEqual(["/logout"]);
         expect(pendingLogout()).toBeNull();
+        expect(serverSessionOpen()).toBe(false);
     });
 
     it("stays pending while the server cannot be reached", async () => {

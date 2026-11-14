@@ -9,7 +9,9 @@ import {
     isCovered,
     lock,
     noteActivity,
+    noteServerSession,
     pendingLogout,
+    serverSessionOpen,
     setPendingLogout,
     setSignedInHere,
     signOutHere,
@@ -134,6 +136,17 @@ describe("who is logged in on this phone", () => {
     it("leaves an open app alone", () => {
         expect(holdIdleCover(fugu)).toBe(false);
         expect(signedInHere()).toBe("fugu@barangay.local");
+    });
+
+    it("remembers whether the server still has this phone logged in", () => {
+        expect(serverSessionOpen()).toBe(true); // a phone logged in before this was tracked
+
+        noteServerSession(false);
+        setSignedInHere(fugu.email);
+        expect(serverSessionOpen()).toBe(false);
+
+        noteServerSession(true);
+        expect(serverSessionOpen()).toBe(true);
     });
 
     it("tells its listeners when the lock or the remembered accounts change", () => {
