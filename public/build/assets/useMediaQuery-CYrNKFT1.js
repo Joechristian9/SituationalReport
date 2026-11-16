@@ -1,1 +1,0 @@
-import{r as s}from"./index.esm-Dw9IacZb.js";function o(e){const[n,c]=s.useState(()=>window.matchMedia(e).matches);return s.useEffect(()=>{const t=window.matchMedia(e),a=()=>c(t.matches);return a(),t.addEventListener("change",a),()=>t.removeEventListener("change",a)},[e]),n}export{o as u};

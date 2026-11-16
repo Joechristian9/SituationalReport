@@ -1,0 +1,1 @@
+import{O as t,P as o,Q as i}from"./gestures-ClJaPaSL.js";import"./index.esm-D6jpOuBf.js";import"./load-features-BP2v7eFa.js";import"./data-id-zZ7VyGQ0.js";import"./is-html-element-CQto32_L.js";const s={renderer:i,...o,...t};export{s as default};

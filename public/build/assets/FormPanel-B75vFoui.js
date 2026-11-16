@@ -1,0 +1,1 @@
+import{j as a}from"./index.esm-D6jpOuBf.js";import{a as e}from"./utils-9gjXS1e5.js";function t({className:r,children:o}){return a.jsx("section",{className:e("mx-auto max-w-7xl rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6",r),children:o})}export{t as F};
