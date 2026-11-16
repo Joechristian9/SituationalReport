@@ -90,6 +90,7 @@ describe("signIn", () => {
         // Always a logout first: a session the phone doesn't know about would otherwise make
         // the server answer the login as the account already logged in.
         expect(postedTo()).toEqual(["/logout", "/login"]);
+        expect(axios.get).toHaveBeenCalledTimes(1); // one token request, the logout's own
         const [, body, config] = axios.post.mock.calls[1];
         expect(body).toEqual({ email: "Fugu@Barangay.local", password: "correct horse", remember: true });
         expect(config).toMatchObject({ timeout: 10000, offlineSync: true, headers: { Accept: "application/json" } });
@@ -238,6 +239,26 @@ describe("signIn", () => {
         expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
     });
 
+    it("sends a locked account's reports before closing its session for someone else's login", async () => {
+        page.user = rugao; // rugao's page went idle or was locked by hand: no logout is waiting
+        server();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(syncNow).toHaveBeenCalledWith({ userId: 8, evenIfHeld: true });
+        expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
+    });
+
+    it("sends nothing first when the server has no session for the page's account", async () => {
+        page.user = rugao; // rugao's saved page, but rugao logged out with internet earlier
+        noteServerSession(null);
+        server();
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(syncNow).not.toHaveBeenCalled();
+    });
+
     it("lets an idle offline session back in without starting it over", async () => {
         // Fugu is working offline on blank forms while rugao is still logged in on the server.
         await rememberAccount(fugu, "correct horse");
@@ -286,7 +307,7 @@ describe("signIn", () => {
         expect(await logIn(fugu.email, "new password 123")).toEqual({ ok: true });
 
         expect(window.location.assign).not.toHaveBeenCalled();
-        expect(syncNow).toHaveBeenCalled();
+        expect(syncNow).toHaveBeenCalledWith(); // the send after the login, not the one before it
         expect(coverNotice()).toBeNull();
         expect(isCovered(fugu)).toBe(false);
         expect(account(fugu.email).stamp).toBe("s2");
@@ -411,6 +432,20 @@ describe("finishPendingLogout", () => {
         server();
         // Sending takes a while on a weak signal; meanwhile the person logs in again on the cover.
         syncNow.mockImplementationOnce(async () => clearPendingLogout());
+
+        await finishPendingLogout();
+
+        expect(axios.post).not.toHaveBeenCalled();
+    });
+
+    it("leaves the session alone when the account logged back in while the logout was starting", async () => {
+        setPendingLogout(7);
+        server();
+        // The token request comes first and can be slow; the person logs in again during it.
+        axios.get.mockImplementationOnce(async () => {
+            clearPendingLogout();
+            return { status: 204 };
+        });
 
         await finishPendingLogout();
 

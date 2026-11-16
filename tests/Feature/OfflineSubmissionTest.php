@@ -14,13 +14,40 @@ it('saves a queued offline report once, even if it is sent twice', function () {
     $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
     $headers = ['X-Offline-Key' => 'abc12345-key', 'X-Offline-Disaster' => (string) $disaster->id, 'Accept' => 'application/json'];
 
-    $this->actingAs($user)->postJson(route('injured.store'), injuredPayload(), $headers)->assertSuccessful();
+    // `saved` is what lets the phone delete its copy (sync.js).
+    $this->actingAs($user)->postJson(route('injured.store'), injuredPayload(), $headers)
+        ->assertSuccessful()
+        ->assertJson(['saved' => true]);
     $this->actingAs($user)->postJson(route('injured.store'), injuredPayload(), $headers)
         ->assertOk()
-        ->assertJson(['replayed' => true]);
+        ->assertJson(['saved' => true, 'replayed' => true]);
 
     expect(Injured::count())->toBe(1)
         ->and(Injured::first()->disaster_id)->toBe($disaster->id);
+});
+
+it('answers a queued report with JSON where the form would get a redirect, and leaves no message behind', function () {
+    $user = userWithPermissions('access-injured-form');
+    $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
+    $headers = ['X-Offline-Key' => 'redirect-key-1', 'X-Offline-Disaster' => (string) $disaster->id];
+
+    // Not asking for JSON: the controller answers back()->with('success', ...).
+    $this->actingAs($user)->post(route('injured.store'), injuredPayload(), $headers)
+        ->assertOk()
+        ->assertExactJson(['saved' => true])
+        ->assertSessionMissing('success');
+
+    expect(Injured::count())->toBe(1);
+});
+
+it('does not call a refused queued report saved', function () {
+    $user = userWithPermissions('access-injured-form');
+    $disaster = Typhoon::create(['name' => 'Storm', 'status' => 'active', 'created_by' => $user->id]);
+    $headers = ['X-Offline-Key' => 'invalid-rows-1', 'X-Offline-Disaster' => (string) $disaster->id];
+
+    $this->actingAs($user)->postJson(route('injured.store'), ['injured' => 'not rows'], $headers)
+        ->assertStatus(422)
+        ->assertJsonMissingPath('saved');
 });
 
 it('treats the same key from another user as a separate report', function () {

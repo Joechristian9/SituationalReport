@@ -99,11 +99,11 @@ it('saves nothing when a queued save fails midway, so the retry writes each row 
         ->and(AuditLog::where('auditable_type', $model)->count())->toBe(0);
 
     $failing = false;
-    // Some of these saves answer with a redirect, which the offline queue also counts as saved.
-    $retry = $this->actingAs($user)->postJson(route($route), [$key => $rows], $headers);
+    $this->actingAs($user)->postJson(route($route), [$key => $rows], $headers)
+        ->assertSuccessful()
+        ->assertJson(['saved' => true]);
 
-    expect($retry->isSuccessful() || $retry->isRedirection())->toBeTrue()
-        ->and($model::count())->toBe(2);
+    expect($model::count())->toBe(2);
 })->with('multi-row saves');
 
 it('undoes an edit made earlier in a save that then fails', function () {

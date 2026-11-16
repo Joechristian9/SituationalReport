@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Typhoon;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
@@ -55,7 +56,7 @@ class HandleOfflineSubmission
         // before the reply arrived) must not create the rows a second time.
         $doneKey = "offline-submission:{$request->user()->id}:{$key}";
         if (Cache::has($doneKey)) {
-            return response()->json(['message' => 'Already saved.', 'replayed' => true]);
+            return response()->json(['saved' => true, 'message' => 'Already saved.', 'replayed' => true]);
         }
 
         $lock = Cache::lock("{$doneKey}:lock", 30);
@@ -67,11 +68,25 @@ class HandleOfflineSubmission
             $response = $next($request);
 
             // Inertia form endpoints answer a successful save with a redirect.
-            if ($response->isSuccessful() || $response->isRedirection()) {
-                Cache::put($doneKey, true, now()->addDays(self::KEEP_DAYS));
+            if (! $response->isSuccessful() && ! $response->isRedirection()) {
+                return $response;
             }
 
-            return $response;
+            Cache::put($doneKey, true, now()->addDays(self::KEEP_DAYS));
+
+            // The phone deletes its copy only on `saved` (sync.js): a redirect followed to a page
+            // looks the same to it as a telco's "no load" page, which also answers 200.
+            if ($response instanceof JsonResponse) {
+                return $response->setData(['saved' => true] + (array) $response->getData(true));
+            }
+
+            // The redirect's message has no page to show on. Left in the session, it would
+            // appear on whichever page the person opens next.
+            if ($request->hasSession()) {
+                $request->session()->forget(['success', 'error']);
+            }
+
+            return response()->json(['saved' => true]);
         } finally {
             $lock->release();
         }

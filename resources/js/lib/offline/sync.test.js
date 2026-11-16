@@ -36,11 +36,21 @@ describe("syncNow", () => {
     });
 
     it("removes the report once the server has it", async () => {
-        axios.post.mockResolvedValue({ status: 200, data: {} });
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true } });
 
         await syncNow();
 
         expect(removeItem).toHaveBeenCalledWith("key-1");
+    });
+
+    it("keeps the report when a 200 answer is not the server's", async () => {
+        // Data on with no load: the telco's page answers every request with 200.
+        axios.post.mockResolvedValue({ status: 200, data: "<html>no load</html>" });
+
+        await syncNow();
+
+        expect(removeItem).not.toHaveBeenCalled();
+        expect(putItem).not.toHaveBeenCalled();
     });
 
     it("holds a report whose rows were changed on another device until the person chooses", async () => {
@@ -65,7 +75,7 @@ describe("syncNow", () => {
     });
 
     it("says which account wrote each report", async () => {
-        axios.post.mockResolvedValue({ status: 200, data: {} });
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true } });
 
         await syncNow();
 
@@ -86,7 +96,7 @@ describe("syncNow", () => {
         // Another account's report, queued from this same forms address before it logged out.
         // Its rows are not on the page now showing, so that page has nothing to reload for.
         allItems.mockResolvedValue([{ ...report, id: "key-2", userId: 2, session: "page-1", path: "/road-reports" }]);
-        axios.post.mockResolvedValue({ status: 200, data: {} });
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true } });
 
         await syncNow({ userId: 2, evenIfHeld: true });
 
@@ -98,7 +108,7 @@ describe("syncNow", () => {
     it("sends nothing while held, except when asked for one account's reports", async () => {
         const other = { ...report, id: "key-2", userId: 2 };
         allItems.mockResolvedValue([report, other]);
-        axios.post.mockResolvedValue({ status: 200, data: {} });
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true } });
         holdSync(true);
 
         await syncNow();
@@ -108,5 +118,22 @@ describe("syncNow", () => {
         expect(removeItem).toHaveBeenCalledTimes(1);
         expect(removeItem).toHaveBeenCalledWith("key-2");
         holdSync(false);
+    });
+
+    it("waits for a run in flight when an account's reports must go before its session closes", async () => {
+        allItems.mockResolvedValue([report, { ...report, id: "key-2", userId: 2 }]);
+        let release;
+        axios.post.mockImplementationOnce(() => new Promise((resolve) => (release = resolve)));
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true } });
+
+        const first = syncNow();
+        await vi.waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+        await syncNow(); // an ordinary call returns at once, so calls can't pile up
+        const second = syncNow({ userId: 2, evenIfHeld: true });
+        release({ status: 200, data: { saved: true } });
+        await Promise.all([first, second]);
+
+        expect(axios.post).toHaveBeenCalledTimes(2);
+        expect(removeItem).toHaveBeenCalledWith("key-2");
     });
 });

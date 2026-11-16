@@ -48,9 +48,14 @@ async function ask(request) {
 
 const freshToken = () => ask(() => axios.get(route('sanctum.csrf-cookie'), REQUEST));
 
-/** 'done' (also when nobody was logged in), 'problem' (the server answered with an error) or 'unreachable'. */
-async function logOutOfServer() {
+/**
+ * 'done' (also when nobody was logged in), 'problem' (the server answered with an error) or
+ * 'unreachable'. `stillWanted` is asked once the token is back, which can take a while: when it
+ * says no, the session is left open and the answer is 'cancelled'.
+ */
+async function logOutOfServer(stillWanted = () => true) {
     if (!(await freshToken())) return 'unreachable';
+    if (!stillWanted()) return 'cancelled';
     const answer = await ask(() => axios.post(route('logout'), {}, REQUEST));
     if (answer?.status === 204 || answer?.status === 401) {
         noteServerSession(null);
@@ -62,11 +67,16 @@ async function logOutOfServer() {
 
 /** The server's answer to a login, or null when it couldn't be reached. */
 async function logInToServer(credentials) {
-    if (!(await freshToken())) return null;
-    // Whoever logged out here with no connection is still logged in on the server, so that
-    // their reports can send: they go now, before that session is closed.
-    const leaving = pendingLogout();
-    if (leaving) await syncNow({ userId: leaving, evenIfHeld: true });
+    // Whoever logged out here with no connection, or whose page is only covered by the login
+    // form (idle, or locked by hand), is still logged in on the server, so that their reports
+    // can send: they go now, before that session is closed.
+    const under = currentUser();
+    const leaving = pendingLogout() ?? (under && !offlineSession() && serverHasSession(under.id) ? under.id : null);
+    if (leaving) {
+        // Asked first so that an unreachable server shows in SERVER_WAIT_MS, not the send's timeout.
+        if (!(await freshToken())) return null;
+        await syncNow({ userId: leaving, evenIfHeld: true });
+    }
     // Always a logout first. If a session is still open (this phone's own, or one it doesn't
     // know about), the server would answer the login as that account instead.
     const left = await logOutOfServer();
@@ -195,7 +205,9 @@ export async function finishPendingLogout() {
     if (!userId || offlineSession() || !navigator.onLine) return;
     await syncNow({ userId, evenIfHeld: true });
     // Sending can take a while on a weak signal. If someone logged in meanwhile (the same
-    // account coming back, or another one), the session now open is theirs: leave it.
-    if (pendingLogout() !== userId || offlineSession()) return;
-    if ((await logOutOfServer()) === 'done') clearPendingLogout();
+    // account coming back, or another one), the session now open is theirs: leave it. Asked
+    // again inside the logout, between its two requests.
+    const stillPending = () => pendingLogout() === userId && !offlineSession();
+    if (!stillPending()) return;
+    if ((await logOutOfServer(stillPending)) === 'done') clearPendingLogout();
 }

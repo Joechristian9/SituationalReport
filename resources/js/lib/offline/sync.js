@@ -12,6 +12,8 @@ export const SEND_TIMEOUT_MS = 30000;
 // During an offline session the server doesn't know the account using the app yet: whatever
 // session is open belongs to someone else, so nothing is sent until that login is done.
 let held = false;
+// The run in flight, for a caller that must wait for it (see syncNow).
+let current = Promise.resolve();
 
 export function holdSync(hold) {
     held = hold;
@@ -68,8 +70,8 @@ export const needsReloadBeforeSaving = (path) => sentFromThisPage.has(`${current
  * `freshToken.used` keeps the rest of this run on the cookie token.
  */
 async function send(item, freshToken) {
-    const post = () =>
-        axios.post(item.url, item.payload, {
+    const post = async () => {
+        const answer = await axios.post(item.url, item.payload, {
             offlineSync: true,
             timeout: SEND_TIMEOUT_MS,
             headers: {
@@ -80,6 +82,11 @@ async function send(item, freshToken) {
                 'X-Offline-User': String(item.userId ?? ''),
             },
         });
+        // Only the server's own "saved" counts (HandleOfflineSubmission.php): a telco's "no load"
+        // page also answers 200. With no `response` on the error, the report waits and is retried.
+        if (answer?.data?.saved !== true) throw new Error('No answer from the server');
+        return answer;
+    };
 
     try {
         return await post();
@@ -93,10 +100,19 @@ async function send(item, freshToken) {
 
 /**
  * Send the queued saves of one account: by default the one whose page is showing. `evenIfHeld`
- * is for sending a logged-out account's reports through its still-open session.
+ * is for sending a leaving account's reports through its still-open session, just before that
+ * session is closed: it also waits for a run in flight and then makes its own, where any other
+ * call returns at once (the app calls often, and those calls must not pile up).
  */
 export async function syncNow({ userId = currentUser()?.id, evenIfHeld = false } = {}) {
-    if (state.running || userId == null || !navigator.onLine || (held && !evenIfHeld)) return;
+    if (userId == null || !navigator.onLine || (held && !evenIfHeld)) return;
+    if (state.running && !evenIfHeld) return;
+    while (state.running) await current.catch(() => {});
+    current = run(userId);
+    await current;
+}
+
+async function run(userId) {
     state.running = true;
     emit();
 
