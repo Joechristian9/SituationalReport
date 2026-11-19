@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Models\WaterLevel;
 use App\Models\WaterService;
 use App\Models\WeatherReport;
+use Illuminate\Support\Facades\Cache;
 
 function skippedRowsDisaster(string $status = 'active'): Typhoon
 {
@@ -135,6 +136,20 @@ it('says so in the flash too when the save answers with a redirect', function ()
         ->assertSessionHas('success', "Saved. 1 row wasn't saved because you can't edit it.");
 });
 
+it('tells the phone about a skipped row when a queued save would have answered with a redirect', function () {
+    $owner = userWithPermissions('access-injured-form');
+    $ended = skippedRowsDisaster('ended');
+    $active = skippedRowsDisaster();
+    $refused = Injured::factory()->create(['user_id' => $owner->id, 'disaster_id' => $ended->id, 'name' => 'Old']);
+    $headers = ['X-Offline-Key' => 'skipped-redirect-key', 'X-Offline-Disaster' => (string) $active->id];
+
+    // Injured answers JSON to the phone's Accept header; without it, it redirects, as AffectedTouristController always does.
+    $this->actingAs($owner)
+        ->post(route('injured.store'), ['injured' => [['id' => $refused->id, 'name' => 'New']]], $headers)
+        ->assertExactJson(['saved' => true, 'message' => "Saved. 1 row wasn't saved because you can't edit it.", 'skipped_rows' => 1])
+        ->assertSessionMissing('success');
+});
+
 it('marks a queued save with a skipped row as done, so a retry writes nothing again', function () {
     $owner = userWithPermissions('access-injured-form');
     $ended = skippedRowsDisaster('ended');
@@ -144,10 +159,22 @@ it('marks a queued save with a skipped row as done, so a retry writes nothing ag
     $payload = ['injured' => [['id' => $refused->id, 'name' => 'New'], ['name' => 'Brand new']]];
 
     $this->actingAs($owner)->postJson(route('injured.store'), $payload, $headers)->assertOk()->assertJsonPath('skipped_rows', 1);
-    $this->actingAs($owner)->postJson(route('injured.store'), $payload, $headers)->assertOk()->assertJson(['replayed' => true]);
+    // The first answer can be lost on a weak signal: the retry must still warn about the row.
+    $this->actingAs($owner)->postJson(route('injured.store'), $payload, $headers)->assertOk()
+        ->assertJson(['replayed' => true, 'skipped_rows' => 1]);
 
     expect($refused->fresh()->name)->toBe('Old')
         ->and(Injured::where('disaster_id', $active->id)->count())->toBe(1);
+});
+
+it('reports no skipped rows when replaying a save recorded before the count was kept', function () {
+    $owner = userWithPermissions('access-injured-form');
+    $active = skippedRowsDisaster();
+    Cache::put("offline-submission:{$owner->id}:old-done-key", true, now()->addDay());
+    $headers = ['X-Offline-Key' => 'old-done-key', 'X-Offline-Disaster' => (string) $active->id];
+
+    $this->actingAs($owner)->postJson(route('injured.store'), ['injured' => [['name' => 'A']]], $headers)
+        ->assertExactJson(['saved' => true, 'message' => 'Already saved.', 'replayed' => true]);
 });
 
 it('refuses numbers too big for their decimal column', function (string $route, string $permission, string $key, array $row) {

@@ -55,8 +55,12 @@ class HandleOfflineSubmission
         // A retry of a save the server already processed (e.g. the connection dropped
         // before the reply arrived) must not create the rows a second time.
         $doneKey = "offline-submission:{$request->user()->id}:{$key}";
-        if (Cache::has($doneKey)) {
-            return response()->json(['saved' => true, 'message' => 'Already saved.', 'replayed' => true]);
+        // Holds the save's skipped-row count, so a retry still warns about them. Saves recorded
+        // before the count was kept hold `true`.
+        $done = Cache::get($doneKey);
+        if ($done !== null) {
+            return response()->json(self::skippedNote(is_int($done) ? $done : 0)
+                + ['saved' => true, 'message' => 'Already saved.', 'replayed' => true]);
         }
 
         $lock = Cache::lock("{$doneKey}:lock", 30);
@@ -72,7 +76,8 @@ class HandleOfflineSubmission
                 return $response;
             }
 
-            Cache::put($doneKey, true, now()->addDays(self::KEEP_DAYS));
+            $skipped = (int) $request->attributes->get(NoteSkippedRows::ATTRIBUTE, 0);
+            Cache::put($doneKey, $skipped, now()->addDays(self::KEEP_DAYS));
 
             // The phone deletes its copy only on `saved` (sync.js): a redirect followed to a page
             // looks the same to it as a telco's "no load" page, which also answers 200.
@@ -86,9 +91,16 @@ class HandleOfflineSubmission
                 $request->session()->forget(['success', 'error']);
             }
 
-            return response()->json(['saved' => true]);
+            // Rows left out still need telling (OfflineStatus shows it), as a JSON save gets.
+            return response()->json(['saved' => true] + self::skippedNote($skipped));
         } finally {
             $lock->release();
         }
+    }
+
+    /** @return array{message?: string, skipped_rows?: int} */
+    private static function skippedNote(int $skipped): array
+    {
+        return $skipped > 0 ? ['message' => NoteSkippedRows::message($skipped), 'skipped_rows' => $skipped] : [];
     }
 }

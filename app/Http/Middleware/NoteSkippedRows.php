@@ -26,9 +26,7 @@ class NoteSkippedRows
             return $response;
         }
 
-        $message = $skipped === 1
-            ? "Saved. 1 row wasn't saved because you can't edit it."
-            : "Saved. {$skipped} rows weren't saved because you can't edit them.";
+        $message = self::message($skipped);
 
         if ($response instanceof JsonResponse) {
             $response->setData(['message' => $message, 'skipped_rows' => $skipped] + $response->getData(true));
@@ -37,5 +35,12 @@ class NoteSkippedRows
         }
 
         return $response;
+    }
+
+    public static function message(int $skipped): string
+    {
+        return $skipped === 1
+            ? "Saved. 1 row wasn't saved because you can't edit it."
+            : "Saved. {$skipped} rows weren't saved because you can't edit them.";
     }
 }

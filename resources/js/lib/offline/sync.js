@@ -124,7 +124,7 @@ async function run(userId) {
         const freshToken = { used: false };
         for (const item of items) {
             try {
-                await send(item, freshToken);
+                const answer = await send(item, freshToken);
                 await removeItem(item.id);
                 state.loginNeeded = false;
                 // Only for this page's own account: a logged-out account's report can carry
@@ -134,7 +134,9 @@ async function run(userId) {
                     latestSentSavedAt = Math.max(latestSentSavedAt, item.savedAt);
                     state.reloadNeeded = true;
                 }
-                window.dispatchEvent(new CustomEvent('offline:sent', { detail: item }));
+                // Rows the account can't edit were left out (NoteSkippedRows.php): OfflineStatus says so.
+                const skippedRows = answer.data.skipped_rows ?? 0;
+                window.dispatchEvent(new CustomEvent('offline:sent', { detail: { ...item, skippedRows } }));
             } catch (error) {
                 const response = error.response;
                 if (!response) break; // still unreachable; try again later

@@ -43,6 +43,16 @@ describe("syncNow", () => {
         expect(removeItem).toHaveBeenCalledWith("key-1");
     });
 
+    it("tells the app how many rows the server left out of a sent report", async () => {
+        axios.post.mockResolvedValue({ status: 200, data: { saved: true, skipped_rows: 2 } });
+
+        await syncNow();
+
+        expect(window.dispatchEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ type: "offline:sent", detail: expect.objectContaining({ skippedRows: 2 }) }),
+        );
+    });
+
     it("keeps the report when a 200 answer is not the server's", async () => {
         // Data on with no load: the telco's page answers every request with 200.
         axios.post.mockResolvedValue({ status: 200, data: "<html>no load</html>" });
