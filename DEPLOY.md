@@ -1,119 +1,106 @@
-
 # Deployment Guide for pitonmain.com
 
-## Quick Deployment
+The live app is **https://pitonmain.com**. It runs from
+`/home/u988863428/domains/pitonmain.com/public_html` on Hostinger, and is deployed with
+**Hostinger's GitHub deploy** (hPanel → Websites → pitonmain.com → Advanced → **Git**), which
+publishes the `main` branch of `github.com/Joechristian9/SituationalReport`.
 
-### Step 1: Connect to Server
-Open a new PowerShell/Terminal window and run:
-```bash
-ssh -p 65002 u988863428@156.67.222.18
-```
-Enter your password when prompted.
+SSH, for the commands below: `ssh -p 65002 u988863428@156.67.222.18` (password prompt), then
+`cd ~/domains/pitonmain.com/public_html`.
 
-### Step 2: Run the deploy script
-Once connected to the server, run:
-```bash
-cd /home/u988863428/domains/pitonmain.com/public_html
-bash deploy-production.sh
-exit
-```
+## What the GitHub deploy does, and what it doesn't
 
-The script, in order:
-1. Backs up the database and report PDFs (`php artisan backup:create`). If that fails it stops
-   and nothing has changed. `SKIP_BACKUP=1 bash deploy-production.sh` skips it in an emergency.
-2. Puts the site in maintenance mode, so visitors see a "back shortly" page instead of errors
-   while new code and old `vendor/` are mixed.
-3. `git pull`, `composer install` (`vendor/` is not in Git), `migrate --force`, then rebuilds the
-   config, route and view caches.
-4. Takes the site out of maintenance mode, also when a step failed (it then prints
-   `DEPLOYMENT FAILED`).
+When you press **Deploy**, Hostinger:
+1. clones `main` (the newest commit),
+2. runs `composer install`,
+3. replaces the app's files with that copy. It keeps `vendor/`, `.env` and `bootstrap/cache/`.
 
-**First deploy of this script:** the copy on the server is still the old one, so run
-`git pull --ff-only origin main` once before `bash deploy-production.sh`.
+It does **not** run any `php artisan` command: no backup, no maintenance mode, no migrations,
+no cache rebuild. Do those by hand over SSH when a release needs them (see below).
 
-After changing `.env`, run `php artisan config:cache` again, because a cached config ignores `.env`.
+The built frontend (`public/build/`) is committed in Git, so the server never runs `npm`.
+Always commit a fresh `npm run build` before deploying.
 
-### Step 3: Clear Browser Cache
-- Visit: https://pitonmain.com/history
-- Press: **Ctrl + Shift + R** (Windows/Linux) or **Cmd + Shift + R** (Mac)
+## Deploying a release
 
----
-## What Was Deployed
+### 1. Before you deploy
+1. Merge into `main` and push.
+2. Open the commit on GitHub and wait for the **green tick** (tests from `.github/workflows/ci.yml`).
+   A red X means don't deploy.
+3. Check whether the release changes the database. On your PC:
+   ```bash
+   git diff --name-only <commit now live> main -- database/migrations
+   ```
+   The live commit is in the last deploy's log (`→ commit 1a2b3c4`) on hPanel's Git page.
+   An empty result means no migrations.
 
-### Latest Commit: `e9ee259`
-**Message:** "refactor: Remove cards and enhance Batch History UI with top filters and icon-based design"
+### 2. Deploy
 
-### Changes:
-✅ Removed card-based layout from Batch History page
-✅ Moved filter options to top of page with cleaner horizontal layout
-✅ Enhanced UI with icon-based design (FileText icon in colored badge)
-✅ Simplified Year and Form Type selection into single row
-✅ Improved visual hierarchy and spacing
-✅ Maintained all existing functionality (Add Year, disaster display, pagination)
-✅ Better responsive layout for mobile and desktop
-✅ Cleaner empty state design without cards
+**Release without migrations** (the usual case):
+1. hPanel → Git → **Deploy**. Wait for `Publishing completed`.
+2. If config or routes are cached on the server (`ls bootstrap/cache` shows `config.php` or
+   `routes-*.php`), run `php artisan optimize:clear` over SSH. Otherwise the old cached config
+   and routes stay in use. If you later cache again, add `config:cache`, `route:cache` and
+   `view:cache` after it.
 
-### Previous Commit: `331e1c0`
-**Message:** "feat: Refactor year system from academic ranges to individual calendar years with dynamic year management"
+**Release with migrations:** the migration changes the live database. MySQL can't undo a
+schema change, so back up first:
+1. SSH:
+   ```bash
+   php artisan backup:create
+   php artisan down --retry=60 --refresh=30
+   ```
+   While the site is down, offline phones get a 503. They treat that as "try later" and keep
+   their unsent reports.
+2. hPanel → Git → **Deploy**.
+3. SSH:
+   ```bash
+   php artisan migrate --force
+   php artisan optimize:clear
+   php artisan up
+   ```
+   If `migrate` fails, still run `php artisan up`, then restore from the backup (see
+   **Backups and Restore** below).
 
-### Previous Changes:
-✅ Changed from academic year ranges (2025-26) to individual calendar years (2025, 2026, 2027)
-✅ Created `years` table with `year` (integer) column
-✅ Added `year_id` foreign key to disasters table
-✅ Created YearController with index/store/destroy methods
-✅ Updated HistoryController to use years table
-✅ Created YearSeeder to populate years from existing disasters
-✅ Added "Add Year" button with modal for creating new years
-✅ All data now properly scoped to selected year
-✅ Validation: years between 1900-2100
-✅ Dynamic year management with instant availability
+### 3. After deploying
+1. https://pitonmain.com/up shows a page (HTTP 200), and the login page opens.
+2. If the release changed `public/sw.js`, `public/offline.html` or the manifests, check that
+   https://pitonmain.com/sw.js shows the new code. The site is behind Hostinger's CDN. If it
+   still shows the old file, flush it: hPanel → Performance → CDN → **Flush cache**.
+3. Log in and check what the release changed.
 
-### Files Modified:
-- `resources/js/Pages/Admin/BatchHistory.jsx` - Refactored UI layout
-- `database/migrations/2026_09_07_101301_create_years_table.php` - New years table
-- `database/migrations/2026_09_07_101410_add_year_id_to_typhoons_table.php` - Added year_id FK
-- `app/Models/Year.php` - New Year model
-- `app/Models/Typhoon.php` - Added year relationship
-- `app/Http/Controllers/YearController.php` - Year CRUD operations
-- `app/Http/Controllers/HistoryController.php` - Refactored for years table
-- `database/seeders/YearSeeder.php` - Data migration seeder
-- `routes/web.php` - Added year routes
-- Multiple compiled assets in `public/build/`undle
-- `public/build/manifest.json` - Asset manifest
+### Undoing a release
+Hostinger deploys only the newest commit of `main`. To go back, revert the commit on `main`
+(`git revert <commit>`), push, wait for the green tick and deploy again. A migration that already
+ran is not undone by this: restore the database from the backup taken before it.
 
----
+## Important
+
+- **Keep auto-deployment off** (hPanel → Git). With it on, every push to `main` goes live at once,
+  before the tests finish and without a backup or migrations.
+- **This folder also holds other projects' folders** (`agrilink/`, `e-traces/`, …). Never point
+  pitonmain.com's Git deploy at another repository or branch. Its publish replaces the app's
+  files with that repository's.
+- **Don't use `deploy-production.sh`, `deploy-ssh.ps1` or `deploy-build.ps1`.** They are from the
+  old `git pull` / upload process, not the GitHub deploy.
+- **`.env` lives only on the server** and is never in Git. It must have `APP_ENV=production` and
+  `APP_DEBUG=false`: a live site in debug mode shows file paths and settings to anyone. After
+  changing `.env`, run `php artisan config:clear` (or `config:cache` if you cache config).
 
 ## Troubleshooting
 
-### If changes don't appear:
-1. Hard refresh browser: **Ctrl + Shift + R**
-2. Clear Laravel cache on server:
+**Changes don't appear**
+1. Hard refresh: **Ctrl + Shift + R**. On the installed phone app, close it and open it again
+   while online.
+2. Check the deploy log on hPanel's Git page shows the commit you expect, with no errors.
+3. Clear Laravel's caches over SSH:
    ```bash
-   ssh -p 65002 u988863428@156.67.222.18
-   cd /home/u988863428/domains/pitonmain.com/public_html
-   php artisan cache:clear
-   php artisan config:clear
-   php artisan route:clear
-   php artisan view:clear
+   php artisan optimize:clear
    ```
-3. Check if git pull was successful (should show files updated)
-4. Verify manifest.json was updated (check timestamp)
+4. For offline/phone problems, check https://pitonmain.com/sw.js first (CDN, see above).
 
-### Check deployment status:
-```bash
-ssh -p 65002 u988863428@156.67.222.18
-cd /home/u988863428/domains/pitonmain.com/public_html
-git log -1 --oneline
-# Should show: e9ee259 refactor: Remove cards and enhance Batch History UI with top filters and icon-based design
-```
-
----
-
-## Alternative: One-Line Deployment
-Copy and paste this entire command (requires password):
-```bash
-ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com/public_html && bash deploy-production.sh"
-```
+**Errors after a deploy:** read today's log over SSH:
+`tail -50 storage/logs/laravel-$(date +%F).log`
 
 ---
 
@@ -121,16 +108,12 @@ ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com
 
 1. **Error alerts (Sentry).** Create a free account at sentry.io → new project → platform
    "Laravel" → copy the DSN. In the server's `.env` set `SENTRY_LARAVEL_DSN=<the DSN>`, then
-   `php artisan config:cache`. Each new error then emails you. Test it with
+   `php artisan config:clear`. Each new error then emails you. Test it with
    `php artisan sentry:test`. No names or user details are sent (`send_default_pii` is off).
 2. **Uptime alerts.** Free account at uptimerobot.com → New monitor → HTTP(s) →
    `https://pitonmain.com/up`, every 5 minutes, alert by email (and SMS if you like).
 3. **Logs.** One file per day, 14 days kept: `storage/logs/laravel-YYYY-MM-DD.log`. If the server's
-   `.env` has `LOG_STACK=single`, change it to `daily` and run `php artisan config:cache`.
-4. **Only the deploy script goes live.** hPanel → Advanced → Git: turn off auto-deployment.
-   Otherwise every push to `main` goes live at once, without the backup, migrations or tests.
-   Check the tests passed (green tick on the commit in GitHub, from `.github/workflows/ci.yml`)
-   before running `deploy-production.sh`.
+   `.env` has `LOG_STACK=single`, change it to `daily` and run `php artisan config:clear`.
 
 ---
 
@@ -139,9 +122,15 @@ ssh -p 65002 u988863428@156.67.222.18 "cd /home/u988863428/domains/pitonmain.com
 ### What is backed up
 `php artisan backup:create` writes one zip to `storage/app/private/backups/` with the full
 database (`database.sql`) and the stored files (`storage/`: the disaster report PDFs).
-The newest 14 are kept (`BACKUP_KEEP`). It runs nightly at 01:00 and before every deploy.
+The newest 14 are kept (`BACKUP_KEEP`). It runs nightly at 01:00, and by hand before a deploy
+with migrations (see above).
 While a disaster is active it also runs every hour as `hourly-*.zip`; the newest 24 of those
 are kept (`BACKUP_KEEP_HOURLY`), separately, so they never push out the daily ones.
+
+**Check after the next deploy** that `storage/app/private/backups/` still has its zips and
+`storage/logs/` its logs. The GitHub deploy says it keeps only `vendor/`, `.env` and
+`bootstrap/cache/`. If it empties `storage/`, every deploy deletes the report PDFs and the
+backups on the server, and only the off-server copies below remain.
 
 ### One-time setup on the server
 1. **Turn on the scheduler.** hPanel → Advanced → Cron Jobs, every minute:
@@ -150,7 +139,7 @@ are kept (`BACKUP_KEEP_HOURLY`), separately, so they never push out the daily on
    ```
    Without it the nightly backup never runs. Check with `php artisan schedule:list`.
 2. **Check it works once:** `php artisan backup:create`. If it says mysqldump was not found,
-   set `MYSQLDUMP_PATH` in `.env` to the output of `which mysqldump`, then `php artisan config:cache`.
+   set `MYSQLDUMP_PATH` in `.env` to the output of `which mysqldump`, then `php artisan config:clear`.
 3. **Optional encryption:** set `BACKUP_PASSWORD` in `.env`. The dump contains names of
    casualties. Store that password outside the server, or the backups can't be opened.
 
@@ -171,6 +160,6 @@ Keep the copies private: they hold the same personal data as the app.
    `mysql -u <DB_USERNAME> -p <DB_DATABASE> < ~/restore/database.sql`
    (or hPanel → Databases → phpMyAdmin → Import `database.sql`).
 4. Files: `cp -r ~/restore/storage/. domains/pitonmain.com/public_html/storage/app/public/`
-5. `php artisan optimize:clear && php artisan config:cache && php artisan up`
+5. `php artisan optimize:clear && php artisan up`
 
 Practise a restore into a spare database once, before you need it for real.
