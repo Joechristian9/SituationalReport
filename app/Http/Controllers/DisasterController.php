@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\PreEmptiveReport;
 use App\Models\Typhoon;
 use App\Models\User;
 use App\Notifications\FormReminder;
@@ -494,12 +495,14 @@ class DisasterController extends Controller
         $table = $validated['table'];
         $user = User::findOrFail($userId);
 
-        // Fetch data from the specified table
-        $query = \DB::table($table)
-            ->where('disaster_id', $activeTyphoon->id);
+        // Pre-emptive rows also belong to the barangay they name (an office may file them for it):
+        // the rows its own form shows, which the "entries" count includes too (PendingForms).
+        $query = $table === 'pre_emptive_reports'
+            ? PreEmptiveReport::where('disaster_id', $activeTyphoon->id)->ofBarangay($user)->toBase()
+            : \DB::table($table)->where('disaster_id', $activeTyphoon->id);
 
         // Only add user_id filter if the table has that column
-        if ($table !== 'agriculture_reports') {
+        if (! in_array($table, ['agriculture_reports', 'pre_emptive_reports'], true)) {
             $query->where('user_id', $userId);
         }
 

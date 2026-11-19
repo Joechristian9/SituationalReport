@@ -30,6 +30,23 @@ it('returns a user\'s records for a report table on the form submission page', f
         ->assertJsonPath('data.0.name', 'Mine');
 });
 
+it('lists the pre-emptive rows an office filed under the barangay\'s name, as its count does', function () {
+    $disaster = activeDisaster();
+    $barangay = userWithRole('user');
+    $office = userWithRole('user');
+
+    DB::table('pre_emptive_reports')->insert([
+        ['barangay' => $barangay->name, 'evacuation_center' => 'For the barangay', 'user_id' => $office->id, 'disaster_id' => $disaster->id, 'created_at' => now(), 'updated_at' => now()],
+        ['barangay' => 'Somewhere else', 'evacuation_center' => 'Not the barangay', 'user_id' => $office->id, 'disaster_id' => $disaster->id, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $this->actingAs(userWithRole('admin'))
+        ->getJson(route('admin.user-form-data', ['userId' => $barangay->id, 'table' => 'pre_emptive_reports']))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.evacuation_center', 'For the barangay');
+});
+
 it('refuses to read tables that are not report forms', function (string $table) {
     activeDisaster();
     $barangay = userWithRole('user');
