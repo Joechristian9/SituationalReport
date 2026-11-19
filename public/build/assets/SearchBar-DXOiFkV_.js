@@ -1,1 +1,0 @@
-import{r as o,j as s}from"./index.esm-D6jpOuBf.js";import{g as c}from"./DataView-RxTVhVZk.js";function x({value:a,onChange:t,placeholder:r="Search...",suggest:e}){const m=o.useId();return s.jsx("div",{className:"w-full sm:max-w-sm",children:s.jsx(c,{id:m,value:a,onChange:t,placeholder:r,label:r,suggest:e})})}export{x as S};
