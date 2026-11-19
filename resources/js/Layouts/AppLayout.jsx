@@ -3,6 +3,7 @@ import { Head, usePage } from "@inertiajs/react";
 import { AppSidebar } from "@/Components/app-sidebar";
 import NotificationBell from "@/Components/reminders/NotificationBell";
 import { Separator } from "@/Components/ui/separator";
+import { setHeaderSlot } from "@/lib/headerSlot";
 import {
     SidebarInset,
     SidebarProvider,
@@ -36,12 +37,12 @@ export default function AppLayout({ title, header, actions, children }) {
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                         {header}
                     </div>
-                    {(actions || showBell) && (
-                        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                            {actions}
-                            {showBell && <NotificationBell />}
-                        </div>
-                    )}
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        {actions}
+                        {/* OfflineStatus draws its chip here (lib/headerSlot.js). */}
+                        <div ref={setHeaderSlot} className="flex items-center empty:hidden" />
+                        {showBell && <NotificationBell />}
+                    </div>
                 </header>
                 {children}
             </SidebarInset>

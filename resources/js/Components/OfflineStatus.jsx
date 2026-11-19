@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, ChevronDown, CloudOff, Copy, GitCompare, Loader2, RefreshCw, Trash2, UploadCloud, Wifi } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import StatusChip from '@/Components/StatusChip';
+import { useHeaderSlot } from '@/lib/headerSlot';
 import { applyChoices, askAboutConflicts } from '@/lib/offline/conflicts';
 import { accountsGone, subscribeAccounts } from '@/lib/offline/accounts';
 import { allItems, putItem, removeItem, subscribe } from '@/lib/offline/store';
@@ -239,6 +242,7 @@ export default function OfflineStatus() {
     const [card, setCard] = useState(null);
     const [box, setBox] = useState(null);
     const [pos, dragHandlers] = useDraggable(box);
+    const headerSlot = useHeaderSlot();
     // Once moved, it no longer sits at the bottom, so the page needn't make room for it there.
     useReservedBottomSpace(pos ? null : card);
 
@@ -284,17 +288,24 @@ export default function OfflineStatus() {
 
         let timer;
         let sentCount = 0;
+        let skippedRows = 0;
         const onQueued = (event) => setAnnouncement(`${event.detail.label} saved on this device. It will be sent when you're back online.`);
-        const onSent = () => {
+        const onSent = (event) => {
             sentCount += 1;
-            const text = `${plural(sentCount, 'report')} sent`;
-            setNotice(text);
+            skippedRows += event.detail?.skippedRows ?? 0;
+            const skipped = skippedRows
+                ? ` · ${plural(skippedRows, 'row')} not saved: you can't edit ${skippedRows === 1 ? 'it' : 'them'}`
+                : '';
+            const text = `${plural(sentCount, 'report')} sent${skipped}`;
+            setNotice({ text, skippedRows });
             setAnnouncement(text);
             clearTimeout(timer);
+            // A warning stays longer: it has more to read and the person may need to act on it.
             timer = setTimeout(() => {
                 setNotice(null);
                 sentCount = 0;
-            }, 4000);
+                skippedRows = 0;
+            }, skippedRows ? 10000 : 4000);
         };
         const onReload = () => setAskRefresh(true);
         const onReady = (event) => {
@@ -328,24 +339,27 @@ export default function OfflineStatus() {
     const failed = items.filter((item) => item.gone || item.status === 'failed').length;
     const conflicts = items.filter((item) => !item.gone && item.status === 'conflict').length;
 
-    // One message at a time, most important first.
+    // One message at a time, most important first. `short` is what the header chip shows next to
+    // its icon: a count, or a word when the person has to act (the full `text` opens on hover/tap).
     let pill = null;
     if (sync.loginNeeded && waiting) {
-        pill = { tone: 'warning', icon: AlertTriangle, text: `Session expired. Log in to send ${plural(waiting, 'saved report')}.`, action: 'login' };
+        pill = { tone: 'warning', icon: AlertTriangle, text: `Session expired. Log in to send ${plural(waiting, 'saved report')}.`, short: 'Log in', action: 'login' };
     } else if (askRefresh) {
-        pill = { tone: 'neutral', icon: CheckCircle2, text: 'Offline reports sent. Refresh before saving again; changes typed since then are cleared.', action: 'refresh' };
+        pill = { tone: 'neutral', icon: CheckCircle2, text: 'Offline reports sent. Refresh before saving again; changes typed since then are cleared.', short: 'Refresh', action: 'refresh' };
     } else if (conflicts) {
-        pill = { tone: 'warning', icon: GitCompare, text: `${plural(conflicts, 'report')} changed on another device · Review` };
+        pill = { tone: 'warning', icon: GitCompare, text: `${plural(conflicts, 'report')} changed on another device · Review`, short: `${conflicts} · Review` };
     } else if (failed) {
-        pill = { tone: 'destructive', icon: AlertTriangle, text: `${failed} not sent · Review` };
+        pill = { tone: 'destructive', icon: AlertTriangle, text: `${failed} not sent · Review`, short: `${failed} · Review` };
     } else if (!online) {
-        pill = { tone: 'warning', icon: CloudOff, text: waiting ? `Offline · ${waiting} waiting to send` : 'Offline · you can keep working' };
+        pill = { tone: 'warning', icon: CloudOff, text: waiting ? `Offline · ${waiting} waiting to send` : 'Offline · you can keep working', short: waiting || null };
     } else if (sync.running && waiting) {
-        pill = { tone: 'neutral', icon: Loader2, spin: true, text: `Sending ${plural(waiting, 'report')}…` };
+        pill = { tone: 'neutral', icon: Loader2, spin: true, text: `Sending ${plural(waiting, 'report')}…`, short: waiting };
     } else if (notice) {
-        pill = { tone: 'success', icon: CheckCircle2, text: notice };
+        pill = notice.skippedRows
+            ? { tone: 'warning', icon: AlertTriangle, text: notice.text, short: `${notice.skippedRows} skipped` }
+            : { tone: 'success', icon: CheckCircle2, text: notice.text };
     } else if (waiting) {
-        pill = { tone: 'neutral', icon: UploadCloud, text: `${waiting} waiting to send` };
+        pill = { tone: 'neutral', icon: UploadCloud, text: `${waiting} waiting to send`, short: waiting };
     } else if (onlineNote) {
         pill = { tone: 'success', icon: Wifi, text: onlineNote };
     }
@@ -361,6 +375,58 @@ export default function OfflineStatus() {
     const icon = <Icon className={cn('h-4 w-4 shrink-0', pill.spin && 'animate-spin motion-reduce:animate-none')} aria-hidden="true" />;
     const expandable = items.length > 0 && !pill.action;
 
+    const actionButton =
+        pill.action === 'login' ? (
+            <Button asChild size="sm" className="min-h-11 md:min-h-8">
+                <a href={route('login')}>Log in</a>
+            </Button>
+        ) : pill.action === 'refresh' ? (
+            <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={refreshPage}>
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Refresh
+            </Button>
+        ) : null;
+
+    const queue = (
+        <>
+            <h2 className="font-semibold text-foreground">Saved on this device</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">These are sent automatically, oldest first, when the internet is back.</p>
+            <ul className="mt-1 divide-y">
+                {items.map((item) => (
+                    <QueuedItem key={item.id} item={item} />
+                ))}
+            </ul>
+            {waiting > 0 && online && (
+                <Button type="button" size="sm" className="mt-2 min-h-11 w-full gap-1.5 md:min-h-9" disabled={sync.running} onClick={() => syncNow()}>
+                    {sync.running ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <UploadCloud className="h-4 w-4" aria-hidden="true" />}
+                    {sync.running ? 'Sending…' : 'Send now'}
+                </Button>
+            )}
+        </>
+    );
+
+    // Pages with the app header: a compact chip there. Others keep the floating pill below.
+    if (headerSlot) {
+        const details = (actionButton || items.length > 0) && (
+            <div className="mt-2 space-y-2">
+                {actionButton}
+                {items.length > 0 && <div className="max-h-[60vh] w-[calc(100vw-4rem)] overflow-y-auto border-t pt-2 sm:w-80">{queue}</div>}
+            </div>
+        );
+        return (
+            <>
+                {liveRegion}
+                {createPortal(
+                    <StatusChip label={pill.text} details={details} className={cn('bg-card hover:bg-muted', TONE[pill.tone])}>
+                        {icon}
+                        {pill.short != null && <span className="whitespace-nowrap tabular-nums">{pill.short}</span>}
+                    </StatusChip>,
+                    headerSlot,
+                )}
+            </>
+        );
+    }
+
     return (
         // Above the dashboard's bottom tab bar when there is one (SectionNav sets --section-nav-h),
         // or wherever the user dragged it.
@@ -373,19 +439,7 @@ export default function OfflineStatus() {
 
             {open && expandable && (
                 <div id="offline-queue" className="max-h-[60vh] w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border bg-card p-4 text-sm shadow-md sm:w-96">
-                    <h2 className="font-semibold text-foreground">Saved on this device</h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">These are sent automatically, oldest first, when the internet is back.</p>
-                    <ul className="mt-1 divide-y">
-                        {items.map((item) => (
-                            <QueuedItem key={item.id} item={item} />
-                        ))}
-                    </ul>
-                    {waiting > 0 && online && (
-                        <Button type="button" size="sm" className="mt-2 min-h-11 w-full gap-1.5 md:min-h-9" disabled={sync.running} onClick={() => syncNow()}>
-                            {sync.running ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <UploadCloud className="h-4 w-4" aria-hidden="true" />}
-                            {sync.running ? 'Sending…' : 'Send now'}
-                        </Button>
-                    )}
+                    {queue}
                 </div>
             )}
 
@@ -398,16 +452,7 @@ export default function OfflineStatus() {
                             <span className="mt-0.5">{icon}</span>
                             <span className="text-foreground">{pill.text}</span>
                         </span>
-                        {pill.action === 'login' ? (
-                            <Button asChild size="sm" className="min-h-11 md:min-h-8">
-                                <a href={route('login')}>Log in</a>
-                            </Button>
-                        ) : (
-                            <Button type="button" size="sm" className="min-h-11 gap-1.5 md:min-h-8" onClick={refreshPage}>
-                                <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                                Refresh
-                            </Button>
-                        )}
+                        {actionButton}
                     </div>
                 ) : expandable ? (
                     <button
