@@ -58,11 +58,14 @@ export default function StatusChip({ label, details, className, children }) {
             </PopoverTrigger>
             <PopoverContent
                 align="end"
+                // Never against the screen edge, where its border disappears on a phone.
+                collisionPadding={12}
                 onPointerEnter={hoverIn}
                 onPointerLeave={hoverOut}
                 // Opened by hovering: leave focus where it is.
                 onOpenAutoFocus={(event) => pinned.current || event.preventDefault()}
-                className="w-auto max-w-[calc(100vw-2rem)] p-3 text-sm sm:max-w-sm"
+                // Phones: the screen's width less the 12px edges. Taller than the screen: it scrolls inside.
+                className="max-h-[var(--radix-popover-content-available-height)] w-[calc(100vw-1.5rem)] overflow-y-auto overscroll-contain p-3 text-sm sm:w-auto sm:min-w-56 sm:max-w-sm"
             >
                 <p className="font-medium text-foreground">{label}</p>
                 {details}

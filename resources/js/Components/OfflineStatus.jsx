@@ -410,7 +410,7 @@ export default function OfflineStatus() {
         const details = (actionButton || items.length > 0) && (
             <div className="mt-2 space-y-2">
                 {actionButton}
-                {items.length > 0 && <div className="max-h-[60vh] w-[calc(100vw-4rem)] overflow-y-auto border-t pt-2 sm:w-80">{queue}</div>}
+                {items.length > 0 && <div className="border-t pt-2 sm:w-80">{queue}</div>}
             </div>
         );
         return (
