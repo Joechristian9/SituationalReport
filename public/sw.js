@@ -3,6 +3,7 @@
  *
  * - Built assets (/build/*, hashed file names): cache first. Files from earlier deploys
  *   are deleted when a new version is cached, so the cache does not grow on every release.
+ * - Images (/images/*): cache first too, so logos don't show broken with no connection.
  * - Pages and JSON data: network first, so online use is always live; the last copy is
  *   kept for when the network is gone, or used when a weak signal takes too long.
  * - Saves (POST) are never touched here; the app queues them itself.
@@ -25,6 +26,25 @@ const MAX_DATA = 120;
 const NETWORK_TIMEOUT = 8000;
 const BASE = new URL(self.registration.scope).pathname;
 const OFFLINE_URL = `${BASE}offline.html`;
+
+// The pictures the app shows (login, lock screen, sidebar, icons). Saved at install: phones that
+// loaded them before images were cached never kept a copy.
+// shortcut: a picture replaced under the same name shows only once sw.js changes (each new sw.js
+// saves these again); give it a new name or ?v= if it must show sooner.
+const IMAGES = [
+    'images/ilagan.jpeg',
+    'images/cdrrmo_logo_192.jpg',
+    'images/icons/favicon-32.png?v=2',
+    'images/icons/apple-touch-icon.png?v=2',
+    'images/icons/icon-192.png?v=2',
+    'images/icons/icon-512.png?v=2',
+];
+
+async function precacheImages() {
+    const cache = await caches.open(ASSETS);
+    // One by one, like precacheBuild: a single missing file must not stop the worker installing.
+    await Promise.all(IMAGES.map((path) => cache.add(`${BASE}${path}`).catch(() => {})));
+}
 
 async function precacheBuild() {
     try {
@@ -61,6 +81,7 @@ self.addEventListener('install', (event) => {
         caches
             .open(ASSETS)
             .then((cache) => cache.add(OFFLINE_URL))
+            .then(precacheImages)
             .then(precacheBuild)
             .then(() => self.skipWaiting()),
     );
@@ -196,7 +217,7 @@ self.addEventListener('fetch', (event) => {
     // URL would later open that page offline with most of its data missing.
     if (request.headers.has('X-Inertia-Partial-Data') || request.headers.has('X-Inertia-Partial-Except')) return;
 
-    if (url.pathname.startsWith(`${BASE}build/`)) {
+    if (url.pathname.startsWith(`${BASE}build/`) || url.pathname.startsWith(`${BASE}images/`)) {
         event.respondWith(cacheFirst(request));
         return;
     }
