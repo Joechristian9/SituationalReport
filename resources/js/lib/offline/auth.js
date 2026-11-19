@@ -82,6 +82,9 @@ async function logInToServer(credentials) {
     const left = await logOutOfServer();
     if (left === 'unreachable') return null;
     if (left === 'problem') return { status: 500 };
+    // That logout was the one waiting: clear it now, or finishPendingLogout could send it again
+    // after this login (rememberAccount runs before signIn clears it) and close the new session.
+    if (left === 'done') clearPendingLogout();
     const answer = await ask(() => axios.post(route('login'), credentials, REQUEST));
     if (!answer || (answer.status < 400 && !answer.data?.user?.id)) return null;
     return answer;

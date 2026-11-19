@@ -249,6 +249,20 @@ describe("signIn", () => {
         expect(syncNow.mock.invocationCallOrder[0]).toBeLessThan(axios.post.mock.invocationCallOrder[0]);
     });
 
+    it("clears the waiting logout before logging in, so it can't close the new session", async () => {
+        setPendingLogout(8);
+        server();
+        let waitingAtLogin;
+        axios.post.mockImplementation(async (url) => {
+            if (url !== "/logout") waitingAtLogin = pendingLogout();
+            return url === "/logout" ? { status: 204 } : { status: 200, data: { user: fugu, home: "/situation-reports" } };
+        });
+
+        await logIn(fugu.email, "correct horse");
+
+        expect(waitingAtLogin).toBeNull();
+    });
+
     it("sends nothing first when the server has no session for the page's account", async () => {
         page.user = rugao; // rugao's saved page, but rugao logged out with internet earlier
         noteServerSession(null);
